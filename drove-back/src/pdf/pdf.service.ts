@@ -27,17 +27,23 @@ export class PdfService {
     @InjectRepository(Travels)
     private readonly travelsRepository: Repository<Travels>,
   ) {
+    const minioEndpoint =
+      this.configService.get<string>('MINIO_ENDPOINT') ||
+      this.configService.get<string>('S3_ENDPOINT');
+    const minioRegion = this.configService.get<string>('MINIO_REGION') || 'us-east-1';
+    const accessKeyId =
+      this.configService.get<string>('MINIO_ACCESS_KEY') ||
+      this.configService.get<string>('AWS_ACCESS_KEY_ID');
+    const secretAccessKey =
+      this.configService.get<string>('MINIO_SECRET_KEY') ||
+      this.configService.get<string>('AWS_SECRET_ACCESS_KEY');
+
     this.s3client = new S3({
-      region: this.configService.get<string>('AWS_REGION') ?? 'eu-west-2',
+      region: minioRegion,
+      ...(minioEndpoint ? { endpoint: minioEndpoint, forcePathStyle: true } : {}),
       credentials:
-        this.configService.get<string>('AWS_ACCESS_KEY_ID') &&
-        this.configService.get<string>('AWS_SECRET_ACCESS_KEY')
-          ? {
-              accessKeyId:
-                this.configService.get<string>('AWS_ACCESS_KEY_ID')!,
-              secretAccessKey:
-                this.configService.get<string>('AWS_SECRET_ACCESS_KEY')!,
-            }
+        accessKeyId && secretAccessKey
+          ? { accessKeyId, secretAccessKey }
           : undefined,
     });
   }
@@ -2229,7 +2235,9 @@ export class PdfService {
   ): Promise<{ filePath: string }> {
     try {
       const bucketName =
-        this.configService.get<string>('AWS_S3_BUCKET') || 'drove-pdf';
+        this.configService.get<string>('MINIO_BUCKET') ||
+        this.configService.get<string>('AWS_S3_BUCKET') ||
+        'drove-pdf';
       const timestamp = this.formatDateForFilename(new Date());
       // Si se proporciona travelId, se usará como carpeta (prefijo)
       const key = travelId
@@ -2250,7 +2258,10 @@ export class PdfService {
       );
 
       // Construimos la URL pública del objeto (asegúrate de que tu bucket u objetos sean de lectura pública)
-      const fileUrl = `https://${bucketName}.s3.${process.env.AWS_REGION || this.configService.get<string>('AWS_REGION') || 'eu-west-2'}.amazonaws.com/${key}`;
+      const endpoint =
+        minioEndpoint?.replace(/\/$/, '') ||
+        `https://${bucketName}.s3.${process.env.AWS_REGION || this.configService.get<string>('AWS_REGION') || 'eu-west-2'}.amazonaws.com`;
+      const fileUrl = `${endpoint}/${bucketName}/${key}`;
       return { filePath: fileUrl };
     } catch (error) {
       console.error('Error al guardar el PDF en S3:', error);

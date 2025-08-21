@@ -19,13 +19,13 @@ import { User } from '../user/entities/user.entity';
 @Injectable()
 export class StorageService {
   private readonly logger = new Logger(StorageService.name);
-  private readonly bucket = 'drover';
-  private readonly endpoint = 'https://bucket-production-6593.up.railway.app';
+  private readonly bucket = process.env.MINIO_BUCKET || 'drover';
+  private readonly endpoint = process.env.MINIO_ENDPOINT || 'http://localhost:9000';
   private readonly s3: S3Client;
 
   /* credenciales fijas (Railway-MinIO) */
-  private readonly accessKey = '3SjMnUt1QtFnDwvqZU6H';
-  private readonly secretKey = 'g64VdVUobDP1MxVxdYreMXrsav7kIFwFa9F4rI9I';
+  private readonly accessKey = process.env.MINIO_ACCESS_KEY || '';
+  private readonly secretKey = process.env.MINIO_SECRET_KEY || '';
 
   constructor(
     @InjectRepository(Invoice)
@@ -38,13 +38,13 @@ export class StorageService {
   ) {
     /* Instancia del cliente S3 apuntando a MinIO */
     this.s3 = new S3Client({
-      region: 'us-east-1', //minio lo ignora
+      region: process.env.MINIO_REGION || 'us-east-1',
       endpoint: this.endpoint,
       forcePathStyle: true,
-      credentials: {
+      credentials: this.accessKey && this.secretKey ? {
         accessKeyId: this.accessKey,
         secretAccessKey: this.secretKey,
-      },
+      } : undefined,
     });
 
     this.ensureBucketExists().catch((e) =>
