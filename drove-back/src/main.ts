@@ -12,7 +12,7 @@ async function bootstrap() {
   });
 
   // Confía en el proxy de Railway para que no pierdas headers
-  app.set('trust proxy', 1);
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
   /** CORS **/
   const envOrigins = (process.env.CORS_ORIGINS || '')
