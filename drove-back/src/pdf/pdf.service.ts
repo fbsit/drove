@@ -2258,9 +2258,12 @@ export class PdfService {
       );
 
       // Construimos la URL pública del objeto (asegúrate de que tu bucket u objetos sean de lectura pública)
-      const endpoint =
-        minioEndpoint?.replace(/\/$/, '') ||
-        `https://${bucketName}.s3.${process.env.AWS_REGION || this.configService.get<string>('AWS_REGION') || 'eu-west-2'}.amazonaws.com`;
+      const configuredEndpoint =
+        this.configService.get<string>('MINIO_ENDPOINT') ||
+        this.configService.get<string>('S3_ENDPOINT');
+      const endpoint = configuredEndpoint
+        ? configuredEndpoint.replace(/\/$/, '')
+        : `https://${bucketName}.s3.${process.env.AWS_REGION || this.configService.get<string>('AWS_REGION') || 'eu-west-2'}.amazonaws.com`;
       const fileUrl = `${endpoint}/${bucketName}/${key}`;
       return { filePath: fileUrl };
     } catch (error) {
