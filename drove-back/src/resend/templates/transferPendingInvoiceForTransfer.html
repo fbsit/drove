@@ -1,0 +1,49 @@
+
+ <!-- Este es un correo de notificación de un traslado pendiente de facturación -->
+
+  <table cellspacing="0" cellpadding="0" width="100%">
+    <tbody><tr>
+      <td align="center">
+        <table style="background-color:#2a1e36; border-radius:12px; margin-top:40px;" cellspacing="0" cellpadding="40" width="600">
+          <tbody><tr>
+            <td align="center">
+              <img style="margin-bottom: 24px;" width="100" alt="DROVE" src="{{URL_LOGO_DROVE}}">
+              <h2 style="color:#ffffff; font-size:22px; margin-bottom: 12px;">Traslado pendiente de facturación</h2>
+              <p style="font-size: 16px; color: #cccccc; margin-bottom: 24px;">
+                Se ha confirmado un pago por transferencia, pero este traslado aún no cuenta con su factura emitida.
+              </p>
+
+              <table style="background-color: #1a0d25; border: 1px solid #444; border-radius: 8px; margin-bottom: 24px;" cellspacing="0" cellpadding="8" width="100%">
+                <tbody><tr>
+                  <td style="color: #bbb;"><strong>Cliente:</strong></td>
+                  <td style="color: #ffffff;">{{client_name}}</td>
+                </tr>
+                <tr>
+                  <td style="color: #bbb;"><strong>Vehículo:</strong></td>
+                  <td style="color: #ffffff;">{{vehicle}}</td>
+                </tr>
+                <tr>
+                  <td style="color: #bbb;"><strong>Ruta:</strong></td>
+                  <td style="color: #ffffff;">{{origin}} → {{destination}}</td>
+                </tr>
+                <tr>
+                  <td style="color: #bbb;"><strong>Fecha solicitada:</strong></td>
+                  <td style="color: #ffffff;">{{transfer_date}}</td>
+                </tr>
+              </tbody></table>
+
+              <a style="display:inline-block; background-color:#00eaff; color:#1a0d25; padding: 14px 28px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 15px;" href="{{URL_ADMIN_TRASLADO}}">
+                Subir factura ahora
+              </a>
+
+              <p style="margin-top: 32px; font-size: 14px; color: #888888;">
+                Este traslado no podrá continuar su proceso hasta que la factura sea registrada en el sistema.
+              </p>
+            </td>
+          </tr>
+        </tbody></table>
+        <p style="font-size: 12px; color: #666; margin-top: 20px;">© 2025 DROVE. Todos los derechos reservados.</p>
+      </td>
+    </tr>
+  </tbody></table>
+

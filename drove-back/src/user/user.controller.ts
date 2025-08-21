@@ -1,0 +1,135 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Patch,
+  Delete,
+  HttpCode,
+  HttpStatus,
+  ParseUUIDPipe,
+  UsePipes,
+  ValidationPipe,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
+import { UserService } from './user.service';
+import { CreateUserDto } from './dtos/createUser.dto';
+import { UpdateUserDto } from './dtos/updatedUser.dto';
+import { User } from './entities/user.entity';
+import { AuthGuard } from '@nestjs/passport';
+import { JwtOrTestGuard } from '../common/guards/jwt-or-test.guard';
+import { ForgotPasswordDto } from './dtos/forgot-password.dto';
+import { ResetPasswordDto } from './dtos/reset-password.dto';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
+
+@ApiTags('Users')
+@Controller('users')
+@UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+export class UserController {
+  constructor(private readonly userService: UserService) {}
+
+  @Post()
+  @ApiOperation({ summary: 'Crear usuario' })
+  @ApiBody({ type: CreateUserDto })
+  @ApiCreatedResponse({ type: User })
+  @HttpCode(HttpStatus.CREATED)
+  create(@Body() createUserDto: CreateUserDto): Promise<User> {
+    return this.userService.create(createUserDto);
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Listar todos los usuarios' })
+  @ApiOkResponse({ type: [User] })
+  @HttpCode(HttpStatus.OK)
+  findAll(): Promise<User[]> {
+    return this.userService.findAll();
+  }
+
+  @UseGuards(JwtOrTestGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obtener el usuario autenticado' })
+  @Get('me')
+  async me(@Request() req) {
+    return this.userService.findOne(req.user.id);
+  }
+
+  @UseGuards(JwtOrTestGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obtener perfil del usuario autenticado' })
+  @Get('profile')
+  async profile(@Request() req) {
+    return this.userService.findOne(req.user.id);
+  }
+
+  @Get('role/:role')
+  @ApiOperation({ summary: 'Listar usuarios por rol' })
+  @ApiParam({ name: 'role', enum: ['CLIENT', 'DROVER', 'ADMIN', 'TRAFFICBOSS'] })
+  findByRole(@Param('role') roleParam: string) {
+    const role = roleParam.toUpperCase();
+    return this.userService.findByRole(role);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Dashboard del drover autenticado' })
+  @Get('drover/dashboard')
+  findByEmail(@Request() req) {
+    return this.userService.droverDashboard(req.user.id);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Obtener un usuario por ID' })
+  @ApiParam({ name: 'id', description: 'UUID del usuario' })
+  @ApiOkResponse({ type: User })
+  @HttpCode(HttpStatus.OK)
+  findOne(@Param('id', new ParseUUIDPipe()) id: string): Promise<User> {
+    return this.userService.findOne(id);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Actualizar usuario' })
+  @ApiParam({ name: 'id', description: 'UUID del usuario' })
+  @ApiBody({ type: UpdateUserDto })
+  @ApiOkResponse({ type: User })
+  @HttpCode(HttpStatus.OK)
+  update(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ): Promise<User> {
+    return this.userService.update(id, updateUserDto);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Eliminar usuario' })
+  @ApiParam({ name: 'id', description: 'UUID del usuario' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {
+    return this.userService.remove(id);
+  }
+
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Enviar código de recuperación de contraseña' })
+  @ApiBody({ type: ForgotPasswordDto })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.userService.sendResetCode(dto.email);
+  }
+
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Resetear contraseña usando código' })
+  @ApiBody({ type: ResetPasswordDto })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.userService.resetPassword(dto);
+  }
+}

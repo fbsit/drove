@@ -1,0 +1,47 @@
+<title>Código de verificación de email</title>
+  <style>
+    body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; margin:0; padding:0; }
+    table { border-collapse:collapse !important; }
+    img { border:0; height:auto; line-height:100%; outline:none; text-decoration:none; display:block; }
+    p, h1 { margin:0; padding:0; }
+    a { text-decoration:none; }
+  </style>
+
+
+  <table cellspacing="0" cellpadding="0" bgcolor="#1A1122" width="100%">
+    <tbody><tr>
+      <td align="center">
+        <table style="border-radius:8px; overflow:hidden;" cellspacing="0" cellpadding="0" bgcolor="#ffffff" width="600">
+          <tbody><tr>
+            <td style="padding:40px 0;" align="center">
+              <img alt="DROVE Logo" width="180" src="{{logo_url}}">
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 40px;">
+              <h1 style="font-family:Arial,sans-serif; font-size:24px; color:#000000; text-align:center; margin-bottom:24px;">
+                Código de verificación de email
+              </h1>
+              <p style="font-family:Arial,sans-serif; font-size:16px; color:#333333; text-align:center; margin-bottom:24px;">
+                Tu código de verificación es:
+              </p>
+              <p style="font-family:Arial,sans-serif; font-size:32px; color:#1A1122; text-align:center; font-weight:bold; margin-bottom:24px;">
+                {{verification_code}}
+              </p>
+              <p style="font-family:Arial,sans-serif; font-size:14px; color:#333333; text-align:center; margin-bottom:32px;">
+                Expira en {{expiration_minutes}} minutos.
+              </p>
+              <p style="font-family:Arial,sans-serif; font-size:12px; color:#888888; text-align:center;">
+                Si no solicitaste este código, ignora este mensaje o contacta a soporte: {{support_email}}
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px; font-family:Arial,sans-serif; font-size:12px; color:#888888;" align="center">
+              © 2025 DROVE. Todos los derechos reservados.
+            </td>
+          </tr>
+        </tbody></table>
+      </td>
+    </tr>
+  </tbody></table>

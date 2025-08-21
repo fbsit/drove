@@ -1,0 +1,49 @@
+
+
+
+  <table cellspacing="0" cellpadding="0" width="100%">
+    <tbody><tr>
+      <td align="center">
+        <table style="background-color:#2a1e36; border-radius:12px; margin-top:40px;" cellspacing="0" cellpadding="40" width="600">
+          <tbody><tr>
+            <td align="center">
+              <img style="margin-bottom: 24px;" width="100" alt="DROVE" src="{{URL_LOGO_DROVE}}">
+              <h2 style="color:#ffffff; font-size:22px; margin-bottom: 12px;">Traslado listo para ser asignado</h2>
+              <p style="font-size: 16px; color: #cccccc; margin-bottom: 24px;">
+                Este traslado ya cuenta con su factura emitida y/o el pago fue recibido correctamente. Puede ser asignado a un DROVER desde el panel de gestión.
+              </p>
+
+              <table style="background-color: #1a0d25; border: 1px solid #444; border-radius: 8px; margin-bottom: 24px;" cellspacing="0" cellpadding="8" width="100%">
+                <tbody><tr>
+                  <td style="color: #bbb;"><strong>Cliente:</strong></td>
+                  <td style="color: #ffffff;">{{NOMBRE_CLIENTE}}</td>
+                </tr>
+                <tr>
+                  <td style="color: #bbb;"><strong>Vehículo:</strong></td>
+                  <td style="color: #ffffff;">{{MARCA_MODELO_PATENTE}}</td>
+                </tr>
+                <tr>
+                  <td style="color: #bbb;"><strong>Ruta:</strong></td>
+                  <td style="color: #ffffff;">{{ORIGEN}} → {{DESTINO}}</td>
+                </tr>
+                <tr>
+                  <td style="color: #bbb;"><strong>Fecha solicitada:</strong></td>
+                  <td style="color: #ffffff;">{{FECHA_TRASLADO}}</td>
+                </tr>
+              </tbody></table>
+
+              <a style="display:inline-block; background-color:#00eaff; color:#1a0d25; padding: 14px 28px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 15px;" href="{{URL_ADMIN_TRASLADO}}">
+                Asignar DROVER
+              </a>
+
+              <p style="margin-top: 32px; font-size: 14px; color: #888888;">
+                Este correo fue enviado automáticamente a los responsables de la operación para continuar con la asignación del traslado.
+              </p>
+            </td>
+          </tr>
+        </tbody></table>
+        <p style="font-size: 12px; color: #666; margin-top: 20px;">© 2025 DROVE. Plataforma de logística inteligente.</p>
+      </td>
+    </tr>
+  </tbody></table>
+

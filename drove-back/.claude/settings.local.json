@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(yarn test:e2e:*)",
+      "Bash(cp:*)",
+      "Bash(docker compose:*)",
+      "Bash(curl:*)",
+      "Bash(yarn test:cov:*)",
+      "Bash(mkdir:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(rm:*)"
+    ],
+    "deny": []
+  }
+}

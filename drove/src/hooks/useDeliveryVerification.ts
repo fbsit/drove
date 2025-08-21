@@ -1,0 +1,339 @@
+
+// src/hooks/useDeliveryVerification.ts
+import { useState, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
+import {
+  DeliveryStepKey,
+  VehicleTransferDB,
+} from '@/types/vehicle-transfer-db';
+import {
+  getVehicleTransfer,
+  saveDeliveryVerification,
+} from '@/services/vehicleTransferService';
+import { TransferStatus } from '@/services/api/types/transfers';
+
+// Definición de interfaz local para TransferDetail
+interface LocalTransferDetail {
+  id: string;
+  created_at?: string;
+  createdAt?: string;
+  typeVehicle?: string;
+  brandVehicle?: string;
+  modelVehicle?: string;
+  yearVehicle?: string;
+  patentVehicle?: string;
+  bastidor?: string;
+  startAddress?: {city: string; lat: number; lng: number};
+  endAddress?: {city: string; lat: number; lng: number};
+  travelDate?: string;
+  travelTime?: string;
+  personDelivery?: {fullName: string; dni: string; email: string; phone: string};
+  personReceive?: {fullName: string; dni: string; email: string; phone: string};
+  distanceTravel?: string | number;
+  timeTravel?: string | number;
+  totalPrice?: string | number;
+  signatureStartClient?: string;
+  paymentMethod?: string;
+  status: string;
+}
+
+/**
+ * Hook que gestiona todo el flujo de verificación de **entrega**.
+ * Devuelve el traslado, el paso actual, funciones de navegación y setters
+ * que cada sub‑paso usa para inyectar sus datos.
+ */
+export const useDeliveryVerification = (transferId: string) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  /* ---------- estado global ---------- */
+  const [transfer, setTransfer] = useState<VehicleTransferDB | null>(null);
+  const [isLoading,   setIsLoading]   = useState(true);
+  const [error,       setError]       = useState<string | null>(null);
+
+  const [currentStep, setCurrentStep] =
+    useState<DeliveryStepKey>('deliverySummary');
+  const [isNextDisabled, setIsNextDisabled] = useState(false);
+  const [isProcessingStep, setIsProcessingStep] = useState(false);
+
+  /* ---------- datos de verificación con URLs de imágenes ---------- */
+  const [exteriorPhotos, setExteriorPhotos] = useState<Record<string, string>|null>(null);
+  const [interiorPhotos, setInteriorPhotos] = useState<Record<string, string>|null>(null);
+  const [recipientIdentity, setRecipientIdentity] = useState<{
+    idNumber: string;
+    idFrontPhoto: string;
+    idBackPhoto: string;
+    selfieWithId: string;
+    hasDamage: boolean;
+    damageDescription?: string;
+  }|null>(null);
+  const [handoverDocuments, setHandoverDocuments] = useState<{
+    delivery_document: string;
+    fuel_receipt: string;
+    comments?: string;
+    drover_signature: string;
+    client_signature: string;
+  }|null>(null);
+
+  /* ---------- progreso visual ---------- */
+  const [stepProgress, setStepProgress] = useState<Record<DeliveryStepKey, boolean>>({
+    'deliverySummary': false,
+    'exteriorPhotos': false,
+    'interiorPhotos': false,
+    'recipientIdentity': false,
+    'finalHandover': false,
+    'confirmation': false,
+  });
+
+  /* ---------- carga inicial ---------- */
+  useEffect(() => {
+    (async () => {
+      if (!transferId) {
+        setError('ID de traslado no indicado');
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const data = await getVehicleTransfer(transferId) as unknown as LocalTransferDetail;
+        if (!data) throw new Error('Traslado no encontrado');
+
+        const adapted: VehicleTransferDB = {
+          id: data.id,
+          created_at: data.created_at ?? data.createdAt ?? '',
+          vehicleDetails: {
+            type: mapVehicleType(data.typeVehicle) ?? 'coche',
+            brand: data.brandVehicle ?? '',
+            model: data.modelVehicle ?? '',
+            year: data.yearVehicle ?? '',
+            licensePlate: data.patentVehicle ?? '',
+            vin: data.bastidor ?? '',
+          },
+          pickupDetails: {
+            originAddress: data.startAddress?.city ?? '',
+            destinationAddress: data.endAddress?.city ?? '',
+            originLat: data.startAddress?.lat ?? 0,
+            originLng: data.startAddress?.lng ?? 0,
+            destinationLat: data.endAddress?.lat ?? 0,
+            destinationLng: data.endAddress?.lng ?? 0,
+            pickupDate: data.travelDate ?? '',
+            pickupTime: data.travelTime ?? '',
+          },
+          senderDetails: {
+            name: data.personDelivery?.fullName ?? '',
+            fullName: data.personDelivery?.fullName ?? '',
+            dni: data.personDelivery?.dni ?? '',
+            email: data.personDelivery?.email ?? '',
+            phone: data.personDelivery?.phone ?? '',
+          },
+          receiverDetails: {
+            name: data.personReceive?.fullName ?? '',
+            fullName: data.personReceive?.fullName ?? '',
+            dni: data.personReceive?.dni ?? '',
+            email: data.personReceive?.email ?? '',
+            phone: data.personReceive?.phone ?? '',
+          },
+          transferDetails: {
+            distance: Number(data.distanceTravel ?? '0'),
+            duration: Number(data.timeTravel ?? '0'),
+            totalPrice: Number(data.totalPrice ?? '0'),
+            signature: data.signatureStartClient ?? '',
+          },
+          paymentMethod: mapPaymentMethod(data.paymentMethod),
+          status: mapApiStatusToAppStatus(data.status),
+        };
+
+        setTransfer(adapted);
+
+        if (adapted.status === 'completado') {
+          setError('Este vehículo ya fue entregado');
+        } else if (adapted.status !== 'en_entrega') {
+          setError('Este traslado no está en estado de entrega');
+        } else {
+          setStepProgress((p) => ({ ...p, 'deliverySummary': true }));
+        }
+      } catch (e: any) {
+        setError(e.message ?? 'Error al cargar datos del traslado');
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, [transferId]);
+
+  /* ---------- helpers ---------- */
+  function mapVehicleType(
+    type?: string
+  ): "coche" | "camioneta" {
+    if (!type) return "coche";
+    const t = type.toLowerCase();
+    if (t === "camioneta" || t === "camión" || t === "truck" || t === "van") return "camioneta";
+    return "coche";
+  }
+  
+  function mapPaymentMethod(
+    method?: string
+  ): "card" | "transfer" {
+    if (!method) return "card";
+    const m = method.toLowerCase();
+    if (m === "transfer" || m === "transferencia" || m === "bank") return "transfer";
+    return "card";
+  }
+  
+  function mapApiStatusToAppStatus(
+    apiStatus: TransferStatus | string,
+  ): VehicleTransferDB['status'] {
+    switch (apiStatus) {
+      case TransferStatus.CREATED:   return 'pendiente';
+      case TransferStatus.ASSIGNED:  return 'confirmado';
+      case TransferStatus.PICKED_UP: return 'en_entrega';
+      case TransferStatus.DELIVERED: return 'completado';
+      case TransferStatus.CANCELLED: return 'cancelado';
+      default:                       return 'en_entrega';
+    }
+  }
+
+  /* ---------- navegación ---------- */
+  const stepOrder: DeliveryStepKey[] = [
+    'deliverySummary',
+    'exteriorPhotos',
+    'interiorPhotos',
+    'recipientIdentity',
+    'finalHandover',
+    'confirmation',
+  ];
+
+  const handleNextStep = useCallback(async () => {
+    if (!transfer) return;
+    const idx = stepOrder.indexOf(currentStep);
+    const nextStep = stepOrder[idx + 1] ?? null;
+
+    // ─── Último paso: enviamos verificación ─────────────────
+    if (currentStep === 'finalHandover' && nextStep === 'confirmation') {
+      setIsProcessingStep(true);
+
+      // Validamos que existan todos los bloques
+      const missingBlock =
+        !exteriorPhotos      ? 'fotos exteriores'   :
+        !interiorPhotos      ? 'fotos interiores'   :
+        !recipientIdentity   ? 'identidad receptor' :
+        !handoverDocuments   ? 'documentos entrega' : '';
+
+      if (missingBlock) {
+        toast({
+          title: 'Faltan datos',
+          description: `Completa ${missingBlock} antes de continuar`,
+          variant: 'destructive',
+        });
+        setIsProcessingStep(false);
+        return;
+      }
+
+      try {
+        // Estructurar datos según DeliveryVerificationDto
+        const deliveryData = {
+          exteriorPhotos: {
+            frontView: exteriorPhotos.frontView || '',
+            rearView: exteriorPhotos.rearView || '',
+            leftFront: exteriorPhotos.leftFront || '',
+            leftRear: exteriorPhotos.leftRear || '',
+            rightFront: exteriorPhotos.rightFront || '',
+            rightRear: exteriorPhotos.rightRear || ''
+          },
+          interiorPhotos: {
+            dashboard: interiorPhotos.dashboard || '',
+            driverSeat: interiorPhotos.driverSeat || '',
+            passengerSeat: interiorPhotos.passengerSeat || '',
+            rearLeftSeat: interiorPhotos.rearLeftSeat || '',
+            rearRightSeat: interiorPhotos.rearRightSeat || '',
+            trunk: interiorPhotos.trunk || ''
+          },
+          recipientIdentity: {
+            idNumber: recipientIdentity.idNumber,
+            idFrontPhoto: recipientIdentity.idFrontPhoto,
+            idBackPhoto: recipientIdentity.idBackPhoto,
+            selfieWithId: recipientIdentity.selfieWithId,
+            hasDamage: recipientIdentity.hasDamage,
+            damageDescription: recipientIdentity.damageDescription
+          },
+          handoverDocuments: {
+            delivery_document: handoverDocuments.delivery_document,
+            fuel_receipt: handoverDocuments.fuel_receipt,
+            drover_signature: handoverDocuments.drover_signature,
+            client_signature: handoverDocuments.client_signature,
+            comments: handoverDocuments.comments
+          },
+          deliveredAt: new Date().toISOString()
+        };
+
+        console.log('Enviando datos de verificación de entrega estructurados:', deliveryData);
+        
+        const ok = await saveDeliveryVerification(transferId, deliveryData);
+        if (!ok) throw new Error('Error al guardar verificación');
+        
+        toast({ title: 'Entrega confirmada', description: 'Datos guardados correctamente' });
+
+        setStepProgress((p) => ({ ...p, [currentStep]: true }));
+        setCurrentStep('confirmation');
+        setStepProgress((p) => ({ ...p, confirmation: true }));
+      } catch (err: any) {
+        console.error('Error en verificación de entrega:', err);
+        toast({
+          title: 'Error',
+          description: err.message || 'No se pudo guardar la verificación',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsProcessingStep(false);
+      }
+      return;
+    }
+
+    // ─── Pasos intermedios ─────────────────────────────────
+    if (nextStep) {
+      setStepProgress((p) => ({ ...p, [currentStep]: true }));
+      setCurrentStep(nextStep);
+    }
+  }, [
+    currentStep,
+    exteriorPhotos,
+    interiorPhotos,
+    recipientIdentity,
+    handoverDocuments,
+    transfer,
+    transferId,
+    toast,
+    stepOrder
+  ]);
+
+  const handlePrevStep = useCallback(() => {
+    const idx = stepOrder.indexOf(currentStep);
+    const prev = stepOrder[idx - 1] ?? 'deliverySummary';
+    setCurrentStep(prev);
+  }, [currentStep, stepOrder]);
+
+  const handleSkipToStep = useCallback(
+    (step: DeliveryStepKey) => {
+      if (stepProgress[step]) setCurrentStep(step);
+    },
+    [stepProgress],
+  );
+
+  /* ---------- API ---------- */
+  return {
+    transfer,
+    isLoading,
+    error,
+    currentStep,
+    isNextDisabled,
+    isProcessingStep,
+    stepProgress,
+    setIsNextDisabled,
+    handleNextStep,
+    handlePrevStep,
+    handleSkipToStep,
+    setExteriorPhotos,
+    setInteriorPhotos,
+    setRecipientIdentity,
+    setHandoverDocuments,
+  };
+};

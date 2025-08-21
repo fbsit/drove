@@ -1,0 +1,111 @@
+ <title>Punto de destino alcanzado: presente este código QR al Drover para iniciar la recepción final</title>
+  <style>
+    /* Reset general para email */
+    body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; margin:0; padding:0; }
+    table { border-collapse:collapse !important; }
+    img { border:0; height:auto; line-height:100%; outline:none; text-decoration:none; display:block; }
+    p, h1, h3 { margin:0; padding:0; }
+    a { text-decoration:none; }
+  </style>
+
+
+  <table cellspacing="0" cellpadding="0" bgcolor="#1A1122" width="100%">
+    <tbody><tr>
+      <td align="center">
+        <table style="border-radius:8px; overflow:hidden;" cellspacing="0" cellpadding="0" bgcolor="#ffffff" width="600">
+          
+          <tbody><tr>
+            <td style="padding:40px 0;" align="center">
+              <img alt="DROVE Logo" width="180" src="{{logo_url}}">
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="padding:0 40px;">
+              <h1 style="font-family:Arial,sans-serif; font-size:22px; color:#000000; text-align:center; margin-bottom:16px;">
+                Punto de destino alcanzado: presente este código QR al Drover para iniciar la recepción final
+              </h1>
+              <p style="font-family:Arial,sans-serif; font-size:14px; color:#333333; text-align:center; margin-bottom:24px;">
+                Para completar la recepción final segura del transporte, presente este código QR al Drover asignado.
+              </p>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="padding:0 40px 24px;" align="center">
+              <img width="150" alt="Código QR Recepción Final" src="{{qr_code_url}}">
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="padding:0 40px 24px;">
+              <h3 style="font-family:Arial,sans-serif; font-size:18px; color:#000000; margin-bottom:8px;">
+                Información del Chofer
+              </h3>
+              <table style="font-family:Arial,sans-serif; font-size:14px; color:#000000;" cellspacing="0" cellpadding="4" width="100%">
+                <tbody><tr><td><strong>Nombre:</strong></td><td>{{driver_name}}</td></tr>
+                <tr><td><strong>Fecha de entrega:</strong></td><td>{{delivery_date}}</td></tr>
+                <tr><td><strong>Hora de llegada:</strong></td><td>{{delivery_time}}</td></tr>
+                <tr><td><strong>ID transporte:</strong></td><td>{{transport_id}}</td></tr>
+              </tbody></table>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="padding:0 40px 24px;">
+              <h3 style="font-family:Arial,sans-serif; font-size:18px; color:#000000; margin-bottom:8px;">
+                Información del Vehículo
+              </h3>
+              <table style="font-family:Arial,sans-serif; font-size:14px; color:#000000;" cellspacing="0" cellpadding="4" width="100%">
+                <tbody><tr><td><strong>Tipo:</strong></td><td>{{vehicle_type}}</td></tr>
+                <tr><td><strong>Marca:</strong></td><td>{{brand}}</td></tr>
+                <tr><td><strong>Modelo:</strong></td><td>{{model}}</td></tr>
+                <tr><td><strong>Año:</strong></td><td>{{year}}</td></tr>
+                <tr><td><strong>Matrícula:</strong></td><td>{{plate}}</td></tr>
+                <tr><td><strong>VIN:</strong></td><td>{{vin}}</td></tr>
+              </tbody></table>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="padding:0 40px 24px;">
+              <h3 style="font-family:Arial,sans-serif; font-size:18px; color:#000000; margin-bottom:8px;">
+                Punto de Origen
+              </h3>
+              <p style="font-family:Arial,sans-serif; font-size:14px; color:#000000; margin-bottom:16px;">
+                {{pickup_address.street}}<br>
+                {{pickup_address.postal_code}} – {{pickup_address.city}} ({{pickup_address.region}})<br>
+                {{pickup_address.country}}
+              </p>
+              <h3 style="font-family:Arial,sans-serif; font-size:18px; color:#000000; margin-bottom:8px;">
+                Destino
+              </h3>
+              <p style="font-family:Arial,sans-serif; font-size:14px; color:#000000; margin-bottom:24px;">
+                {{delivery_address.street}}<br>
+                {{delivery_address.postal_code}} – {{delivery_address.city}} ({{delivery_address.region}})<br>
+                {{delivery_address.country}}
+              </p>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="padding:0 40px 24px;">
+              <h3 style="font-family:Arial,sans-serif; font-size:18px; color:#000000; margin-bottom:8px;">
+                Detalles del Transporte
+              </h3>
+              <table style="font-family:Arial,sans-serif; font-size:14px; color:#000000;" cellspacing="0" cellpadding="4" width="100%">
+                <tbody><tr><td><strong>Distancia:</strong></td><td>{{distance}} km</td></tr>
+                <tr><td><strong>Total con I.V.A:</strong></td><td>{{total_with_tax}}</td></tr>
+              </tbody></table>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="padding:20px; font-family:Arial,sans-serif; font-size:12px; color:#888888;" align="center">
+              © 2025 DROVE. Todos los derechos reservados.
+            </td>
+          </tr>
+        </tbody></table>
+      </td>
+    </tr>
+  </tbody></table>

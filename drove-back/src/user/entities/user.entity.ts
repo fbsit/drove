@@ -1,0 +1,68 @@
+// src/user/entities/user.entity.ts
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+} from 'typeorm';
+import { ContactInfoDto } from './../dtos/contact-info.dto';
+import { Travels } from './../../travels/entities/travel.entity';
+
+export enum UserStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
+
+export enum UserRole {
+  CLIENT = 'CLIENT',
+  DROVER = 'DROVER',
+  ADMIN = 'ADMIN',
+  TRAFFICBOSS = 'TRAFFICBOSS',
+}
+
+@Entity('users')
+export class User {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ unique: true })
+  email: string;
+
+  @Column()
+  password: string;
+
+  @Column({ default: false })
+  emailVerified: boolean;
+
+  @Column({ type: 'varchar', length: 6, nullable: true })
+  verificationCode?: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  codeExpiresAt?: Date | null;
+
+  @Column({ type: 'simple-json' })
+  contactInfo: ContactInfoDto;
+
+  /* ─────── nuevas columnas ─────── */
+  @Column({ type: 'enum', enum: UserStatus, default: UserStatus.PENDING })
+  status: UserStatus;
+
+  @Column({ type: 'enum', enum: UserRole, default: UserRole.CLIENT })
+  role: UserRole;
+  /* ─────────────────────────────── */
+
+  @CreateDateColumn({ type: 'timestamp with time zone' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp with time zone' })
+  updatedAt: Date;
+
+  @OneToMany(() => Travels, (t) => t.client)
+  travelsAsClient: Travels[];
+
+  @OneToMany(() => Travels, (t) => t.drover)
+  travelsAsDrover: Travels[];
+}

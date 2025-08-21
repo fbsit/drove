@@ -1,0 +1,134 @@
+
+import React, { useEffect, useState } from 'react';
+import { UseFormReturn } from 'react-hook-form';
+import { Card, CardContent } from '@/components/ui/card';
+import { MapPin, Clock, Navigation, Euro } from 'lucide-react';
+import { VehicleTransferFormData } from '@/types/vehicle-transfer-request';
+import { LatLngCity } from '@/types/lat-lng-city';
+import { TarifaService } from '@/services/tarifaService';
+
+interface RouteDisplayProps {
+  form: UseFormReturn<VehicleTransferFormData>;
+  originAddress: LatLngCity;
+  destinationAddress: LatLngCity;
+}
+
+export const RouteDisplay: React.FC<RouteDisplayProps> = ({
+  form,
+  originAddress,
+  destinationAddress
+}) => {
+  const [distance, setDistance] = useState<string>('');
+  const [duration, setDuration] = useState<string>('');
+  const [price, setPrice] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (originAddress.lat && originAddress.lng && destinationAddress.lat && destinationAddress.lng) {
+      calculateRoute();
+    }
+  }, [originAddress, destinationAddress]);
+
+  const calculateRoute = async () => {
+    setLoading(true);
+    try {
+      // Simulate route calculation
+      const distanceKm = Math.round(Math.random() * 100 + 10);
+      const durationMinutes = Math.round(distanceKm * 1.2);
+      
+      const distanceStr = `${distanceKm} km`;
+      const durationStr = `${Math.floor(durationMinutes / 60)}h ${durationMinutes % 60}min`;
+      
+      setDistance(distanceStr);
+      setDuration(durationStr);
+      
+      // Calculate price using TarifaService
+      const calculatedPrice = await TarifaService.getPriceByDistance(distanceKm);
+      setPrice(calculatedPrice);
+      
+      // Update form with calculated values
+      form.setValue('transferDetails', {
+        ...form.getValues('transferDetails'),
+        distance: distanceKm,
+        duration: durationMinutes,
+        totalPrice: calculatedPrice
+      });
+    } catch (error) {
+      console.error('Error calculating route:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card className="bg-white/10 border-white/20">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6EF7FF]"></div>
+            <span className="ml-2 text-white">Calculando ruta...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-white/10 border-white/20">
+      <CardContent className="p-4 space-y-4">
+        <div className="flex items-center gap-2">
+          <Navigation className="w-5 h-5 text-[#6EF7FF]" />
+          <h3 className="text-white font-semibold">Información de la Ruta</h3>
+        </div>
+        
+        <div className="space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="w-3 h-3 rounded-full bg-green-500 mt-2"></div>
+            <div className="flex-1">
+              <p className="text-xs text-green-400 font-medium">ORIGEN</p>
+              <p className="text-white text-sm">{originAddress.address}</p>
+            </div>
+          </div>
+          
+          <div className="flex items-start gap-3">
+            <div className="w-3 h-3 rounded-full bg-red-500 mt-2"></div>
+            <div className="flex-1">
+              <p className="text-xs text-red-400 font-medium">DESTINO</p>
+              <p className="text-white text-sm">{destinationAddress.address}</p>
+            </div>
+          </div>
+        </div>
+        
+        {distance && duration && (
+          <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/20">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <MapPin className="w-4 h-4 text-[#6EF7FF]" />
+                <span className="text-xs text-white/70">Distancia</span>
+              </div>
+              <p className="text-white font-semibold">{distance}</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <Clock className="w-4 h-4 text-[#6EF7FF]" />
+                <span className="text-xs text-white/70">Duración</span>
+              </div>
+              <p className="text-white font-semibold">{duration}</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <Euro className="w-4 h-4 text-[#6EF7FF]" />
+                <span className="text-xs text-white/70">Precio</span>
+              </div>
+              <p className="text-white font-semibold">{price.toFixed(2)}€</p>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default RouteDisplay;

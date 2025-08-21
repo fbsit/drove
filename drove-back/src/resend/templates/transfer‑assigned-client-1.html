@@ -1,0 +1,128 @@
+ 
+  <title>{{subject}}</title>
+  <style>
+    /* Reset básico email */
+    body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+    table { border-collapse:collapse !important; }
+    img { border:0; height:auto; line-height:100%; outline:none; text-decoration:none; }
+    a { text-decoration:none; }
+  </style>
+
+
+  
+  <div style="display:none; max-height:0; overflow:hidden; font-size:0; line-height:0;">
+    {{preheader}}
+  </div>
+
+  <table width="100%" bgcolor="#1A1122" cellpadding="0" cellspacing="0">
+    <tbody><tr>
+      <td align="center" style="padding:20px">
+        <table width="600" bgcolor="#ffffff" cellpadding="0" cellspacing="0" style="border-radius:8px; overflow:hidden;">
+          
+          
+          <tbody><tr>
+            <td align="center" style="padding:40px 0;">
+              <img src="{{logo_url}}" width="180" alt="DROVE" style="display:block;">
+            </td>
+          </tr>
+
+          
+          <tr>
+            <td align="center" style="padding:0 40px 24px;">
+              <h1 style="font-family:Arial,sans-serif; font-size:22px; color:#000000; margin:0;">
+                Traslado de vehículo asignado a un Drover
+              </h1>
+            </td>
+          </tr>
+
+          
+          <tr>
+            <td align="center" style="padding:0 40px 24px;">
+              <p style="font-family:Arial,sans-serif; font-size:16px; color:#333333; margin:0 0 8px;">
+                Muestra este código QR al Drover para que inicie el traslado:
+              </p>
+              <img src="{{qr_code_url}}" alt="Código QR de seguridad" width="150" style="display:block; margin:0 auto;">
+            </td>
+          </tr>
+
+          
+          <tr>
+            <td style="padding:0 40px 24px; font-family:Arial,sans-serif; color:#000000;">
+              
+              
+              <h3 style="font-size:18px; margin:16px 0 8px;">Información del Chofer</h3>
+              <table width="100%" cellpadding="4" cellspacing="0" style="font-size:14px;">
+                <tbody><tr>
+                  <td><strong>Nombre:</strong></td>
+                  <td>{{driver_name}}</td>
+                </tr>
+                <tr>
+                  <td><strong>Teléfono:</strong></td>
+                  <td>{{driver_phone}}</td>
+                </tr>
+                <tr>
+                  <td><strong>Fecha recogida:</strong></td>
+                  <td>{{pickup_date}} a las {{pickup_time}}</td>
+                </tr>
+                <tr>
+                  <td><strong>Cliente:</strong></td>
+                  <td>{{client_name}}</td>
+                </tr>
+                <tr>
+                  <td><strong>ID solicitud:</strong></td>
+                  <td>{{request_id}}</td>
+                </tr>
+              </tbody></table>
+
+              
+              <h3 style="font-size:18px; margin:24px 0 8px;">Información del Vehículo</h3>
+              <table width="100%" cellpadding="4" cellspacing="0" style="font-size:14px;">
+                <tbody><tr><td><strong>Tipo:</strong></td><td>{{vehicle_type}}</td></tr>
+                <tr><td><strong>Marca:</strong></td><td>{{brand}}</td></tr>
+                <tr><td><strong>Modelo:</strong></td><td>{{model}}</td></tr>
+                <tr><td><strong>Año:</strong></td><td>{{year}}</td></tr>
+                <tr><td><strong>Matrícula:</strong></td><td>{{plate}}</td></tr>
+                <tr><td><strong>Bastidor:</strong></td><td>{{vin}}</td></tr>
+              </tbody></table>
+
+              
+              <h3 style="font-size:18px; margin:24px 0 8px;">Dirección de Recogida</h3>
+              <p style="font-size:14px; margin:0;">
+                {{pickup_address.street}}<br>
+                {{pickup_address.postal_code}} – {{pickup_address.city}} ({{pickup_address.region}})<br>
+                {{pickup_address.country}}
+              </p>
+
+              <h3 style="font-size:18px; margin:24px 0 8px;">Dirección de Entrega</h3>
+              <p style="font-size:14px; margin:0;">
+                {{delivery_address.street}}<br>
+                {{delivery_address.postal_code}} – {{delivery_address.city}} ({{delivery_address.region}})<br>
+                {{delivery_address.country}}
+              </p>
+
+              
+              <h3 style="font-size:18px; margin:24px 0 8px;">Detalles del Traslado</h3>
+              <table width="100%" cellpadding="4" cellspacing="0" style="font-size:14px;">
+                <tbody><tr><td><strong>Distancia:</strong></td><td>{{distance}} km</td></tr>
+                <tr><td><strong>Total (con IVA):</strong></td><td>{{total_with_tax}}</td></tr>
+                <tr><td><strong>Fecha emisión:</strong></td><td>{{issue_date}}</td></tr>
+              </tbody></table>
+
+            </td>
+          </tr>
+
+          
+          <tr>
+            <td align="center" style="padding:24px 40px; font-family:Arial,sans-serif; font-size:12px; color:#888888;">
+              <p style="margin:0;">Por su seguridad, no comparta este código QR. Solo muéstrelo en persona al Drover asignado.</p>
+              <p style="margin:8px 0 0;">© 2025 DROVE. Todos los derechos reservados.</p>
+            </td>
+          </tr>
+
+        </tbody></table>
+      </td>
+    </tr>
+  </tbody></table>
+
+
+

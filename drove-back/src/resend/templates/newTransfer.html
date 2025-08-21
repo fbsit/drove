@@ -1,0 +1,51 @@
+
+    <!-- Email para el cliente cuando cree un viaje -->
+
+  <table style="background-color: #1a0d25;" border="0" cellspacing="0" cellpadding="0" width="100%">
+    <tbody><tr>
+      <td align="center">
+        <table style="margin: 0 auto; background-color: #2a1e36; border-radius: 8px;" border="0" cellspacing="0" cellpadding="0" width="600">
+          <tbody><tr>
+            <td style="padding: 40px 0; text-align: center;">
+              <img style="height: 40px; margin-bottom: 16px;" alt="DROVE" src="https://cdn.drove.es/logo-white.png">
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 24px 32px;">
+              <h2 style="color: #ffffff; font-size: 22px;">Tu solicitud de traslado ha sido registrada</h2>
+              <p style="font-size: 16px; color: #f1f1f1;">Hola <strong>{{name}}</strong>,</p>
+              <p style="font-size: 16px; color: #ddd;">
+                Hemos recibido correctamente tu solicitud de traslado. En estos momentos está en proceso de asignación. Te notificaremos cuando un DROVER haya sido confirmado.
+              </p>
+
+              <table style="width:100%; background-color: #1a0d25; padding: 16px; border: 1px solid #444; border-radius: 6px; margin: 24px 0;">
+                <tbody><tr><td style="padding: 4px 0; color: #cccccc;"><strong>Vehículo:</strong> {{vehicle}}</td></tr>
+                <tr><td style="padding: 4px 0; color: #cccccc;"><strong>Fecha solicitada:</strong> {{requested_date}}</td></tr>
+                <tr><td style="padding: 4px 0; color: #cccccc;"><strong>Punto de origen:</strong> {{origin}}</td></tr>
+                <tr><td style="padding: 4px 0; color: #cccccc;"><strong>Punto de destino:</strong> {{destination}}</td></tr>
+                <tr><td style="padding: 4px 0; color: #cccccc;"><strong>Estado:</strong> En espera de asignación</td></tr>
+              </tbody></table>
+
+              <div style="text-align: center; margin: 32px 0;">
+                <a style="background-color: #00eaff; color: #1a0d25; padding: 14px 28px; font-size: 16px; text-decoration: none; border-radius: 6px; display: inline-block;" href="{{transfer_url}}">Ver traslado en plataforma</a>
+              </div>
+
+              <p style="margin-top: 40px; font-size: 16px; color: #ccc;">Gracias por confiar en DROVE.<br><strong style="color: #ffffff;">Equipo DROVE</strong></p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0 32px;">
+              <hr style="border: none; border-top: 1px solid #444; margin: 32px 0;">
+              <p style="font-size: 13px; color: #888;">Si no solicitaste este traslado, por favor responde a este correo para notificarlo.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 24px 32px; text-align: center; font-size: 12px; color: #666;">
+              © 2025 DROVE. Todos los derechos reservados.
+            </td>
+          </tr>
+        </tbody></table>
+      </td>
+    </tr>
+  </tbody></table>
+

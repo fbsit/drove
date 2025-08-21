@@ -1,0 +1,141 @@
+ <title>{{subject}}</title>
+  <style>
+    /* Reset básico email */
+    body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+    table { border-collapse:collapse !important; }
+    img { border:0; height:auto; line-height:100%; outline:none; text-decoration:none; }
+    a { text-decoration:none; }
+  </style>
+
+
+  
+  <div style="display:none; max-height:0; overflow:hidden; font-size:0; line-height:0;">
+    {{preheader}}
+  </div>
+
+  <table cellspacing="0" cellpadding="0" bgcolor="#1A1122" width="100%">
+    <tbody><tr>
+      <td style="padding:20px;" align="center">
+        <table style="border-radius:8px; overflow:hidden;" cellspacing="0" cellpadding="0" bgcolor="#ffffff" width="600">
+          
+          
+          <tbody><tr>
+            <td style="padding:40px 0;" align="center">
+              <img style="display:block;" alt="DROVE" width="180" src="{{logo_url}}">
+            </td>
+          </tr>
+
+          
+          <tr>
+            <td style="padding:0 40px 24px; font-family:Arial,sans-serif; color:#000000;">
+              <h1 style="font-size:22px; margin:0 0 12px; text-align:center;">Comprobante de inicio de transporte del vehículo</h1>
+              <p style="font-size:14px; margin:0; text-align:center;">
+                Completado por el chofer al iniciar el transporte del vehículo.
+              </p>
+            </td>
+          </tr>
+
+          
+          <tr>
+            <td style="padding:0 40px 24px; font-family:Arial,sans-serif; color:#000000;">
+              
+              <h3 style="font-size:18px; margin:16px 0 8px;">Información del Chofer</h3>
+              <table style="font-size:14px;" cellspacing="0" cellpadding="4" width="100%">
+                <tbody><tr><td><strong>Nombre del chofer:</strong></td><td>{{driver_name}}</td></tr>
+                <tr><td><strong>Fecha de origen:</strong></td><td>{{pickup_date}}</td></tr>
+                <tr><td><strong>Hora de origen:</strong></td><td>{{pickup_time}}</td></tr>
+                <tr><td><strong>ID:</strong></td><td>{{request_id}}</td></tr>
+              </tbody></table>
+
+              <h3 style="font-size:18px; margin:24px 0 8px;">Datos del Cliente</h3>
+              <table style="font-size:14px;" cellspacing="0" cellpadding="4" width="100%">
+                <tbody><tr><td><strong>Cliente:</strong></td><td>{{client_name}}</td></tr>
+                <tr><td><strong>Teléfono:</strong></td><td>{{client_phone}}</td></tr>
+              </tbody></table>
+
+            </td>
+          </tr>
+
+          
+          <tr>
+            <td style="padding:0 40px 24px; font-family:Arial,sans-serif; color:#000000;">
+              <h3 style="font-size:18px; margin:0 0 8px;">Información del Vehículo</h3>
+              <table style="font-size:14px;" cellspacing="0" cellpadding="4" width="100%">
+                <tbody><tr><td><strong>Tipo:</strong></td><td>{{vehicle_type}}</td></tr>
+                <tr><td><strong>Marca:</strong></td><td>{{brand}}</td></tr>
+                <tr><td><strong>Modelo:</strong></td><td>{{model}}</td></tr>
+                <tr><td><strong>Año:</strong></td><td>{{year}}</td></tr>
+                <tr><td><strong>Matrícula:</strong></td><td>{{plate}}</td></tr>
+                <tr><td><strong>VIN:</strong></td><td>{{vin}}</td></tr>
+              </tbody></table>
+            </td>
+          </tr>
+
+          
+          <tr>
+            <td style="padding:0 40px 24px; font-family:Arial,sans-serif; color:#000000;">
+              <h3 style="font-size:18px; margin:0 0 8px;">Origen</h3>
+              <p style="font-size:14px; margin:0 0 16px;">
+                {{pickup_address.street}}<br>
+                {{pickup_address.postal_code}} – {{pickup_address.city}} ({{pickup_address.region}})<br>
+                {{pickup_address.country}}
+              </p>
+              <h3 style="font-size:18px; margin:0 0 8px;">Destino</h3>
+              <p style="font-size:14px; margin:0 0 16px;">
+                {{delivery_address.street}}<br>
+                {{delivery_address.postal_code}} – {{delivery_address.city}} ({{delivery_address.region}})<br>
+                {{delivery_address.country}}
+              </p>
+            </td>
+          </tr>
+
+          
+          <tr>
+            <td style="padding:0 40px 24px; font-family:Arial,sans-serif; color:#000000;">
+              <h3 style="font-size:18px; margin:0 0 8px;">Detalles del Transporte</h3>
+              <table style="font-size:14px;" cellspacing="0" cellpadding="4" width="100%">
+                <tbody><tr><td><strong>Distancia:</strong></td><td>{{distance}} km</td></tr>
+                <tr><td><strong>Total con I.V.A:</strong></td><td>{{total_with_tax}}</td></tr>
+              </tbody></table>
+            </td>
+          </tr>
+
+          
+          <tr>
+            <td style="padding:0 40px 24px;">
+              <table cellspacing="0" cellpadding="0" width="100%">
+                <tbody><tr>
+                  <td style="width:50%; font-family:Arial,sans-serif; font-size:14px; color:#000; padding:20px;" align="center">
+                    <p style="margin:0 0 8px;"><strong>Firma del entregador</strong></p>
+                    <img style="display:block; margin:0 auto;" width="200" alt="Firma del entregador" src="{{holder_signature_url}}">
+                  </td>
+                  <td style="width:50%; font-family:Arial,sans-serif; font-size:14px; color:#000; padding:20px;" align="center">
+                    <p style="margin:0 0 8px;"><strong>Firma del chofer</strong></p>
+                    <img style="display:block; margin:0 auto;" width="200" alt="Firma del chofer" src="{{driver_signature_url}}">
+                  </td>
+                </tr>
+              </tbody></table>
+            </td>
+          </tr>
+
+          
+          <tr>
+            <td style="padding:0 40px 24px; font-family:Arial,sans-serif;">
+              <p style="font-size:14px; margin:0; color:#333333;">
+                Ambas partes confirman el inicio del transporte del vehículo desde el punto de origen hasta el destino, solicitado por el cliente y aceptado por el chofer, según lo indicado en este documento de confirmación emitido a través de DROVE®.
+              </p>
+              <p style="font-size:12px; margin:8px 0 0; color:#888888;"><strong>Fecha de emisión del documento:</strong> {{doc_issue_date}}</p>
+            </td>
+          </tr>
+
+          
+          <tr>
+            <td style="padding:20px; font-family:Arial,sans-serif; font-size:12px; color:#888888;" align="center">
+              © 2025 DROVE. Todos los derechos reservados.
+            </td>
+          </tr>
+
+        </tbody></table>
+      </td>
+    </tr>
+  </tbody></table>

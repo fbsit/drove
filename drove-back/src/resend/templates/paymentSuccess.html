@@ -1,0 +1,47 @@
+<!-- This email template is used to notify users that their payment has been successfully received. It includes details such as payment date, amount, payment method, and transfer ID. -->
+<!-- It also provides a link to view the details of the transfer. -->
+
+
+  <table cellspacing="0" cellpadding="0" width="100%">
+    <tbody><tr>
+      <td align="center">
+        <table style="background-color: #2a1e36; border-radius: 10px; margin-top: 40px;" cellspacing="0" cellpadding="40" width="600">
+          <tbody><tr>
+            <td align="center">
+              <img style="margin-bottom: 20px;" width="120" alt="DROVE" src="{{logo_url}}">
+              <h1 style="color: #00eaff;">¡Pago recibido!</h1>
+              <p style="font-size: 16px; color: #ccc;">
+                Hemos registrado correctamente tu pago. Gracias por confiar en DROVE.
+              </p>
+              <table style="margin: 20px 0; background-color: #1a0d25; border-radius: 8px;" cellspacing="0" cellpadding="10" width="100%">
+                <tbody><tr>
+                  <td style="color: #bbb;"><strong>Fecha del pago:</strong></td>
+                  <td style="color: #fff;">{{payment_date}}</td>
+                </tr>
+                <tr>
+                  <td style="color: #bbb;"><strong>Monto pagado:</strong></td>
+                  <td style="color: #fff;">€{{amount}}</td>
+                </tr>
+                <tr>
+                  <td style="color: #bbb;"><strong>Método de pago:</strong></td>
+                  <td style="color: #fff;">{{payment_method}}</td>
+                </tr>
+                <tr>
+                  <td style="color: #bbb;"><strong>ID del traslado:</strong></td>
+                  <td style="color: #fff;">{{transfer_id}}</td>
+                </tr>
+              </tbody></table>
+              <a style="display: inline-block; margin-top: 20px; padding: 12px 24px; background-color: #00eaff; color: #1a0d25; text-decoration: none; border-radius: 6px; font-weight: bold;" href="{{transfer_url}}">
+                Ver detalles del traslado
+              </a>
+              <p style="margin-top: 30px; font-size: 14px; color: #999;">
+                Este correo es solo una confirmación de que tu pago ha sido recibido. Puedes revisar los detalles de tu traslado accediendo a tu cuenta.
+              </p>
+            </td>
+          </tr>
+        </tbody></table>
+        <p style="font-size: 12px; color: #666; margin-top: 20px;">© 2025 DROVE. Todos los derechos reservados.</p>
+      </td>
+    </tr>
+  </tbody></table>
+

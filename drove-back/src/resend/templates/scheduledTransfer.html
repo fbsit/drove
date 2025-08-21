@@ -1,0 +1,55 @@
+  <!-- Este es un correo de notificación de traslado reprogramado -->
+
+
+  <table style="background-color: #1a0d25;" border="0" cellspacing="0" cellpadding="0" width="100%">
+    <tbody><tr>
+      <td align="center">
+        <table style="margin: 0 auto; background-color: #2a1e36; border-radius: 8px;" border="0" cellspacing="0" cellpadding="0" width="600">
+          <tbody><tr>
+            <td style="padding: 40px 0; text-align: center;">
+              <img style="height: 40px; margin-bottom: 16px;" alt="DROVE" src="https://cdn.drove.es/logo-white.png">
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 24px 32px;">
+              <h2 style="color: #ffffff; font-size: 22px;">Un traslado ha sido reprogramado</h2>
+              <p style="font-size: 16px; color: #f1f1f1;">Hola <strong>{{name}}</strong>,</p>
+              <p style="font-size: 16px; color: #ddd;">Queremos informarte que el traslado asociado a tu solicitud ha sido reprogramado con los siguientes datos actualizados:</p>
+
+              <ul style="font-size: 16px; color: #ccc; line-height: 1.7;">
+                <li><strong>Nuevo día:</strong> {{new_date}}</li>
+                <li><strong>Nuevo horario estimado:</strong> {{new_time}}</li>
+                <li><strong>Punto de origen:</strong> {{origin}}</li>
+                <li><strong>Destino:</strong> {{destination}}</li>
+              </ul>
+
+              <p style="font-size: 16px; color: #ccc;">Motivo del cambio:</p>
+              <div style="background-color: #3a2f4a; padding: 16px; border-radius: 6px; margin: 16px 0; color: #eee;">
+                {{reason}}
+              </div>
+
+              <div style="text-align: center; margin: 32px 0;">
+                <a style="background-color: #00eaff; color: #1a0d25; padding: 14px 28px; font-size: 16px; text-decoration: none; border-radius: 6px; display: inline-block;" href="{{transfer_url}}">Ver traslado en la plataforma</a>
+              </div>
+
+              <p style="font-size: 16px; color: #ccc;">Si estás de acuerdo con los nuevos datos, no necesitas realizar ninguna acción. Si tienes dudas o necesitas apoyo, no dudes en contactarnos.</p>
+
+              <p style="margin-top: 40px; font-size: 16px; color: #ccc;">Gracias por usar <strong style="color: #ffffff;">DROVE</strong>.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0 32px;">
+              <hr style="border: none; border-top: 1px solid #444; margin: 32px 0;">
+              <p style="font-size: 13px; color: #888;">Este mensaje fue enviado automáticamente. Si no reconoces esta acción, por favor contáctanos.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 24px 32px; text-align: center; font-size: 12px; color: #666;">
+              © 2025 DROVE. Todos los derechos reservados.
+            </td>
+          </tr>
+        </tbody></table>
+      </td>
+    </tr>
+  </tbody></table>
+

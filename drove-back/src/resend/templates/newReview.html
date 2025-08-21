@@ -1,0 +1,54 @@
+
+  <!-- Este es un correo de notificación de nueva reseña hacia el drover -->
+
+
+  <table style="background-color: #1a0d25;" border="0" cellspacing="0" cellpadding="0" width="100%">
+    <tbody><tr>
+      <td align="center">
+        <table style="margin: 0 auto; background-color: #2a1e36; border-radius: 8px;" border="0" cellspacing="0" cellpadding="0" width="600">
+          <tbody><tr>
+            <td style="padding: 40px 0; text-align: center;">
+              <img style="height: 40px; margin-bottom: 16px;" alt="DROVE" src="https://cdn.drove.es/logo-white.png">
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 24px 32px;">
+              <h2 style="color: #ffffff; font-size: 22px;">Nueva reseña recibida</h2>
+              <p style="font-size: 16px; color: #f1f1f1;">Hola <strong>{{name}}</strong>,</p>
+              <p style="font-size: 16px; color: #ddd;">Se ha recibido una nueva evaluación correspondiente a un traslado recientemente completado.</p>
+
+              <p style="font-size: 16px; color: #ccc;">Detalles del traslado:</p>
+              <ul style="font-size: 16px; color: #ccc; line-height: 1.7;">
+                <li><strong>Fecha:</strong> {{transfer_date}}</li>
+                <li><strong>Vehículo:</strong> {{vehicle}}</li>
+                <li><strong>Ruta:</strong> {{origin}} → {{destination}}</li>
+                <li><strong>Cliente:</strong> {{client_name}}</li>
+              </ul>
+
+              <p style="font-size: 16px; color: #ccc;">Evaluación recibida:</p>
+              <div style="background-color: #3a2f4a; padding: 16px; border-radius: 6px; color: #eee; margin-bottom: 24px;">
+                <p style="margin: 0;"><strong>Calificación:</strong> ★★★★★ ({{rating}}/5)</p>
+                <p style="margin-top: 12px;"><strong>Comentario:</strong><br>{{comment}}</p>
+              </div>
+
+              <p style="font-size: 16px; color: #ccc;">Puedes revisar esta evaluación directamente en la plataforma.</p>
+
+              <p style="margin-top: 40px; font-size: 16px; color: #ccc;">Gracias por tu compromiso,<br><strong style="color: #ffffff;">Equipo DROVE</strong></p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0 32px;">
+              <hr style="border: none; border-top: 1px solid #444; margin: 32px 0;">
+              <p style="font-size: 13px; color: #888;">Este mensaje fue enviado automáticamente. Si tienes dudas, por favor contáctanos.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 24px 32px; text-align: center; font-size: 12px; color: #666;">
+              © 2025 DROVE. Todos los derechos reservados.
+            </td>
+          </tr>
+        </tbody></table>
+      </td>
+    </tr>
+  </tbody></table>
+
