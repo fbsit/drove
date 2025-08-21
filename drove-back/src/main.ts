@@ -13,22 +13,13 @@ async function bootstrap() {
   });
 
   /* CORS */
-  const envOrigins = (process.env.CORS_ORIGINS || '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const defaultOrigins = [
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'http://localhost:8080',
-    'http://localhost:8080/registro',
-    'http://127.0.0.1:8080',
-    'https://drove-frontend-production.up.railway.app',
-  ];
-  const origins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
-
   app.enableCors({
-    origin: origins,
+    origin: [
+      'http://localhost:8080',
+      'http://localhost:8080/registro',
+      'http://127.0.0.1:8080',
+      'https://drove-frontend-production.up.railway.app',
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization, Accept',
     credentials: true, // solo si envías cookies/headers auth
