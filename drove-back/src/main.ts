@@ -8,15 +8,19 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule, {
-    rawBody: true,
-    bodyParser: true,
+    rawBody: true,   // para webhooks
   });
 
-  /* CORS */
+  // Confía en el proxy de Railway para que no pierdas headers
+  app.set('trust proxy', 1);
+
+  /** CORS **/
   const envOrigins = (process.env.CORS_ORIGINS || '')
     .split(',')
-    .map((s) => s.trim())
+    .map(s => s.trim())
     .filter(Boolean);
+
+  // Lista explícita + patrones (localhost y *.railway.app)
   const whitelist = new Set<string>([
     'http://localhost:5173',
     'http://127.0.0.1:5173',
@@ -26,61 +30,44 @@ async function bootstrap() {
     ...envOrigins,
   ]);
 
-  // Preflight handler to always answer OPTIONS with proper CORS headers
-  app.use((req, res, next) => {
-    const origin = (req.headers.origin as string) || '';
-    if (req.method === 'OPTIONS' && (!origin || whitelist.has(origin))) {
-      res.header('Access-Control-Allow-Origin', origin || '*');
-      res.header(
-        'Access-Control-Allow-Methods',
-        'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-      );
-      res.header(
-        'Access-Control-Allow-Headers',
-        'Content-Type, Authorization, Accept, X-Requested-With, Origin',
-      );
-      res.header('Access-Control-Allow-Credentials', 'true');
-      return res.sendStatus(204);
+  const allowedPatterns: RegExp[] = [
+    /^https?:\/\/localhost:\d+$/,
+    /^https?:\/\/127\.0\.0\.1:\d+$/,
+    /^https:\/\/.*\.up\.railway\.app$/,
+  ];
+
+  const originFn = (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
+    if (!origin) return cb(null, true); // fetch desde backend o curl
+    if (whitelist.has(origin) || allowedPatterns.some((re) => re.test(origin))) {
+      return cb(null, true);
     }
-    return next();
-  });
+    return cb(new Error(`Not allowed by CORS: ${origin}`));
+  };
 
   app.enableCors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (whitelist.has(origin)) return callback(null, true);
-      return callback(new Error(`Not allowed by CORS: ${origin}`), false);
-    },
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'Accept',
-      'X-Requested-With',
-      'Origin',
-    ],
+    origin: originFn,
     credentials: true,
+    methods: ['GET','HEAD','PUT','PATCH','POST','DELETE','OPTIONS'],
+    allowedHeaders: ['Content-Type','Authorization','Accept','X-Requested-With','Origin'],
     optionsSuccessStatus: 204,
-    preflightContinue: false,
     maxAge: 86400,
   });
+
+  // IMPORTANTE: registra el raw body SOLO en el webhook antes del body-parser JSON
   app.use('/payments/webhook', express.raw({ type: 'application/json' }));
 
-  /* Swagger */
+  /** Swagger **/
   const config = new DocumentBuilder()
     .setTitle('Drove API')
     .setDescription('Documentación de la API de Drove')
     .setVersion('1.0')
-    .addBearerAuth({
-      type: 'http',
-      scheme: 'bearer',
-      bearerFormat: 'JWT',
-      description: 'Proveer token JWT en el header Authorization: Bearer <token>',
-    })
+    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
-  logger.log(`Listening on port ${process.env.PORT ?? 3001}`);
-  await app.listen(process.env.PORT ?? 3001);
+
+  const port = Number(process.env.PORT) || 3001;
+  logger.log(`Listening on port ${port}`);
+  await app.listen(port, '0.0.0.0');
 }
 bootstrap();
