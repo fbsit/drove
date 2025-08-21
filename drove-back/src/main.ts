@@ -26,6 +26,25 @@ async function bootstrap() {
     ...envOrigins,
   ]);
 
+  // Preflight handler to always answer OPTIONS with proper CORS headers
+  app.use((req, res, next) => {
+    const origin = (req.headers.origin as string) || '';
+    if (req.method === 'OPTIONS' && (!origin || whitelist.has(origin))) {
+      res.header('Access-Control-Allow-Origin', origin || '*');
+      res.header(
+        'Access-Control-Allow-Methods',
+        'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      );
+      res.header(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, Accept, X-Requested-With, Origin',
+      );
+      res.header('Access-Control-Allow-Credentials', 'true');
+      return res.sendStatus(204);
+    }
+    return next();
+  });
+
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
@@ -33,8 +52,17 @@ async function bootstrap() {
       return callback(new Error(`Not allowed by CORS: ${origin}`), false);
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'X-Requested-With',
+      'Origin',
+    ],
     credentials: true,
     optionsSuccessStatus: 204,
+    preflightContinue: false,
+    maxAge: 86400,
   });
   app.use('/payments/webhook', express.raw({ type: 'application/json' }));
 
