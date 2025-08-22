@@ -22,6 +22,7 @@ async function bootstrap() {
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization, Accept, Access-Control-Allow-Origin',
     credentials: true, // solo si envías cookies/headers auth
+    preflightContinue: false, 
     optionsSuccessStatus: 204, // respuesta corta al pre-flight
   });
   app.use('/payments/webhook', express.raw({ type: 'application/json' }));
