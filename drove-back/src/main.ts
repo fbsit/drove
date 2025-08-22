@@ -14,41 +14,16 @@ async function bootstrap() {
   // Confiar en proxy (Railway)
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
-  // Handle OPTIONS requests FIRST - before any other middleware
-  app.use((req, res, next) => {
-    if (req.method === 'OPTIONS') {
-      const origin = req.headers.origin as string | undefined;
-      if (origin) {
-        res.header('Access-Control-Allow-Origin', origin);
-        res.header('Vary', 'Origin');
-        res.header('Access-Control-Allow-Credentials', 'true');
-        res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-        const reqHeaders = req.headers['access-control-request-headers'] as string ||
-          'Content-Type, Authorization, Accept, X-Requested-With, Origin';
-        res.header('Access-Control-Allow-Headers', reqHeaders);
-        return res.sendStatus(204);
-      }
-    }
-    return next();
-  });
-
-  // Echo CORS headers on all non-OPTIONS responses
-  app.use((req, res, next) => {
-    const origin = req.headers.origin as string | undefined;
-    if (origin) {
-      res.header('Access-Control-Allow-Origin', origin);
-      res.header('Vary', 'Origin');
-      res.header('Access-Control-Allow-Credentials', 'true');
-    }
-    return next();
-  });
-
   /**
-   * CORS global - this should come AFTER the custom OPTIONS handler
+   * CORS simple y explícito para orígenes definidos
    */
   app.enableCors({
-    origin: true,                 // refleja cualquier Origin permitido
-    credentials: true,            // permite cookies/credenciales
+    origin: [
+      'http://localhost:8080',
+      'http://127.0.0.1:8080',
+      'https://drove.up.railway.app',
+    ],
+    credentials: true,
     methods: ['GET','HEAD','PUT','PATCH','POST','DELETE','OPTIONS'],
     allowedHeaders: ['Content-Type','Authorization','Accept','X-Requested-With','Origin'],
     optionsSuccessStatus: 204,
