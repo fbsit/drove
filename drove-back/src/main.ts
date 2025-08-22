@@ -8,70 +8,48 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule, {
-    rawBody: true,   // para webhooks
+    rawBody: true, // para webhooks
   });
 
-  // Confía en el proxy de Railway para que no pierdas headers
+  // Confiar en proxy (Railway)
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
-  /** CORS (configurable por variables de entorno) **/
-  const allowAllOrigins = (process.env.CORS_ALLOW_ALL || '').toLowerCase() === 'true';
-  const envOrigins = (process.env.CORS_ORIGINS || '')
-    .split(',')
-    .map(s => s.trim())
-    .filter(Boolean);
-
-  // Lista explícita + patrones (localhost y *.railway.app)
-  const whitelist = new Set<string>([
+  /** CORS (simple y directo) **/
+  const WHITELIST = new Set<string>([
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:8080',
     'http://127.0.0.1:8080',
     'https://drove-frontend-production.up.railway.app',
-    ...envOrigins,
   ]);
 
-  const allowedPatterns: RegExp[] = [
+  const PATTERNS: RegExp[] = [
     /^https?:\/\/localhost:\d+$/,
     /^https?:\/\/127\.0\.0\.1:\d+$/,
-    /^https:\/\/.*\.up\.railway\.app$/,
+    /^https:\/\/.*\.up\.railway\.app$/, // cualquier subdominio de Railway
   ];
 
-  const originFn = (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
-    if (!origin) return cb(null, true); // fetch desde backend o curl
-    if (whitelist.has(origin) || allowedPatterns.some((re) => re.test(origin))) {
+  const originFn = (
+    origin: string | undefined,
+    cb: (err: Error | null, allow?: boolean) => void
+  ) => {
+    if (!origin) return cb(null, true); // peticiones server-to-server
+    if (WHITELIST.has(origin) || PATTERNS.some(re => re.test(origin))) {
       return cb(null, true);
     }
     return cb(new Error(`Not allowed by CORS: ${origin}`));
   };
 
-  const corsMethods = (process.env.CORS_METHODS || 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS')
-    .split(',')
-    .map(m => m.trim().toUpperCase())
-    .filter(Boolean);
-  const corsAllowedHeaders = (process.env.CORS_ALLOWED_HEADERS || 'Content-Type,Authorization,Accept,X-Requested-With,Origin')
-    .split(',')
-    .map(h => h.trim())
-    .filter(Boolean);
-  const corsExposedHeaders = (process.env.CORS_EXPOSED_HEADERS || '')
-    .split(',')
-    .map(h => h.trim())
-    .filter(Boolean);
-  const corsCredentials = (process.env.CORS_CREDENTIALS || 'true').toLowerCase() === 'true';
-  const corsMaxAge = Number(process.env.CORS_MAX_AGE || 86400);
-  const corsOptionsSuccessStatus = Number(process.env.CORS_OPTIONS_SUCCESS_STATUS || 204);
-
   app.enableCors({
-    origin: allowAllOrigins ? true : originFn,
-    credentials: corsCredentials,
-    methods: corsMethods,
-    allowedHeaders: corsAllowedHeaders,
-    exposedHeaders: corsExposedHeaders.length ? corsExposedHeaders : undefined,
-    optionsSuccessStatus: corsOptionsSuccessStatus,
-    maxAge: corsMaxAge,
+    origin: originFn,
+    credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'Origin'],
+    optionsSuccessStatus: 204,
+    maxAge: 86400,
   });
 
-  // IMPORTANTE: registra el raw body SOLO en el webhook antes del body-parser JSON
+  // Raw body SOLO para el webhook (antes del parser JSON)
   app.use('/payments/webhook', express.raw({ type: 'application/json' }));
 
   /** Swagger **/
