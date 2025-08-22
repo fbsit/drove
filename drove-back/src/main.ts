@@ -4,8 +4,12 @@ import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import * as express from 'express';
-import helmet from 'helmet';
-import compression from 'compression';
+import helmetImport from 'helmet';
+import compressionImport from 'compression';
+
+// Compat: soportar CJS/ESM en runtime (default o módulo)
+const helmet = (helmetImport as any)?.default ?? (helmetImport as any);
+const compression = (compressionImport as any)?.default ?? (compressionImport as any);
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
