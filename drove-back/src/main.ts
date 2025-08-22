@@ -14,7 +14,25 @@ async function bootstrap() {
   // Confiar en proxy (Railway)
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
-  // Echo CORS headers on all non-OPTIONS responses as a safety net
+  // Handle OPTIONS requests FIRST - before any other middleware
+  app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+      const origin = req.headers.origin as string | undefined;
+      if (origin) {
+        res.header('Access-Control-Allow-Origin', origin);
+        res.header('Vary', 'Origin');
+        res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+        const reqHeaders = req.headers['access-control-request-headers'] as string ||
+          'Content-Type, Authorization, Accept, X-Requested-With, Origin';
+        res.header('Access-Control-Allow-Headers', reqHeaders);
+        return res.sendStatus(204);
+      }
+    }
+    return next();
+  });
+
+  // Echo CORS headers on all non-OPTIONS responses
   app.use((req, res, next) => {
     const origin = req.headers.origin as string | undefined;
     if (origin) {
@@ -26,30 +44,7 @@ async function bootstrap() {
   });
 
   /**
-   * Fallback global para preflight OPTIONS.
-   * Si por cualquier motivo enableCors no se aplica en este request,
-   * este middleware garantiza los headers CORS correctos.
-   */
-  app.use((req, res, next) => {
-    if (req.method === 'OPTIONS') {
-      const origin = (req.headers.origin as string) || '*';
-      res.header('Access-Control-Allow-Origin', origin);
-      res.header('Vary', 'Origin');
-      res.header('Access-Control-Allow-Credentials', 'true');
-      res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-      // Reutiliza lo que pida el navegador, o usa un set razonable
-      const reqHeaders =
-        (req.headers['access-control-request-headers'] as string) ||
-        'Content-Type, Authorization, Accept, X-Requested-With, Origin';
-      res.header('Access-Control-Allow-Headers', reqHeaders);
-      return res.sendStatus(204);
-    }
-    return next();
-  });
-
-  /**
-   * CORS global, directo y amplio (refleja el Origin que venga).
-   * Si quieres restringir luego, cambiamos `origin: true` por un callback con whitelist.
+   * CORS global - this should come AFTER the custom OPTIONS handler
    */
   app.enableCors({
     origin: true,                 // refleja cualquier Origin permitido
