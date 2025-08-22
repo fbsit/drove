@@ -20,7 +20,7 @@ async function bootstrap() {
       'https://drove.up.railway.app',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type, Authorization, Accept',
+    allowedHeaders: 'Content-Type, Authorization, Accept, Access-Control-Allow-Origin',
     credentials: true, // solo si envías cookies/headers auth
     optionsSuccessStatus: 204, // respuesta corta al pre-flight
   });
