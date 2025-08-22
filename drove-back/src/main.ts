@@ -23,6 +23,7 @@ async function bootstrap() {
     'http://drove-frontend-production.up.railway.app',
     'https://drove-frontend-production.up.railway.app/',
     'https://drove-frontend-production.up.railway.app',
+    'https://drove-frontend-production.up.railway.app/registro'
   ]);
 
   const PATTERNS: RegExp[] = [
