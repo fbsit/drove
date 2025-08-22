@@ -1,4 +1,4 @@
-const API_BASE_URL = (typeof window !== 'undefined' && (window as any).__API_URL__) || (import.meta as any)?.env?.VITE_API_URL || 'https://drove-back-production.up.railway.app';
+const API_BASE_URL = (typeof window !== 'undefined' && (window as any).__API_URL__) || (import.meta as any)?.env?.VITE_API_URL || 'https://drove-backend-production.up.railway.app';
 
 /* Permite usar todas las opciones de RequestInit + timeout en ms */
 export interface RequestConfig extends RequestInit {
