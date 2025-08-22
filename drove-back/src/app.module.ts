@@ -77,27 +77,28 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(AuthMiddleware)
-      .exclude({ path: '/auth/login', method: RequestMethod.ALL })
-      .exclude({ path: '/users', method: RequestMethod.ALL })
-      .exclude({ path: '/users/forgot-password', method: RequestMethod.ALL })
-      .exclude({ path: '/users/reset-password', method: RequestMethod.ALL })
-      .exclude({ path: '/storage/upload/drover', method: RequestMethod.ALL })
+      .exclude({ path: 'auth/login', method: RequestMethod.ALL })
+      .exclude({ path: 'users', method: RequestMethod.ALL })
+      .exclude({ path: 'users/forgot-password', method: RequestMethod.ALL })
+      .exclude({ path: 'users/reset-password', method: RequestMethod.ALL })
+      .exclude({ path: 'storage/upload/drover', method: RequestMethod.ALL })
       .exclude({
-        path: '/verifications/email/send-code',
+        path: 'verifications/email/send-code',
         method: RequestMethod.ALL,
       })
       .exclude({
-        path: '/verifications/email/check-code',
+        path: 'verifications/email/check-code',
         method: RequestMethod.ALL,
       })
       .exclude({
-        path: '/pdf',
+        path: 'pdf',
         method: RequestMethod.ALL,
       })
       .exclude({
-        path: '/payments/webhooks',
+        path: 'payments/webhook',
         method: RequestMethod.ALL,
       })
+      .exclude({ path: '*', method: RequestMethod.OPTIONS })
       .forRoutes('*');
   }
 }
