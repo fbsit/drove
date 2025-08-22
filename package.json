@@ -1,0 +1,16 @@
+{
+  "name": "drove-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "install:all": "yarn --cwd drove-back install && yarn --cwd drove install",
+    "build": "yarn --cwd drove-back build && yarn --cwd drove build",
+    "dev": "concurrently -n back,front -c blue,green \"yarn --cwd drove-back start:dev\" \"yarn --cwd drove dev\"",
+    "start:prod": "concurrently -n back,front -c blue,green \"yarn --cwd drove-back start:prod\" \"yarn --cwd drove preview\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
+
+
