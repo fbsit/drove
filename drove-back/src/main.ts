@@ -8,51 +8,48 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule, {
-    rawBody: true, // para webhooks
+    rawBody: true, // para webhooks (Stripe, etc.)
   });
 
   // Confiar en proxy (Railway)
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
-  /** CORS (simple y directo) **/
-  const WHITELIST = new Set<string>([
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'http://localhost:8080',
-    'http://127.0.0.1:8080',
-    'http://drove-frontend-production.up.railway.app',
-    'https://drove-frontend-production.up.railway.app/',
-    'https://drove-frontend-production.up.railway.app',
-    'https://drove-frontend-production.up.railway.app/registro'
-  ]);
-
-  const PATTERNS: RegExp[] = [
-    /^https?:\/\/localhost:\d+$/,
-    /^https?:\/\/127\.0\.0\.1:\d+$/,
-    /^https:\/\/.*\.up\.railway\.app$/, // cualquier subdominio de Railway
-  ];
-
-  const originFn = (
-    origin: string | undefined,
-    cb: (err: Error | null, allow?: boolean) => void
-  ) => {
-    if (!origin) return cb(null, true); // peticiones server-to-server
-    if (WHITELIST.has(origin) || PATTERNS.some(re => re.test(origin))) {
-      return cb(null, true);
+  /**
+   * Fallback global para preflight OPTIONS.
+   * Si por cualquier motivo enableCors no se aplica en este request,
+   * este middleware garantiza los headers CORS correctos.
+   */
+  app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+      const origin = (req.headers.origin as string) || '*';
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Vary', 'Origin');
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+      // Reutiliza lo que pida el navegador, o usa un set razonable
+      const reqHeaders =
+        (req.headers['access-control-request-headers'] as string) ||
+        'Content-Type, Authorization, Accept, X-Requested-With, Origin';
+      res.header('Access-Control-Allow-Headers', reqHeaders);
+      return res.sendStatus(204);
     }
-    return cb(new Error(`Not allowed by CORS: ${origin}`));
-  };
+    return next();
+  });
 
+  /**
+   * CORS global, directo y amplio (refleja el Origin que venga).
+   * Si quieres restringir luego, cambiamos `origin: true` por un callback con whitelist.
+   */
   app.enableCors({
-    origin: originFn,
-    credentials: true,
-    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'Origin'],
+    origin: true,                 // refleja cualquier Origin permitido
+    credentials: true,            // permite cookies/credenciales
+    methods: ['GET','HEAD','PUT','PATCH','POST','DELETE','OPTIONS'],
+    allowedHeaders: ['Content-Type','Authorization','Accept','X-Requested-With','Origin'],
     optionsSuccessStatus: 204,
     maxAge: 86400,
   });
 
-  // Raw body SOLO para el webhook (antes del parser JSON)
+  // Raw body SOLO para el webhook antes del parser JSON
   app.use('/payments/webhook', express.raw({ type: 'application/json' }));
 
   /** Swagger **/
