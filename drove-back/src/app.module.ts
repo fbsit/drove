@@ -29,6 +29,9 @@ import { join } from 'path';
     TypeOrmModule.forRootAsync({
       useFactory: () => {
         const hasDatabaseUrl = !!process.env.DATABASE_URL;
+        const synchronize = process.env.TYPEORM_SYNC
+          ? process.env.TYPEORM_SYNC.toLowerCase() === 'true'
+          : process.env.NODE_ENV !== 'production';
         if (hasDatabaseUrl) {
           return {
             type: 'postgres' as const,
@@ -38,7 +41,9 @@ import { join } from 'path';
                 ? { rejectUnauthorized: false }
                 : false,
             entities: [join(__dirname, '/**/*.entity.{ts,js}')],
-            synchronize: process.env.TYPEORM_SYNC === 'true',
+            autoLoadEntities: true,
+            synchronize,
+            logging: process.env.TYPEORM_LOGGING?.toLowerCase() === 'true',
           };
         }
         return {
@@ -53,7 +58,9 @@ import { join } from 'path';
               ? { rejectUnauthorized: false }
               : false,
           entities: [join(__dirname, '/**/*.entity.{ts,js}')],
-          synchronize: process.env.TYPEORM_SYNC === 'true',
+          autoLoadEntities: true,
+          synchronize,
+          logging: process.env.TYPEORM_LOGGING?.toLowerCase() === 'true',
         };
       },
     }),
