@@ -14,7 +14,8 @@ async function bootstrap() {
   // Confía en el proxy de Railway para que no pierdas headers
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
-  /** CORS **/
+  /** CORS (configurable por variables de entorno) **/
+  const allowAllOrigins = (process.env.CORS_ALLOW_ALL || '').toLowerCase() === 'true';
   const envOrigins = (process.env.CORS_ORIGINS || '')
     .split(',')
     .map(s => s.trim())
@@ -44,13 +45,30 @@ async function bootstrap() {
     return cb(new Error(`Not allowed by CORS: ${origin}`));
   };
 
+  const corsMethods = (process.env.CORS_METHODS || 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS')
+    .split(',')
+    .map(m => m.trim().toUpperCase())
+    .filter(Boolean);
+  const corsAllowedHeaders = (process.env.CORS_ALLOWED_HEADERS || 'Content-Type,Authorization,Accept,X-Requested-With,Origin')
+    .split(',')
+    .map(h => h.trim())
+    .filter(Boolean);
+  const corsExposedHeaders = (process.env.CORS_EXPOSED_HEADERS || '')
+    .split(',')
+    .map(h => h.trim())
+    .filter(Boolean);
+  const corsCredentials = (process.env.CORS_CREDENTIALS || 'true').toLowerCase() === 'true';
+  const corsMaxAge = Number(process.env.CORS_MAX_AGE || 86400);
+  const corsOptionsSuccessStatus = Number(process.env.CORS_OPTIONS_SUCCESS_STATUS || 204);
+
   app.enableCors({
-    origin: originFn,
-    credentials: true,
-    methods: ['GET','HEAD','PUT','PATCH','POST','DELETE','OPTIONS'],
-    allowedHeaders: ['Content-Type','Authorization','Accept','X-Requested-With','Origin'],
-    optionsSuccessStatus: 204,
-    maxAge: 86400,
+    origin: allowAllOrigins ? true : originFn,
+    credentials: corsCredentials,
+    methods: corsMethods,
+    allowedHeaders: corsAllowedHeaders,
+    exposedHeaders: corsExposedHeaders.length ? corsExposedHeaders : undefined,
+    optionsSuccessStatus: corsOptionsSuccessStatus,
+    maxAge: corsMaxAge,
   });
 
   // IMPORTANTE: registra el raw body SOLO en el webhook antes del body-parser JSON
