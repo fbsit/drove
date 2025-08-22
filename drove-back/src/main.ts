@@ -14,6 +14,17 @@ async function bootstrap() {
   // Confiar en proxy (Railway)
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
+  // Echo CORS headers on all non-OPTIONS responses as a safety net
+  app.use((req, res, next) => {
+    const origin = req.headers.origin as string | undefined;
+    if (origin) {
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Vary', 'Origin');
+      res.header('Access-Control-Allow-Credentials', 'true');
+    }
+    return next();
+  });
+
   /**
    * Fallback global para preflight OPTIONS.
    * Si por cualquier motivo enableCors no se aplica en este request,
