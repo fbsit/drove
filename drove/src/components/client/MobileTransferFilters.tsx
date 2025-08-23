@@ -23,7 +23,7 @@ interface Props {
 }
 
 const estados = [
-  { value: "", label: "Todos los estados" },
+  { value: "all", label: "Todos los estados" },
   { value: TransferStatus.PENDINGPAID, label: "Pendiente Pago" },
   { value: TransferStatus.CREATED, label: "Creado" },
   { value: TransferStatus.ASSIGNED, label: "Asignado" },
@@ -57,7 +57,7 @@ const MobileTransferFilters: React.FC<Props> = ({
       <div className="flex gap-3 w-full">
         {/* Selector de estado */}
         <div className="flex-1">
-          <Select value={status} onValueChange={setStatus}>
+          <Select value={status || 'all'} onValueChange={val => setStatus(val === 'all' ? '' : val)}>
             <SelectTrigger className="w-full h-12 rounded-2xl px-4 bg-[#1A1F2C] text-white border border-white/10 text-base font-medium">
               <SelectValue placeholder="Todos los estados" />
             </SelectTrigger>

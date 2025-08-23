@@ -23,7 +23,7 @@ interface Props {
 }
 
 const estados = [
-  { value: "", label: "Todos" },
+  { value: "all", label: "Todos" },
   { value: TransferStatus.PENDINGPAID, label: "Pendiente Pago" },
   { value: TransferStatus.CREATED, label: "Creado" },
   { value: TransferStatus.ASSIGNED, label: "Asignado" },
@@ -53,7 +53,7 @@ const ClientTransferFilters: React.FC<Props> = ({
         value={search}
         onChange={e => setSearch(e.target.value)}
       />
-      <Select value={status} onValueChange={setStatus}>
+      <Select value={status || 'all'} onValueChange={val => setStatus(val === 'all' ? '' : val)}>
         <SelectTrigger className="rounded-2xl px-4 py-2 bg-[#1A1F2C] text-white border border-white/10 font-montserrat">
           <SelectValue placeholder="Todos" />
         </SelectTrigger>

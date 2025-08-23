@@ -50,7 +50,14 @@ const Invoices: React.FC = () => {
     [invoices],
   );
 
-  const filteredInvoices = invoices;
+  // Fallback: si el backend ignora filtros, aplicamos filtrado local por estado
+  const filteredInvoices = React.useMemo(() => {
+    const list = Array.isArray(invoices) ? invoices : [];
+    if (filterStatus && filterStatus !== 'todos') {
+      return list.filter((inv) => inv?.status === filterStatus);
+    }
+    return list;
+  }, [invoices, filterStatus]);
 
 
   async function handleUploadPDF(file: File, invoiceId: string) {
