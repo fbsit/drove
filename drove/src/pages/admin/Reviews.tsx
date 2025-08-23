@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
 import { useReviewsManagement } from "@/hooks/admin/useReviewsManagement";
+import { useDebouncedValue } from "@/hooks/useDebounce";
 import { Loader2, Star, MessageSquare, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -10,6 +11,8 @@ const Reviews: React.FC = () => {
   const [drover, setDrover] = useState("todos");
   const [responseFilter, setResponseFilter] = useState("todas");
 
+  const debouncedSearch = useDebouncedValue(search, 300);
+
   const { 
     reviews, 
     drovers, 
@@ -18,26 +21,10 @@ const Reviews: React.FC = () => {
     markAsViewed,
     isResponding,
     isMarkingAsViewed 
-  } = useReviewsManagement();
+  } = useReviewsManagement({ search: debouncedSearch, rating: ratingFilter, drover, responded: responseFilter });
 
-  // Filtrar reseñas
-  const filteredReviews = reviews.filter(review => {
-    const matchesSearch = review.clientName.toLowerCase().includes(search.toLowerCase()) ||
-                         review.droverName.toLowerCase().includes(search.toLowerCase()) ||
-                         review.comment.toLowerCase().includes(search.toLowerCase());
-    
-    const matchesRating = ratingFilter === "todas" || 
-                         review.rating.toString() === ratingFilter;
-    
-    const matchesDrover = drover === "todos" || 
-                         review.droverName === drover;
-    
-    const matchesResponse = responseFilter === "todas" ||
-                           (responseFilter === "respondidas" && review.adminResponse) ||
-                           (responseFilter === "sin_responder" && !review.adminResponse);
-    
-    return matchesSearch && matchesRating && matchesDrover && matchesResponse;
-  });
+  // Server-side (a futuro) o fuente ya filtrada por queryKey. Mostramos lo recibido
+  const filteredReviews = reviews;
 
   // Calcular estadísticas
   const stats = {

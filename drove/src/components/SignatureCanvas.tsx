@@ -121,6 +121,7 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
         ref={canvasRef}
         width={400}
         height={150}
+        data-testid="signature-canvas"
         onMouseDown={startDrawing}
         onMouseMove={draw}
         onMouseUp={endDrawing}

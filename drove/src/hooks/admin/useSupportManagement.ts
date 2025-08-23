@@ -2,18 +2,28 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AdminService, TicketStatusDTO, TicketReplyDTO } from '@/services/adminService';
 import { toast } from '@/hooks/use-toast';
+import { useDebouncedValue } from '@/hooks/useDebounce';
 import { SupportMetrics } from '@/types/admin';
 
-export const useSupportManagement = () => {
+export const useSupportManagement = (filters?: { search?: string; status?: string; priority?: string }) => {
   const qc = useQueryClient();
+  const debouncedSearch = useDebouncedValue(filters?.search ?? '', 300);
+  const normalizedStatus = filters?.status ?? 'todos';
+  const normalizedPriority = filters?.priority ?? 'todos';
 
-  /* ─────────── Obtener tickets ─────────── */
+  /* ─────────── Obtener tickets con filtros server-side ─────────── */
   const {
     data: tickets = [],
     isLoading,
   } = useQuery<any[]>({
-    queryKey: ['admin-support-tickets'],
-    queryFn: AdminService.getSupportTickets,
+    queryKey: ['admin-support-tickets', { search: debouncedSearch, status: normalizedStatus, priority: normalizedPriority }],
+    queryFn: async ({ queryKey }) => {
+      const [, params] = queryKey as [string, { search?: string; status?: string; priority?: string }];
+      const search = params?.search || '';
+      const status = params?.status && params.status !== 'todos' ? params.status : undefined;
+      const priority = params?.priority && params.priority !== 'todos' ? params.priority : undefined;
+      return AdminService.getSupportTickets({ search, status, priority } as any);
+    },
     refetchInterval: 60_000,
   });
 

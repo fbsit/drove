@@ -4,11 +4,14 @@ import { Loader2, MessageCircle, Clock, AlertTriangle, CheckCircle } from "lucid
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSupportManagement } from "@/hooks/admin/useSupportManagement";
+import { useDebouncedValue } from "@/hooks/useDebounce";
 
 const Support: React.FC = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [priorityFilter, setPriorityFilter] = useState("todos");
+
+  const debouncedSearch = useDebouncedValue(search, 300);
 
   const { 
     tickets, 
@@ -18,18 +21,10 @@ const Support: React.FC = () => {
     respondToTicket,
     isUpdatingStatus,
     isResponding 
-  } = useSupportManagement();
+  } = useSupportManagement({ search: debouncedSearch, status: statusFilter, priority: priorityFilter });
 
-  // Filtrar tickets
-  const filteredTickets = tickets.filter(ticket => {
-    const matchesSearch = ticket.subject.toLowerCase().includes(search.toLowerCase()) ||
-                         ticket.clientName.toLowerCase().includes(search.toLowerCase()) ||
-                         ticket.clientEmail.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "todos" || ticket.status === statusFilter;
-    const matchesPriority = priorityFilter === "todos" || ticket.priority === priorityFilter;
-    
-    return matchesSearch && matchesStatus && matchesPriority;
-  });
+  // Server-side filtering
+  const filteredTickets = tickets;
 
   const handleUpdateStatus = (ticketId: string, status: string) => {
     updateTicketStatus(ticketId, status);

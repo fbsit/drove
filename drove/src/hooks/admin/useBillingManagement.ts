@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { UseMutateFunction, useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import { AdminService } from '@/services/adminService';
+import { useDebouncedValue } from '@/hooks/useDebounce';
 
 export interface InvoiceData {
   id: string;
@@ -15,14 +16,27 @@ export interface InvoiceData {
   transfer_id?: string;
 }
 
-export const useBillingManagement = () => {
+export const useBillingManagement = (filters?: { search?: string; status?: 'todos' | InvoiceData['status']; clientId?: string; from?: Date; to?: Date }) => {
   const [pendingPayments, setPendingPayments] = useState<InvoiceData[]>([]);
   const [pendingInvoices, setPendingInvoices] = useState<InvoiceData[]>([]);
   const [allInvoices, setAllInvoices] = useState<InvoiceData[]>([]);
+  const debouncedSearch = useDebouncedValue(filters?.search ?? '', 300);
+  const normalizedStatus = filters?.status ?? 'todos';
+  const from = filters?.from ? filters.from.toISOString().slice(0,10) : undefined;
+  const to = filters?.to ? filters.to.toISOString().slice(0,10) : undefined;
 
   const { data: invoices = [], isLoading, refetch } = useQuery<InvoiceData[]>({
-    queryKey: ['invoices'],
-    queryFn: AdminService.getAllInvoices,
+    queryKey: ['invoices', { search: debouncedSearch, status: normalizedStatus, clientId: filters?.clientId, from, to }],
+    queryFn: async ({ queryKey }) => {
+      const [, params] = queryKey as [string, { search?: string; status?: string; clientId?: string; from?: string; to?: string }];
+      return AdminService.getAllInvoices({
+        search: params?.search || undefined,
+        status: params?.status && params.status !== 'todos' ? params.status : undefined,
+        clientId: params?.clientId,
+        from: params?.from,
+        to: params?.to,
+      });
+    },
     onSuccess: (data) => {
       const pending = data.filter(inv => inv.status === 'pending');
       setPendingInvoices(pending);

@@ -1,5 +1,6 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useDebouncedValue } from '@/hooks/useDebounce';
 import { AdminService } from '@/services/adminService';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,18 +24,28 @@ export interface TransferData {
   distance: string;
 }
 
-export const useTransfersManagement = () => {
+export const useTransfersManagement = (filters?: { search?: string; status?: string; from?: Date; to?: Date }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const debouncedSearch = useDebouncedValue(filters?.search ?? '', 300);
+  const normalizedStatus = (filters?.status ?? 'todos');
+  const from = filters?.from ? filters.from.toISOString().slice(0,10) : undefined;
+  const to = filters?.to ? filters.to.toISOString().slice(0,10) : undefined;
 
   const { data: transfers = [], isLoading, refetch: refetchTransfer } = useQuery({
-    queryKey: ['admin-transfers'],
-    queryFn: async (): Promise<TransferData[]> => {
+    queryKey: ['admin-transfers', { search: debouncedSearch, status: normalizedStatus, from, to }],
+    queryFn: async ({ queryKey }): Promise<TransferData[]> => {
+      const [, params] = queryKey as [string, { search?: string; status?: string; from?: string; to?: string }];
       console.log('[TRANSFERS] 🔄 Obteniendo traslados...');
       try {
-        const response = await AdminService.getTransfers();
+        const response: any = await AdminService.getTransfers({
+          search: params?.search || undefined,
+          status: params?.status && params.status !== 'todos' ? params.status : undefined,
+          from: params.from,
+          to: params.to,
+        });
         console.log('[TRANSFERS] ✅ Traslados obtenidos:', response);
-        return response?.transfers?.map((transfer: any): TransferData => ({
+        return (Array.isArray(response) ? response : response?.transfers || []).map((transfer: any): TransferData => ({
           id: `${transfer?.id}` || `transfer-${Date.now()}`,
           clientName: transfer.client?.contactInfo?.fullName || transfer.client_name || 'Cliente',
           clientEmail: transfer.client?.email || transfer.client_email || 'No email',
@@ -65,7 +76,7 @@ export const useTransfersManagement = () => {
     refetchInterval: 60000,
   });
 
-   const { data: drovers = [], isLoadingDrovers } = useQuery({
+   const { data: drovers = [], isLoading: isLoadingDrovers } = useQuery({
     queryKey: ['admin-drover'],
     queryFn: async (): Promise<TransferData[]> => {
       try {

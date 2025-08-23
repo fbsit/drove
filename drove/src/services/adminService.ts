@@ -117,8 +117,14 @@ export class AdminService {
   }
 
   // === GESTIÓN DE TRASLADOS ===
-  static async getTransfers(): Promise<any[]> {
-    return await ApiService.get('/admin/transfers');
+  static async getTransfers(params?: { search?: string; status?: string; from?: string; to?: string }): Promise<any[]> {
+    const qs = new URLSearchParams();
+    if (params?.search) qs.set('search', params.search);
+    if (params?.status) qs.set('status', params.status);
+    if (params?.from) qs.set('from', params.from);
+    if (params?.to) qs.set('to', params.to);
+    const endpoint = qs.toString() ? `/admin/transfers?${qs.toString()}` : '/admin/transfers';
+    return await ApiService.get(endpoint);
   }
 
   static async assignDriver(transferId: string, droverId: string, adminId: string): Promise<void> {
@@ -146,8 +152,15 @@ export class AdminService {
   }
 
   // === FACTURACIÓN ===
-  static async getAllInvoices(): Promise<any[]> {
-    return await ApiService.get('/invoices');
+  static async getAllInvoices(params?: { search?: string; status?: string; clientId?: string; from?: string; to?: string }): Promise<any[]> {
+    const qs = new URLSearchParams();
+    if (params?.search) qs.set('search', params.search);
+    if (params?.status) qs.set('status', params.status);
+    if (params?.clientId) qs.set('clientId', params.clientId);
+    if (params?.from) qs.set('from', params.from);
+    if (params?.to) qs.set('to', params.to);
+    const endpoint = qs.toString() ? `/invoices?${qs.toString()}` : '/invoices';
+    return await ApiService.get(endpoint);
   }
 
   static async getPendingInvoices(): Promise<any[]> {
@@ -162,9 +175,26 @@ export class AdminService {
     return await ApiService.post(`/admin/invoices/${invoiceId}/issue`, {});
   }
 
+  // === PAGOS ===
+  static async getPayments(params?: { search?: string; status?: string; method?: string; from?: string; to?: string }): Promise<any[]> {
+    const qs = new URLSearchParams();
+    if (params?.search) qs.set('search', params.search);
+    if (params?.status) qs.set('status', params.status);
+    if (params?.method) qs.set('method', params.method);
+    if (params?.from) qs.set('from', params.from);
+    if (params?.to) qs.set('to', params.to);
+    const endpoint = qs.toString() ? `/payments?${qs.toString()}` : '/payments';
+    return await ApiService.get(endpoint);
+  }
+
   // === SOPORTE ===
-  static async getSupportTickets(): Promise<any[]> {
-    return await ApiService.get('/admin/support/tickets');
+  static async getSupportTickets(params?: { search?: string; status?: string; priority?: string }): Promise<any[]> {
+    const qs = new URLSearchParams();
+    if (params?.search) qs.set('search', params.search);
+    if (params?.status) qs.set('status', params.status);
+    if (params?.priority) qs.set('priority', params.priority);
+    const endpoint = qs.toString() ? `/admin/support/tickets?${qs.toString()}` : '/admin/support/tickets';
+    return await ApiService.get(endpoint);
   }
 
   static async updateTicketStatus(ticketId: string, dto: TicketStatusDTO): Promise<void> {

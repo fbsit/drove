@@ -11,6 +11,7 @@ import TransferStepsBar from '@/components/trips/TransferStepsBar';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TransferService } from '@/services/transferService';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/hooks/use-toast';
 
 interface TripStep {
   id: string;
@@ -70,40 +71,33 @@ const ActiveTrip: React.FC = () => {
   useEffect(() => {
     if (trip?.status === 'IN_PROGRESS' && 'geolocation' in navigator) {
       console.log('[ROUTE_TRACKING] 🚗 Iniciando captura de ruta');
-      
-      routeTrackingInterval.current = setInterval(() => {
+
+      const capturePosition = () => {
         navigator.geolocation.getCurrentPosition(
           (position) => {
             const { latitude, longitude } = position.coords;
-            const newPoint = {
-              lat: latitude,
-              lng: longitude,
-              timestamp: Date.now()
-            };
-            
+            const newPoint = { lat: latitude, lng: longitude, timestamp: Date.now() };
             setRoutePoints(prev => {
-              // Evitar duplicados muy cercanos (menos de 10 metros de diferencia)
               const lastPoint = prev[prev.length - 1];
               if (lastPoint) {
                 const distance = haversineMeters(
                   { lat: lastPoint.lat, lng: lastPoint.lng },
                   { lat: latitude, lng: longitude }
                 );
-                if (distance < 10) return prev; // No agregar si está muy cerca del último punto
+                if (distance < 10) return prev;
               }
-              
               console.log('[ROUTE_TRACKING] 📍 Nuevo punto capturado:', newPoint);
               return [...prev, newPoint];
             });
           },
           (error) => console.error('[ROUTE_TRACKING] ❌ Error GPS:', error),
-          {
-            enableHighAccuracy: true,
-            maximumAge: 5000,
-            timeout: 10000
-          }
+          { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
         );
-      }, 10000); // Capturar punto cada 10 segundos
+      };
+
+      // Captura inmediata y luego intervalos
+      capturePosition();
+      routeTrackingInterval.current = setInterval(capturePosition, 10000);
     }
 
     return () => {
@@ -212,13 +206,29 @@ const ActiveTrip: React.FC = () => {
   };
 
   const handleFinishViaje = async () => {
-    if (trip.status === 'IN_PROGRESS') {
-      const polyline = generatePolyline(routePoints);
-      console.log('[FINISH_TRAVEL] 🏁 Enviando polyline:', polyline);
-      console.log('[FINISH_TRAVEL] 📊 Total de puntos capturados:', routePoints.length);
-      
+    if (trip.status !== 'IN_PROGRESS') return;
+
+    // Generar polyline; si no hay puntos, usa origen/destino como fallback
+    let points = routePoints;
+    if (!points || points.length === 0) {
+      if (trip.startAddress && trip.endAddress) {
+        points = [
+          { lat: trip.startAddress.lat, lng: trip.startAddress.lng, timestamp: Date.now() - 1 },
+          { lat: trip.endAddress.lat, lng: trip.endAddress.lng, timestamp: Date.now() },
+        ];
+      }
+    }
+    const polyline = generatePolyline(points || []);
+    console.log('[FINISH_TRAVEL] 🏁 Enviando polyline:', polyline);
+    console.log('[FINISH_TRAVEL] 📊 Total de puntos capturados:', points?.length || 0);
+
+    try {
       await TransferService.saveFinishTravelVerification(transferId, { polyline });
+      toast({ title: 'Viaje finalizado', description: 'Se registró la ruta del traslado.' });
       await refetch();
+    } catch (err: any) {
+      console.error('[FINISH_TRAVEL] ❌ Error al finalizar viaje', err);
+      toast({ variant: 'destructive', title: 'Error al finalizar', description: err?.message || 'Intenta de nuevo.' });
     }
   };
 

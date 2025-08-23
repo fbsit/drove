@@ -171,6 +171,8 @@ export const useVehicleTransferRequest = () => {
       const hasAllPickupFields =
         isValidAddress(pickupDetails?.originAddress) &&
         isValidAddress(pickupDetails?.destinationAddress) &&
+        !!pickupDetails?.originAddress?.city?.trim() &&
+        !!pickupDetails?.destinationAddress?.city?.trim() &&
         !!pickupDetails?.pickupDate &&
         !!pickupDetails?.pickupTime;
 

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useDebouncedValue } from '@/hooks/useDebounce';
 import InvoiceFiltersBar from '@/components/admin/invoices/InvoiceFiltersBar';
 import InvoiceCard from '@/components/admin/invoices/InvoiceCard';
 import { toast } from '@/hooks/use-toast';
@@ -16,14 +17,25 @@ const Invoices: React.FC = () => {
   const [filterClient, setFilterClient] = useState('');
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
 
+  const debouncedSearch = useDebouncedValue(search, 300);
+
   /* --------------------- fetch real de facturas desde API ------------------ */
   const {
     data: invoices = [],
     isLoading,
     refetch: refetchInvoices,
   } = useQuery<Invoice[]>({
-    queryKey: ['invoices'],
-    queryFn: AdminService.getAllInvoices,
+    queryKey: ['invoices', { search: debouncedSearch, status: filterStatus, clientId: filterClient, from: dateRange.from?.toISOString().slice(0,10), to: dateRange.to?.toISOString().slice(0,10) }],
+    queryFn: async ({ queryKey }) => {
+      const [, params] = queryKey as [string, { search?: string; status?: string; clientId?: string; from?: string; to?: string }];
+      return AdminService.getAllInvoices({
+        search: params?.search || undefined,
+        status: params?.status && params.status !== 'todos' ? params.status : undefined,
+        clientId: params?.clientId || undefined,
+        from: params?.from,
+        to: params?.to,
+      });
+    },
     onError: () =>
       toast({
         variant: 'destructive',
@@ -38,33 +50,7 @@ const Invoices: React.FC = () => {
     [invoices],
   );
 
-  const filteredInvoices = useMemo(() => {
-    // 1) asegura un array
-    const list = Array.isArray(invoices) ? invoices : [];
-
-    // 2) normaliza el término de búsqueda
-    const q = search.trim().toLowerCase();
-
-    return list.filter((inv) => {
-      /* ────── búsqueda ────── */
-      const byClient = (inv?.client_name ?? '').toLowerCase().includes(q);
-      const byId = String(inv?.id ?? '').toLowerCase().includes(q);
-      const matchesSearch = !q || byClient || byId;
-
-      /* ────── filtros simples ────── */
-      const matchesStatus = filterStatus === 'todos' || inv?.status === filterStatus;
-      const matchesClient = !filterClient || inv?.client_id === filterClient;
-
-      /* ────── rango de fechas ────── */
-      const issue = inv?.issue_date ? new Date(inv.issue_date) : null;
-
-      const afterFrom = !dateRange.from || (issue && issue >= dateRange.from);
-      const beforeTo = !dateRange.to || (issue && issue <= dateRange.to);
-      const matchesDate = afterFrom && beforeTo;
-
-      return matchesSearch && matchesStatus && matchesClient && matchesDate;
-    });
-  }, [invoices, search, filterStatus, filterClient, dateRange]);
+  const filteredInvoices = invoices;
 
 
   async function handleUploadPDF(file: File, invoiceId: string) {

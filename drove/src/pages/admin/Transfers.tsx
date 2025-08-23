@@ -5,6 +5,7 @@ import TransferMetrics from "@/components/admin/transfers/TransferMetrics";
 import TransfersTable from "@/components/admin/transfers/TransfersTable";
 import RescheduleModal from "@/components/admin/transfers/RescheduleModal";
 import { useTransfersManagement } from "@/hooks/admin/useTransfersManagement";
+import { useDebouncedValue } from "@/hooks/useDebounce";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { TransferStatus } from "@/services/api/types/transfers";
@@ -14,6 +15,7 @@ const Transfers: React.FC = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [dateRange, setDateRange] = useState<{from?: Date, to?: Date}>({});
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [selectedTransferId, setSelectedTransferId] = useState<string>("");
   const navigate = useNavigate();
@@ -26,25 +28,10 @@ const Transfers: React.FC = () => {
     updateTransferStatus,
     isAssigningDriver,
     isUpdatingStatus 
-  } = useTransfersManagement();
+  } = useTransfersManagement({ search: debouncedSearch, status: statusFilter, from: dateRange.from, to: dateRange.to });
 
-  // Filtrar traslados
-  const filteredTransfers = transfers?.filter(transfer => {
-    const matchesSearch = transfer.clientName.toLowerCase().includes(search.toLowerCase()) ||
-                         transfer.clientEmail.toLowerCase().includes(search.toLowerCase()) ||
-                         transfer.id.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "todos" || transfer.status === statusFilter;
-    
-    let matchesDate = true;
-    if (dateRange.from && dateRange.to) {
-      const transferDate = new Date(transfer.createdAt);
-      const fromTime = dateRange.from.setHours(0,0,0,0);
-      const toTime = dateRange.to.setHours(23,59,59,999);
-      matchesDate = transferDate.getTime() >= fromTime && transferDate.getTime() <= toTime;
-    }
-    
-    return matchesSearch && matchesStatus && matchesDate;
-  });
+  // Server-side filtering, no filtro local: mostramos directamente transfers
+  const filteredTransfers = transfers;
 
   const handleAssignDriver = (transferId: string, driverId: string) => {
     navigate(`/admin/asignar/${transferId}`);

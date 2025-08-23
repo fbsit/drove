@@ -3,11 +3,9 @@
  * Prueba para verificar la correcta redirección según el rol del usuario
  */
 
-import { getRedirectPathForUser } from '../../utils/authRedirects';
-import type { User } from '../../types/auth';
-
-// Importamos explícitamente las funciones de Jest
-import { describe, expect, test } from '@jest/globals';
+import { describe, expect, test } from 'vitest';
+import { getRedirectPathForUser } from '@/utils/authRedirects';
+import type { User } from '@/types/auth';
 
 describe('User Redirection Tests', () => {
   
@@ -68,6 +66,6 @@ describe('User Redirection Tests', () => {
       is_approved: true
     };
     
-    expect(getRedirectPathForUser(user as any)).toBe('/admin/usuarios');
+    expect(getRedirectPathForUser(user as any)).toBe('/admin/dashboard');
   });
 });

@@ -1,5 +1,8 @@
 
 import React, { useState } from "react";
+import { useQuery } from '@tanstack/react-query';
+import { AdminService } from '@/services/adminService';
+import { useDebouncedValue } from '@/hooks/useDebounce';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -11,15 +14,21 @@ const Payments: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"todos" | "completado" | "pendiente" | "fallido">("todos");
   const [methodFilter, setMethodFilter] = useState<"todos" | "tarjeta" | "transferencia">("todos");
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
 
-  const filteredPayments = mockPayments.filter(payment => {
-    const matchesSearch = payment.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payment.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "todos" || payment.status === statusFilter;
-    const matchesMethod = methodFilter === "todos" || payment.method === methodFilter;
-    
-    return matchesSearch && matchesStatus && matchesMethod;
+  const { data: payments = [] } = useQuery<any[]>({
+    queryKey: ['admin-payments', { search: debouncedSearch, status: statusFilter, method: methodFilter }],
+    queryFn: async ({ queryKey }) => {
+      const [, params] = queryKey as [string, { search?: string; status?: string; method?: string }];
+      return AdminService.getPayments({
+        search: params?.search || undefined,
+        status: params?.status && params.status !== 'todos' ? params.status : undefined,
+        method: params?.method && params.method !== 'todos' ? params.method : undefined,
+      });
+    }
   });
+
+  const filteredPayments = payments;
 
   const getStatusBadge = (status: string) => {
     switch(status) {
