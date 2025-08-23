@@ -8,13 +8,13 @@ import './App.css';
 
 function App() {
   return (
-    <AppProviders>
-      <BrowserRouter>
+    <BrowserRouter>
+      <AppProviders>
         <AppLayout>
           <AppRoutes />
         </AppLayout>
-      </BrowserRouter>
-    </AppProviders>
+      </AppProviders>
+    </BrowserRouter>
   );
 }
 
