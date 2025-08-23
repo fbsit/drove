@@ -65,20 +65,35 @@ const formatFechaHora = (str: string) => {
 
 export default function ClientTripDetail() {
   const { id } = useParams();
-  const [trip, setTrip] = useState(null);
+  const [trip, setTrip] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [errorMsg, setErrorMsg] = useState<string>("");
   const [showMap, setShowMap] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    handleGetTravel()
-  }, [id])
+    handleGetTravel();
+    const timeout = setTimeout(() => {
+      if (loading) setErrorMsg('Estamos preparando tu traslado. Esto puede tardar unos segundos.');
+    }, 8000);
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   const handleGetTravel = async () => {
-    if (id) {
+    if (!id) return;
+    try {
+      setLoading(true);
       const travel = await TransferService.getTransferById(id);
-      setTrip(travel);
+      // si el backend devuelve 201/202 o un objeto parcial, forzamos render mínimo
+      setTrip(travel ?? {});
+      setErrorMsg("");
+    } catch (e: any) {
+      setErrorMsg('No pudimos cargar el traslado. Intenta recargar o vuelve atrás.');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -143,12 +158,28 @@ export default function ClientTripDetail() {
     CANCELLED: { label: 'Cancelado', hint: 'Viaje anulado', color: '#dc2626' },
   };
 
-  if (!trip) {
+  if (loading && !trip) {
     return (
       <DashboardLayout pageTitle={`Traslado #${trip?.id}`}>
-        <div>Viaje sin información</div>
+        <div className="flex flex-col items-center justify-center h-64 text-white/80">
+          Cargando traslado...
+        </div>
       </DashboardLayout>
     )
+  }
+
+  if (!trip || Object.keys(trip).length === 0) {
+    return (
+      <DashboardLayout pageTitle="Traslado">
+        <div className="flex flex-col items-center justify-center h-64 gap-3 text-center">
+          <div className="text-white/80">{errorMsg || 'No pudimos cargar el traslado.'}</div>
+          <div className="flex gap-2">
+            <button onClick={handleGetTravel} className="px-4 py-2 rounded-2xl bg-[#6EF7FF] text-[#22142A] font-bold">Reintentar</button>
+            <Link to="/cliente/traslados" className="px-4 py-2 rounded-2xl bg-white/10 text-white border border-white/20">Volver</Link>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
   }
 
   // Si es móvil, renderizar la versión móvil
