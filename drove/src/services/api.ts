@@ -50,7 +50,10 @@ class ApiService {
 
       /* auth caducado */
       if (resp.status === 401) {
-        // No borres el token ni redirijas aquí; deja que ProtectedRoute/AuthContext gestionen el estado
+        try {
+          const { dispatchUnauthorized } = await import('@/lib/authBus');
+          dispatchUnauthorized();
+        } catch {}
         throw new Error('Unauthorized');
       } else if (resp.status === 403) {
         const data = await resp.json();

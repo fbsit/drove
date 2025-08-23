@@ -11,6 +11,7 @@ import { es } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { DateRange } from "react-day-picker";
 import { TransferStatus } from "@/services/api/types/transfers";
+import { Select, SelectContent, SelectGroup, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
 
 interface Props {
   search: string;
@@ -56,23 +57,18 @@ const MobileTransferFilters: React.FC<Props> = ({
       <div className="flex gap-3 w-full">
         {/* Selector de estado */}
         <div className="flex-1">
-          <select
-            value={status}
-            onChange={e => setStatus(e.target.value)}
-            className="w-full h-12 rounded-2xl px-4 bg-white/30 text-white border-0 text-base font-medium focus:ring-2 focus:ring-[#6EF7FF] appearance-none"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-              backgroundPosition: 'right 12px center',
-              backgroundRepeat: 'no-repeat',
-              backgroundSize: '16px'
-            }}
-          >
-            {estados.map(opt =>
-              <option key={opt.value} value={opt.value} className="bg-[#22142A] text-white">
-                {opt.label}
-              </option>
-            )}
-          </select>
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger className="w-full h-12 rounded-2xl px-4 bg-[#1A1F2C] text-white border border-white/10 text-base font-medium">
+              <SelectValue placeholder="Todos los estados" />
+            </SelectTrigger>
+            <SelectContent className="bg-[#22142A] text-white border-white/10 z-30">
+              <SelectGroup>
+                {estados.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Selector de fechas */}

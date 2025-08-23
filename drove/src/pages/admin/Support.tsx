@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { Loader2, MessageCircle, Clock, AlertTriangle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectGroup, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSupportManagement } from "@/hooks/admin/useSupportManagement";
 import { useDebouncedValue } from "@/hooks/useDebounce";
@@ -112,28 +113,34 @@ const Support: React.FC = () => {
           onChange={(e) => setSearch(e.target.value)}
           className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50"
         />
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white"
-        >
-          <option value="todos">Todos los estados</option>
-          <option value="abierto">Abierto</option>
-          <option value="en_progreso">En Progreso</option>
-          <option value="resuelto">Resuelto</option>
-          <option value="cerrado">Cerrado</option>
-        </select>
-        <select
-          value={priorityFilter}
-          onChange={(e) => setPriorityFilter(e.target.value)}
-          className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white"
-        >
-          <option value="todos">Todas las prioridades</option>
-          <option value="urgente">Urgente</option>
-          <option value="alta">Alta</option>
-          <option value="media">Media</option>
-          <option value="baja">Baja</option>
-        </select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full p-3 rounded-lg bg-[#1A1F2C] border border-white/20 text-white">
+            <SelectValue placeholder="Todos los estados" />
+          </SelectTrigger>
+          <SelectContent className="bg-[#22142A] text-white border-white/10 z-30">
+            <SelectGroup>
+              <SelectItem value="todos">Todos los estados</SelectItem>
+              <SelectItem value="abierto">Abierto</SelectItem>
+              <SelectItem value="en_progreso">En Progreso</SelectItem>
+              <SelectItem value="resuelto">Resuelto</SelectItem>
+              <SelectItem value="cerrado">Cerrado</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+          <SelectTrigger className="w-full p-3 rounded-lg bg-[#1A1F2C] border border-white/20 text-white">
+            <SelectValue placeholder="Todas las prioridades" />
+          </SelectTrigger>
+          <SelectContent className="bg-[#22142A] text-white border-white/10 z-30">
+            <SelectGroup>
+              <SelectItem value="todos">Todas las prioridades</SelectItem>
+              <SelectItem value="urgente">Urgente</SelectItem>
+              <SelectItem value="alta">Alta</SelectItem>
+              <SelectItem value="media">Media</SelectItem>
+              <SelectItem value="baja">Baja</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Lista de tickets */}

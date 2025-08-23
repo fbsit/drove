@@ -11,6 +11,7 @@ import { es } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { DateRange } from "react-day-picker";
 import { TransferStatus } from "@/services/api/types/transfers";
+import { Select, SelectContent, SelectGroup, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
 
 interface Props {
   search: string;
@@ -52,15 +53,18 @@ const ClientTransferFilters: React.FC<Props> = ({
         value={search}
         onChange={e => setSearch(e.target.value)}
       />
-      <select
-        value={status}
-        onChange={e => setStatus(e.target.value)}
-        className="rounded-2xl px-4 py-2 bg-white/30 text-white border-0 font-montserrat focus:ring-2 focus:ring-[#6EF7FF]"
-      >
-        {estados.map(opt =>
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        )}
-      </select>
+      <Select value={status} onValueChange={setStatus}>
+        <SelectTrigger className="rounded-2xl px-4 py-2 bg-[#1A1F2C] text-white border border-white/10 font-montserrat">
+          <SelectValue placeholder="Todos" />
+        </SelectTrigger>
+        <SelectContent className="bg-[#22142A] text-white border-white/10 z-30">
+          <SelectGroup>
+            {estados.map(opt => (
+              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
       <Popover>
         <PopoverTrigger asChild>
           <Button

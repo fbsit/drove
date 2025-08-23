@@ -6,6 +6,7 @@ import TransfersTable from "@/components/admin/transfers/TransfersTable";
 import RescheduleModal from "@/components/admin/transfers/RescheduleModal";
 import { useTransfersManagement } from "@/hooks/admin/useTransfersManagement";
 import { useDebouncedValue } from "@/hooks/useDebounce";
+import { Select, SelectContent, SelectGroup, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { TransferStatus } from "@/services/api/types/transfers";
@@ -112,21 +113,24 @@ const Transfers: React.FC = () => {
           onChange={(e) => setSearch(e.target.value)}
           className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50"
         />
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white"
-        >
-          <option value="todos">Todos los estados</option>
-          <option value={TransferStatus.PENDINGPAID}>Pendiente de Pago</option>
-          <option value={TransferStatus.CREATED}>Creado</option>
-          <option value={TransferStatus.ASSIGNED}>Drover Asignado</option>
-          <option value={TransferStatus.PICKED_UP}>Vehículo Recogido</option>
-          <option value={TransferStatus.IN_PROGRESS}>En Progreso</option>
-          <option value={TransferStatus.REQUEST_FINISH}>Solicitando Entrega</option>
-          <option value={TransferStatus.DELIVERED}>Entregado</option>
-          <option value={TransferStatus.CANCELLED}>Cancelado</option>
-        </select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full p-3 rounded-lg bg-[#1A1F2C] border border-white/20 text-white">
+            <SelectValue placeholder="Todos los estados" />
+          </SelectTrigger>
+          <SelectContent className="bg-[#22142A] text-white border-white/10 z-30">
+            <SelectGroup>
+              <SelectItem value="todos">Todos los estados</SelectItem>
+              <SelectItem value={TransferStatus.PENDINGPAID}>Pendiente de Pago</SelectItem>
+              <SelectItem value={TransferStatus.CREATED}>Creado</SelectItem>
+              <SelectItem value={TransferStatus.ASSIGNED}>Drover Asignado</SelectItem>
+              <SelectItem value={TransferStatus.PICKED_UP}>Vehículo Recogido</SelectItem>
+              <SelectItem value={TransferStatus.IN_PROGRESS}>En Progreso</SelectItem>
+              <SelectItem value={TransferStatus.REQUEST_FINISH}>Solicitando Entrega</SelectItem>
+              <SelectItem value={TransferStatus.DELIVERED}>Entregado</SelectItem>
+              <SelectItem value={TransferStatus.CANCELLED}>Cancelado</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Lista de traslados */}

@@ -4,6 +4,7 @@ import { useReviewsManagement } from "@/hooks/admin/useReviewsManagement";
 import { useDebouncedValue } from "@/hooks/useDebounce";
 import { Loader2, Star, MessageSquare, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectGroup, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
 
 const Reviews: React.FC = () => {
   const [search, setSearch] = useState("");
@@ -103,37 +104,46 @@ const Reviews: React.FC = () => {
           onChange={(e) => setSearch(e.target.value)}
           className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50"
         />
-        <select
-          value={ratingFilter}
-          onChange={(e) => setRatingFilter(e.target.value)}
-          className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white"
-        >
-          <option value="todas">Todas las calificaciones</option>
-          <option value="5">5 estrellas</option>
-          <option value="4">4 estrellas</option>
-          <option value="3">3 estrellas</option>
-          <option value="2">2 estrellas</option>
-          <option value="1">1 estrella</option>
-        </select>
-        <select
-          value={drover}
-          onChange={(e) => setDrover(e.target.value)}
-          className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white"
-        >
-          <option value="todos">Todos los drovers</option>
-          {drovers.map(d => (
-            <option key={d.id} value={d.name}>{d.name}</option>
-          ))}
-        </select>
-        <select
-          value={responseFilter}
-          onChange={(e) => setResponseFilter(e.target.value)}
-          className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white"
-        >
-          <option value="todas">Todas las respuestas</option>
-          <option value="respondidas">Respondidas</option>
-          <option value="sin_responder">Sin responder</option>
-        </select>
+        <Select value={ratingFilter} onValueChange={setRatingFilter}>
+          <SelectTrigger className="w-full p-3 rounded-lg bg-[#1A1F2C] border border-white/20 text-white">
+            <SelectValue placeholder="Todas las calificaciones" />
+          </SelectTrigger>
+          <SelectContent className="bg-[#22142A] text-white border-white/10 z-30">
+            <SelectGroup>
+              <SelectItem value="todas">Todas las calificaciones</SelectItem>
+              <SelectItem value="5">5 estrellas</SelectItem>
+              <SelectItem value="4">4 estrellas</SelectItem>
+              <SelectItem value="3">3 estrellas</SelectItem>
+              <SelectItem value="2">2 estrellas</SelectItem>
+              <SelectItem value="1">1 estrella</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+        <Select value={drover} onValueChange={setDrover}>
+          <SelectTrigger className="w-full p-3 rounded-lg bg-[#1A1F2C] border border-white/20 text-white">
+            <SelectValue placeholder="Todos los drovers" />
+          </SelectTrigger>
+          <SelectContent className="bg-[#22142A] text-white border-white/10 z-30">
+            <SelectGroup>
+              <SelectItem value="todos">Todos los drovers</SelectItem>
+              {drovers.map(d => (
+                <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+        <Select value={responseFilter} onValueChange={setResponseFilter}>
+          <SelectTrigger className="w-full p-3 rounded-lg bg-[#1A1F2C] border border-white/20 text-white">
+            <SelectValue placeholder="Todas las respuestas" />
+          </SelectTrigger>
+          <SelectContent className="bg-[#22142A] text-white border-white/10 z-30">
+            <SelectGroup>
+              <SelectItem value="todas">Todas las respuestas</SelectItem>
+              <SelectItem value="respondidas">Respondidas</SelectItem>
+              <SelectItem value="sin_responder">Sin responder</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Lista de reseñas */}

@@ -10,6 +10,7 @@ import { useAuthActions } from '@/hooks/useAuthActions';
 import { AuthService, User } from '@/services/authService';
 import { toast } from '@/hooks/use-toast';
 import type { AuthSignInData } from '@/types/auth';
+import { useNavigate } from 'react-router-dom';
 
 interface AuthContextProps {
   user: User | null;
@@ -41,6 +42,7 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const navigate = useNavigate();
   /* ---------- estado centralizado ---------- */
   const authState = useAuthState();          // { user, session, loading, … setters }
   const authActions = useAuthActions(
@@ -143,10 +145,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     authState.setIsLoading(true);
     try {
       await AuthService.signOut();
+      // Limpieza completa de storage
+      try {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user_email');
+        localStorage.removeItem('auth_user_role');
+        localStorage.removeItem('auth_user_id');
+        localStorage.removeItem('auth_user_name');
+        localStorage.removeItem('auth_user_type');
+      } catch {}
       authState.setUser(null);
       authState.setSession(null);
-      localStorage.removeItem('auth_token');
       toast({ title: 'Sesión cerrada', description: 'Has cerrado sesión.' });
+      navigate('/');
     } catch (err) {
       console.error('[AUTH] signOut', err);
       toast({
@@ -168,6 +179,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Redirección global ante 401
+  useEffect(() => {
+    const onUnauthorized = () => {
+      try {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user_email');
+        localStorage.removeItem('auth_user_role');
+        localStorage.removeItem('auth_user_id');
+        localStorage.removeItem('auth_user_name');
+        localStorage.removeItem('auth_user_type');
+      } catch {}
+      authState.setUser(null);
+      authState.setSession(null);
+      navigate('/');
+    };
+    window.addEventListener('auth:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', onUnauthorized);
+  }, [navigate]);
 
   /* ---------- otros métodos (sin cambios) ---------- */
   const updateProfile = async (data: any) => {
