@@ -206,7 +206,7 @@ const Header = () => {
               >
                 <Avatar>
                   <AvatarFallback className="bg-[#6EF7FF] text-[#22142A] font-bold">
-                    {getInitials(user as any)}
+                    {getInitials()}
                   </AvatarFallback>
                 </Avatar>
               </div>
