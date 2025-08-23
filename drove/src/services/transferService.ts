@@ -26,7 +26,16 @@ export class TransferService {
   }
 
   static async createTravel(data: any): Promise<any> {
-    return await ApiService.post('/travels', data);
+    const typeVehicle = data?.vehicleDetails?.type ?? data?.typeVehicle;
+    const payload = {
+      ...data,
+      typeVehicle,
+      vehicleDetails: {
+        ...data?.vehicleDetails,
+        type: typeVehicle,
+      },
+    };
+    return await ApiService.post('/travels', payload);
   }
 
   static async getTravelsByClient(clientId: string): Promise<any[]> {

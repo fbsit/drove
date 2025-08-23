@@ -22,6 +22,19 @@ import TransferDetailsStep from '@/components/vehicle-transfer/TransferDetailsSt
 import PaymentMethodStep from '@/components/vehicle-transfer/PaymentMethodStep';
 import ConfirmationStep from '@/components/vehicle-transfer/ConfirmationStep';
 
+function normalizeTransferPayload(raw: any) {
+  const typeVehicle = raw?.vehicleDetails?.type ?? raw?.vehicleType ?? raw?.typeVehicle ?? 'coche';
+  return {
+    ...raw,
+    // Mantener shape esperado por backend (msw y Nest leen typeVehicle en PDF/email)
+    typeVehicle,
+    vehicleDetails: {
+      ...raw?.vehicleDetails,
+      type: typeVehicle,
+    },
+  };
+}
+
 const DesktopTransferRequest: React.FC = () => {
   
   const navigate = useNavigate();
@@ -43,7 +56,8 @@ const DesktopTransferRequest: React.FC = () => {
 
   const onSubmit = async (data: any) => {
     setLoading(true);
-    const transferenciaCreada = await TransferService.createTransfer(data);
+    const payload = normalizeTransferPayload(data);
+    const transferenciaCreada = await TransferService.createTransfer(payload);
     console.log("transferenciaCreada",transferenciaCreada);
     toast({
       title: 'Éxito',
@@ -62,8 +76,8 @@ const DesktopTransferRequest: React.FC = () => {
         (async () => {
           try {
             setLoading(true);
-            const data = form.getValues();
-            const created = await TransferService.createTransfer(data);
+            const raw = form.getValues();
+            const created = await TransferService.createTransfer(normalizeTransferPayload(raw));
             toast({ title: 'Éxito', description: 'Traslado solicitado correctamente.' });
             if (created?.id) {
               setDidAutoCreate(true);
