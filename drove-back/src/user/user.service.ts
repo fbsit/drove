@@ -55,13 +55,17 @@ export class UserService {
       });
       const created = await this.userRepo.save(user);
 
-      // Enviar verificación de email (server-side)
+      // Enviar verificación de email (server-side) con LINK y código unificado de 6 dígitos
       try {
-        const code = randomBytes(3).toString('hex');
+        const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6 dígitos
         created.verificationCode = code;
         created.codeExpiresAt = new Date(Date.now() + 10 * 60_000); // 10 minutos
         await this.userRepo.save(created);
-        await this.resend.sendEmailToverifyEmail(created.email, code);
+
+        const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.app';
+        const verifyUrl = `${baseUrl.replace(/\/$/, '')}/verifyEmail?email=${encodeURIComponent(created.email)}&code=${encodeURIComponent(code)}`;
+        const name = created?.contactInfo?.fullName || created.email;
+        await this.resend.sendEmailVerificationEmail(created.email, name, verifyUrl);
       } catch (mailErr) {
         // No interrumpir la creación de usuario si falla el envío
       }
