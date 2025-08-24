@@ -62,7 +62,7 @@ export class UserService {
         created.codeExpiresAt = new Date(Date.now() + 10 * 60_000); // 10 minutos
         await this.userRepo.save(created);
 
-        const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.app';
+        const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
         const verifyUrl = `${baseUrl.replace(/\/$/, '')}/verifyEmail?email=${encodeURIComponent(created.email)}&code=${encodeURIComponent(code)}`;
         const name = created?.contactInfo?.fullName || created.email;
         await this.resend.sendEmailVerificationEmail(created.email, name, verifyUrl);

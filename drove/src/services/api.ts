@@ -46,7 +46,6 @@ class ApiService {
       });
 
       clearTimeout(idTimeout);
-      console.log("respuesta", resp);
 
       /* auth caducado */
       if (resp.status === 401) {
