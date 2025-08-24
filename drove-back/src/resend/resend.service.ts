@@ -1205,9 +1205,13 @@ export class ResendService {
   ) => {
     const template = this.loadTemplate('verificationNewEmail');
 
+    // Soporta ambas convenciones de variables usadas en plantillas
     const html = template({
       name,
       verification_link: verificationLink,
+      // Compat con plantilla actual (mayúsculas y nombres en ES)
+      LINK_VERIFICACION: verificationLink,
+      Nombre: name,
     });
 
     if (!this.client) return false;
