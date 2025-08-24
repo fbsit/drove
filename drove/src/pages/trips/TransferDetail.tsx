@@ -153,7 +153,7 @@ const TransferDetail = () => {
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-white text-xl mb-2">Error</h2>
           <p className="text-white/70 mb-4">{error || 'No se encontró el traslado'}</p>
-          <Button onClick={() => navigate(-1)} variant="outline">
+          <Button onClick={() => navigate('/cliente/traslados')} variant="outline">
             <ArrowLeft size={16} className="mr-2" />
             Volver
           </Button>
@@ -171,7 +171,7 @@ const TransferDetail = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(-1)}
+              onClick={() => navigate('/cliente/traslados')}
             >
               <ArrowLeft size={16} />
             </Button>
