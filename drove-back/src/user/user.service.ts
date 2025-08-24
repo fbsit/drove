@@ -53,7 +53,20 @@ export class UserService {
         role,
         contactInfo,
       });
-      return await this.userRepo.save(user);
+      const created = await this.userRepo.save(user);
+
+      // Enviar verificación de email (server-side)
+      try {
+        const code = randomBytes(3).toString('hex');
+        created.verificationCode = code;
+        created.codeExpiresAt = new Date(Date.now() + 10 * 60_000); // 10 minutos
+        await this.userRepo.save(created);
+        await this.resend.sendEmailToverifyEmail(created.email, code);
+      } catch (mailErr) {
+        // No interrumpir la creación de usuario si falla el envío
+      }
+
+      return created;
     } catch (error: any) {
       if (error.code === '23505') {
         throw new ConflictException(`El email ${email} ya existe.`);
