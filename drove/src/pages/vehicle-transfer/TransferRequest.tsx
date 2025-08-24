@@ -23,6 +23,7 @@ import PaymentMethodStep from '@/components/vehicle-transfer/PaymentMethodStep';
 import ConfirmationStep from '@/components/vehicle-transfer/ConfirmationStep';
 
 function normalizeTransferPayload(raw: any) {
+  console.log('raw front', raw);
   const typeVehicle = raw?.vehicleDetails?.type ?? raw?.vehicleType ?? raw?.typeVehicle ?? 'coche';
   return {
     ...raw,
