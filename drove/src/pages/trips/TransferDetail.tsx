@@ -52,13 +52,13 @@ interface TransferData {
 }
 
 const TransferDetail = () => {
-  const { transferId } = useParams();
+  const { id: transferId } = useParams();
   const navigate = useNavigate();
   const [transferData, setTransferData] = useState<TransferData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  console.log("transferId", transferId);
+  // id proviene de la ruta /traslados/:id
 
   useEffect(() => {
     if (transferId) {
