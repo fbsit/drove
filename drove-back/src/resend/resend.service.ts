@@ -6,6 +6,8 @@ import * as Handlebars from 'handlebars';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Travels } from './../travels/entities/travel.entity';
+import { PdfService } from '../pdf/pdf.service';
+import fetch from 'node-fetch';
 
 export interface ResendSendEmailPayload {
   from: string;
@@ -66,7 +68,7 @@ export class ResendService {
     HandlebarsTemplateDelegate
   > = {};
 
-  constructor(private readonly config: ConfigService) {
+  constructor(private readonly config: ConfigService, private readonly pdfService: PdfService) {
     const apiKey = 're_dikLWbNB_2tg41mPRK8UCuUcybKSwEiw1';
 
     if (!apiKey) {
@@ -147,11 +149,33 @@ export class ResendService {
     if (!this.client) {
       return false;
     }
+    let attachments: any[] | undefined;
+    try {
+      const pdfUrl = await this.pdfService.generatePDF(
+        travel.id,
+        'withdrawals',
+        true,
+        false,
+        false,
+        false,
+        false,
+        'chofer',
+        1,
+      );
+      const res = await fetch(pdfUrl);
+      const buf = await res.buffer();
+      attachments = [
+        { filename: `transfer_${travel.id}_step1.pdf`, content: buf },
+      ];
+    } catch (e) {
+      // fallback: send without attachment
+    }
     return this.client.emails.send({
       from: 'contacto@drove.es',
       to: payload.to,
       subject: payload.subject,
       html,
+      ...(attachments ? { attachments } : {}),
     });
   }
   //Correo para asignacion de chofer (email chofer jt) X
@@ -202,11 +226,31 @@ export class ResendService {
     if (!this.client) {
       return false;
     }
+    let attachments: any[] | undefined;
+    try {
+      const pdfUrl = await this.pdfService.generatePDF(
+        travel.id,
+        'withdrawals',
+        true,
+        false,
+        false,
+        false,
+        false,
+        'chofer',
+        1,
+      );
+      const res = await fetch(pdfUrl);
+      const buf = await res.buffer();
+      attachments = [
+        { filename: `transfer_${travel.id}_step1.pdf`, content: buf },
+      ];
+    } catch (e) {}
     return this.client.emails.send({
       from: 'contacto@drove.es',
       to: payload.to,
       subject: payload.subject,
       html,
+      ...(attachments ? { attachments } : {}),
     });
   }
   //Correo para confirmar recogida de auto (email cliente) X
@@ -259,11 +303,31 @@ export class ResendService {
     if (!this.client) {
       return false;
     }
+    let attachments: any[] | undefined;
+    try {
+      const pdfUrl = await this.pdfService.generatePDF(
+        travel.id,
+        'withdrawals',
+        true,
+        false,
+        false,
+        false,
+        false,
+        'chofer',
+        2,
+      );
+      const res = await fetch(pdfUrl);
+      const buf = await res.buffer();
+      attachments = [
+        { filename: `transfer_${travel.id}_step2.pdf`, content: buf },
+      ];
+    } catch (e) {}
     return this.client.emails.send({
       from: 'contacto@drove.es',
       to: client.email,
       subject: 'DROVER se dirigue a su destino',
       html,
+      ...(attachments ? { attachments } : {}),
     });
   }
   //Correo para confirmar recogida de auto (email drover jt) X
@@ -316,11 +380,31 @@ export class ResendService {
     if (!this.client) {
       return false;
     }
+    let attachments: any[] | undefined;
+    try {
+      const pdfUrl = await this.pdfService.generatePDF(
+        travel.id,
+        'withdrawals',
+        true,
+        false,
+        false,
+        false,
+        false,
+        'chofer',
+        2,
+      );
+      const res = await fetch(pdfUrl);
+      const buf = await res.buffer();
+      attachments = [
+        { filename: `transfer_${travel.id}_step2.pdf`, content: buf },
+      ];
+    } catch (e) {}
     return this.client.emails.send({
       from: 'contacto@drove.es',
       to: client.email,
       subject: 'DROVER se dirigue a su destino',
       html,
+      ...(attachments ? { attachments } : {}),
     });
   }
   //Correo para llega al destino (email client jt) (no se envia al drover) X
@@ -373,11 +457,31 @@ export class ResendService {
     if (!this.client) {
       return false;
     }
+    let attachments: any[] | undefined;
+    try {
+      const pdfUrl = await this.pdfService.generatePDF(
+        travel.id,
+        'delivery',
+        true,
+        false,
+        false,
+        false,
+        false,
+        'chofer',
+        3,
+      );
+      const res = await fetch(pdfUrl);
+      const buf = await res.buffer();
+      attachments = [
+        { filename: `transfer_${travel.id}_step3.pdf`, content: buf },
+      ];
+    } catch (e) {}
     return this.client.emails.send({
       from: 'contacto@drove.es',
       to: client.email,
       subject: 'DROVER llego a su destino',
       html,
+      ...(attachments ? { attachments } : {}),
     });
   }
   //Correo de entrega de vehiculo (cliente jt receptor) X
@@ -430,11 +534,31 @@ export class ResendService {
     if (!this.client) {
       return false;
     }
+    let attachments: any[] | undefined;
+    try {
+      const pdfUrl = await this.pdfService.generatePDF(
+        travel.id,
+        'delivery',
+        false,
+        false,
+        true,
+        true,
+        true,
+        'chofer',
+        4,
+      );
+      const res = await fetch(pdfUrl);
+      const buf = await res.buffer();
+      attachments = [
+        { filename: `transfer_${travel.id}_step4.pdf`, content: buf },
+      ];
+    } catch (e) {}
     return this.client.emails.send({
       from: 'contacto@drove.es',
       to: client.email,
       subject: payload.subject,
       html,
+      ...(attachments ? { attachments } : {}),
     });
   }
   //Correo de entrega de vehiculo (cliente jt receptor) X
@@ -487,11 +611,31 @@ export class ResendService {
     if (!this.client) {
       return false;
     }
+    let attachments: any[] | undefined;
+    try {
+      const pdfUrl = await this.pdfService.generatePDF(
+        travel.id,
+        'delivery',
+        false,
+        false,
+        true,
+        true,
+        true,
+        'chofer',
+        4,
+      );
+      const res = await fetch(pdfUrl);
+      const buf = await res.buffer();
+      attachments = [
+        { filename: `transfer_${travel.id}_step4.pdf`, content: buf },
+      ];
+    } catch (e) {}
     return this.client.emails.send({
       from: 'contacto@drove.es',
       to: client.email,
       subject: payload.subject,
       html,
+      ...(attachments ? { attachments } : {}),
     });
   }
   //Correo para verificar correos.
