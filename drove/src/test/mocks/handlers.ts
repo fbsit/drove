@@ -11,18 +11,21 @@ export const handlers = [
     }),
   ),
 
-  http.get(`${API}/users/me`, async () =>
-    HttpResponse.json({
+  http.get(`${API}/users/me`, async () => {
+    // Permite que los tests fuercen el rol vía localStorage
+    const forcedRole = (globalThis as any)?.localStorage?.getItem('auth_user_role');
+    const role = (forcedRole || 'client').toLowerCase();
+    return HttpResponse.json({
       id: 'u1',
       email: 'a@b.com',
-      role: 'client',
-      user_type: 'client',
+      role,
+      user_type: role,
       full_name: 'Test User',
       profile_complete: true,
       is_approved: true,
       created_at: new Date().toISOString(),
-    }),
-  ),
+    });
+  }),
 
   // travels for client dashboard
   http.get(`${API}/travels/client/:clientId`, async ({ params }) => {
