@@ -5,17 +5,17 @@ import { VerificationsController } from './verifications.controller';
 import { EmailVerificationService } from './verifications.service';
 import { User } from '../user/entities/user.entity'; // ← your User entity
 import { UserModule } from '../user/user.module'; // ← module that exports the repository
-import { ResendService } from '../resend/resend.service'; // ← wherever you define it
+import { ResendModule } from '../resend/resend.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User]), // make UserRepository injectable
     forwardRef(() => UserModule), // if UsersModule also needs VerificationsModule
+    ResendModule,
   ],
   controllers: [VerificationsController],
   providers: [
     EmailVerificationService,
-    ResendService, // register ResendService
   ],
   exports: [EmailVerificationService],
 })

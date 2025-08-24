@@ -6,7 +6,6 @@ import { User } from '../user/entities/user.entity';
 import { Travels } from '../travels/entities/travel.entity';
 import { Payment } from '../payment/entities/payment.entity';
 import { Invoice } from '../invoices/entities/invoice.entity';
-import { ResendService } from '../resend/resend.service';
 import { AdminService } from './admin.service';
 import { AdminController } from './admin.controller';
 
@@ -16,7 +15,7 @@ import { AdminController } from './admin.controller';
     TypeOrmModule.forFeature([User, Travels, Payment, Invoice]),
   ],
   controllers: [AdminController],
-  providers: [AdminService, ResendService],
+  providers: [AdminService],
   exports: [AdminService], // opcional, por si otro módulo necesita el servicio
 })
 export class AdminModule {}

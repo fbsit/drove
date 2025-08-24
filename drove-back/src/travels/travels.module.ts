@@ -7,7 +7,7 @@ import { TravelsService } from './travels.service';
 import { TravelsController } from './travels.controller';
 import { InvoicesModule } from '../invoices/invoices.module';
 import { StripeService } from '../payment/stripe.service';
-import { ResendService } from '../resend/resend.service';
+import { ResendModule } from '../resend/resend.module';
 import { TravelOffer } from './entities/travel-offer.entity';
 import { TravelsGateway } from './travel.gateway';
 import { User } from '../user/entities/user.entity';
@@ -15,9 +15,10 @@ import { User } from '../user/entities/user.entity';
   imports: [
     TypeOrmModule.forFeature([Travels, Payment, TravelOffer, User]), // ← aquí agregamos Payment
     InvoicesModule,
+    ResendModule,
   ],
   controllers: [TravelsController],
-  providers: [TravelsService, TravelsGateway, StripeService, ResendService],
+  providers: [TravelsService, TravelsGateway, StripeService],
   exports: [TravelsService],
 })
 export class TravelsModule {}
