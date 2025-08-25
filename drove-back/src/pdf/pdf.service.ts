@@ -2153,6 +2153,7 @@ export class PdfService {
         return {
           title: 'Nombre del chofer:',
           nameKey:
+            droverDetail?.contactInfo?.fullName ||
             droverDetail?.contactInfo?.info?.extendedFields?.items[
               'custom.fullname'
             ] ||
