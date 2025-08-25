@@ -162,11 +162,13 @@ export class ResendService {
         'chofer',
         1,
       );
-      const res = await fetch(pdfUrl);
-      const buf = await res.buffer();
-      attachments = [
-        { filename: `transfer_${travel.id}_step1.pdf`, content: buf },
-      ];
+      if (pdfUrl) {
+        const res = await fetch(pdfUrl);
+        const buf = await res.buffer();
+        attachments = [
+          { filename: `transfer_${travel.id}_step1.pdf`, content: buf },
+        ];
+      }
     } catch (e) {
       // fallback: send without attachment
     }
@@ -239,11 +241,13 @@ export class ResendService {
         'chofer',
         1,
       );
-      const res = await fetch(pdfUrl);
-      const buf = await res.buffer();
-      attachments = [
-        { filename: `transfer_${travel.id}_step1.pdf`, content: buf },
-      ];
+      if (pdfUrl) {
+        const res = await fetch(pdfUrl);
+        const buf = await res.buffer();
+        attachments = [
+          { filename: `transfer_${travel.id}_step1.pdf`, content: buf },
+        ];
+      }
     } catch (e) {}
     return this.client.emails.send({
       from: 'contacto@drove.es',
@@ -316,11 +320,13 @@ export class ResendService {
         'chofer',
         2,
       );
-      const res = await fetch(pdfUrl);
-      const buf = await res.buffer();
-      attachments = [
-        { filename: `transfer_${travel.id}_step2.pdf`, content: buf },
-      ];
+      if (pdfUrl) {
+        const res = await fetch(pdfUrl);
+        const buf = await res.buffer();
+        attachments = [
+          { filename: `transfer_${travel.id}_step2.pdf`, content: buf },
+        ];
+      }
     } catch (e) {}
     return this.client.emails.send({
       from: 'contacto@drove.es',
@@ -393,11 +399,13 @@ export class ResendService {
         'chofer',
         2,
       );
-      const res = await fetch(pdfUrl);
-      const buf = await res.buffer();
-      attachments = [
-        { filename: `transfer_${travel.id}_step2.pdf`, content: buf },
-      ];
+      if (pdfUrl) {
+        const res = await fetch(pdfUrl);
+        const buf = await res.buffer();
+        attachments = [
+          { filename: `transfer_${travel.id}_step2.pdf`, content: buf },
+        ];
+      }
     } catch (e) {}
     return this.client.emails.send({
       from: 'contacto@drove.es',
@@ -470,11 +478,13 @@ export class ResendService {
         'chofer',
         3,
       );
-      const res = await fetch(pdfUrl);
-      const buf = await res.buffer();
-      attachments = [
-        { filename: `transfer_${travel.id}_step3.pdf`, content: buf },
-      ];
+      if (pdfUrl) {
+        const res = await fetch(pdfUrl);
+        const buf = await res.buffer();
+        attachments = [
+          { filename: `transfer_${travel.id}_step3.pdf`, content: buf },
+        ];
+      }
     } catch (e) {}
     return this.client.emails.send({
       from: 'contacto@drove.es',
@@ -547,11 +557,13 @@ export class ResendService {
         'chofer',
         4,
       );
-      const res = await fetch(pdfUrl);
-      const buf = await res.buffer();
-      attachments = [
-        { filename: `transfer_${travel.id}_step4.pdf`, content: buf },
-      ];
+      if (pdfUrl) {
+        const res = await fetch(pdfUrl);
+        const buf = await res.buffer();
+        attachments = [
+          { filename: `transfer_${travel.id}_step4.pdf`, content: buf },
+        ];
+      }
     } catch (e) {}
     return this.client.emails.send({
       from: 'contacto@drove.es',
@@ -624,11 +636,13 @@ export class ResendService {
         'chofer',
         4,
       );
-      const res = await fetch(pdfUrl);
-      const buf = await res.buffer();
-      attachments = [
-        { filename: `transfer_${travel.id}_step4.pdf`, content: buf },
-      ];
+      if (pdfUrl) {
+        const res = await fetch(pdfUrl);
+        const buf = await res.buffer();
+        attachments = [
+          { filename: `transfer_${travel.id}_step4.pdf`, content: buf },
+        ];
+      }
     } catch (e) {}
     return this.client.emails.send({
       from: 'contacto@drove.es',
