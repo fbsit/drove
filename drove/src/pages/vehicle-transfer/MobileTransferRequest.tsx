@@ -154,7 +154,7 @@ const MobileTransferRequest = () => {
                         style={{ fontFamily: "Helvetica" }}
                       >
                         <CheckCircle className="mr-2 h-4 w-4" />
-                        Confirmar Traslado
+                        Firmar y Solicitar Traslado
                       </Button>
                     ) : (
                       <div className="text-white/70 text-center">Procesando solicitud y redirigiendo…</div>

@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { CreditCard, Banknote, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import SignatureSection from './signature/SignatureSection';
 
 interface PaymentMethodStepProps {
   form: UseFormReturn<VehicleTransferRequest>;
@@ -83,6 +84,19 @@ const PaymentMethodStep: React.FC<PaymentMethodStepProps> = ({ form }) => {
           </Alert>
         </div>
       )}
+
+      {/* Firma del solicitante */}
+      <div className="mt-6">
+        <SignatureSection
+          form={form as any}
+          onSignatureChange={(sig: string) => {
+            form.setValue('transferDetails.signature', sig as any, {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
+          }}
+        />
+      </div>
     </div>
   );
 };

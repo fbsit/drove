@@ -186,7 +186,7 @@ const DesktopTransferRequest: React.FC = () => {
                         className="w-full sm:w-auto rounded-2xl bg-green-500 hover:bg-green-400 text-white font-bold transition-all duration-200 shadow-lg hover:shadow-xl"
                       >
                         <CheckCircle className="mr-2 h-4 w-4" />
-                        Confirmar Traslado
+                        Firmar y Solicitar Traslado
                       </Button>
                     ) : (
                       <div className="text-white/70">Procesando solicitud y redirigiendo…</div>
