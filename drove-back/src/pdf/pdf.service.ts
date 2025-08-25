@@ -2161,7 +2161,10 @@ export class PdfService {
             ] ||
             droverDetail?.detailRegister?.name ||
             'Nombre Chofer',
-          phoneKey: droverDetail?.detailRegister?.phones || 'Sin teléfono',
+          phoneKey:
+            droverDetail?.contactInfo?.phone ||
+            droverDetail?.detailRegister?.phones ||
+            'Sin teléfono',
         };
     }
   }

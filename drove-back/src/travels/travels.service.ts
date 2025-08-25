@@ -93,6 +93,13 @@ export class TravelsService {
       trafficManager: false,
     };
 
+    const initialSignature =
+      raw.signatureStartClient ||
+      raw.signature ||
+      raw?.pickupDetails?.signature ||
+      raw?.senderDetails?.signature ||
+      '';
+
     const dto: CreateTravelDto = {
       // — vehículo —
       bastidor: raw.vehicleDetails.vin,
@@ -118,7 +125,7 @@ export class TravelsService {
       personReceive: receiver,
 
       // — firma, cliente y estado —
-      signatureStartClient: raw.signature,
+      signatureStartClient: initialSignature,
       idClient: raw.clientId,
       status: raw.status,
       paymentMethod: raw.paymentMethod,
