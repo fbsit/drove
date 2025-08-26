@@ -13,7 +13,18 @@ export class TransferService {
   }
 
   static async createTransfer(transferData: VehicleTransferFormData): Promise<any> {
-    return await ApiService.post('/travels', transferData);
+    const anyData = transferData as any;
+    const signatureStartClient = anyData?.signatureStartClient
+      ?? anyData?.transferDetails?.signature
+      ?? anyData?.signature
+      ?? '';
+
+    const payload = {
+      ...anyData,
+      ...(signatureStartClient ? { signatureStartClient } : {}),
+    };
+
+    return await ApiService.post('/travels', payload);
   }
 
   static async updateTransfer(transferId: string, transferData: Partial<VehicleTransferFormData>): Promise<any> {
@@ -26,15 +37,23 @@ export class TransferService {
   }
 
   static async createTravel(data: any): Promise<any> {
+    console.log('data', data);
     const typeVehicle = data?.vehicleDetails?.type ?? data?.typeVehicle;
+    const signatureStartClient = (data as any)?.signatureStartClient
+      ?? (data as any)?.transferDetails?.signature
+      ?? (data as any)?.signature
+      ?? '';
+
     const payload = {
       ...data,
       typeVehicle,
+      ...(signatureStartClient ? { signatureStartClient } : {}),
       vehicleDetails: {
         ...data?.vehicleDetails,
         type: typeVehicle,
       },
     };
+    console.log('payload', payload);
     return await ApiService.post('/travels', payload);
   }
 

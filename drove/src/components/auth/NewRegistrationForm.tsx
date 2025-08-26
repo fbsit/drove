@@ -102,7 +102,7 @@ const NewRegistrationForm: React.FC<Props> = ({ onComplete, isLoading = false })
       
       toast({
         title: "¡Registro exitoso!",
-        description: "Tu cuenta ha sido creada correctamente. Revisa tu correo para verificar tu cuenta.",
+        description: "Tu cuenta ha sido creada correctamente. Te enviamos un correo para verificar tu cuenta.",
       });
 
       // Llamar al callback de finalización

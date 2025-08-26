@@ -52,13 +52,13 @@ interface TransferData {
 }
 
 const TransferDetail = () => {
-  const { transferId } = useParams();
+  const { id: transferId } = useParams();
   const navigate = useNavigate();
   const [transferData, setTransferData] = useState<TransferData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  console.log("transferId", transferId);
+  // id proviene de la ruta /traslados/:id
 
   useEffect(() => {
     if (transferId) {
@@ -73,38 +73,38 @@ const TransferDetail = () => {
       
       // Mapear la respuesta de la API al formato esperado
       const mappedData: TransferData = {
-        id: response.id || transferId!,
-        status: response.status || 'pendiente',
-        pickupAddress: response.pickup_address || response.pickupAddress || '',
-        destinationAddress: response.destination_address || response.destinationAddress || '',
-        pickupDate: response.pickup_date || response.pickupDate || '',
-        pickupTime: response.pickup_time || response.pickupTime || '',
-        amount: response.amount || response.price || 0,
+        id: response?.id || transferId!,
+        status: response?.status || 'pendiente',
+        pickupAddress: response?.startAddress?.address || response?.startAddress?.city || '',
+        destinationAddress: response?.endAddress?.address || response?.endAddress?.city || '',
+        pickupDate: response?.travelDate || '',
+        pickupTime: response?.travelTime || '',
+        amount: Number(response?.totalPrice ?? 0),
         vehicleDetails: {
-          type: response.vehicle_type || response.vehicleDetails?.type || '',
-          licensePlate: response.license_plate || response.vehicleDetails?.licensePlate || '',
-          brand: response.vehicle_brand || response.vehicleDetails?.brand || '',
-          model: response.vehicle_model || response.vehicleDetails?.model || '',
-          year: response.vehicle_year || response.vehicleDetails?.year || '',
+          type: response?.typeVehicle || response?.vehicleDetails?.type || '',
+          licensePlate: response?.patentVehicle || response?.licensePlate || response?.vehicleDetails?.licensePlate || '',
+          brand: response?.brandVehicle || response?.vehicleDetails?.brand || '',
+          model: response?.modelVehicle || response?.vehicleDetails?.model || '',
+          year: response?.yearVehicle || response?.vehicleDetails?.year || '',
         },
         clientInfo: {
-          name: response.client_name || response.clientInfo?.name || '',
-          phone: response.client_phone || response.clientInfo?.phone || '',
-          email: response.client_email || response.clientInfo?.email || '',
+          name: response?.client?.contactInfo?.fullName || response?.client_name || '',
+          phone: response?.client?.contactInfo?.phone || response?.client_phone || '',
+          email: response?.client?.email || response?.client_email || '',
         },
         senderInfo: {
-          name: response.sender_name || response.senderInfo?.name || '',
-          phone: response.sender_phone || response.senderInfo?.phone || '',
+          name: response?.personDelivery?.fullName || response?.sender_name || '',
+          phone: response?.personDelivery?.phone || response?.sender_phone || '',
         },
         receiverInfo: {
-          name: response.receiver_name || response.receiverInfo?.name || '',
-          phone: response.receiver_phone || response.receiverInfo?.phone || '',
+          name: response?.personReceive?.fullName || response?.receiver_name || '',
+          phone: response?.personReceive?.phone || response?.receiver_phone || '',
         },
-        droverInfo: response.drover_name ? {
-          name: response.drover_name || response.droverInfo?.name || '',
-          phone: response.drover_phone || response.droverInfo?.phone || '',
+        droverInfo: response?.drover ? {
+          name: response?.drover?.contactInfo?.fullName || response?.drover_name || '',
+          phone: response?.drover?.contactInfo?.phone || response?.drover_phone || '',
         } : undefined,
-        createdAt: response.created_at || response.createdAt || '',
+        createdAt: response?.created_at || response?.createdAt || new Date().toISOString(),
       };
       
       setTransferData(mappedData);
@@ -153,7 +153,7 @@ const TransferDetail = () => {
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-white text-xl mb-2">Error</h2>
           <p className="text-white/70 mb-4">{error || 'No se encontró el traslado'}</p>
-          <Button onClick={() => navigate(-1)} variant="outline">
+          <Button onClick={() => navigate('/cliente/traslados')} variant="outline">
             <ArrowLeft size={16} className="mr-2" />
             Volver
           </Button>
@@ -171,7 +171,7 @@ const TransferDetail = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(-1)}
+              onClick={() => navigate('/cliente/traslados')}
             >
               <ArrowLeft size={16} />
             </Button>

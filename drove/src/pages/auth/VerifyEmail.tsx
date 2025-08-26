@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';          // ya lo tienes
 import { toast } from '@/hooks/use-toast';                 // idem
@@ -18,23 +18,20 @@ export default function VerifyEmail() {
   const [status, setStatus] = useState<Status>('checking');
   const [loading, setLoading] = useState(false);
 
-  /* ───────── intenta verificar al montar ───────── */
+  /* ───────── intenta verificar solo una vez ───────── */
+  const attemptedRef = useRef(false);
   useEffect(() => {
-    if (!email || !code) {
-      setStatus('missing');
-      return;
-    }
+    if (attemptedRef.current) return;
+    if (!email || !code) { setStatus('missing'); return; }
+    attemptedRef.current = true;
 
     (async () => {
       setLoading(true);
       try {
         await checkVerificationCode(email, code);
-        toast({
-          title: 'Correo verificado',
-          description: '¡Tu correo fue validado correctamente!',
-        });
+        toast({ title: 'Correo verificado', description: '¡Tu correo fue validado correctamente!' });
         setStatus('success');
-        setTimeout(() => navigate('/'), 3000);        // opcional
+        setTimeout(() => navigate('/'), 3000);
       } catch (err: any) {
         if (err?.response?.status === 410) setStatus('expired');
         else setStatus('error');
@@ -42,7 +39,7 @@ export default function VerifyEmail() {
         setLoading(false);
       }
     })();
-  }, [email, code, checkVerificationCode, navigate]);
+  }, [email, code]);
 
   /* ───────── reenviar código si falla / expira ───────── */
   const handleResend = async () => {

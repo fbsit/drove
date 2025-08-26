@@ -53,7 +53,24 @@ export class UserService {
         role,
         contactInfo,
       });
-      return await this.userRepo.save(user);
+      const created = await this.userRepo.save(user);
+
+      // Enviar verificación de email (server-side) con LINK y código unificado de 6 dígitos
+      try {
+        const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6 dígitos
+        created.verificationCode = code;
+        created.codeExpiresAt = new Date(Date.now() + 10 * 60_000); // 10 minutos
+        await this.userRepo.save(created);
+
+        const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+        const verifyUrl = `${baseUrl.replace(/\/$/, '')}/verifyEmail?email=${encodeURIComponent(created.email)}&code=${encodeURIComponent(code)}`;
+        const name = created?.contactInfo?.fullName || created.email;
+        await this.resend.sendEmailVerificationEmail(created.email, name, verifyUrl);
+      } catch (mailErr) {
+        // No interrumpir la creación de usuario si falla el envío
+      }
+
+      return created;
     } catch (error: any) {
       if (error.code === '23505') {
         throw new ConflictException(`El email ${email} ya existe.`);

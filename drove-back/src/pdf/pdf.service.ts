@@ -87,10 +87,11 @@ export class PdfService {
         default:
           break;
       }
-      return url_pdf;
+      return typeof url_pdf === 'string' ? url_pdf : null;
     } catch (e) {
       console.log(e);
-      throw new InternalServerErrorException(`Error generando el PDF: ${e}`);
+      // No interrumpir el proceso: si falla la generación, devolvemos null
+      return null;
     }
   }
 
@@ -130,6 +131,12 @@ export class PdfService {
     step: number,
   ): Promise<any> {
     try {
+      // Normalizar estructuras opcionales para evitar errores por null/undefined
+      const deliveryVerification = travel?.deliveryVerification || {};
+      const exteriorPhotos = deliveryVerification?.exteriorPhotos || {};
+      const interiorPhotos = deliveryVerification?.interiorPhotos || {};
+      const handoverDocuments = deliveryVerification?.handoverDocuments || {};
+      const recipientIdentity = deliveryVerification?.recipientIdentity || {};
       // Cálculos iniciales para la altura de la página
       const qrSectionHeight = 140;
       const baseWithImage =
@@ -142,11 +149,8 @@ export class PdfService {
       const mustAddCertificate =
         step === 4 &&
         addDniClient &&
-        travel.deliveryVerification.handoverDocuments.delivery_document &&
-        typeof travel.deliveryVerification.handoverDocuments
-          .delivery_document === 'string' &&
-        travel.deliveryVerification.handoverDocuments.delivery_document.trim() !==
-          '';
+        typeof handoverDocuments.delivery_document === 'string' &&
+        handoverDocuments.delivery_document.trim() !== '';
 
       if (mustAddCertificate) {
         extraHeight = 900; // Aumentaremos 300px
@@ -295,10 +299,11 @@ export class PdfService {
           font: helveticaBoldFont,
           color: rgb(0, 0, 0),
         });
-        const dniValue =
+        const dniValue = String(
           detailInfo === 'delivery'
-            ? travel?.personDelivery?.dni
-            : travel?.personReceive?.dni;
+            ? (travel?.personDelivery?.dni ?? '')
+            : (travel?.personReceive?.dni ?? ''),
+        );
         const positionXDni = detailInfo === 'delivery' ? 273 : 160;
         page.drawText(dniValue, {
           x: positionXDni,
@@ -359,7 +364,7 @@ export class PdfService {
           font: helveticaBoldFont,
           color: rgb(0, 0, 0),
         });
-        const dniValue = travel?.personReceive?.dni;
+        const dniValue = String(travel?.personReceive?.dni ?? '');
         page.drawText(dniValue, {
           x: 160,
           y: pageHeight - 107,
@@ -391,7 +396,7 @@ export class PdfService {
           font: helveticaBoldFont,
           color: rgb(0, 0, 0),
         });
-        const dniValue = travel?.personReceive?.dni;
+        const dniValue = String(travel?.personReceive?.dni ?? '');
         page.drawText(dniValue, {
           x: 160,
           y: pageHeight - 107,
@@ -985,91 +990,61 @@ export class PdfService {
       });
       const datosImagenesWithdrawalsVehiculo = [
         // Vistas exteriores (ExteriorPhotosDto)
-        ['Parte frontal', travel.deliveryVerification.exteriorPhotos.frontView],
-        ['Parte trasera', travel.deliveryVerification.exteriorPhotos.rearView],
+        ['Parte frontal', exteriorPhotos.frontView || ''],
+        ['Parte trasera', exteriorPhotos.rearView || ''],
         [
           'Lado izquierdo delantero',
-          travel.deliveryVerification.exteriorPhotos.leftFront,
+          exteriorPhotos.leftFront || '',
         ],
         [
           'Lado izquierdo trasero',
-          travel.deliveryVerification.exteriorPhotos.leftRear,
+          exteriorPhotos.leftRear || '',
         ],
         [
           'Lado derecho delantero',
-          travel.deliveryVerification.exteriorPhotos.rightFront,
+          exteriorPhotos.rightFront || '',
         ],
         [
           'Lado derecho trasero',
-          travel.deliveryVerification.exteriorPhotos.rightRear,
+          exteriorPhotos.rightRear || '',
         ],
 
         // Vistas interiores (InteriorPhotosDto)
-        [
-          'Cuadro de mando',
-          travel.deliveryVerification.interiorPhotos.dashboard,
-        ],
-        [
-          'Asiento conductor',
-          travel.deliveryVerification.interiorPhotos.driverSeat,
-        ],
-        [
-          'Asiento acompañante',
-          travel.deliveryVerification.interiorPhotos.passengerSeat,
-        ],
-        [
-          'Asientos traseros lado izquierdo',
-          travel.deliveryVerification.interiorPhotos.rearLeftSeat,
-        ],
-        [
-          'Asientos traseros lado derecho',
-          travel.deliveryVerification.interiorPhotos.rearRightSeat,
-        ],
-        ['Interior maletero', travel.deliveryVerification.interiorPhotos.trunk],
+        ['Cuadro de mando', interiorPhotos.dashboard || ''],
+        ['Asiento conductor', interiorPhotos.driverSeat || ''],
+        ['Asiento acompañante', interiorPhotos.passengerSeat || ''],
+        ['Asientos traseros lado izquierdo', interiorPhotos.rearLeftSeat || ''],
+        ['Asientos traseros lado derecho', interiorPhotos.rearRightSeat || ''],
+        ['Interior maletero', interiorPhotos.trunk || ''],
       ];
       const datosImagenesDeliveryVehiculo: [string, string][] = [
         // Vistas exteriores (ExteriorPhotosDto)
-        ['Parte frontal', travel.deliveryVerification.exteriorPhotos.frontView],
-        ['Parte trasera', travel.deliveryVerification.exteriorPhotos.rearView],
+        ['Parte frontal', exteriorPhotos.frontView || ''],
+        ['Parte trasera', exteriorPhotos.rearView || ''],
         [
           'Lado izquierdo delantero',
-          travel.deliveryVerification.exteriorPhotos.leftFront,
+          exteriorPhotos.leftFront || '',
         ],
         [
           'Lado izquierdo trasero',
-          travel.deliveryVerification.exteriorPhotos.leftRear,
+          exteriorPhotos.leftRear || '',
         ],
         [
           'Lado derecho delantero',
-          travel.deliveryVerification.exteriorPhotos.rightFront,
+          exteriorPhotos.rightFront || '',
         ],
         [
           'Lado derecho trasero',
-          travel.deliveryVerification.exteriorPhotos.rightRear,
+          exteriorPhotos.rightRear || '',
         ],
 
         // Vistas interiores (InteriorPhotosDto)
-        [
-          'Cuadro de mando',
-          travel.deliveryVerification.interiorPhotos.dashboard,
-        ],
-        ['Interior maletero', travel.deliveryVerification.interiorPhotos.trunk],
-        [
-          'Asiento conductor',
-          travel.deliveryVerification.interiorPhotos.driverSeat,
-        ],
-        [
-          'Asiento acompañante',
-          travel.deliveryVerification.interiorPhotos.passengerSeat,
-        ],
-        [
-          'Asientos traseros lado derecho',
-          travel.deliveryVerification.interiorPhotos.rearRightSeat,
-        ],
-        [
-          'Asientos traseros lado izquierdo',
-          travel.deliveryVerification.interiorPhotos.rearLeftSeat,
-        ],
+        ['Cuadro de mando', interiorPhotos.dashboard || ''],
+        ['Interior maletero', interiorPhotos.trunk || ''],
+        ['Asiento conductor', interiorPhotos.driverSeat || ''],
+        ['Asiento acompañante', interiorPhotos.passengerSeat || ''],
+        ['Asientos traseros lado derecho', interiorPhotos.rearRightSeat || ''],
+        ['Asientos traseros lado izquierdo', interiorPhotos.rearLeftSeat || ''],
       ];
       let currentY = tableTop - tableHeight - 50;
       const datosImagenesVehiculo = addStartImagesVehicule
@@ -1490,11 +1465,11 @@ export class PdfService {
           const datosImagenesDNICliente: [string, string][] = [
             [
               'Anverso DNI cliente',
-              travel.deliveryVerification.recipientIdentity.idFrontPhoto,
+              recipientIdentity.idFrontPhoto || '',
             ],
             [
               'Reverso DNI cliente',
-              travel.deliveryVerification.recipientIdentity.idBackPhoto,
+              recipientIdentity.idBackPhoto || '',
             ],
           ];
           const imagesPerRowDNI = 2;
@@ -1702,13 +1677,14 @@ export class PdfService {
         });
         currentY -= 20;
         // Firma del cliente
-        const pngImageBytes = addDniClient
-          ? // Si ya añadimos el DNI del cliente, usamos la firma final que está en el DTO de entrega
-            travel.deliveryVerification.handoverDocuments.client_signature.split(
-              ',',
-            )[1]
-          : // En caso contrario, usamos la firma inicial que sigue viniendo en el CreateTravelDto
-            travel.signatureStartClient.split(',')[1];
+        const clientSignatureSource = addDniClient
+          ? handoverDocuments?.client_signature
+          : travel?.signatureStartClient;
+        const pngImageBytes =
+          typeof clientSignatureSource === 'string' &&
+          clientSignatureSource.includes(',')
+            ? clientSignatureSource.split(',')[1]
+            : null;
         if (pngImageBytes) {
           const signatureClientImage = await pdfDoc.embedPng(
             Buffer.from(pngImageBytes, 'base64'),
@@ -1753,10 +1729,12 @@ export class PdfService {
             thickness: 3,
             color: rgb(0, 0, 0),
           });
+          const droverSignatureSource = handoverDocuments?.drover_signature;
           const pngImageBytesChofer =
-            travel.deliveryVerification.handoverDocuments.drover_signature.split(
-              ',',
-            )[1];
+            typeof droverSignatureSource === 'string' &&
+            droverSignatureSource.includes(',')
+              ? droverSignatureSource.split(',')[1]
+              : null;
           if (pngImageBytesChofer) {
             const signatureClientImageChofer = await pdfDoc.embedPng(
               Buffer.from(pngImageBytesChofer, 'base64'),
@@ -1838,10 +1816,9 @@ export class PdfService {
         // 4. Dibujar el Certificado (si existe)
         if (
           addDniClient &&
-          travel.deliveryVerification?.handoverDocuments.delivery_document
+          handoverDocuments?.delivery_document
         ) {
-          const certificateUrl =
-            travel.deliveryVerification.handoverDocuments.delivery_document;
+          const certificateUrl = handoverDocuments.delivery_document;
           // Patrón para Wix media URLs
           const wixImagePattern = /^wix:image:\/\/v1\/(.+?)\//;
           const match = certificateUrl.match(wixImagePattern);
@@ -1891,11 +1868,11 @@ export class PdfService {
           const datosImagenesDNICliente: [string, string][] = [
             [
               'Anverso DNI cliente',
-              travel.deliveryVerification.recipientIdentity.idFrontPhoto,
+              recipientIdentity.idFrontPhoto || '',
             ],
             [
               'Reverso DNI cliente',
-              travel.deliveryVerification.recipientIdentity.idBackPhoto,
+              recipientIdentity.idBackPhoto || '',
             ],
           ];
           const imagesPerRowDNI = 2;
@@ -2007,11 +1984,14 @@ export class PdfService {
           color: rgb(0, 0, 0),
         });
         currentY -= 20;
-        const pngImageBytes = addDniClient
-          ? travel.deliveryVerification.handoverDocuments.client_signature.split(
-              ',',
-            )[1]
-          : travel.signatureStartClient.split(',')[1];
+        const clientSignatureSource2 = addDniClient
+          ? handoverDocuments?.client_signature
+          : travel?.signatureStartClient;
+        const pngImageBytes =
+          typeof clientSignatureSource2 === 'string' &&
+          clientSignatureSource2.includes(',')
+            ? clientSignatureSource2.split(',')[1]
+            : null;
         if (pngImageBytes) {
           const signatureClientImage = await pdfDoc.embedPng(
             Buffer.from(pngImageBytes, 'base64'),
@@ -2052,10 +2032,12 @@ export class PdfService {
             thickness: 3,
             color: rgb(0, 0, 0),
           });
+          const droverSignatureSource2 = handoverDocuments?.drover_signature;
           const pngImageBytesChofer =
-            travel.deliveryVerification.handoverDocuments.drover_signature.split(
-              ',',
-            )[1];
+            typeof droverSignatureSource2 === 'string' &&
+            droverSignatureSource2.includes(',')
+              ? droverSignatureSource2.split(',')[1]
+              : null;
           if (pngImageBytesChofer) {
             const signatureClientImageChofer = await pdfDoc.embedPng(
               Buffer.from(pngImageBytesChofer, 'base64'),
@@ -2171,6 +2153,7 @@ export class PdfService {
         return {
           title: 'Nombre del chofer:',
           nameKey:
+            droverDetail?.contactInfo?.fullName ||
             droverDetail?.contactInfo?.info?.extendedFields?.items[
               'custom.fullname'
             ] ||
@@ -2179,7 +2162,10 @@ export class PdfService {
             ] ||
             droverDetail?.detailRegister?.name ||
             'Nombre Chofer',
-          phoneKey: droverDetail?.detailRegister?.phones || 'Sin teléfono',
+          phoneKey:
+            droverDetail?.contactInfo?.phone ||
+            droverDetail?.detailRegister?.phones ||
+            'Sin teléfono',
         };
     }
   }

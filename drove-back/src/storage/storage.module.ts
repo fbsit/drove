@@ -8,16 +8,17 @@ import { StorageController } from './storage.controller';
 import { Invoice } from '../invoices/entities/invoice.entity';
 import { Travels } from '../travels/entities/travel.entity';
 import { User } from '../user/entities/user.entity';
-import { ResendService } from '../resend/resend.service';
+import { ResendModule } from '../resend/resend.module';
 
 @Module({
   imports: [
     ConfigModule,
     // Registras aquí los repositorios para inyección
     TypeOrmModule.forFeature([Invoice, Travels, User]),
+    ResendModule,
   ],
   controllers: [StorageController],
-  providers: [StorageService, ResendService],
+  providers: [StorageService],
   exports: [StorageService],
 })
 export class StorageModule {}

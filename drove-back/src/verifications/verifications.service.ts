@@ -17,12 +17,15 @@ export class EmailVerificationService {
     const user = await this.userRepo.findOne({ where: { email } });
     if (!user) return false;
 
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6 dígitos unificado
     user.verificationCode = code;
     user.codeExpiresAt = new Date(Date.now() + this.CODE_TTL);
     await this.userRepo.save(user);
 
-    await this.resend.sendEmailToverifyEmail(email, code);
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const verifyUrl = `${baseUrl.replace(/\/$/, '')}/verifyEmail?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`;
+    const name = user?.contactInfo?.fullName || email;
+    await this.resend.sendEmailVerificationEmail(email, name, verifyUrl);
 
     return true;
   }
