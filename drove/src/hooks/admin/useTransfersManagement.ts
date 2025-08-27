@@ -82,7 +82,11 @@ export const useTransfersManagement = (filters?: { search?: string; status?: str
       try {
         console.log('[TRANSFERS] 🔄 Obteniendo drovers...');
         const response = await AdminService.getDrovers();
-        return response;
+        // Normalizar selfie si viene anidada
+        return (response as any[] || []).map((d: any) => ({
+          ...d,
+          photo: d?.contactInfo?.selfie || d?.selfie || d?.photo || null,
+        }));
       } catch (error) {
         console.error('[TRANSFERS] ❌ Error al obtener drovers:', error);
         toast({
@@ -90,7 +94,7 @@ export const useTransfersManagement = (filters?: { search?: string; status?: str
           title: "Error",
           description: "No se pudieron cargar los traslados."
         });
-        return [];
+        return [] as any;
       }
     },
     refetchInterval: 60000,

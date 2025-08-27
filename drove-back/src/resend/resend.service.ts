@@ -113,7 +113,7 @@ export class ResendService {
       to: client.email,
       subject: 'Traslado asignado a un Drover',
       preheader: 'Tu vehículo pronto será recogido.',
-      logo_url: 'https://drove.com/logo.png',
+      logo_url: 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
       qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?data=${travel.id}`,
       driver_name: driver ? `${driver.contactInfo.fullName}` : 'Por asignar',
       driver_phone: driver ? driver.contactInfo.phone : '',
@@ -192,7 +192,7 @@ export class ResendService {
       to: client.email,
       subject: 'Traslado asignado a un Drover',
       preheader: 'Tu vehículo pronto será recogido.',
-      logo_url: 'https://drove.com/logo.png',
+      logo_url: 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
       qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?data=${travel.id}`,
       driver_name: driver ? `${driver.contactInfo.fullName}` : 'Por asignar',
       driver_phone: driver ? driver.contactInfo.phone : '',
@@ -270,7 +270,7 @@ export class ResendService {
       to: client.email,
       subject: 'Traslado asignado a un Drover',
       preheader: 'Tu vehículo pronto será recogido.',
-      logo_url: 'https://drove.com/logo.png',
+      logo_url: 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
       qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?data=${travel.id}`,
       driver_name: driver ? `${driver.contactInfo.fullName}` : 'Por asignar',
       driver_phone: driver ? driver.contactInfo.phone : '',
@@ -349,7 +349,7 @@ export class ResendService {
       to: client.email,
       subject: 'Traslado asignado a un Drover',
       preheader: 'Tu vehículo pronto será recogido.',
-      logo_url: 'https://drove.com/logo.png',
+      logo_url: 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
       qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?data=${travel.id}`,
       driver_name: driver ? `${driver.contactInfo.fullName}` : 'Por asignar',
       driver_phone: driver ? driver.contactInfo.phone : '',
@@ -428,7 +428,7 @@ export class ResendService {
       to: client.email,
       subject: 'Traslado asignado a un Drover',
       preheader: 'Tu vehículo pronto será recogido.',
-      logo_url: 'https://drove.com/logo.png',
+      logo_url: 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
       qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?data=${travel.id}`,
       driver_name: driver ? `${driver.contactInfo.fullName}` : 'Por asignar',
       driver_phone: driver ? driver.contactInfo.phone : '',
@@ -507,7 +507,7 @@ export class ResendService {
       to: client.email,
       subject: 'Vehículo entregado',
       preheader: 'Tu vehículo pronto será recogido.',
-      logo_url: 'https://drove.com/logo.png',
+      logo_url: 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
       qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?data=${travel.id}`,
       driver_name: driver ? `${driver.contactInfo.fullName}` : 'Por asignar',
       driver_phone: driver ? driver.contactInfo.phone : '',
@@ -586,7 +586,7 @@ export class ResendService {
       to: client.email,
       subject: 'Felicidades entregaste el vehículo',
       preheader: 'Tu vehículo pronto será recogido.',
-      logo_url: 'https://drove.com/logo.png',
+      logo_url: 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
       qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?data=${travel.id}`,
       driver_name: driver ? `${driver.contactInfo.fullName}` : 'Por asignar',
       driver_phone: driver ? driver.contactInfo.phone : '',
@@ -714,10 +714,12 @@ export class ResendService {
   ) => {
     const template = this.loadTemplate('activeNewTrafficBoss');
 
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://test-drove.vercel.app';
+    const loginUrl = `${baseUrl.replace(/\/$/, '')}/login`;
     const html = template({
       name,
       temp_password: tempPassword,
-      login_url: 'https://drove.app/login',
+      login_url: loginUrl,
       expiration_hours: 24,
     });
 
@@ -732,6 +734,45 @@ export class ResendService {
   };
 
   /**
+   * Notifica al equipo admin que un nuevo usuario verificó su correo y está pendiente de aprobación.
+   */
+  public sendNewUserPendingApprovalEmail = async (
+    to: string | string[],
+    userEmail: string,
+    fullName: string,
+    role: string,
+    approvalUrl: string,
+    logoUrl: string = 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
+  ) => {
+    const year = new Date().getFullYear();
+    const html = `
+      <div style="font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background:#0F0A12; color:#fff; padding:24px;">
+        <div style="text-align:center; margin-bottom:16px;">
+          <img src="${logoUrl}" alt="DROVE" style="height:40px" />
+        </div>
+        <h2 style="margin:0 0 12px 0; font-size:20px;">Nuevo usuario pendiente de aprobación</h2>
+        <p style="margin:0 0 8px 0; color:#ddd;">Se ha verificado un nuevo registro y requiere revisión:</p>
+        <ul style="color:#ddd; line-height:1.6">
+          <li><strong>Email:</strong> ${userEmail}</li>
+          <li><strong>Nombre:</strong> ${fullName || 'Sin nombre'}</li>
+          <li><strong>Rol:</strong> ${role}</li>
+        </ul>
+        <div style="margin:16px 0;">
+          <a href="${approvalUrl}" style="display:inline-block; background:#7C3AED; color:#fff; padding:10px 16px; border-radius:8px; text-decoration:none;">Abrir panel para aprobar</a>
+        </div>
+        <p style="margin-top:24px; color:#999; font-size:12px;">© ${year} DROVE</p>
+      </div>`;
+
+    if (!this.client) return false;
+    return this.client.emails.send({
+      from: 'contacto@drove.es',
+      to,
+      subject: 'Nuevo usuario verificado – pendiente de aprobación',
+      html,
+    } as any);
+  };
+
+  /**
    * Envía el e-mail de “Cuenta aprobada” (usuario estándar).
    *
    * Plantilla:  accountApproved
@@ -742,13 +783,15 @@ export class ResendService {
   public sendAccountApprovedEmail = async (
     email: string, // destinatario
     name: string, // nombre a mostrar
-    loginUrl = 'https://drove.app/login', // URL del botón (se puede sobreescribir)
+    loginUrl?: string, // URL del botón (se puede sobreescribir)
   ) => {
     const template = this.loadTemplate('approvedAccount');
 
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://test-drove.vercel.app';
+    const computedLogin = `${baseUrl.replace(/\/$/, '')}/login`;
     const html = template({
       name,
-      login_url: loginUrl,
+      login_url: loginUrl || computedLogin,
     });
 
     if (!this.client) return false;
@@ -852,7 +895,7 @@ export class ResendService {
     destination: string,
     driverName: string,
     transferUrl: string,
-    logoUrl = 'https://cdn.drove.es/logo-white.png',
+    logoUrl = 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
     year: number = new Date().getFullYear(),
   ) => {
     const template = this.loadTemplate('newDrover-reassigned');
@@ -987,7 +1030,7 @@ export class ResendService {
     paymentMethod: string,
     transferId: string,
     transferUrl: string,
-    logoUrl = 'https://cdn.drove.es/logo-white.png',
+    logoUrl = 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
   ) => {
     const template = this.loadTemplate('paymentSuccess');
 
@@ -1192,7 +1235,7 @@ export class ResendService {
     destination: string,
     transferDate: string,
     adminTransferUrl: string,
-    logoUrl: string = 'https://cdn.drove.es/logo-white.png',
+    logoUrl: string = 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
   ) => {
     const template = this.loadTemplate('transfer-create-pending-invoice');
 
@@ -1237,7 +1280,7 @@ export class ResendService {
     destination: string,
     transferDate: string,
     adminTransferUrl: string,
-    logoUrl: string = 'https://cdn.drove.es/logo-white.png',
+    logoUrl: string = 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
   ) => {
     const template = this.loadTemplate('transferAvailableForAssigned');
 
@@ -1323,7 +1366,7 @@ export class ResendService {
     destination: string,
     transferDate: string,
     adminTransferUrl: string,
-    logoUrl: string = 'https://cdn.drove.es/logo-white.png',
+    logoUrl: string = 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
   ) => {
     const template = this.loadTemplate('transferPendingInvoiceForTransfer');
 

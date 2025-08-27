@@ -5,13 +5,16 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, ArrowLeft, Bell } from "lucide-react";
+import { useEffect } from "react";
+import NotificationService from "@/services/notificationService";
 
 const Header = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   // Detectar si estamos en una página de perfil
@@ -36,6 +39,22 @@ const Header = () => {
     await logout();
     navigate("/login");
   };
+
+  // Poll simple de notificaciones no leídas
+  useEffect(() => {
+    let timer: any;
+    const fetchCount = async () => {
+      try {
+        const count = await NotificationService.getUnreadCount();
+        setUnreadCount(count || 0);
+      } catch {}
+    };
+    if (isAuthenticated) {
+      fetchCount();
+      timer = setInterval(fetchCount, 30000);
+    }
+    return () => timer && clearInterval(timer);
+  }, [isAuthenticated]);
 
   // Función DIRECTA para manejar clic en perfil - BYPASS ProfileRedirect
   const handlePerfilClick = () => {
@@ -196,6 +215,15 @@ const Header = () => {
         )}
         {isAuthenticated && user && (
           <div className="flex items-center gap-2 relative">
+            {/* Bell badge */}
+            <div className="relative mr-1">
+              <Bell className="text-white cursor-pointer" size={20} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 font-bold">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </div>
             <span className="hidden md:block text-white font-bold">
               {getDisplayName()?.split(' ')[0]}
             </span>

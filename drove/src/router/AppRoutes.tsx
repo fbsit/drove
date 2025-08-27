@@ -66,6 +66,7 @@ import ReassignDriver from '@/pages/admin/ReassignDriver';
 import JefesDeTrafico from '@/pages/admin/JefesDeTrafico';
 import DroverProfile from '@/pages/admin/DroverProfile';
 import VerifyEmail from '@/pages/auth/VerifyEmail';
+import PendingApproval from '@/pages/auth/PendingApproval';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -77,6 +78,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/seguridad" element={<Seguridad />} />
       <Route path="/login" element={<Login />} />
       <Route path="/verifyEmail" element={<VerifyEmail />} />
+      <Route path="/registro/en-revision" element={<PendingApproval />} />
       <Route path="/recuperar-contraseña" element={<ForgotPassword />} />
       <Route path="/reset-password/:code" element={<ResetPassword />} />
       <Route path="/registro" element={<Register />} />

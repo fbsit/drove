@@ -22,14 +22,9 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.fillStyle = 'rgba(34,20,42,0.5)';
+    // Fondo blanco para que la firma se incruste nítida en PDF y sin marcas
+    ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.font = '16px Helvetica';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.fillText('Firme aquí', canvas.width / 2, canvas.height / 2);
   }, []);
 
   /* ───────── handlers ───────── */
@@ -53,7 +48,7 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
     if (!hasDrawn) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.fillStyle = 'rgba(34,20,42,0.5)';
+        ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         setHasDrawn(true);
       }
@@ -102,14 +97,8 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.fillStyle = 'rgba(34,20,42,0.5)';
+    ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.font = '16px Helvetica';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.fillText('Firme aquí', canvas.width / 2, canvas.height / 2);
 
     setHasDrawn(false);
     onSignatureChange('');

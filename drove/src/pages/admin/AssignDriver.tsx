@@ -127,9 +127,9 @@ export const AssignDriver: React.FC = () => {
     // Transform drovers to match Driver interface
     const transformedDrivers: Driver[] = drovers.map(d => ({
       id: d.id,
-      full_name: d.full_name || '',
-      email: d.email || '',
-      phone: d.phone || '',
+      full_name: d.full_name || d?.contactInfo?.fullName || '',
+      email: d.email || d?.contactInfo?.email || '',
+      phone: d?.contactInfo?.phone || d.phone || '',
       rating: 4.5, // Default rating
       completedTrips: 0, // Default completed trips
       status: d.status === 'APPROVED' ? 'APPROVED' : 'disponible',
@@ -139,9 +139,9 @@ export const AssignDriver: React.FC = () => {
         distance: '5km'
       },
       contactInfo: {
-        fullName: d.full_name || '',
-        email: d.email || '',
-        phone: d.phone || ''
+        fullName: d.full_name || d?.contactInfo?.fullName || '',
+        email: d.email || d?.contactInfo?.email || '',
+        phone: d?.contactInfo?.phone || d.phone || ''
       }
     }));
 

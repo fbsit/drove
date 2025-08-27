@@ -101,9 +101,10 @@ export class PaymentsController {
               travel.endAddress.city,
               travel.travelDate || new Date().toISOString(),
               `https://admin.drove.app/transfers/${travel.id}`,
+              'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
             );
             await this.resend.sendPaymentReceivedEmail(
-              'logo',
+              'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
               paymentDate,
               amount ?? '0',
               paymentMethod ?? 'Método no especificado',
@@ -111,7 +112,7 @@ export class PaymentsController {
               transferUrl,
             );
 
-            const logo_url = 'https://official-logo-url.com/default-logo.png';
+            const logo_url = 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null';
             const clientInfo = await this.userRepo.findOneById(travel.idClient);
             const client_name =
               clientInfo?.contactInfo?.fullName || 'Cliente desconocido';

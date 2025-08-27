@@ -12,6 +12,12 @@ export class NotificationService {
     return Array.isArray(response) ? response : (response?.notifications ?? []);
   }
 
+  static async getUnreadCount(): Promise<number> {
+    const response = await ApiService.get('/notifications/unread-count');
+    if (typeof response === 'number') return response;
+    return response?.count ?? 0;
+  }
+
   static async markAsRead(notificationId: string): Promise<void> {
     // Backend expone PATCH /notifications/:id para updates genéricos
     await ApiService.patch(`/notifications/${notificationId}`, { read: true });

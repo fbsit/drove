@@ -171,7 +171,14 @@ export class PdfService {
 
       // Obtener información del cliente y del chofer
       const client = await this.getUser(travel.idClient);
-      const chofer = await this.getUser(travel.idChofer);
+      // Algunos modelos usan droverId/drover en lugar de idChofer
+      const chofer = (travel as any).drover
+        ? (travel as any).drover
+        : (travel as any).droverId
+        ? await this.getUser((travel as any).droverId)
+        : (travel as any).idChofer
+        ? await this.getUser((travel as any).idChofer)
+        : null;
 
       // Calcular el tiempo de uso y normalizarlo
       const timeUse =
@@ -206,21 +213,18 @@ export class PdfService {
         (step !== 4 && detailInfo === 'chofer') ||
         (step !== 4 && detailInfo === 'selfChofer')
       ) {
-        const wixImageUrlSelfie = chofer?.selfie;
+        const wixImageUrlSelfie = chofer?.contactInfo?.selfie || chofer?.selfie;
         if (wixImageUrlSelfie && typeof wixImageUrlSelfie === 'string') {
           const imageId = wixImageUrlSelfie;
-          let directImageUrl;
-          if (!imageId.includes('static.wixstatic.com')) {
-            directImageUrl = `https://wixmp-168aa19777669ff0d074d7f2.wixmp.com/${imageId}`;
-          } else {
-            directImageUrl = imageId;
-          }
-          const imageFormat: any = wixImageUrlSelfie.includes('.png')
+          let directImageUrl = imageId;
+          // Si es dataURL (base64), incrustar directamente
+          const isDataUrl = typeof directImageUrl === 'string' && directImageUrl.startsWith('data:image/');
+          const imageFormat: any = (isDataUrl && directImageUrl.includes('image/png')) || (!isDataUrl && directImageUrl.includes('.png'))
             ? 'png'
             : 'jpg';
-          const response = await fetch(directImageUrl);
-          const arrayBuffer = await response.arrayBuffer();
-          const imageBuffer = Buffer.from(arrayBuffer);
+          const imageBuffer = isDataUrl
+            ? Buffer.from(directImageUrl.split(',')[1], 'base64')
+            : Buffer.from(await (await fetch(directImageUrl)).arrayBuffer());
           let emblemSelfieImage;
           if (imageFormat === 'jpg' || imageFormat === 'jpeg') {
             emblemSelfieImage = await pdfDoc.embedJpg(imageBuffer);
@@ -1177,9 +1181,8 @@ export class PdfService {
       const tableAddressWidth = colAddressWidth * 2;
       const tableAddressHeight = rowAddressHeight * 6;
       const AddressTabla: [string, string][] = [
+        ['Dirección', (travel.startAddress as any)?.address || travel.startAddress.city],
         ['Ciudad', travel.startAddress.city],
-        ['Latitud', travel.startAddress.lat.toString()],
-        ['Longitud', travel.startAddress.lng.toString()],
       ];
       AddressTabla.forEach((fila, filaIndex) => {
         const x = tableAddressLeft;
@@ -1254,9 +1257,8 @@ export class PdfService {
       const tableAddressDeliveryWidth = colAddressDeliveryWidth * 2;
       const tableAddressDeliveryHeight = rowAddressDeliveryHeight * 6;
       const AddressDeliveryTabla: [string, string][] = [
+        ['Dirección', (travel.endAddress as any)?.address || travel.endAddress.city],
         ['Ciudad', travel.endAddress.city],
-        ['Latitud', travel.endAddress.lat.toString()],
-        ['Longitud', travel.endAddress.lng.toString()],
       ];
       AddressDeliveryTabla.forEach((fila, filaIndex) => {
         const x = tableAddressDeliveryLeft;
@@ -1334,9 +1336,14 @@ export class PdfService {
       const colDetailWidth = 250;
       const tableDetailWidth = colDetailWidth * 2;
       const tableDetailHeight = rowDetailHeight * 2;
+      const distanceKmRaw = (detailRoute && (detailRoute as any).DistanceInKM) || travel?.distanceTravel || '';
+      const distanceFormatted = distanceKmRaw
+        ? `${Number(distanceKmRaw).toFixed(2)} Kilómetros`
+        : '—';
+      const totalCliente = (detailRoute as any)?.priceResult?.Total_Cliente;
       const detailTravelTabla = [
-        ['Distancia', `${detailRoute.DistanceInKM} Kilometros`],
-        ['Total con I.V.A', `${detailRoute?.priceResult?.Total_Cliente} €`],
+        ['Distancia', distanceFormatted],
+        ['Total con I.V.A', totalCliente ? `${totalCliente} €` : '—'],
       ];
       detailTravelTabla.forEach((fila, filaIndex) => {
         const x = tableDetailLeft;

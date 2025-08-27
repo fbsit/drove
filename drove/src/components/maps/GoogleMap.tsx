@@ -16,41 +16,19 @@ const defaultCenter = {
   lng: -3.7037902
 };
 
-// Opciones optimizadas para el mapa
+// Opciones de mapa (estándar, sin estilos oscuros)
 const mapOptions = {
-  disableDefaultUI: true,
+  disableDefaultUI: false,
   zoomControl: true,
-  scrollwheel: false,
-  gestureHandling: 'cooperative',
-  clickableIcons: false, // Previene clics en POIs
-  styles: [
-    {
-      "elementType": "geometry",
-      "stylers": [{ "color": "#242f3e" }]
-    },
-    {
-      "elementType": "labels.text.stroke",
-      "stylers": [{ "color": "#242f3e" }]
-    },
-    {
-      "elementType": "labels.text.fill",
-      "stylers": [{ "color": "#746855" }]
-    },
-    // Reducir POIs para mejorar rendimiento
-    {
-      "featureType": "poi",
-      "stylers": [{ "visibility": "off" }]
-    },
-    // Reducir etiquetas para mejorar rendimiento
-    {
-      "featureType": "transit",
-      "stylers": [{ "visibility": "off" }]
-    }
-  ],
+  scrollwheel: true,
+  gestureHandling: 'greedy' as const,
+  clickableIcons: true,
   streetViewControl: false,
-  mapTypeControl: false,
-  minZoom: 5, // Previene zoom excesivo
-  maxZoom: 15, // Previene zoom excesivo
+  mapTypeControl: true,
+  mapTypeId: 'roadmap' as const,
+  backgroundColor: '#ffffff',
+  minZoom: 3,
+  maxZoom: 18,
 };
 
 // Extendemos MapDirectionsProps para incluir onRouteReady
@@ -90,11 +68,13 @@ const GoogleMapComponent = ({
     isLoading,
     routeInfo
   } = useGoogleMapsRouting(
-    map, 
-    addresses.origin, 
-    addresses.destination, 
-    isAddressesSelected, 
-    onRouteCalculated
+    map,
+    addresses.origin,
+    addresses.destination,
+    isAddressesSelected,
+    onRouteCalculated,
+    { lat: originAddress?.lat ?? null, lng: originAddress?.lng ?? null },
+    { lat: destinationAddress?.lat ?? null, lng: destinationAddress?.lng ?? null },
   );
 
   const shouldShowMap = isReady && isAddressesSelected && addresses.origin && addresses.destination && !isApiBlocked;

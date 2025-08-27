@@ -30,7 +30,8 @@ import { TravelOffer, OfferStatus } from './entities/travel-offer.entity';
 import { TravelsGateway } from './travel.gateway';
 import { DataSource } from 'typeorm';
 import { forwardRef, Inject } from '@nestjs/common';
-import { User } from '../user/entities/user.entity';
+import { User, UserRole } from '../user/entities/user.entity';
+import { NotificationsService } from '../notifications/notifications.service';
 
 interface RescheduleRecord {
   previousDate: string | null;
@@ -61,6 +62,7 @@ export class TravelsService {
     private readonly userRepo: Repository<User>,
     @Inject(forwardRef(() => TravelsGateway))
     private readonly gateway: TravelsGateway,
+    private readonly notifications?: NotificationsService,
   ) {}
 
   private readonly defaultRelations = [
@@ -436,6 +438,45 @@ export class TravelsService {
       (update as any).droverId = (dto as any).droverId;
     }
     await this.travelsRepo.update({ id }, update);
+    try {
+      // notificación transversal por cambio de estado
+      const travel = await this.travelsRepo.findOne({ where: { id } as FindOptionsWhere<Travels> });
+      await this.notifications?.create({
+        title: 'Estado de traslado actualizado',
+        message: `Traslado ${id} → ${dto.status}`,
+        roleTarget: UserRole.ADMIN,
+        category: 'TRAVEL_UPDATED',
+        entityType: 'TRAVEL',
+        entityId: id,
+        read: false,
+        userId: null,
+        data: { status: dto.status, clientId: travel?.idClient, droverId: travel?.droverId },
+      });
+      if (travel?.idClient) {
+        await this.notifications?.create({
+          title: 'Tu traslado cambió de estado',
+          message: `Estado: ${dto.status}`,
+          roleTarget: UserRole.CLIENT,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: id,
+          read: false,
+          userId: travel.idClient,
+        });
+      }
+      if (travel?.droverId) {
+        await this.notifications?.create({
+          title: 'Traslado asignado/actualizado',
+          message: `Estado: ${dto.status}`,
+          roleTarget: UserRole.DROVER,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: id,
+          read: false,
+          userId: travel.droverId,
+        });
+      }
+    } catch {}
     if (dto?.status === 'REQUEST_FINISH') {
       //TODO:Avisar a todos que el viaje llego bien
       //Enviar correo 5 (cliente, JT)

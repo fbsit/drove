@@ -11,11 +11,13 @@ import { ResendModule } from '../resend/resend.module';
 import { TravelOffer } from './entities/travel-offer.entity';
 import { TravelsGateway } from './travel.gateway';
 import { User } from '../user/entities/user.entity';
+import { NotificationsModule } from '../notifications/notifications.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Travels, Payment, TravelOffer, User]), // ← aquí agregamos Payment
     InvoicesModule,
     ResendModule,
+    NotificationsModule,
   ],
   controllers: [TravelsController],
   providers: [TravelsService, TravelsGateway, StripeService],
