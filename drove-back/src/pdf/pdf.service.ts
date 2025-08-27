@@ -101,13 +101,15 @@ export class PdfService {
   generateQR(idTravel: string, page: string): Buffer<ArrayBufferLike> {
     try {
       console.log('generando qr', page);
-      const base_url =
+      const rawBaseUrl =
         this.configService.get<string>('FRONTEND_BASE_URL') ||
-        'http://localhost:3000/';
+        'https://test-drove.vercel.app';
+      const baseUrl = rawBaseUrl.replace(/\/+$/, '');
+      // withdrawals => flujo de recogida, delivery => flujo de entrega
       const url =
         page === 'withdrawals'
-          ? `${base_url}retiro?idTravel=${idTravel}`
-          : `${base_url}entrega?idTravel=${idTravel}`;
+          ? `${baseUrl}/verificacion/recogida/${idTravel}`
+          : `${baseUrl}/verificacion/entrega/${idTravel}`;
       const qrPng: Buffer = QrImage.imageSync(url, { type: 'png' });
       return qrPng;
     } catch (error) {
