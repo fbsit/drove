@@ -44,7 +44,7 @@ const Header = () => {
     navigate("/login");
   };
 
-  // Poll simple de notificaciones no leídas
+  // Carga contador tras autenticación y cambios de usuario
   useEffect(() => {
     const fetchCount = async () => {
       try {
@@ -52,12 +52,12 @@ const Header = () => {
         setUnreadCount(count || 0);
       } catch {}
     };
-    if (isAuthenticated) {
+    if (isAuthenticated && user?.id) {
       fetchCount();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.id, user?.role]);
 
-  // Cargar listado inicial tras login (o recarga con sesión válida)
+  // Cargar listado inicial tras login/cambio de usuario (o recarga con sesión válida)
   useEffect(() => {
     const fetchList = async () => {
       try {
@@ -69,10 +69,10 @@ const Header = () => {
         if (unread !== unreadCount) setUnreadCount(unread);
       } catch {}
     };
-    if (isAuthenticated && notifications.length === 0) {
+    if (isAuthenticated && user?.id) {
       fetchList();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.id, user?.role]);
 
   // Tiempo real por socket: incrementar badge y refrescar lista si panel abierto
   useEffect(() => {
