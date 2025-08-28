@@ -16,7 +16,7 @@ export class NotificationsService {
 
   async create(createNotificationDto: Partial<Notification>) {
     const entity = this.repo.create(createNotificationDto as any);
-    const saved = await this.repo.save(entity);
+    const saved: Notification = await this.repo.save(entity as any);
     // Emitir por socket centralizado según destino
     if (saved.userId) {
       this.gateway.emitToUser(saved.userId, 'notification:new', saved);
