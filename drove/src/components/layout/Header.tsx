@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { LayoutDashboard, ArrowLeft, Bell, Check } from "lucide-react";
 import { useEffect } from "react";
 import NotificationService from "@/services/notificationService";
+import { useSocket } from '@/contexts/SocketContext';
 
 const Header = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -17,6 +18,7 @@ const Header = () => {
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const { onNotification } = useSocket();
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   // Detectar si estamos en una página de perfil
@@ -44,7 +46,6 @@ const Header = () => {
 
   // Poll simple de notificaciones no leídas
   useEffect(() => {
-    let timer: any;
     const fetchCount = async () => {
       try {
         const count = await NotificationService.getUnreadCount();
@@ -53,12 +54,22 @@ const Header = () => {
     };
     if (isAuthenticated) {
       fetchCount();
-      timer = setInterval(fetchCount, 10000);
     }
-    return () => timer && clearInterval(timer);
   }, [isAuthenticated]);
 
-  // Refetch when window gains focus for snappier UX
+  // Tiempo real por socket: incrementar badge y refrescar lista si panel abierto
+  useEffect(() => {
+    if (!onNotification) return;
+    const unsubscribe = onNotification((n: any) => {
+      setUnreadCount((c) => c + 1);
+      if (notifOpen) {
+        setNotifications((prev) => [n, ...prev].slice(0, 10));
+      }
+    });
+    return () => { try { (unsubscribe as any)?.(); } catch {} };
+  }, [onNotification, notifOpen]);
+
+  // Refetch when window gains focus for snappier UX (sin polling)
   useEffect(() => {
     const onFocus = async () => {
       if (!isAuthenticated) return;

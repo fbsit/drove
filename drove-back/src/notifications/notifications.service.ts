@@ -4,17 +4,28 @@ import { Repository } from 'typeorm';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { Notification } from './entities/notification.entity';
+import { NotificationsGateway } from './notifications.gateway';
 
 @Injectable()
 export class NotificationsService {
   constructor(
     @InjectRepository(Notification)
     private readonly repo: Repository<Notification>,
+    private readonly gateway: NotificationsGateway,
   ) {}
 
   async create(createNotificationDto: Partial<Notification>) {
     const entity = this.repo.create(createNotificationDto as any);
-    return this.repo.save(entity);
+    const saved = await this.repo.save(entity);
+    // Emitir por socket centralizado según destino
+    if (saved.userId) {
+      this.gateway.emitToUser(saved.userId, 'notification:new', saved);
+    } else if (saved.roleTarget && saved.roleTarget !== 'ALL') {
+      this.gateway.emitToRole(String(saved.roleTarget), 'notification:new', saved);
+    } else {
+      this.gateway.emitToAll('notification:new', saved);
+    }
+    return saved;
   }
 
   async findAllForUser(userId: string, role: string) {

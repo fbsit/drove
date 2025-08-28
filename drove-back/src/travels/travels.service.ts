@@ -255,7 +255,7 @@ export class TravelsService {
 
     // Notificación para admins: nuevo viaje creado
     try {
-      await this.notifications?.create({
+      const notif = await this.notifications?.create({
         title: 'Nuevo viaje creado',
         message: `Viaje #${travelInfo.id} ${travel.startAddress?.city} → ${travel.endAddress?.city}`,
         roleTarget: UserRole.ADMIN,
@@ -270,6 +270,7 @@ export class TravelsService {
           endCity: travel.endAddress?.city,
         },
       });
+      notif;
     } catch {}
     return { ...travelInfo, url: checkoutUrl };
   }
