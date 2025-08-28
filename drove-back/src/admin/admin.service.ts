@@ -9,6 +9,8 @@ import { Invoice, InvoiceStatus } from '../invoices/entities/invoice.entity';
 import { Travels } from '../travels/entities/travel.entity';
 import { TransferStatus } from '../travels/entities/travel.entity';
 import { DetailedUser, FavoriteRoute } from '../user/dtos/detailed-user.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { UserRole } from '../user/entities/user.entity';
 @Injectable()
 export class AdminService {
   constructor(
@@ -20,6 +22,7 @@ export class AdminService {
     @InjectRepository(Invoice)
     private readonly invoiceRepo: Repository<Invoice>,
     private readonly resend: ResendService,
+    private readonly notifications?: NotificationsService,
   ) {}
 
   private readonly defaultRelations = ['payments', 'client', 'drover'];
@@ -262,6 +265,32 @@ export class AdminService {
     transfer.assignedAt = new Date();
     transfer.status = TransferStatus.ASSIGNED; // Asignar
     const resultSave = await this.transferRepo.save(transfer);
+
+    // Notificaciones transversales: cliente y drover deben enterarse
+    try {
+      await this.notifications?.create({
+        title: 'Conductor asignado',
+        message: `Tu traslado ${transfer.id} fue asignado a un conductor`,
+        roleTarget: UserRole.CLIENT,
+        category: 'TRAVEL_UPDATED',
+        entityType: 'TRAVEL',
+        entityId: transfer.id,
+        read: false,
+        userId: transfer.idClient,
+      });
+      if (transfer.droverId) {
+        await this.notifications?.create({
+          title: 'Se te asignó un traslado',
+          message: `${transfer.startAddress?.city} → ${transfer.endAddress?.city}`,
+          roleTarget: UserRole.DROVER,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: transfer.id,
+          read: false,
+          userId: transfer.droverId,
+        });
+      }
+    } catch {}
 
     return true;
   }
