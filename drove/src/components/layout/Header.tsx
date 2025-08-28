@@ -76,7 +76,11 @@ const Header = () => {
     if (!notifOpen) {
       try {
         const list = await NotificationService.getNotifications();
-        setNotifications(Array.isArray(list) ? list.slice(0, 10) : []);
+        const arr = Array.isArray(list) ? list.slice(0, 10) : [];
+        setNotifications(arr);
+        // Fallback: si por alguna razón el contador no llegó, lo calculamos del listado
+        const unread = arr.filter((n: any) => !n.read).length;
+        if (unread > 0 && unread !== unreadCount) setUnreadCount(unread);
       } catch {}
     }
   };
