@@ -49,7 +49,8 @@ const Header = () => {
     const fetchCount = async () => {
       try {
         const count = await NotificationService.getUnreadCount();
-        setUnreadCount(count || 0);
+        // Nunca reducir el contador con respuestas atrasadas
+        setUnreadCount((prev) => Math.max(prev, count || 0));
       } catch {}
     };
     if (isAuthenticated && user?.id) {
