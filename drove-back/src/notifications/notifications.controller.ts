@@ -20,7 +20,7 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Listar notificaciones del usuario actual' })
   findAll(@Req() req: any) {
     const userId = req.user?.sub || req.user?.id;
-    const role = req.user?.role || 'CLIENT';
+    const role = String(req.user?.role || 'CLIENT').toUpperCase();
     return this.notificationsService.findAllForUser(userId, role);
   }
 
@@ -28,7 +28,7 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Contar notificaciones no leídas del usuario actual' })
   unreadCount(@Req() req: any) {
     const userId = req.user?.sub || req.user?.id;
-    const role = req.user?.role || 'CLIENT';
+    const role = String(req.user?.role || 'CLIENT').toUpperCase();
     return this.notificationsService.countUnreadForUser(userId, role);
   }
 

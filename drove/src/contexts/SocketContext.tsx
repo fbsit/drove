@@ -37,9 +37,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     if (user?.id) {
-      console.log('🔌 Conectando WebSocket para drover:', user.id);
+      console.log('🔌 Conectando WebSocket para usuario:', user.id, 'role=', user.role);
       
       const newSocket = io(API_URL, {
+        transports: ['websocket'],
         auth: { 
           userId: user.id,
           role: (user.role || '').toUpperCase()
@@ -67,6 +68,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       // Notificaciones para cualquier rol
       newSocket.on('notification:new', (n: any) => {
+        console.log('🔔 notification:new', n);
         window.dispatchEvent(new CustomEvent('notification:new', { detail: n }));
       });
 

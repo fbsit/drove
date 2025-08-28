@@ -17,12 +17,17 @@ export class NotificationsService {
   async create(createNotificationDto: Partial<Notification>) {
     const entity = this.repo.create(createNotificationDto as any);
     const saved: Notification = await this.repo.save(entity as any);
-    // Emitir por socket centralizado según destino
+    // Emitir por socket centralizado según destino (amplificado: usuario y/o rol)
+    let emitted = false;
     if (saved.userId) {
       this.gateway.emitToUser(saved.userId, 'notification:new', saved);
-    } else if (saved.roleTarget && saved.roleTarget !== 'ALL') {
+      emitted = true;
+    }
+    if (saved.roleTarget && saved.roleTarget !== 'ALL') {
       this.gateway.emitToRole(String(saved.roleTarget), 'notification:new', saved);
-    } else {
+      emitted = true;
+    }
+    if (!emitted) {
       this.gateway.emitToAll('notification:new', saved);
     }
     return saved;
