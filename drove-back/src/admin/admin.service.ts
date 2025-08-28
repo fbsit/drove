@@ -461,4 +461,10 @@ export class AdminService {
       totalRevenue: Number(raw.totalRevenue ?? 0),
     };
   }
+
+  /** Generación de reportes (placeholder): por ahora devuelve los mismos datos que getReportData usando filtros opcionales */
+  async generateReport(filters?: any): Promise<any> {
+    // En el futuro, usar "filters" para construir queries específicas
+    return this.getReportData();
+  }
 }

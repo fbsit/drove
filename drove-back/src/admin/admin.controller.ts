@@ -164,6 +164,16 @@ export class AdminController {
     return this.adminService.getReportData();
   }
 
+  /** POST /admin/reports/generate */
+  @Post('reports/generate')
+  @ApiOperation({ summary: 'Generar reporte con filtros (side-effect o respuesta inmediata)' })
+  @ApiBody({ schema: { type: 'object', properties: { filters: { type: 'object', additionalProperties: true } } } })
+  @ApiCreatedResponse({ description: 'Reporte generado', schema: { type: 'object', additionalProperties: true } })
+  async generateReports(@Body('filters') filters: any, @Res() res: Response) {
+    const data = await this.adminService.generateReport(filters || {});
+    return res.status(HttpStatus.CREATED).json(data);
+  }
+
   /** POST /admin/transfers/:id/assign */
   @Post('transfers/:transferId/assign')
   @ApiOperation({ summary: 'Asignar drover a traslado' })
