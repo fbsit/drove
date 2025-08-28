@@ -545,6 +545,46 @@ export class TravelsService {
         startedAt: new Date(),
       },
     );
+
+    // Notificaciones: inicio de viaje
+    try {
+      const travel = await this.travelsRepo.findOne({ where: { id } as FindOptionsWhere<Travels> });
+      await this.notifications?.create({
+        title: 'Viaje iniciado',
+        message: `Traslado ${id} en progreso`,
+        roleTarget: UserRole.ADMIN,
+        category: 'TRAVEL_UPDATED',
+        entityType: 'TRAVEL',
+        entityId: id,
+        read: false,
+        userId: null,
+        data: { status: TransferStatus.IN_PROGRESS, clientId: travel?.idClient, droverId: travel?.droverId },
+      });
+      if (travel?.idClient) {
+        await this.notifications?.create({
+          title: 'Tu traslado ha comenzado',
+          message: 'El conductor inició el viaje',
+          roleTarget: UserRole.CLIENT,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: id,
+          read: false,
+          userId: travel.idClient,
+        });
+      }
+      if (travel?.droverId) {
+        await this.notifications?.create({
+          title: 'Has iniciado un traslado',
+          message: `${travel.startAddress?.city} → ${travel.endAddress?.city}`,
+          roleTarget: UserRole.DROVER,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: id,
+          read: false,
+          userId: travel.droverId,
+        });
+      }
+    } catch {}
   }
 
   private haversineDistanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
@@ -610,6 +650,44 @@ export class TravelsService {
     });
     this.resend.sendConfirmationPickupEmailClient(travel);
     this.resend.sendConfirmationPickupEmailDJT(travel);
+
+    // Notificaciones: vehículo recogido
+    try {
+      await this.notifications?.create({
+        title: 'Vehículo recogido',
+        message: `Traslado ${id} recogido por el conductor`,
+        roleTarget: UserRole.ADMIN,
+        category: 'TRAVEL_UPDATED',
+        entityType: 'TRAVEL',
+        entityId: id,
+        read: false,
+        userId: null,
+      });
+      if (travel?.idClient) {
+        await this.notifications?.create({
+          title: 'Tu vehículo fue recogido',
+          message: `${travel.startAddress?.city} → ${travel.endAddress?.city}`,
+          roleTarget: UserRole.CLIENT,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: id,
+          read: false,
+          userId: travel.idClient,
+        });
+      }
+      if (travel?.droverId) {
+        await this.notifications?.create({
+          title: 'Recogida confirmada',
+          message: 'Has confirmado la recogida del vehículo',
+          roleTarget: UserRole.DROVER,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: id,
+          read: false,
+          userId: travel.droverId,
+        });
+      }
+    } catch {}
   }
 
   async saveDeliveryVerification(
@@ -651,5 +729,43 @@ export class TravelsService {
         'link',
       );
     }, 1000);
+
+    // Notificaciones: entrega confirmada
+    try {
+      await this.notifications?.create({
+        title: 'Traslado entregado',
+        message: `Traslado ${id} finalizado`,
+        roleTarget: UserRole.ADMIN,
+        category: 'TRAVEL_UPDATED',
+        entityType: 'TRAVEL',
+        entityId: id,
+        read: false,
+        userId: null,
+      });
+      if (travel?.idClient) {
+        await this.notifications?.create({
+          title: 'Traslado finalizado',
+          message: 'Tu vehículo ha sido entregado',
+          roleTarget: UserRole.CLIENT,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: id,
+          read: false,
+          userId: travel.idClient,
+        });
+      }
+      if (travel?.droverId) {
+        await this.notifications?.create({
+          title: 'Entrega confirmada',
+          message: 'Has completado la entrega',
+          roleTarget: UserRole.DROVER,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: id,
+          read: false,
+          userId: travel.droverId,
+        });
+      }
+    } catch {}
   }
 }
