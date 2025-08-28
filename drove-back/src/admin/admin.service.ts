@@ -10,7 +10,6 @@ import { Travels } from '../travels/entities/travel.entity';
 import { TransferStatus } from '../travels/entities/travel.entity';
 import { DetailedUser, FavoriteRoute } from '../user/dtos/detailed-user.dto';
 import { NotificationsService } from '../notifications/notifications.service';
-import { UserRole } from '../user/entities/user.entity';
 @Injectable()
 export class AdminService {
   constructor(
