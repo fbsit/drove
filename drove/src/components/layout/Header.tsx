@@ -105,6 +105,49 @@ const Header = () => {
     } catch {}
   };
 
+  // Deducción de ruta de destino desde la notificación
+  const resolveNotificationRoute = (n: any): string | null => {
+    const role = String(user?.role || '').toLowerCase();
+    const entityType = String(n?.entityType || n?.data?.entityType || '').toUpperCase();
+    const entityId = n?.entityId || n?.data?.entityId || n?.data?.travelId || n?.data?.id;
+    const category = String(n?.category || '').toUpperCase();
+
+    // Viajes / traslados
+    if (entityType === 'TRAVEL' && entityId) {
+      if (role === 'admin' || role === 'traffic_manager') return `/admin/asignar/${entityId}`;
+      if (role === 'client') return `/cliente/traslados/${entityId}`;
+      if (role === 'drover') return `/traslados/activo/${entityId}`;
+      return `/viajes/${entityId}`; // fallback común
+    }
+
+    // Nuevos usuarios
+    if (category === 'NEW_USER' || entityType === 'USER') {
+      const userRole = String(n?.data?.userRole || '').toLowerCase();
+      if (userRole === 'drover') return n?.entityId ? `/admin/drovers/${n.entityId}` : '/admin/drovers';
+      if (userRole === 'client') return n?.entityId ? `/admin/clientes/${n.entityId}` : '/admin/clientes';
+      // fallback a listado de clientes si no se conoce el rol
+      return '/admin/clientes';
+    }
+
+    // Por defecto, ir al dashboard del rol
+    if (role === 'admin') return '/admin/dashboard';
+    if (role === 'client') return '/cliente/dashboard';
+    if (role === 'drover') return '/drover/dashboard';
+    if (role === 'traffic_manager') return '/trafico/dashboard';
+    return '/';
+  };
+
+  const handleNotificationClick = async (n: any) => {
+    const to = resolveNotificationRoute(n);
+    if (!to) return;
+    try {
+      if (!n.read) await handleMarkAsRead(n.id);
+    } finally {
+      setNotifOpen(false);
+      navigate(to);
+    }
+  };
+
   // Función DIRECTA para manejar clic en perfil - BYPASS ProfileRedirect
   const handlePerfilClick = () => {
     console.log("🖱️ DIRECTO - Clic en perfil - Usuario:", user?.user_type);
@@ -280,14 +323,14 @@ const Header = () => {
                       <div className="p-4 text-white/70 text-sm">Sin notificaciones</div>
                     ) : (
                       notifications.map((n) => (
-                        <div key={n.id} className="p-3 flex items-start gap-2 hover:bg-white/5">
+                        <div key={n.id} className="p-3 flex items-start gap-2 hover:bg-white/5 cursor-pointer" onClick={() => handleNotificationClick(n)}>
                           <div className={`mt-1 h-2 w-2 rounded-full ${n.read ? 'bg-white/30' : 'bg-[#6EF7FF]'}`} />
                           <div className="flex-1">
                             <div className="text-white text-sm font-semibold">{n.title}</div>
                             <div className="text-white/70 text-xs">{n.message}</div>
                           </div>
                           {!n.read && (
-                            <button onClick={() => handleMarkAsRead(n.id)} className="text-xs text-[#6EF7FF] hover:underline flex items-center gap-1">
+                            <button onClick={(e) => { e.stopPropagation(); handleMarkAsRead(n.id); }} className="text-xs text-[#6EF7FF] hover:underline flex items-center gap-1">
                               <Check size={14} />
                             </button>
                           )}
