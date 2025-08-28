@@ -252,6 +252,25 @@ export class TravelsService {
       travel.endAddress.city,
       url || '',
     );
+
+    // Notificación para admins: nuevo viaje creado
+    try {
+      await this.notifications?.create({
+        title: 'Nuevo viaje creado',
+        message: `Viaje #${travelInfo.id} ${travel.startAddress?.city} → ${travel.endAddress?.city}`,
+        roleTarget: UserRole.ADMIN,
+        category: 'TRAVEL_CREATED',
+        entityType: 'TRAVEL',
+        entityId: travelInfo.id,
+        read: false,
+        userId: null,
+        data: {
+          clientId: user.sub,
+          startCity: travel.startAddress?.city,
+          endCity: travel.endAddress?.city,
+        },
+      });
+    } catch {}
     return { ...travelInfo, url: checkoutUrl };
   }
 
@@ -527,13 +546,37 @@ export class TravelsService {
     );
   }
 
-  async finishTravel(id: string, { polyline }: FinishTravelDto): Promise<void> {
+  private haversineDistanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+    const R = 6371; // km
+    const dLat = (b.lat - a.lat) * Math.PI / 180;
+    const dLng = (b.lng - a.lng) * Math.PI / 180;
+    const lat1 = a.lat * Math.PI / 180;
+    const lat2 = b.lat * Math.PI / 180;
+    const sinDLat = Math.sin(dLat / 2);
+    const sinDLng = Math.sin(dLng / 2);
+    const aVal = sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLng * sinDLng;
+    const c = 2 * Math.atan2(Math.sqrt(aVal), Math.sqrt(1 - aVal));
+    return R * c;
+  }
+
+  async finishTravel(id: string, { polyline, currentLat, currentLng }: FinishTravelDto): Promise<void> {
     const trip = await this.travelsRepo.findOne({ where: { id } });
     if (!trip) throw new NotFoundException(`Travel ${id} not found`);
     if (trip.status !== TransferStatus.IN_PROGRESS)
       throw new BadRequestException('El viaje no está en progreso');
     if (!trip.startedAt)
       throw new BadRequestException(`Travel ${id} no tiene fecha de inicio`);
+
+    // Regla: solo puede finalizar si está a <= 100km del destino
+    if (typeof currentLat === 'number' && typeof currentLng === 'number') {
+      const end = trip.endAddress as any;
+      if (end?.lat != null && end?.lng != null) {
+        const distKm = this.haversineDistanceKm({ lat: currentLat, lng: currentLng }, { lat: Number(end.lat), lng: Number(end.lng) });
+        if (distKm > 100) {
+          throw new BadRequestException(`No puedes finalizar aún: estás a ${distKm.toFixed(1)} km del destino (máximo permitido 100 km).`);
+        }
+      }
+    }
     const now = new Date();
     const diffMs = now.getTime() - trip.startedAt.getTime();
     // convierte ms a minutos y segundos, por ejemplo "12:34"
