@@ -57,6 +57,23 @@ const Header = () => {
     }
   }, [isAuthenticated]);
 
+  // Cargar listado inicial tras login (o recarga con sesión válida)
+  useEffect(() => {
+    const fetchList = async () => {
+      try {
+        const list = await NotificationService.getNotifications();
+        const arr = Array.isArray(list) ? list.slice(0, 10) : [];
+        setNotifications(arr);
+        // sincronizar badge si es necesario
+        const unread = arr.filter((n: any) => !n.read).length;
+        if (unread !== unreadCount) setUnreadCount(unread);
+      } catch {}
+    };
+    if (isAuthenticated && notifications.length === 0) {
+      fetchList();
+    }
+  }, [isAuthenticated]);
+
   // Tiempo real por socket: incrementar badge y refrescar lista si panel abierto
   useEffect(() => {
     if (!onNotification) return;
@@ -77,10 +94,18 @@ const Header = () => {
         const count = await NotificationService.getUnreadCount();
         setUnreadCount(count || 0);
       } catch {}
+      // Si recargó y el listado está vacío, obtenerlo de forma perezosa
+      if (notifications.length === 0) {
+        try {
+          const list = await NotificationService.getNotifications();
+          const arr = Array.isArray(list) ? list.slice(0, 10) : [];
+          setNotifications(arr);
+        } catch {}
+      }
     };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, notifications.length]);
 
   const toggleNotifications = async () => {
     setNotifOpen((v) => !v);
