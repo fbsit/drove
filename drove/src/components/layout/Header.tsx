@@ -5,7 +5,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, ArrowLeft, Bell } from "lucide-react";
+import { LayoutDashboard, ArrowLeft, Bell, Check } from "lucide-react";
 import { useEffect } from "react";
 import NotificationService from "@/services/notificationService";
 
@@ -15,6 +15,8 @@ const Header = () => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   // Detectar si estamos en una página de perfil
@@ -51,10 +53,42 @@ const Header = () => {
     };
     if (isAuthenticated) {
       fetchCount();
-      timer = setInterval(fetchCount, 30000);
+      timer = setInterval(fetchCount, 10000);
     }
     return () => timer && clearInterval(timer);
   }, [isAuthenticated]);
+
+  // Refetch when window gains focus for snappier UX
+  useEffect(() => {
+    const onFocus = async () => {
+      if (!isAuthenticated) return;
+      try {
+        const count = await NotificationService.getUnreadCount();
+        setUnreadCount(count || 0);
+      } catch {}
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [isAuthenticated]);
+
+  const toggleNotifications = async () => {
+    setNotifOpen((v) => !v);
+    if (!notifOpen) {
+      try {
+        const list = await NotificationService.getNotifications();
+        setNotifications(Array.isArray(list) ? list.slice(0, 10) : []);
+      } catch {}
+    }
+  };
+
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await NotificationService.markAsRead(id);
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+      // reduce badge
+      setUnreadCount((c) => Math.max(0, c - 1));
+    } catch {}
+  };
 
   // Función DIRECTA para manejar clic en perfil - BYPASS ProfileRedirect
   const handlePerfilClick = () => {
@@ -217,11 +251,36 @@ const Header = () => {
           <div className="flex items-center gap-2 relative">
             {/* Bell badge */}
             <div className="relative mr-1">
-              <Bell className="text-white cursor-pointer" size={20} />
+              <Bell className="text-white cursor-pointer" size={20} onClick={toggleNotifications} />
               {unreadCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 font-bold">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
+              )}
+              {notifOpen && (
+                <div className="absolute right-0 mt-2 w-72 bg-[#291A38] border border-white/15 rounded-2xl shadow-lg z-[1200]">
+                  <div className="p-3 border-b border-white/10 text-white font-bold">Notificaciones</div>
+                  <div className="max-h-80 overflow-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-4 text-white/70 text-sm">Sin notificaciones</div>
+                    ) : (
+                      notifications.map((n) => (
+                        <div key={n.id} className="p-3 flex items-start gap-2 hover:bg-white/5">
+                          <div className={`mt-1 h-2 w-2 rounded-full ${n.read ? 'bg-white/30' : 'bg-[#6EF7FF]'}`} />
+                          <div className="flex-1">
+                            <div className="text-white text-sm font-semibold">{n.title}</div>
+                            <div className="text-white/70 text-xs">{n.message}</div>
+                          </div>
+                          {!n.read && (
+                            <button onClick={() => handleMarkAsRead(n.id)} className="text-xs text-[#6EF7FF] hover:underline flex items-center gap-1">
+                              <Check size={14} />
+                            </button>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
               )}
             </div>
             <span className="hidden md:block text-white font-bold">
