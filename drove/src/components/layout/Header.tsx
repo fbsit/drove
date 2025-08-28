@@ -64,9 +64,9 @@ const Header = () => {
         const list = await NotificationService.getNotifications();
         const arr = Array.isArray(list) ? list.slice(0, 10) : [];
         setNotifications(arr);
-        // sincronizar badge si es necesario
+        // No bajamos el contador basados en listado parcial; solo lo subimos si procede
         const unread = arr.filter((n: any) => !n.read).length;
-        if (unread !== unreadCount) setUnreadCount(unread);
+        if (unread > unreadCount) setUnreadCount(unread);
       } catch {}
     };
     if (isAuthenticated && user?.id) {
@@ -78,13 +78,17 @@ const Header = () => {
   useEffect(() => {
     if (!onNotification) return;
     const unsubscribe = onNotification((n: any) => {
-      setUnreadCount((c) => c + 1);
-      if (notifOpen) {
-        setNotifications((prev) => [n, ...prev].slice(0, 10));
+      // Evita double-count cuando el servidor ya manda una lista con el nuevo elemento
+      const exists = notifications.some((x) => x.id === n.id);
+      if (!exists) {
+        setUnreadCount((c) => c + 1);
+        if (notifOpen) {
+          setNotifications((prev) => [n, ...prev].slice(0, 10));
+        }
       }
     });
     return () => { try { (unsubscribe as any)?.(); } catch {} };
-  }, [onNotification, notifOpen]);
+  }, [onNotification, notifOpen, notifications]);
 
   // Refetch when window gains focus for snappier UX (sin polling)
   useEffect(() => {
@@ -92,7 +96,8 @@ const Header = () => {
       if (!isAuthenticated) return;
       try {
         const count = await NotificationService.getUnreadCount();
-        setUnreadCount(count || 0);
+        // Si el servidor dice menos que nuestro contador local, mantenemos el mayor para evitar parpadeos
+        setUnreadCount((prev) => Math.max(prev, count || 0));
       } catch {}
       // Si recargó y el listado está vacío, obtenerlo de forma perezosa
       if (notifications.length === 0) {
@@ -114,9 +119,9 @@ const Header = () => {
         const list = await NotificationService.getNotifications();
         const arr = Array.isArray(list) ? list.slice(0, 10) : [];
         setNotifications(arr);
-        // Fallback: si por alguna razón el contador no llegó, lo calculamos del listado
+        // Fallback: no reducimos el contador; solo incrementamos si detectamos más
         const unread = arr.filter((n: any) => !n.read).length;
-        if (unread > 0 && unread !== unreadCount) setUnreadCount(unread);
+        if (unread > unreadCount) setUnreadCount(unread);
       } catch {}
     }
   };
