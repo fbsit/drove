@@ -22,7 +22,7 @@ export class NotificationsService {
     if (saved.userId) {
       this.gateway.emitToUser(saved.userId, 'notification:new', saved);
       emitted = true;
-    }
+    } 
     if (saved.roleTarget && saved.roleTarget !== 'ALL') {
       this.gateway.emitToRole(String(saved.roleTarget), 'notification:new', saved);
       emitted = true;
