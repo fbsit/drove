@@ -83,6 +83,7 @@ export class AdminService {
         province: user.contactInfo.state || '',
         country: user.contactInfo.country || '',
         zipCode: user.contactInfo.zip || '',
+        selfie: user.contactInfo.selfie || undefined,
       },
       totalSpent,
       tripsCount: travels.length,
