@@ -1,5 +1,5 @@
 // src/admin/admin.service.ts
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, FindOptionsWhere } from 'typeorm';
 import { ResendService } from '../resend/resend.service';
@@ -23,6 +23,8 @@ export class AdminService {
     private readonly resend: ResendService,
     private readonly notifications?: NotificationsService,
   ) {}
+
+  private readonly logger = new Logger(AdminService.name);
 
   private readonly defaultRelations = ['payments', 'client', 'drover'];
   /* ─────────── Usuarios ─────────── */
@@ -263,10 +265,12 @@ export class AdminService {
     transfer.assignedBy = adminId;
     transfer.assignedAt = new Date();
     transfer.status = TransferStatus.ASSIGNED; // Asignar
-    const resultSave = await this.transferRepo.save(transfer);
+    await this.transferRepo.update({ id: transfer.id }, { droverId, assignedBy: adminId, assignedAt: transfer.assignedAt, status: TransferStatus.ASSIGNED });
+    const savedAfter = await this.transferRepo.findOne({ where: { id: transfer.id }, relations: this.defaultRelations });
 
     // Notificaciones transversales: cliente y drover deben enterarse
     try {
+      this.logger.debug(`Creating notifications for assignment transfer=${transfer.id} droverId=${savedAfter?.droverId} clientId=${transfer.idClient}`);
       await this.notifications?.create({
         title: 'Conductor asignado',
         message: `Tu traslado ${transfer.id} fue asignado a un conductor`,
@@ -277,7 +281,8 @@ export class AdminService {
         read: false,
         userId: transfer.idClient,
       });
-      if (transfer.droverId) {
+      if (savedAfter?.droverId) {
+        this.logger.debug(`Notifying drover userId=${savedAfter.droverId} for transfer=${transfer.id}`);
         await this.notifications?.create({
           title: 'Se te asignó un traslado',
           message: `${transfer.startAddress?.city} → ${transfer.endAddress?.city}`,
@@ -286,7 +291,7 @@ export class AdminService {
           entityType: 'TRAVEL',
           entityId: transfer.id,
           read: false,
-          userId: transfer.droverId,
+          userId: savedAfter.droverId,
         });
       }
     } catch {}
