@@ -36,13 +36,29 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
   const assignedDriver = transfer.drivers?.full_name;
   const shouldShowAssignButton = !isCompleted && !isAssigned && !isInProgress;
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat("es-ES", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }).format(date);
+  const formatDate = (dateInput: any) => {
+    if (!dateInput) return '—';
+    try {
+      let date: Date;
+      if (typeof dateInput === 'string' || typeof dateInput === 'number') {
+        date = new Date(dateInput);
+      } else if (dateInput instanceof Date) {
+        date = dateInput;
+      } else if (typeof dateInput === 'object') {
+        const val = (dateInput as any).createdAt || (dateInput as any).created_at || null;
+        date = val ? new Date(val) : new Date();
+      } else {
+        return '—';
+      }
+      if (isNaN(date.getTime())) return '—';
+      return new Intl.DateTimeFormat('es-ES', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }).format(date);
+    } catch {
+      return '—';
+    }
   };
 
   const handleVerClick = () => {
@@ -56,7 +72,7 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
         <div className="flex items-center gap-2">
           {gamify && getGamifyIcon(transfer.status)}
           <StatusBadge status={transfer.status} />
-          <span className="ml-auto text-sm text-white/60">{formatDate(transfer.created_at)}</span>
+          <span className="ml-auto text-sm text-white/60">{formatDate(transfer.createdAt || transfer.created_at)}</span>
         </div>
         
         <div className="flex items-center gap-2">
