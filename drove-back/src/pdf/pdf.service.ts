@@ -275,7 +275,7 @@ export class PdfService {
         (step !== 4 && detailInfo === 'chofer') ||
         (step !== 4 && detailInfo === 'selfChofer')
       ) {
-        page.drawText('Télefono:', {
+        page.drawText('Teléfono:', {
           x: 125,
           y: pageHeight - 90,
           size: fontSize,
@@ -479,14 +479,14 @@ export class PdfService {
         font: font,
         color: rgb(0, 0, 0),
       });
-      page.drawText('ID:', {
+      page.drawText('ID Cliente:', {
         x: 50,
         y: pageHeight - 160 + fixVertical,
         size: fontSize,
         font: helveticaBoldFont,
         color: rgb(0, 0, 0),
       });
-      page.drawText(travel?.idClient, {
+      page.drawText(String(travel?.idClient || ''), {
         x: 70,
         y: pageHeight - 160 + fixVertical,
         size: fontSize,

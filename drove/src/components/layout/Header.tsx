@@ -20,6 +20,7 @@ const Header = () => {
   const [notifications, setNotifications] = useState<any[]>([]);
   const { onNotification } = useSocket();
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const notifRef = useRef<HTMLDivElement | null>(null);
 
   // Detectar si estamos en una página de perfil
   const isProfilePage = location.pathname.includes('/perfil');
@@ -36,6 +37,19 @@ const Header = () => {
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpen]);
+
+  // Cerrar popover de notificaciones al hacer clic fuera
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setNotifOpen(false);
+      }
+    };
+    if (notifOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [notifOpen]);
 
   // Acción logout
   const handleLogout = async () => {
@@ -351,7 +365,7 @@ const Header = () => {
                 </span>
               )}
               {notifOpen && (
-                <div className="absolute right-0 mt-2 w-72 bg-[#291A38] border border-white/15 rounded-2xl shadow-lg z-[1200]">
+                <div ref={notifRef} className="absolute right-0 mt-2 w-72 bg-[#291A38] border border-white/15 rounded-2xl shadow-lg z-[1200]">
                   <div className="p-3 border-b border-white/10 text-white font-bold">Notificaciones</div>
                   <div className="max-h-80 overflow-auto">
                     {notifications.length === 0 ? (
