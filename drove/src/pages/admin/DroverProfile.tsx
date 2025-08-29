@@ -96,8 +96,8 @@ const DroverProfile: React.FC = () => {
       <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 bg-[#2B2540] px-3 xs:px-4 md:px-8 py-5 md:py-7 border-b border-white/10">
         {/* Avatar */}
         <div className="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center rounded-full bg-[#6ef7ff]/90 shadow-md border-4 border-white overflow-hidden text-2xl md:text-3xl font-bold uppercase text-[#22142A]">
-          {drover.avatar && drover.avatar !== "" ? (
-            <img src={drover.avatar} alt={drover.contactInfo?.fullName} className="w-full h-full object-cover rounded-full" />
+          { (drover?.contactInfo?.selfie || drover?.selfie) ? (
+            <img src={drover?.contactInfo?.selfie || drover?.selfie} alt={drover.contactInfo?.fullName} className="w-full h-full object-cover rounded-full" />
           ) : (
             drover.contactInfo?.fullName?.charAt(0)
           )}
