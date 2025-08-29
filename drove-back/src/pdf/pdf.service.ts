@@ -2163,6 +2163,8 @@ export class PdfService {
           title: 'Nombre del chofer:',
           nameKey:
             droverDetail?.contactInfo?.fullName ||
+            droverDetail?.full_name ||
+            droverDetail?.name ||
             droverDetail?.contactInfo?.info?.extendedFields?.items[
               'custom.fullname'
             ] ||
@@ -2173,6 +2175,7 @@ export class PdfService {
             'Nombre Chofer',
           phoneKey:
             droverDetail?.contactInfo?.phone ||
+            droverDetail?.phone ||
             droverDetail?.detailRegister?.phones ||
             'Sin teléfono',
         };

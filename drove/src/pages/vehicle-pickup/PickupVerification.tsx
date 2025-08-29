@@ -17,6 +17,33 @@ import { TransferService }             from '@/services/transferService';
 import { usePickupVerification }       from '@/hooks/usePickupVerification';
 import { StorageService }              from '@/services/storageService';
 
+// Utilidad: comprimir imagen en el cliente antes de subir (reduce 70-85%)
+async function compressImage(file: File, maxWidth = 1600, quality = 0.75): Promise<File> {
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = URL.createObjectURL(file);
+    });
+    const scale = Math.min(1, maxWidth / (img.width || maxWidth));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round((img.width || maxWidth) * scale));
+    canvas.height = Math.max(1, Math.round((img.height || maxWidth) * scale));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return file;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const blob: Blob | null = await new Promise((resolve) =>
+      canvas.toBlob((b) => resolve(b), 'image/jpeg', quality),
+    );
+    URL.revokeObjectURL(img.src);
+    if (!blob) return file;
+    return new File([blob], file.name.replace(/\.(png|jpg|jpeg)$/i, '.jpg'), { type: 'image/jpeg' });
+  } catch {
+    return file;
+  }
+}
+
 const STEPS = {
   VEHICLE_EXTERIOR : 1,
   VEHICLE_INTERIOR : 2,
@@ -100,9 +127,11 @@ const PickupVerification: React.FC = () => {
     setIsUploadingImage(true);
     
     try {
+      // Comprimir imagen antes de subir para acelerar en móviles
+      const optimized = await compressImage(file, 1600, 0.75);
       // Subir imagen al storage - solo enviamos folderPath
       const folderPath = `travel/${transferId}/pickup/${type}`;
-      const imageUrl = await StorageService.uploadImage(file, folderPath);
+      const imageUrl = await StorageService.uploadImage(optimized, folderPath);
       
       if (imageUrl) {
         console.log('URL de imagen recibida:', imageUrl);

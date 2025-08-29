@@ -633,6 +633,51 @@ export class TravelsService {
         timeTravel,
       },
     );
+
+    // Notificaciones y correo al solicitar finalización
+    try {
+      const travel = await this.travelsRepo.findOne({
+        where: { id } as FindOptionsWhere<Travels>,
+        relations: this.defaultRelations,
+      });
+      await this.notifications?.create({
+        title: 'Solicitud de finalización de traslado',
+        message: `El traslado ${id} fue marcado para finalizar`,
+        roleTarget: UserRole.ADMIN,
+        category: 'TRAVEL_UPDATED',
+        entityType: 'TRAVEL',
+        entityId: id,
+        read: false,
+        userId: null,
+        data: { status: TransferStatus.REQUEST_FINISH, clientId: travel?.idClient, droverId: travel?.droverId },
+      });
+      if (travel?.idClient) {
+        await this.notifications?.create({
+          title: 'Tu traslado está por finalizar',
+          message: 'El conductor solicitó finalizar el traslado',
+          roleTarget: UserRole.CLIENT,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: id,
+          read: false,
+          userId: travel.idClient,
+        });
+      }
+      if (travel?.droverId) {
+        await this.notifications?.create({
+          title: 'Solicitud de finalización enviada',
+          message: 'Se notificó a Administración y al cliente',
+          roleTarget: UserRole.DROVER,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: id,
+          read: false,
+          userId: travel.droverId,
+        });
+      }
+      // Correo de aviso de llegada (mismo que en updateStatus)
+      this.resend.sendArrivedEmailDJT(travel);
+    } catch {}
   }
 
   async savePickupVerification(
