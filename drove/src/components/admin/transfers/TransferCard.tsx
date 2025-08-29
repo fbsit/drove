@@ -126,10 +126,10 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
         
         {/* Botones de acción - Nueva fila separada */}
         <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
-          {/* Primera fila: Botón Ver siempre visible (admin → ruta admin) */}
+          {/* Primera fila: Botón Ver siempre visible (admin → detalle activo) */}
           <div className="flex justify-end">
             <Button variant="ghost" size="sm" onClick={handleVerClick} asChild>
-              <Link to={`/admin/traslados?focus=${transfer.id}`}>
+              <Link to={`/traslados/activo/${transfer.id}`}>
                 Ver <ArrowRight size={16} />
               </Link>
             </Button>

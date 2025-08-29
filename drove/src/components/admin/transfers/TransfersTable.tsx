@@ -233,7 +233,7 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                               <DropdownMenuContent className="bg-[#22142A] border-white/20">
                                 <DropdownMenuItem asChild>
                                   <Link 
-                                    to={`/admin/traslados?focus=${transfer.id}`}
+                                    to={`/traslados/activo/${transfer.id}`}
                                     className="flex items-center gap-2 text-white hover:bg-white/10 cursor-pointer"
                                   >
                                     <Eye size={16} />
