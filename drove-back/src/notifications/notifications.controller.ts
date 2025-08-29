@@ -17,9 +17,7 @@ export class NotificationsController {
   }
 
   @Get()
-  @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
-  @Header('Pragma', 'no-cache')
-  @Header('Expires', '0')
+  @Header('Cache-Control', 'no-store')
   @ApiOperation({ summary: 'Listar notificaciones del usuario actual' })
   findAll(@Req() req: any) {
     const userId = req.user?.sub || req.user?.id;
@@ -28,9 +26,7 @@ export class NotificationsController {
   }
 
   @Get('unread-count')
-  @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
-  @Header('Pragma', 'no-cache')
-  @Header('Expires', '0')
+  @Header('Cache-Control', 'no-store')
   @ApiOperation({ summary: 'Contar notificaciones no leídas del usuario actual' })
   unreadCount(@Req() req: any) {
     const userId = req.user?.sub || req.user?.id;
