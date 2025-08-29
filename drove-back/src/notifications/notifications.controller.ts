@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Header } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
@@ -17,6 +17,9 @@ export class NotificationsController {
   }
 
   @Get()
+  @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+  @Header('Pragma', 'no-cache')
+  @Header('Expires', '0')
   @ApiOperation({ summary: 'Listar notificaciones del usuario actual' })
   findAll(@Req() req: any) {
     const userId = req.user?.sub || req.user?.id;
@@ -25,6 +28,9 @@ export class NotificationsController {
   }
 
   @Get('unread-count')
+  @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+  @Header('Pragma', 'no-cache')
+  @Header('Expires', '0')
   @ApiOperation({ summary: 'Contar notificaciones no leídas del usuario actual' })
   unreadCount(@Req() req: any) {
     const userId = req.user?.sub || req.user?.id;
