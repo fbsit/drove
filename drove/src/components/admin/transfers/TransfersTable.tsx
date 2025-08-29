@@ -45,13 +45,30 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [selectedTransferForReschedule, setSelectedTransferForReschedule] = useState<any>(null);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat("es-ES", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }).format(date);
+  const formatDate = (dateInput: any) => {
+    if (!dateInput) return '—';
+    try {
+      // Acepta Date, ISO string, timestamp o campos pickup_details
+      let date: Date;
+      if (typeof dateInput === 'string' || typeof dateInput === 'number') {
+        date = new Date(dateInput);
+      } else if (dateInput instanceof Date) {
+        date = dateInput;
+      } else if (typeof dateInput === 'object') {
+        const val = (dateInput as any).createdAt || (dateInput as any).created_at || null;
+        date = val ? new Date(val) : new Date();
+      } else {
+        return '—';
+      }
+      if (isNaN(date.getTime())) return '—';
+      return new Intl.DateTimeFormat('es-ES', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }).format(date);
+    } catch {
+      return '—';
+    }
   };
 
   const toggleRow = (transferId: string) => {
@@ -167,7 +184,7 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Calendar size={16} className="text-white/70" />
-                            <p className="text-white text-sm">{formatDate(transfer.created_at)}</p>
+                            <p className="text-white text-sm">{formatDate(transfer.createdAt || transfer.created_at)}</p>
                           </div>
                         </TableCell>
                         
