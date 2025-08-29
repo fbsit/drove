@@ -12,6 +12,7 @@ import {
   Check, ArrowLeft, ArrowRight, Camera, FileText, User, Loader,
 } from 'lucide-react';
 import { toast }                       from 'sonner';
+import { useAuth }                    from '@/contexts/AuthContext';
 import DashboardLayout                 from '@/components/layout/DashboardLayout';
 import { TransferService }             from '@/services/transferService';
 import { usePickupVerification }       from '@/hooks/usePickupVerification';
@@ -83,6 +84,7 @@ const INTERIOR_KEYS = {
 const PickupVerification: React.FC = () => {
   const { transferId }               = useParams<{ transferId: string }>();
   const navigate                     = useNavigate();
+  const { user }                     = useAuth();
   const [currentStep, setCurrentStep] = useState(STEPS.VEHICLE_EXTERIOR);
   const [transfer, setTransfer]       = useState<any>(null);
   const [isLoading, setIsLoading]     = useState(true);
@@ -110,6 +112,39 @@ const PickupVerification: React.FC = () => {
         setIsLoading(true);
         const data = await TransferService.getTransferById(transferId);
         setTransfer(data);
+
+        // Regla: solo el drover asignado y ventana de 30 minutos
+        try {
+          const assignedDroverId = data?.droverId || data?.drover?.id;
+          if (!user?.id || !assignedDroverId || String(user.id) !== String(assignedDroverId)) {
+            toast.warning('Esta verificación solo puede realizarla el drover asignado.');
+            navigate('/drover/dashboard');
+            return;
+          }
+
+          const dateStr = data?.travelDate || data?.pickupDetails?.pickupDate;
+          const timeStr = data?.travelTime || data?.pickupDetails?.pickupTime;
+          if (dateStr && timeStr) {
+            const dt = new Date(dateStr);
+            const [hh = '00', mm = '00'] = String(timeStr).split(':');
+            dt.setHours(Number(hh), Number(mm), 0, 0);
+
+            const now = new Date();
+            const minus30 = new Date(now.getTime() - 30 * 60 * 1000);
+            const plus30  = new Date(now.getTime() + 30 * 60 * 1000);
+
+            if (dt < minus30) {
+              toast.warning('La hora de recogida ya pasó. Contacta a soporte para reprogramar.');
+              navigate('/drover/dashboard');
+              return;
+            }
+            if (dt > plus30) {
+              toast.warning('Aún es muy temprano para iniciar la recogida. Vuelve dentro de 30 minutos.');
+              navigate('/drover/dashboard');
+              return;
+            }
+          }
+        } catch {}
       } catch {
         toast.error('Error al cargar el traslado');
       } finally { setIsLoading(false); }
