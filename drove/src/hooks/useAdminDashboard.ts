@@ -78,7 +78,19 @@ export const useAdminDashboard = () => {
     retry: 3,
   });
 
+  // Traslados recientes (últimos 5)
+  const { data: recentTransfers = [] } = useQuery({
+    queryKey: ['admin-dashboard-recent-transfers'],
+    queryFn: async () => {
+      const list = await AdminService.getTransfers({});
+      // ordenar por createdAt desc si viene, tomar 5
+      const arr = Array.isArray(list?.transfers) ? list.transfers : (Array.isArray(list) ? list : []);
+      return arr.sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 5);
+    },
+    staleTime: 60_000,
+  });
+
   console.log("metricas finales", metrics);
 
-  return { metrics, isLoading, error };
+  return { metrics, recentTransfers, isLoading, error };
 };

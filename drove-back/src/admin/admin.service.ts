@@ -461,9 +461,24 @@ export class AdminService {
     // clientType no existe en travels; métrica por tipo de cliente requeriría join con users
 
     const raw = await qb.getRawOne();
+
+    // Conteos por estado para el dashboard
+    const statusCounts = await this.transferRepo
+      .createQueryBuilder('t')
+      .select('t.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('t.status')
+      .getRawMany<{ status: string; count: string }>();
+
+    const transferStatus = statusCounts.map((r) => ({
+      status: r.status,
+      count: Number(r.count),
+    }));
+
     return {
       totalTransfers: Number(raw.totalTransfers ?? 0),
       totalRevenue: Number(raw.totalRevenue ?? 0),
+      transferStatus,
     };
   }
 
