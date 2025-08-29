@@ -126,10 +126,10 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
         
         {/* Botones de acción - Nueva fila separada */}
         <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
-          {/* Primera fila: Botón Ver siempre visible */}
+          {/* Primera fila: Botón Ver siempre visible (admin → ruta admin) */}
           <div className="flex justify-end">
             <Button variant="ghost" size="sm" onClick={handleVerClick} asChild>
-              <Link to={`/traslados/${transfer.id}`}>
+              <Link to={`/admin/traslados?focus=${transfer.id}`}>
                 Ver <ArrowRight size={16} />
               </Link>
             </Button>
@@ -138,8 +138,8 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
           {/* Segunda fila: Botones condicionales */}
           {(shouldShowAssignButton || isAssigned || transfer.status === TransferStatus.CREATED) && (
             <div className="flex flex-col gap-2">
-              {/* Botón Asignar Drover */}
-              {shouldShowAssignButton && (
+              {/* Botón Asignar/Reasignar según estado */}
+              {shouldShowAssignButton ? (
                 <Button
                   variant="outline"
                   size="sm"
@@ -148,7 +148,16 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
                 >
                   <Link to={`/admin/asignar/${transfer.id}`}>Asignar Drover</Link>
                 </Button>
-              )}
+              ) : isAssigned ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-orange-400/50 text-orange-400 hover:bg-orange-400/10 w-full"
+                  asChild
+                >
+                  <Link to={`/admin/reasignar/${transfer.id}`}>Reasignar Drover</Link>
+                </Button>
+              ) : null}
               
               {/* Botón Reagendar para traslados created o assigned */}
               {(transfer.status === TransferStatus.CREATED || transfer.status === TransferStatus.ASSIGNED) && (

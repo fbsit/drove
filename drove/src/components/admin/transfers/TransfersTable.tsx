@@ -190,7 +190,7 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                         
                         <TableCell className="text-right">
                           <span className="text-base font-bold text-[#6EF7FF] whitespace-nowrap">
-                            {parseFloat(transfer.price).toFixed(2)} €
+                            {Number(transfer.totalPrice ?? transfer.price ?? 0).toFixed(2)} €
                           </span>
                         </TableCell>
                         
@@ -233,7 +233,7 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                               <DropdownMenuContent className="bg-[#22142A] border-white/20">
                                 <DropdownMenuItem asChild>
                                   <Link 
-                                    to={`/traslados/${transfer.id}`}
+                                    to={`/admin/traslados?focus=${transfer.id}`}
                                     className="flex items-center gap-2 text-white hover:bg-white/10 cursor-pointer"
                                   >
                                     <Eye size={16} />
