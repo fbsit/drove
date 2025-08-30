@@ -92,6 +92,20 @@ const PickupVerification: React.FC = () => {
   const [accessWarning, setAccessWarning] = useState<string | null>(null);
   const [accessBlocked, setAccessBlocked] = useState<boolean>(false);
 
+  const scheduledPickupText = React.useMemo(() => {
+    try {
+      const dateStr = (transfer as any)?.travelDate || (transfer as any)?.pickupDetails?.pickupDate;
+      const timeStr = (transfer as any)?.travelTime || (transfer as any)?.pickupDetails?.pickupTime;
+      if (!dateStr || !timeStr) return '';
+      const dt = new Date(dateStr);
+      const [hh = '00', mm = '00'] = String(timeStr).split(':');
+      dt.setHours(Number(hh), Number(mm), 0, 0);
+      return new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' }).format(dt);
+    } catch {
+      return '';
+    }
+  }, [transfer]);
+
   const {
     signature,
     comments,
@@ -450,6 +464,9 @@ const PickupVerification: React.FC = () => {
             <div>
               <div className="font-semibold">No puedes completar la verificación todavía</div>
               <div className="text-sm opacity-90">{accessWarning}</div>
+              {scheduledPickupText && (
+                <div className="text-sm mt-1 opacity-90">Hora programada: {scheduledPickupText}</div>
+              )}
             </div>
           </div>
         )}
@@ -482,6 +499,7 @@ const PickupVerification: React.FC = () => {
         </div>
 
         {/* tarjeta principal */}
+        {!accessBlocked && (
         <Card className="border-white/20 bg-white/5 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-white text-center">
@@ -523,6 +541,29 @@ const PickupVerification: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+        )}
+
+        {accessBlocked && (
+          <Card className="border-white/20 bg-white/5 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-white text-center">Recogida programada</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-white/80 text-center">
+                {scheduledPickupText ? (
+                  <p>Hora programada de recogida: <span className="font-semibold text-white">{scheduledPickupText}</span></p>
+                ) : (
+                  <p>Consulta la hora programada en el detalle del traslado.</p>
+                )}
+              </div>
+              <div className="mt-6 flex justify-center">
+                <Button onClick={() => navigate('/drover/dashboard')} className="bg-[#6EF7FF] text-[#22142A] hover:bg-[#6EF7FF]/90">
+                  Volver al Dashboard
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </DashboardLayout>
   );
