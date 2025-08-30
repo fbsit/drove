@@ -18,13 +18,10 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    // Fondo blanco para que la firma se incruste nítida en PDF y sin marcas
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Fondo transparente (por defecto) para incrustar la firma sin background en el PDF
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   }, []);
 
   /* ───────── handlers ───────── */
@@ -45,14 +42,7 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
     setLastX(clientX - rect.left);
     setLastY(clientY - rect.top);
 
-    if (!hasDrawn) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        setHasDrawn(true);
-      }
-    }
+    if (!hasDrawn) setHasDrawn(true);
   };
 
   const draw = (
@@ -75,7 +65,7 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(x, y);
-    ctx.strokeStyle = '#FFFFFF';
+    ctx.strokeStyle = '#111827'; // negro/gris oscuro para buen contraste
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.stroke();
@@ -96,9 +86,7 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     setHasDrawn(false);
     onSignatureChange('');

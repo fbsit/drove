@@ -1124,38 +1124,39 @@ export class PdfService {
                 color: rgb(0, 0, 0),
               });
               if (wixImageUrl && typeof wixImageUrl === 'string') {
-                const wixImagePattern = /^wix:image:\/\/v1\/(.+?)\//;
-                const match = wixImageUrl.match(wixImagePattern);
-                if (match && match[1]) {
-                  const imageId = match[1];
-                  const directImageUrl = `https://static.wixstatic.com/media/${imageId}`;
-                  const imageFormat: any = wixImageUrl.includes('.png')
-                    ? 'png'
-                    : 'jpg';
-                  const response = await fetch(directImageUrl);
-                  const arrayBuffer = await response.arrayBuffer();
-                  const imageBuffer = Buffer.from(arrayBuffer);
-                  let embeddedImage;
-                  if (imageFormat === 'jpg' || imageFormat === 'jpeg') {
-                    embeddedImage = await pdfDoc.embedJpg(imageBuffer);
-                  } else if (imageFormat === 'png') {
-                    embeddedImage = await pdfDoc.embedPng(imageBuffer);
-                  } else {
-                    console.warn(
-                      `Formato de imagen no soportado para ${description}`,
-                    );
-                    continue;
+                const tryEmbed = async (src: string) => {
+                  try {
+                    // data URI
+                    if (src.startsWith('data:image/')) {
+                      const [, b64] = src.split(',');
+                      const buf = Buffer.from(b64, 'base64');
+                      if (src.includes('png')) return await pdfDoc.embedPng(buf);
+                      return await pdfDoc.embedJpg(buf);
+                    }
+                    // wix -> directo
+                    const wixMatch = src.match(/^wix:image:\/\/v1\/(.+?)\//);
+                    const url = wixMatch && wixMatch[1]
+                      ? `https://static.wixstatic.com/media/${wixMatch[1]}`
+                      : src;
+                    const res = await fetch(url);
+                    const arr = await res.arrayBuffer();
+                    const buf = Buffer.from(arr);
+                    if (url.toLowerCase().endsWith('.png')) return await pdfDoc.embedPng(buf);
+                    return await pdfDoc.embedJpg(buf);
+                  } catch {
+                    return null;
                   }
-                  page.drawImage(embeddedImage, {
+                };
+                const img = await tryEmbed(wixImageUrl);
+                if (img) {
+                  page.drawImage(img, {
                     x: xPosition + 10,
                     y: currentY + 10,
                     width: imageWidth,
                     height: imageHeight,
                   });
                 } else {
-                  console.warn(
-                    `No se pudo extraer el ID de la imagen para ${description}`,
-                  );
+                  console.warn(`No fue posible incrustar imagen para ${description}`);
                 }
               } else {
                 console.warn(`No hay imagen disponible para ${description}`);
