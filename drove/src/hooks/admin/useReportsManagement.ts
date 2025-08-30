@@ -42,16 +42,38 @@ export const useReportsManagement = () => {
         value: Number(s.count || s.value || 0),
       }));
 
-      const paymentMethods = (r.paymentMethods || []).map((m: any) => ({
+      let paymentMethods = (r.paymentMethods || []).map((m: any) => ({
         name: String(m.method || m.name || '').toUpperCase() === 'STRIPE' ? 'Tarjeta (Stripe)' : 'Transferencia',
         value: Number(m.amount || m.value || 0),
       }));
 
-      const paymentStatus = (r.paymentStatus || []).map((p: any) => ({
+      let paymentStatus = (r.paymentStatus || []).map((p: any) => ({
         name: p.status || p.name,
         value: Number(p.count || p.value || 0),
         color: p.color || '#6EF7FF',
       }));
+
+      // Fallback: si el backend no entregó métricas de pagos, agrégalas a partir de /payments
+      if ((!paymentMethods || paymentMethods.length === 0) || (!paymentStatus || paymentStatus.length === 0)) {
+        try {
+          const payments: any[] = await AdminService.getPayments();
+          // Métodos
+          const byMethod: Record<string, number> = {};
+          // Estados
+          const byStatus: Record<string, number> = {};
+          payments.forEach((p: any) => {
+            const methodKey = String(p.method || p.paymentMethod || '').toUpperCase();
+            const statusKey = String(p.status || '').toUpperCase();
+            const amount = Number(p.amount || p.total || 0);
+            byMethod[methodKey] = (byMethod[methodKey] || 0) + amount;
+            byStatus[statusKey] = (byStatus[statusKey] || 0) + 1;
+          });
+          const methodMap: Record<string,string> = { STRIPE: 'Tarjeta (Stripe)', CARD: 'Tarjeta (Stripe)', TRANSFER: 'Transferencia', BANK_TRANSFER: 'Transferencia' };
+          paymentMethods = Object.entries(byMethod).map(([k,v]) => ({ name: methodMap[k] || k, value: v }));
+          const statusColor: Record<string,string> = { PENDING: '#FFD166', CONFIRMED: '#06D6A0', PAID: '#06D6A0', FAILED: '#FF6B6B', CANCELLED: '#FF6B6B', REFUNDED: '#6EF7FF' };
+          paymentStatus = Object.entries(byStatus).map(([k,v]) => ({ name: k, value: v as number, color: statusColor[k] || '#6EF7FF' }));
+        } catch {}
+      }
 
       return {
         ...r,
