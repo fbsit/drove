@@ -21,8 +21,10 @@ import { Button } from '@/components/ui/button';
 
 const DashboardDroverPanel: React.FC = () => {
   const { user } = useAuth();           // se asume user.id
-  const [tracking, setTracking] = React.useState(false);
-  const trackerRef = React.useRef<number | null>(null);
+  const [tracking, setTracking] = React.useState<boolean>(() => {
+    try { return localStorage.getItem('drover_tracking_active') === '1'; } catch { return false; }
+  });
+  const watcherRef = React.useRef<number | null>(null);
 
   /* ------------------ fetch datos reales ------------------ */
   const {
@@ -56,6 +58,28 @@ const DashboardDroverPanel: React.FC = () => {
   if (isLoading) {
     return <div className="h-64 flex items-center justify-center text-white">Cargando…</div>;
   }
+
+  // Rehidratar tracking al montar si estaba activo
+  React.useEffect(() => {
+    const active = (() => { try { return localStorage.getItem('drover_tracking_active') === '1'; } catch { return false; }})();
+    if (active && watcherRef.current == null && 'geolocation' in navigator) {
+      watcherRef.current = navigator.geolocation.watchPosition(async (pos) => {
+        try { await DroverService.updateCurrentPosition(pos.coords.latitude, pos.coords.longitude); } catch {}
+      }, () => {}, { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 });
+      setTracking(true);
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible' && active) {
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+          try { await DroverService.updateCurrentPosition(pos.coords.latitude, pos.coords.longitude); } catch {}
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
 
   /* ------------------ render ------------------ */
   return (
@@ -145,32 +169,28 @@ const DashboardDroverPanel: React.FC = () => {
               onClick={async () => {
                 if (tracking) {
                   setTracking(false);
-                  if (trackerRef.current) {
-                    window.clearInterval(trackerRef.current);
-                    trackerRef.current = null;
+                  try { localStorage.setItem('drover_tracking_active', '0'); } catch {}
+                  if (watcherRef.current != null) {
+                    navigator.geolocation.clearWatch(watcherRef.current);
+                    watcherRef.current = null;
                   }
                   return;
                 }
-                // Activar tracking: cada 5 min enviar posición si no está en viaje activo
-                const sendPosition = async () => {
-                  try {
-                    await new Promise<void>((resolve, reject) => {
-                      if (!navigator.geolocation) return reject(new Error('Geolocation no disponible'));
-                      navigator.geolocation.getCurrentPosition(
-                        async (pos) => {
-                          try {
-                            await DroverService.updateCurrentPosition(pos.coords.latitude, pos.coords.longitude);
-                            resolve();
-                          } catch (e) { reject(e as any); }
-                        },
-                        (err) => reject(err),
-                        { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 }
-                      );
-                    });
-                  } catch {}
+                // Activar tracking persistente con watchPosition
+                const startWatch = () => {
+                  if (!('geolocation' in navigator)) return;
+                  watcherRef.current = navigator.geolocation.watchPosition(
+                    async (pos) => {
+                      try {
+                        await DroverService.updateCurrentPosition(pos.coords.latitude, pos.coords.longitude);
+                      } catch {}
+                    },
+                    () => {},
+                    { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 }
+                  );
                 };
-                await sendPosition();
-                trackerRef.current = window.setInterval(sendPosition, 5 * 60 * 1000);
+                startWatch();
+                try { localStorage.setItem('drover_tracking_active', '1'); } catch {}
                 setTracking(true);
               }}
             >
