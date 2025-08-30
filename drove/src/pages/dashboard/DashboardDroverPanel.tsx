@@ -178,6 +178,13 @@ const DashboardDroverPanel: React.FC = () => {
               {tracking ? 'Tracking activo (click para detener)' : 'Activar Tracking de Ubicación'}
             </Button>
 
+            {/* Solo móvil: acceso al escáner QR */}
+            <Button asChild variant="outline" className="w-full rounded-2xl h-12 md:hidden">
+              <Link to="/qr/scan">
+                <Star size={18} className="mr-2"/> Escanear QR
+              </Link>
+            </Button>
+
             <Button variant="outline" className="w-full rounded-2xl h-12">
               <Star size={18} className="mr-2"/> Historial Completo
             </Button>

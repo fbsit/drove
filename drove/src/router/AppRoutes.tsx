@@ -24,6 +24,9 @@ import PaymentSuccess from '@/pages/paymentSuccess';
 import PaymentCancel from '@/pages/paymentCancel';
 import NotFound from '@/pages/NotFound';
 
+// Import dinámico del escáner para evitar problemas de paths
+const QRScanner = React.lazy(() => import('../pages/qr/QRScanner'));
+
 // Importaciones de páginas protegidas
 import ProfileRedirect from '@/pages/ProfileRedirect';
 import AdminProfile from '@/pages/admin/Profile';
@@ -95,6 +98,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/registro/:userType" element={<Register />} />
       <Route path="/postular" element={<Apply />} />
       <Route path="/qr/:code" element={<QRRedirect />} />
+      <Route path="/qr/scan" element={<React.Suspense fallback={null}><QRScanner /></React.Suspense>} />
       <Route path="/terminos" element={<TermsOfService />} />
       <Route path="/privacidad" element={<PrivacyPolicy />} />
       <Route path="/cookies" element={<CookiesPolicy />} />
