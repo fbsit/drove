@@ -54,12 +54,7 @@ const DashboardDroverPanel: React.FC = () => {
   console.log("valor stats",stats)
   const recentTrips  = dashboard?.recentTrips ?? [];
 
-  /* ------------------ loading ------------------ */
-  if (isLoading) {
-    return <div className="h-64 flex items-center justify-center text-white">Cargando…</div>;
-  }
-
-  // Rehidratar tracking al montar si estaba activo
+  // Rehidratar tracking al montar si estaba activo (colocado antes de cualquier return)
   React.useEffect(() => {
     const active = (() => { try { return localStorage.getItem('drover_tracking_active') === '1'; } catch { return false; }})();
     if (active && watcherRef.current == null && 'geolocation' in navigator) {
@@ -80,6 +75,11 @@ const DashboardDroverPanel: React.FC = () => {
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, []);
+
+  /* ------------------ loading ------------------ */
+  if (isLoading) {
+    return <div className="h-64 flex items-center justify-center text-white">Cargando…</div>;
+  }
 
   /* ------------------ render ------------------ */
   return (
