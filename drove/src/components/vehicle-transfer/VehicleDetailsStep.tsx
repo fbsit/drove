@@ -76,23 +76,19 @@ const VehicleDetailsStep: React.FC<VehicleDetailsStepProps> = ({ form }) => {
 
       {vehicleDetails.model && (
         <div className="space-y-4 sm:space-y-6">
+          {/* Matrícula */}
           <FormField
             control={form.control}
-            name="vehicleDetails"
+            name="vehicleDetails.licensePlate"
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-white font-medium">Matrícula</FormLabel>
                 <FormControl>
-                  <Input 
-                    placeholder="Ejemplo: 1234ABC o ABC1234" 
-                    value={vehicleDetails.licensePlate || ""}
-                    onChange={(e) => {
-                      const currentDetails = field.value || {};
-                      field.onChange({
-                        ...currentDetails,
-                        licensePlate: e.target.value.toUpperCase()
-                      });
-                    }}
+                  <Input
+                    placeholder="Ejemplo: 1234ABC o ABC1234"
+                    {...field}
+                    value={field.value || ''}
+                    onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                     maxLength={7}
                     className="w-full max-w-full"
                   />
@@ -101,9 +97,9 @@ const VehicleDetailsStep: React.FC<VehicleDetailsStepProps> = ({ form }) => {
                   <span className="text-white/60 text-sm">Formato: 1234ABC o ABC1234</span>
                   <span className={cn(
                     "text-sm",
-                    licensePlateValue.length === 7 ? "text-green-500" : "text-white/60"
+                    (field.value?.length || 0) === 7 ? "text-green-500" : "text-white/60"
                   )}>
-                    {licensePlateValue.length}/7 caracteres
+                    {(field.value?.length || 0)}/7 caracteres
                   </span>
                 </FormDescription>
                 <FormMessage className="text-red-400" />
@@ -111,23 +107,19 @@ const VehicleDetailsStep: React.FC<VehicleDetailsStepProps> = ({ form }) => {
             )}
           />
 
+          {/* VIN */}
           <FormField
             control={form.control}
-            name="vehicleDetails"
+            name="vehicleDetails.vin"
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-white font-medium">Nº de bastidor (VIN)</FormLabel>
                 <FormControl>
-                  <Input 
-                    placeholder="17 caracteres alfanuméricos" 
-                    value={vehicleDetails.vin || ""}
-                    onChange={(e) => {
-                      const currentDetails = field.value || {};
-                      field.onChange({
-                        ...currentDetails,
-                        vin: e.target.value.toUpperCase()
-                      });
-                    }}
+                  <Input
+                    placeholder="17 caracteres alfanuméricos"
+                    {...field}
+                    value={field.value || ''}
+                    onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                     maxLength={17}
                     className="w-full max-w-full"
                   />
@@ -136,9 +128,9 @@ const VehicleDetailsStep: React.FC<VehicleDetailsStepProps> = ({ form }) => {
                   <span className="text-white/60 text-sm">Sin caracteres I, O, Q</span>
                   <span className={cn(
                     "text-sm",
-                    vinValue.length === 17 ? "text-green-500" : "text-white/60"
+                    (field.value?.length || 0) === 17 ? "text-green-500" : "text-white/60"
                   )}>
-                    {vinValue.length}/17 caracteres
+                    {(field.value?.length || 0)}/17 caracteres
                   </span>
                 </FormDescription>
                 <FormMessage className="text-red-400" />

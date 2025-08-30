@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/card';
 import { Button }                      from '@/components/ui/button';
 import {
-  Check, ArrowLeft, ArrowRight, Camera, FileText, User, Loader,
+  Check, ArrowLeft, ArrowRight, Camera, FileText, User, Loader, AlertTriangle,
 } from 'lucide-react';
 import { toast }                       from 'sonner';
 import { useAuth }                    from '@/contexts/AuthContext';
@@ -89,6 +89,8 @@ const PickupVerification: React.FC = () => {
   const [transfer, setTransfer]       = useState<any>(null);
   const [isLoading, setIsLoading]     = useState(true);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [accessWarning, setAccessWarning] = useState<string | null>(null);
+  const [accessBlocked, setAccessBlocked] = useState<boolean>(false);
 
   const {
     signature,
@@ -114,37 +116,38 @@ const PickupVerification: React.FC = () => {
         setTransfer(data);
 
         // Regla: solo el drover asignado y ventana de 30 minutos
-        try {
-          const assignedDroverId = data?.droverId || data?.drover?.id;
-          if (!user?.id || !assignedDroverId || String(user.id) !== String(assignedDroverId)) {
-            toast.warning('Esta verificación solo puede realizarla el drover asignado.');
-            navigate('/drover/dashboard');
+        const assignedDroverId = data?.droverId || data?.drover?.id;
+        if (!user?.id || !assignedDroverId || String(user.id) !== String(assignedDroverId)) {
+          setAccessBlocked(true);
+          setAccessWarning('Solo el drover asignado puede realizar esta verificación.');
+          toast.warning('Solo el drover asignado puede realizar esta verificación.');
+          return;
+        }
+
+        const dateStr = data?.travelDate || data?.pickupDetails?.pickupDate;
+        const timeStr = data?.travelTime || data?.pickupDetails?.pickupTime;
+        if (dateStr && timeStr) {
+          const dt = new Date(dateStr);
+          const [hh = '00', mm = '00'] = String(timeStr).split(':');
+          dt.setHours(Number(hh), Number(mm), 0, 0);
+
+          const now = new Date();
+          const minus30 = new Date(now.getTime() - 30 * 60 * 1000);
+          const plus30  = new Date(now.getTime() + 30 * 60 * 1000);
+
+          if (dt < minus30) {
+            setAccessBlocked(true);
+            setAccessWarning('La hora de recogida ya pasó. Contacta a soporte para reprogramar.');
+            toast.warning('La hora de recogida ya pasó.');
             return;
           }
-
-          const dateStr = data?.travelDate || data?.pickupDetails?.pickupDate;
-          const timeStr = data?.travelTime || data?.pickupDetails?.pickupTime;
-          if (dateStr && timeStr) {
-            const dt = new Date(dateStr);
-            const [hh = '00', mm = '00'] = String(timeStr).split(':');
-            dt.setHours(Number(hh), Number(mm), 0, 0);
-
-            const now = new Date();
-            const minus30 = new Date(now.getTime() - 30 * 60 * 1000);
-            const plus30  = new Date(now.getTime() + 30 * 60 * 1000);
-
-            if (dt < minus30) {
-              toast.warning('La hora de recogida ya pasó. Contacta a soporte para reprogramar.');
-              navigate('/drover/dashboard');
-              return;
-            }
-            if (dt > plus30) {
-              toast.warning('Aún es muy temprano para iniciar la recogida. Vuelve dentro de 30 minutos.');
-              navigate('/drover/dashboard');
-              return;
-            }
+          if (dt > plus30) {
+            setAccessBlocked(true);
+            setAccessWarning('Aún es muy temprano para iniciar la recogida. Vuelve dentro de 30 minutos.');
+            toast.warning('Aún es muy temprano para iniciar la recogida.');
+            return;
           }
-        } catch {}
+        }
       } catch {
         toast.error('Error al cargar el traslado');
       } finally { setIsLoading(false); }
@@ -306,7 +309,7 @@ const PickupVerification: React.FC = () => {
                     />
                     <Button variant="destructive" size="icon"
                       onClick={() => removeImage(type, k)}
-                      disabled={isUploadingImage}
+                      disabled={isUploadingImage || accessBlocked}
                       className="absolute top-2 right-2 h-6 w-6">✕</Button>
                   </div>
                 ) : (
@@ -317,7 +320,7 @@ const PickupVerification: React.FC = () => {
                       <Camera className="h-8 w-8 text-white/70"/>
                     )}
                     <input type="file" accept="image/*" capture="environment" className="hidden"
-                      disabled={isUploadingImage}
+                      disabled={isUploadingImage || accessBlocked}
                       onChange={e => handleImageChange(type, k, e)}/>
                   </label>
                 )}
@@ -441,6 +444,15 @@ const PickupVerification: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto space-y-6">
+        {accessWarning && (
+          <div className="flex items-center gap-3 p-3 rounded-lg border border-amber-400 bg-amber-500/15 text-amber-100">
+            <AlertTriangle className="h-5 w-5" />
+            <div>
+              <div className="font-semibold">No puedes completar la verificación todavía</div>
+              <div className="text-sm opacity-90">{accessWarning}</div>
+            </div>
+          </div>
+        )}
         {/* encabezado */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Verificación de Recogida</h1>
@@ -496,14 +508,14 @@ const PickupVerification: React.FC = () => {
                 </Button>
               ) : currentStep === STEPS.CONFIRMATION ? (
                 <Button onClick={handleSubmitVerification}
-                  disabled={isSubmitting || !canProceed()}
+                  disabled={isSubmitting || !canProceed() || accessBlocked}
                   className="bg-green-500 hover:bg-green-600 text-white ml-auto">
                   {isSubmitting
                     ? (<><Loader className="mr-2 h-4 w-4 animate-spin"/>Enviando…</>)
                     : 'Enviar Verificación'}
                 </Button>
               ) : (
-                <Button onClick={handleNext} disabled={!canProceed()}
+                <Button onClick={handleNext} disabled={!canProceed() || accessBlocked}
                   className="bg-[#6EF7FF] text-[#22142A] hover:bg-[#6EF7FF]/90 disabled:opacity-50 ml-auto">
                   Siguiente <ArrowRight size={16} className="ml-2"/>
                 </Button>
