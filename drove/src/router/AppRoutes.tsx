@@ -2,6 +2,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Importaciones de páginas públicas
 import Index from '@/pages/Index';
@@ -68,6 +69,15 @@ import DroverProfile from '@/pages/admin/DroverProfile';
 import VerifyEmail from '@/pages/auth/VerifyEmail';
 import PendingApproval from '@/pages/auth/PendingApproval';
 
+const RoleDashboardRedirect: React.FC = () => {
+  const { user } = useAuth();
+  const role = String((user as any)?.role || '').toLowerCase();
+  if (role === 'client') return <Navigate to="/cliente/dashboard" replace />;
+  if (role === 'drover') return <Navigate to="/drover/dashboard" replace />;
+  if (role === 'traffic_manager' || role === 'trafficboss' || role === 'traffic_boss') return <Navigate to="/trafico/dashboard" replace />;
+  return <Navigate to="/admin/dashboard" replace />;
+};
+
 const AppRoutes: React.FC = () => {
   return (
     <Routes>
@@ -104,7 +114,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/clientes/:id" element={<ClientProfile />} />
 
         {/* Rutas de dashboard */}
-        <Route path="/dashboard" element={<Navigate to="/admin/dashboard" />} />
+        <Route path="/dashboard" element={<RoleDashboardRedirect />} />
         <Route path="/admin/dashboard" element={<DashboardAdminPanel />} />
         <Route path="/cliente/dashboard" element={<DashboardClientPanel />} />
         <Route path="/drover/dashboard" element={<DashboardDroverPanel />} />
