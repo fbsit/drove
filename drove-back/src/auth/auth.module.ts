@@ -14,7 +14,7 @@ import { JwtStrategy } from './jwt.strategy';
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'supersecretkey', // Define el secreto vía variables de entorno o directamente
       signOptions: {
-        expiresIn: process.env.JWT_EXPIRES_IN || '3600s', // Tiempo de expiración del token
+        expiresIn: process.env.JWT_EXPIRES_IN || '1d', // 1 día por defecto
       },
     }),
     VerificationsModule,

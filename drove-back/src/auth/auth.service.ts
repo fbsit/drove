@@ -70,11 +70,14 @@ export class AuthService {
       role: user.role,
     };
 
-    const access_token = this.jwtService.sign(payload);
+    // Firmar con expiración explícita (1 día por defecto o JWT_EXPIRES_IN)
+    const access_token = this.jwtService.sign(payload, {
+      expiresIn: process.env.JWT_EXPIRES_IN || '1d',
+    });
 
     return {
       access_token,
-      expiresIn: process.env.JWT_EXPIRES_IN || '3600',
+      expiresIn: process.env.JWT_EXPIRES_IN || '86400',
       user: {
         id: user.id,
         name: fullName,
