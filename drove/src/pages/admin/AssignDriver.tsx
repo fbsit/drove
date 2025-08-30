@@ -194,7 +194,10 @@ export const AssignDriver: React.FC = () => {
         description: `${driver?.contactInfo.fullName} ha sido ${isReassignmentMode ? 'reasignado al' : 'asignado al'
           } traslado`,
       });
-      navigate('/admin/traslados');
+      // Mantener en la pantalla y refrescar detalles para evitar sensación de salto
+      await fetchTransferDetails();
+      setIsSubmitting(false);
+      setSelectedDriverId(null);
     } catch (e) {
       console.error(e);
       toast({
