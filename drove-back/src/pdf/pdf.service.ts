@@ -481,14 +481,14 @@ export class PdfService {
       });
       page.drawText('ID Cliente:', {
         x: 50,
-        y: pageHeight - 160 + fixVertical,
+        y: pageHeight - 162 + fixVertical,
         size: fontSize,
         font: helveticaBoldFont,
         color: rgb(0, 0, 0),
       });
       page.drawText(String(travel?.idClient || ''), {
-        x: 70,
-        y: pageHeight - 160 + fixVertical,
+        x: 120,
+        y: pageHeight - 162 + fixVertical,
         size: fontSize,
         font: font,
         color: rgb(0, 0, 0),
