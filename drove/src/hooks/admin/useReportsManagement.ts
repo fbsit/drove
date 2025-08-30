@@ -25,7 +25,44 @@ export const useReportsManagement = () => {
     isLoading,
   } = useQuery<ReportData>({
     queryKey: ['admin-reports'],
-    queryFn:   AdminService.getReports,
+    queryFn:   async () => {
+      const r: any = await AdminService.getReports();
+      // Normalizar estructuras para las gráficas
+      const statusMap: Record<string, string> = {
+        CREATED: 'Creado',
+        ASSIGNED: 'Asignado',
+        IN_PROGRESS: 'En Progreso',
+        DELIVERED: 'Entregado',
+        PICKED_UP: 'Recogido',
+        REQUEST_FINISH: 'Solicita Finalizar',
+        CANCELLED: 'Cancelado',
+      };
+      const transferStatus = (r.transferStatus || r.status || []).map((s: any) => ({
+        name: statusMap[s.status] || s.status || 'Otro',
+        value: Number(s.count || s.value || 0),
+      }));
+
+      const paymentMethods = (r.paymentMethods || []).map((m: any) => ({
+        name: String(m.method || m.name || '').toUpperCase() === 'STRIPE' ? 'Tarjeta (Stripe)' : 'Transferencia',
+        value: Number(m.amount || m.value || 0),
+      }));
+
+      const paymentStatus = (r.paymentStatus || []).map((p: any) => ({
+        name: p.status || p.name,
+        value: Number(p.count || p.value || 0),
+        color: p.color || '#6EF7FF',
+      }));
+
+      return {
+        ...r,
+        transferStatus,
+        paymentMethods,
+        paymentStatus,
+        revenue: Number(r.revenue || r.totalRevenue || 0),
+        transfers: Number(r.transfers || r.totalTransfers || 0),
+        drivers: Number(r.drivers || r.activeDrivers || 0),
+      } as ReportData as any;
+    },
     refetchInterval: 300_000, // 5 min
     onError: () =>
       toast({
