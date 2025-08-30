@@ -124,8 +124,8 @@ export const AssignDriver: React.FC = () => {
 
   /* filtrado + orden */
   const filteredAndSortedDrivers = useMemo(() => {
-    // Transform drovers to match Driver interface
-    const transformedDrivers: Driver[] = drovers.map(d => ({
+    // Transform drovers to match Driver interface (tipado flexible)
+    const transformedDrivers: Driver[] = (drovers as any[]).map((d: any) => ({
       id: d.id,
       full_name: d.full_name || d?.contactInfo?.fullName || '',
       email: d.email || d?.contactInfo?.email || '',
@@ -194,10 +194,14 @@ export const AssignDriver: React.FC = () => {
         description: `${driver?.contactInfo.fullName} ha sido ${isReassignmentMode ? 'reasignado al' : 'asignado al'
           } traslado`,
       });
-      // Mantener en la pantalla y refrescar detalles para evitar sensación de salto
-      await fetchTransferDetails();
+      // Redirigir inmediatamente tras respuesta exitosa
       setIsSubmitting(false);
       setSelectedDriverId(null);
+      if (transferId) {
+        navigate(`/traslados/activo/${transferId}`);
+      } else {
+        navigate('/admin/traslados');
+      }
     } catch (e) {
       console.error(e);
       toast({
@@ -261,7 +265,7 @@ export const AssignDriver: React.FC = () => {
         showFilters={showFilters} setShowFilters={setShowFilters}
       />
 
-      {console.log("drovers",drovers)}
+      {/* debug eliminado para evitar renderizar void en JSX */}
 
       {/* lista drovers */}
       {filteredAndSortedDrivers.length === 0 ? (
