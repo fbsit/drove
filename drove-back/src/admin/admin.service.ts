@@ -428,6 +428,30 @@ export class AdminService {
       count: Number(r.count),
     }));
 
+    // 9) Pagos por método
+    const paymentByMethodRaw = await this.paymentRepo
+      .createQueryBuilder('p')
+      .select('COALESCE(UPPER(p.method),\'TRANSFER\')', 'method')
+      .addSelect('SUM(p.amount)', 'amount')
+      .groupBy('UPPER(p.method)')
+      .getRawMany<{ method: string; amount: string }>();
+    const paymentMethods = paymentByMethodRaw.map((r) => ({
+      method: r.method,
+      amount: Number(r.amount || 0),
+    }));
+
+    // 10) Estado de pagos (conteo)
+    const paymentStatusRaw = await this.paymentRepo
+      .createQueryBuilder('p')
+      .select('p.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('p.status')
+      .getRawMany<{ status: string; count: string }>();
+    const paymentStatus = paymentStatusRaw.map((r) => ({
+      status: r.status,
+      count: Number(r.count || 0),
+    }));
+
     return {
       totalTransfers,
       totalRevenue,
@@ -441,8 +465,8 @@ export class AdminService {
       clients,
 
       transferStatus,
-      paymentMethods: [], // si aún no los implementas
-      paymentStatus: [], // idem
+      paymentMethods,
+      paymentStatus,
 
       topClients,
       topDrovers,
