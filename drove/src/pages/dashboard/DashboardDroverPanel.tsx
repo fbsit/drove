@@ -21,6 +21,8 @@ import { Button } from '@/components/ui/button';
 
 const DashboardDroverPanel: React.FC = () => {
   const { user } = useAuth();           // se asume user.id
+  const [tracking, setTracking] = React.useState(false);
+  const trackerRef = React.useRef<number | null>(null);
 
   /* ------------------ fetch datos reales ------------------ */
   const {
@@ -137,8 +139,43 @@ const DashboardDroverPanel: React.FC = () => {
               </Link>
             </Button>
 
-            <Button variant="outline" className="w-full rounded-2xl h-12">
-              <Calendar size={18} className="mr-2"/> Programar Disponibilidad
+            <Button
+              variant={tracking ? 'default' : 'outline'}
+              className={`w-full rounded-2xl h-12 ${tracking ? 'bg-green-500 text-white hover:bg-green-400' : ''}`}
+              onClick={async () => {
+                if (tracking) {
+                  setTracking(false);
+                  if (trackerRef.current) {
+                    window.clearInterval(trackerRef.current);
+                    trackerRef.current = null;
+                  }
+                  return;
+                }
+                // Activar tracking: cada 5 min enviar posición si no está en viaje activo
+                const sendPosition = async () => {
+                  try {
+                    await new Promise<void>((resolve, reject) => {
+                      if (!navigator.geolocation) return reject(new Error('Geolocation no disponible'));
+                      navigator.geolocation.getCurrentPosition(
+                        async (pos) => {
+                          try {
+                            await DroverService.updateCurrentPosition(pos.coords.latitude, pos.coords.longitude);
+                            resolve();
+                          } catch (e) { reject(e as any); }
+                        },
+                        (err) => reject(err),
+                        { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 }
+                      );
+                    });
+                  } catch {}
+                };
+                await sendPosition();
+                trackerRef.current = window.setInterval(sendPosition, 5 * 60 * 1000);
+                setTracking(true);
+              }}
+            >
+              <Calendar size={18} className="mr-2"/>
+              {tracking ? 'Tracking activo (click para detener)' : 'Activar Tracking de Ubicación'}
             </Button>
 
             <Button variant="outline" className="w-full rounded-2xl h-12">

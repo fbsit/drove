@@ -52,6 +52,16 @@ export class User {
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.CLIENT })
   role: UserRole;
+
+  // Posición actual del drover cuando el tracking está activo
+  @Column({ type: 'float', nullable: true })
+  currentLat?: number | null;
+
+  @Column({ type: 'float', nullable: true })
+  currentLng?: number | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  currentPositionUpdatedAt?: Date | null;
   /* ─────────────────────────────── */
 
   @CreateDateColumn({ type: 'timestamp with time zone' })

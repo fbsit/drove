@@ -210,6 +210,16 @@ export class UserService {
     return this.userRepo.save(user);
   }
 
+  async updateCurrentPosition(userId: string, lat: number, lng: number) {
+    const user = await this.findOne(userId);
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    user.currentLat = typeof lat === 'number' ? lat : null;
+    user.currentLng = typeof lng === 'number' ? lng : null;
+    user.currentPositionUpdatedAt = new Date();
+    await this.userRepo.save(user);
+    return { ok: true };
+  }
+
   /**
    * Elimina un usuario
    */
