@@ -213,7 +213,7 @@ export const useVehicleTransferRequest = () => {
         return false;
       }
 
-      // Regla: solo hoy y al menos con 4 horas de anticipación
+      // Regla: permitir fechas futuras; si es HOY exigir al menos +4 horas; nunca permitir fechas pasadas
       try {
         const dateVal = new Date(pickupDetails.pickupDate as any);
         const [h = '00', m = '00'] = String(pickupDetails.pickupTime || '00:00').split(':');
@@ -227,17 +227,20 @@ export const useVehicleTransferRequest = () => {
           dateVal.getMonth() === now.getMonth() &&
           dateVal.getDate() === now.getDate();
 
-        if (!isSameDay) {
+        // Fecha pasada (día anterior o mismo día pero hora en el pasado)
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        if (dateVal < startOfToday) {
           toast({
             variant: 'destructive',
             title: 'Fecha inválida',
-            description: 'Solo puedes solicitar traslados para hoy.',
+            description: 'Selecciona hoy o una fecha futura.',
           });
-          form.setError('pickupDetails.pickupDate' as any, { type: 'validate', message: 'Debe ser hoy' });
+          form.setError('pickupDetails.pickupDate' as any, { type: 'validate', message: 'No se permiten fechas pasadas' });
           return false;
         }
 
-        if (dateVal < fourHoursLater) {
+        // Si es hoy, exigir +4 horas de anticipación
+        if (isSameDay && dateVal < fourHoursLater) {
           toast({
             variant: 'destructive',
             title: 'Anticipación insuficiente',
