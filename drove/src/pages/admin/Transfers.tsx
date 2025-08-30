@@ -27,8 +27,8 @@ const Transfers: React.FC = () => {
     isLoading, 
     assignDriver, 
     updateTransferStatus,
-    isAssigningDriver,
-    isUpdatingStatus 
+    isAssigning: isAssigningDriver,
+    isUpdating: isUpdatingStatus 
   } = useTransfersManagement({ search: debouncedSearch, status: statusFilter, from: dateRange.from, to: dateRange.to });
 
   // Server-side filtering, no filtro local: mostramos directamente transfers
@@ -84,23 +84,27 @@ const Transfers: React.FC = () => {
         </p>
       </div>
 
-      {/* Métricas */}
-      <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      {/* Métricas reales */}
+      <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <div className="bg-white/10 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-white">{metrics?.totalTransfers}</div>
+          <div className="text-2xl font-bold text-white">{metrics?.totalTransfers ?? transfers.length}</div>
           <div className="text-sm text-white/60">Total Traslados</div>
         </div>
         <div className="bg-white/10 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-green-400">{metrics?.completedTransfers}</div>
+          <div className="text-2xl font-bold text-green-400">{metrics?.completedTransfers ?? transfers.filter(t=>t.status==='DELIVERED').length}</div>
           <div className="text-sm text-white/60">Entregados</div>
         </div>
         <div className="bg-white/10 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-yellow-400">{metrics?.inProgressTransfers}</div>
+          <div className="text-2xl font-bold text-yellow-400">{metrics?.inProgressTransfers ?? transfers.filter(t=>t.status==='IN_PROGRESS').length}</div>
           <div className="text-sm text-white/60">En Progreso</div>
         </div>
         <div className="bg-white/10 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-blue-400">{metrics?.pendingTransfers}</div>
+          <div className="text-2xl font-bold text-blue-400">{metrics?.pendingTransfers ?? transfers.filter(t=>t.status==='CREATED' || t.status==='PENDINGPAID').length}</div>
           <div className="text-sm text-white/60">Pendientes</div>
+        </div>
+        <div className="bg-white/10 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-white">{metrics?.assignedTransfers ?? transfers.filter(t=>t.status==='ASSIGNED').length}</div>
+          <div className="text-sm text-white/60">Asignados</div>
         </div>
       </div>
 

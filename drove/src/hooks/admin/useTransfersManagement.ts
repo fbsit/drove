@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDebouncedValue } from '@/hooks/useDebounce';
 import { AdminService } from '@/services/adminService';
@@ -45,7 +46,16 @@ export const useTransfersManagement = (filters?: { search?: string; status?: str
           to: params.to,
         });
         console.log('[TRANSFERS] ✅ Traslados obtenidos:', response);
-        return (Array.isArray(response) ? response : response?.transfers || []).map((transfer: any): TransferData => ({
+        const list = (Array.isArray(response) ? response : response?.transfers || []);
+        const totals = {
+          totalTransfers: list.length,
+          completedTransfers: list.filter((t:any)=>t.status==='DELIVERED').length,
+          inProgressTransfers: list.filter((t:any)=>t.status==='IN_PROGRESS').length,
+          pendingTransfers: list.filter((t:any)=>t.status==='CREATED' || t.status==='PENDINGPAID').length,
+          assignedTransfers: list.filter((t:any)=>t.status==='ASSIGNED').length,
+        } as any;
+        (response as any)._metrics = totals;
+        return list.map((transfer: any): TransferData => ({
           id: `${transfer?.id}` || `transfer-${Date.now()}`,
           clientName: transfer.client?.contactInfo?.fullName || transfer.client_name || 'Cliente',
           clientEmail: transfer.client?.email || transfer.client_email || 'No email',
@@ -147,8 +157,23 @@ export const useTransfersManagement = (filters?: { search?: string; status?: str
     }
   });
 
+  // Derivar métricas reales basadas en la respuesta cacheada
+  const metrics = React.useMemo(() => {
+    const anyData: any = (transfers as any);
+    const m = anyData?._metrics;
+    if (m) return {
+      totalTransfers: m.totalTransfers,
+      completedTransfers: m.completedTransfers,
+      inProgressTransfers: m.inProgressTransfers,
+      pendingTransfers: m.pendingTransfers,
+      assignedTransfers: m.assignedTransfers,
+    };
+    return undefined as any;
+  }, [transfers]);
+
   return {
     transfers,
+    metrics,
     drovers,
     isLoadingDrovers,
     isLoading,
