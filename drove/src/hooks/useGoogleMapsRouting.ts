@@ -22,7 +22,9 @@ export function useGoogleMapsRouting(
   originAddress?: string,
   destinationAddress?: string,
   isAddressesSelected = false,
-  onRouteCalculated?: (distance: string, duration: string) => void
+  onRouteCalculated?: (distance: string, duration: string) => void,
+  originCoord?: { lat: number | null; lng: number | null },
+  destinationCoord?: { lat: number | null; lng: number | null },
 ) {
   const { isReady, isApiBlocked } = useGoogleMapsInit();
   const [originMarker, setOriginMarker] = useState<google.maps.LatLng | null>(null);
@@ -64,9 +66,16 @@ export function useGoogleMapsRouting(
     });
   }, [isApiBlocked]);
 
-  // — Geocodificar ORIGEN cuando cambie la dirección —
+  // — Fijar ORIGEN por coordenadas (si hay), si no geocodificar dirección —
   useEffect(() => {
-    if (map && isReady && !isApiBlocked && isAddressesSelected && originAddress) {
+    if (!map || !isReady || isApiBlocked || !isAddressesSelected) return;
+    if (originCoord && originCoord.lat != null && originCoord.lng != null) {
+      const loc = new google.maps.LatLng(originCoord.lat, originCoord.lng);
+      setOriginMarker(loc);
+      map.panTo(loc);
+      return;
+    }
+    if (originAddress) {
       geocodeAddress(originAddress).then(loc => {
         if (loc) {
           setOriginMarker(loc);
@@ -74,18 +83,24 @@ export function useGoogleMapsRouting(
         }
       });
     }
-  }, [map, originAddress, isAddressesSelected, isReady, isApiBlocked, geocodeAddress]);
+  }, [map, originAddress, originCoord?.lat, originCoord?.lng, isAddressesSelected, isReady, isApiBlocked, geocodeAddress]);
 
-  // — Geocodificar DESTINO cuando cambie la dirección —
+  // — Fijar DESTINO por coordenadas (si hay), si no geocodificar —
   useEffect(() => {
-    if (map && isReady && !isApiBlocked && isAddressesSelected && destinationAddress) {
+    if (!map || !isReady || isApiBlocked || !isAddressesSelected) return;
+    if (destinationCoord && destinationCoord.lat != null && destinationCoord.lng != null) {
+      const loc = new google.maps.LatLng(destinationCoord.lat, destinationCoord.lng);
+      setDestinationMarker(loc);
+      return;
+    }
+    if (destinationAddress) {
       geocodeAddress(destinationAddress).then(loc => {
         if (loc) {
           setDestinationMarker(loc);
         }
       });
     }
-  }, [map, destinationAddress, isAddressesSelected, isReady, isApiBlocked, geocodeAddress]);
+  }, [map, destinationAddress, destinationCoord?.lat, destinationCoord?.lng, isAddressesSelected, isReady, isApiBlocked, geocodeAddress]);
 
   // — Calcular ruta cuando ambos marcadores estén listos —
   useEffect(() => {

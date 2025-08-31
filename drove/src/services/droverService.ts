@@ -50,6 +50,10 @@ export class DroverService {
     if (!userId) throw new Error('No user id');
     return await ApiService.patch(`/users/${userId}`, { contactInfo: profileData });
   }
+
+  static async updateCurrentPosition(lat: number, lng: number) {
+    return ApiService.post('/users/me/current-position', { lat, lng });
+  }
 }
 
 export default DroverService;

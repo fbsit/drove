@@ -2,6 +2,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Importaciones de páginas públicas
 import Index from '@/pages/Index';
@@ -22,6 +23,9 @@ import TransferViewer from '@/pages/trips/TransferViewer';
 import PaymentSuccess from '@/pages/paymentSuccess';
 import PaymentCancel from '@/pages/paymentCancel';
 import NotFound from '@/pages/NotFound';
+
+// Import dinámico del escáner para evitar problemas de paths
+const QRScanner = React.lazy(() => import('../pages/qr/QRScanner'));
 
 // Importaciones de páginas protegidas
 import ProfileRedirect from '@/pages/ProfileRedirect';
@@ -66,6 +70,16 @@ import ReassignDriver from '@/pages/admin/ReassignDriver';
 import JefesDeTrafico from '@/pages/admin/JefesDeTrafico';
 import DroverProfile from '@/pages/admin/DroverProfile';
 import VerifyEmail from '@/pages/auth/VerifyEmail';
+import PendingApproval from '@/pages/auth/PendingApproval';
+
+const RoleDashboardRedirect: React.FC = () => {
+  const { user } = useAuth();
+  const role = String((user as any)?.role || '').toLowerCase();
+  if (role === 'client') return <Navigate to="/cliente/dashboard" replace />;
+  if (role === 'drover') return <Navigate to="/drover/dashboard" replace />;
+  if (role === 'traffic_manager' || role === 'trafficboss' || role === 'traffic_boss') return <Navigate to="/trafico/dashboard" replace />;
+  return <Navigate to="/admin/dashboard" replace />;
+};
 
 const AppRoutes: React.FC = () => {
   return (
@@ -77,12 +91,14 @@ const AppRoutes: React.FC = () => {
       <Route path="/seguridad" element={<Seguridad />} />
       <Route path="/login" element={<Login />} />
       <Route path="/verifyEmail" element={<VerifyEmail />} />
+      <Route path="/registro/en-revision" element={<PendingApproval />} />
       <Route path="/recuperar-contraseña" element={<ForgotPassword />} />
       <Route path="/reset-password/:code" element={<ResetPassword />} />
       <Route path="/registro" element={<Register />} />
       <Route path="/registro/:userType" element={<Register />} />
       <Route path="/postular" element={<Apply />} />
       <Route path="/qr/:code" element={<QRRedirect />} />
+      <Route path="/qr/scan" element={<React.Suspense fallback={null}><QRScanner /></React.Suspense>} />
       <Route path="/terminos" element={<TermsOfService />} />
       <Route path="/privacidad" element={<PrivacyPolicy />} />
       <Route path="/cookies" element={<CookiesPolicy />} />
@@ -102,7 +118,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/clientes/:id" element={<ClientProfile />} />
 
         {/* Rutas de dashboard */}
-        <Route path="/dashboard" element={<Navigate to="/admin/dashboard" />} />
+        <Route path="/dashboard" element={<RoleDashboardRedirect />} />
         <Route path="/admin/dashboard" element={<DashboardAdminPanel />} />
         <Route path="/cliente/dashboard" element={<DashboardClientPanel />} />
         <Route path="/drover/dashboard" element={<DashboardDroverPanel />} />

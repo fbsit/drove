@@ -7,9 +7,16 @@ import ApiService from './api';
  */
 export class NotificationService {
   static async getNotifications(): Promise<any[]> {
-    const response = await ApiService.get('/notifications');
+    // Cache-busting via query param; no custom request headers to avoid CORS preflight issues
+    const response = await ApiService.get(`/notifications?t=${Date.now()}`);
     // El backend retorna array directo
     return Array.isArray(response) ? response : (response?.notifications ?? []);
+  }
+
+  static async getUnreadCount(): Promise<number> {
+    const response = await ApiService.get(`/notifications/unread-count?t=${Date.now()}`);
+    if (typeof response === 'number') return response;
+    return response?.count ?? 0;
   }
 
   static async markAsRead(notificationId: string): Promise<void> {

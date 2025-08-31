@@ -25,6 +25,7 @@ export interface DetailedUser {
     province: string;
     country: string;
     zipCode: string;
+    selfie?: string;
   };
   totalSpent: number;
   tripsCount: number;

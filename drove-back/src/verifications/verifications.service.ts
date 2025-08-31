@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from '../user/entities/user.entity';
+import { In, Repository } from 'typeorm';
+import { User, UserRole } from '../user/entities/user.entity';
 import { ResendService } from '../resend/resend.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class EmailVerificationService {
@@ -11,6 +12,7 @@ export class EmailVerificationService {
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     private readonly resend: ResendService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async sendVerificationCode(email: string): Promise<boolean> {
@@ -41,6 +43,40 @@ export class EmailVerificationService {
     user.verificationCode = undefined;
     user.codeExpiresAt = undefined;
     await this.userRepo.save(user);
+
+    // Notificar a administradores para aprobar al nuevo usuario
+    try {
+      const admins = await this.userRepo.find({
+        where: [
+          { role: UserRole.ADMIN },
+          { role: UserRole.TRAFFICBOSS },
+        ],
+        select: { email: true },
+      });
+      const recipients = admins.map(a => a.email).filter(Boolean);
+      if (recipients.length) {
+        const approvalUrl = `https://admin.drove.app/users`;
+        await this.resend.sendNewUserPendingApprovalEmail(
+          recipients,
+          user.email,
+          user?.contactInfo?.fullName || '',
+          user.role,
+          approvalUrl,
+        );
+      }
+      // Crear notificación global para administradores
+      await this.notifications.create({
+        title: 'Nuevo usuario verificado',
+        message: `${user?.contactInfo?.fullName || user.email} está pendiente de aprobación`,
+        roleTarget: UserRole.ADMIN,
+        category: 'NEW_USER',
+        entityType: 'USER',
+        entityId: user.id,
+        read: false,
+        userId: null,
+        data: { email: user.email, role: user.role },
+      });
+    } catch {}
     return true;
   }
 }

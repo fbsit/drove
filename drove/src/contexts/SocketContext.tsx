@@ -21,6 +21,7 @@ interface SocketContextType {
   acceptOffer: (travelId: string) => void;
   declineOffer: (travelId: string) => void;
   closeOfferModal: () => void;
+  onNotification?: (cb: (n: any) => void) => void;
 }
 
 const SocketContext = createContext<SocketContextType | null>(null);
@@ -35,13 +36,14 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [showOfferModal, setShowOfferModal] = useState(false);
 
   useEffect(() => {
-    if (user?.id && user?.role === 'driver') {
-      console.log('🔌 Conectando WebSocket para drover:', user.id);
+    if (user?.id) {
+      console.log('🔌 Conectando WebSocket para usuario:', user.id, 'role=', user.role);
       
       const newSocket = io(API_URL, {
+        transports: ['websocket'],
         auth: { 
           userId: user.id,
-          userRole: user.role 
+          role: (user.role || '').toUpperCase()
         }
       });
 
@@ -55,11 +57,19 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setIsConnected(false);
       });
 
-      // Escuchar ofertas de viajes
-      newSocket.on('travel.offer', (offerData: TravelOffer) => {
-        console.log('🚗 Nueva oferta de viaje recibida:', offerData);
-        setCurrentOffer(offerData);
-        setShowOfferModal(true);
+      // Escuchar ofertas de viajes (solo drover)
+      if ((user.role || '').toLowerCase() === 'drover') {
+        newSocket.on('travel.offer', (offerData: TravelOffer) => {
+          console.log('🚗 Nueva oferta de viaje recibida:', offerData);
+          setCurrentOffer(offerData);
+          setShowOfferModal(true);
+        });
+      }
+
+      // Notificaciones para cualquier rol
+      newSocket.on('notification:new', (n: any) => {
+        console.log('🔔 notification:new', n);
+        window.dispatchEvent(new CustomEvent('notification:new', { detail: n }));
       });
 
       // Confirmación de respuesta enviada
@@ -105,7 +115,12 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       showOfferModal,
       acceptOffer,
       declineOffer,
-      closeOfferModal
+      closeOfferModal,
+      onNotification: (cb: (n: any) => void) => {
+        const handler = (e: any) => cb(e.detail);
+        window.addEventListener('notification:new', handler);
+        return () => window.removeEventListener('notification:new', handler);
+      }
     }}>
       {children}
     </SocketContext.Provider>

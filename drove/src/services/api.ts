@@ -49,21 +49,33 @@ class ApiService {
 
       /* auth caducado */
       if (resp.status === 401) {
-        try {
-          const { dispatchUnauthorized } = await import('@/lib/authBus');
-          dispatchUnauthorized();
-        } catch {}
-        throw new Error('Unauthorized');
+        // Evitar redirección global cuando el 401 proviene del login (lo maneja la UI)
+        const isLoginCall = url.endsWith('/auth/login');
+        if (!isLoginCall) {
+          try {
+            const { dispatchUnauthorized } = await import('@/lib/authBus');
+            dispatchUnauthorized();
+          } catch {}
+        }
+        let msg = 'Unauthorized';
+        try { msg = (await resp.json()).message ?? msg; } catch {}
+        const err: any = new Error(msg);
+        err.status = 401;
+        throw err;
       } else if (resp.status === 403) {
         const data = await resp.json();
-        throw new Error(data.message);
+        const err: any = new Error(data.message);
+        err.status = 403;
+        throw err;
       }
 
       if (!resp.ok) {
         /* intenta extraer mensaje JSON */
         let msg = `HTTP ${resp.status}: ${resp.statusText}`;
         try { msg = (await resp.json()).message ?? msg; } catch { /* ignore */ }
-        throw new Error(msg);
+        const err: any = new Error(msg);
+        err.status = resp.status;
+        throw err;
       }
 
       /* 204 - No Content  */

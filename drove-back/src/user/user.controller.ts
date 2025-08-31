@@ -22,6 +22,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { JwtOrTestGuard } from '../common/guards/jwt-or-test.guard';
 import { ForgotPasswordDto } from './dtos/forgot-password.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
+import { IsNumber } from 'class-validator';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -131,5 +132,18 @@ export class UserController {
   @HttpCode(HttpStatus.NO_CONTENT)
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.userService.resetPassword(dto);
+  }
+
+  /* --- Tracking de drover: actualizar ubicación actual --- */
+  @UseGuards(JwtOrTestGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Actualizar ubicación actual del usuario autenticado (solo drover)' })
+  @Post('me/current-position')
+  async updateCurrentPosition(
+    @Request() req,
+    @Body('lat') lat: number,
+    @Body('lng') lng: number,
+  ) {
+    return this.userService.updateCurrentPosition(req.user.id, lat, lng);
   }
 }

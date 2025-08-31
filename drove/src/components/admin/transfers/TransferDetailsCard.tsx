@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from '@/hooks/use-toast';
 import RescheduleModal from './RescheduleModal';
+import GoogleMapComponent from "@/components/maps/GoogleMap";
 
 interface LocalTransferDetail {
   id: string;
@@ -83,7 +84,7 @@ const TransferDetailsCard: React.FC<TransferDetailsCardProps> = ({ transfer: ini
   const [isContactsOpen, setIsContactsOpen] = useState(false);
   const [isRequirementsOpen, setIsRequirementsOpen] = useState(false);
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
-  const [showMap, setShowMap] = useState(false);
+  const [showMap, setShowMap] = useState(true);
 
   console.log('TransferDetailsCard render - transfer status:', transfer.status);
   console.log('Show reschedule button?', ["pendiente", "asignado"].includes(transfer.status || ""));
@@ -331,8 +332,22 @@ const TransferDetailsCard: React.FC<TransferDetailsCardProps> = ({ transfer: ini
 
                 {/* Mapa */}
                 {showMap && (
-                  <div className="h-64 md:h-80 rounded-2xl overflow-hidden bg-white/10 flex items-center justify-center">
-                    <p className="text-gray-500">Mapa de ruta (próximamente)</p>
+                  <div className="h-64 md:h-80 rounded-2xl overflow-hidden bg-white/5">
+                    <GoogleMapComponent
+                      originAddress={{
+                        city: (transfer as any)?.startAddress?.city || '',
+                        lat: (transfer as any)?.startAddress?.lat ?? null,
+                        lng: (transfer as any)?.startAddress?.lng ?? null,
+                        address: (transfer as any)?.startAddress?.address || ''
+                      }}
+                      destinationAddress={{
+                        city: (transfer as any)?.endAddress?.city || '',
+                        lat: (transfer as any)?.endAddress?.lat ?? null,
+                        lng: (transfer as any)?.endAddress?.lng ?? null,
+                        address: (transfer as any)?.endAddress?.address || ''
+                      }}
+                      isAddressesSelected={true}
+                    />
                   </div>
                 )}
               </div>

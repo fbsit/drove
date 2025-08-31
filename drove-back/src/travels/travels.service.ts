@@ -30,7 +30,8 @@ import { TravelOffer, OfferStatus } from './entities/travel-offer.entity';
 import { TravelsGateway } from './travel.gateway';
 import { DataSource } from 'typeorm';
 import { forwardRef, Inject } from '@nestjs/common';
-import { User } from '../user/entities/user.entity';
+import { User, UserRole } from '../user/entities/user.entity';
+import { NotificationsService } from '../notifications/notifications.service';
 
 interface RescheduleRecord {
   previousDate: string | null;
@@ -61,6 +62,7 @@ export class TravelsService {
     private readonly userRepo: Repository<User>,
     @Inject(forwardRef(() => TravelsGateway))
     private readonly gateway: TravelsGateway,
+    private readonly notifications?: NotificationsService,
   ) {}
 
   private readonly defaultRelations = [
@@ -250,6 +252,26 @@ export class TravelsService {
       travel.endAddress.city,
       url || '',
     );
+
+    // Notificación para admins: nuevo viaje creado
+    try {
+      const notif = await this.notifications?.create({
+        title: 'Nuevo viaje creado',
+        message: `Viaje #${travelInfo.id} ${travel.startAddress?.city} → ${travel.endAddress?.city}`,
+        roleTarget: UserRole.ADMIN,
+        category: 'TRAVEL_CREATED',
+        entityType: 'TRAVEL',
+        entityId: travelInfo.id,
+        read: false,
+        userId: null,
+        data: {
+          clientId: user.sub,
+          startCity: travel.startAddress?.city,
+          endCity: travel.endAddress?.city,
+        },
+      });
+      notif;
+    } catch {}
     return { ...travelInfo, url: checkoutUrl };
   }
 
@@ -436,6 +458,45 @@ export class TravelsService {
       (update as any).droverId = (dto as any).droverId;
     }
     await this.travelsRepo.update({ id }, update);
+    try {
+      // notificación transversal por cambio de estado
+      const travel = await this.travelsRepo.findOne({ where: { id } as FindOptionsWhere<Travels> });
+      await this.notifications?.create({
+        title: 'Estado de traslado actualizado',
+        message: `Traslado ${id} → ${dto.status}`,
+        roleTarget: UserRole.ADMIN,
+        category: 'TRAVEL_UPDATED',
+        entityType: 'TRAVEL',
+        entityId: id,
+        read: false,
+        userId: null,
+        data: { status: dto.status, clientId: travel?.idClient, droverId: travel?.droverId },
+      });
+      if (travel?.idClient) {
+        await this.notifications?.create({
+          title: 'Tu traslado cambió de estado',
+          message: `Estado: ${dto.status}`,
+          roleTarget: UserRole.CLIENT,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: id,
+          read: false,
+          userId: travel.idClient,
+        });
+      }
+      if (travel?.droverId) {
+        await this.notifications?.create({
+          title: 'Traslado asignado/actualizado',
+          message: `Estado: ${dto.status}`,
+          roleTarget: UserRole.DROVER,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: id,
+          read: false,
+          userId: travel.droverId,
+        });
+      }
+    } catch {}
     if (dto?.status === 'REQUEST_FINISH') {
       //TODO:Avisar a todos que el viaje llego bien
       //Enviar correo 5 (cliente, JT)
@@ -484,15 +545,79 @@ export class TravelsService {
         startedAt: new Date(),
       },
     );
+
+    // Notificaciones: inicio de viaje
+    try {
+      const travel = await this.travelsRepo.findOne({ where: { id } as FindOptionsWhere<Travels> });
+      await this.notifications?.create({
+        title: 'Viaje iniciado',
+        message: `Traslado ${id} en progreso`,
+        roleTarget: UserRole.ADMIN,
+        category: 'TRAVEL_UPDATED',
+        entityType: 'TRAVEL',
+        entityId: id,
+        read: false,
+        userId: null,
+        data: { status: TransferStatus.IN_PROGRESS, clientId: travel?.idClient, droverId: travel?.droverId },
+      });
+      if (travel?.idClient) {
+        await this.notifications?.create({
+          title: 'Tu traslado ha comenzado',
+          message: 'El conductor inició el viaje',
+          roleTarget: UserRole.CLIENT,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: id,
+          read: false,
+          userId: travel.idClient,
+        });
+      }
+      if (travel?.droverId) {
+        await this.notifications?.create({
+          title: 'Has iniciado un traslado',
+          message: `${travel.startAddress?.city} → ${travel.endAddress?.city}`,
+          roleTarget: UserRole.DROVER,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: id,
+          read: false,
+          userId: travel.droverId,
+        });
+      }
+    } catch {}
   }
 
-  async finishTravel(id: string, { polyline }: FinishTravelDto): Promise<void> {
+  private haversineDistanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+    const R = 6371; // km
+    const dLat = (b.lat - a.lat) * Math.PI / 180;
+    const dLng = (b.lng - a.lng) * Math.PI / 180;
+    const lat1 = a.lat * Math.PI / 180;
+    const lat2 = b.lat * Math.PI / 180;
+    const sinDLat = Math.sin(dLat / 2);
+    const sinDLng = Math.sin(dLng / 2);
+    const aVal = sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLng * sinDLng;
+    const c = 2 * Math.atan2(Math.sqrt(aVal), Math.sqrt(1 - aVal));
+    return R * c;
+  }
+
+  async finishTravel(id: string, { polyline, currentLat, currentLng }: FinishTravelDto): Promise<void> {
     const trip = await this.travelsRepo.findOne({ where: { id } });
     if (!trip) throw new NotFoundException(`Travel ${id} not found`);
     if (trip.status !== TransferStatus.IN_PROGRESS)
       throw new BadRequestException('El viaje no está en progreso');
     if (!trip.startedAt)
       throw new BadRequestException(`Travel ${id} no tiene fecha de inicio`);
+
+    // Regla: solo puede finalizar si está a <= 100km del destino
+    if (typeof currentLat === 'number' && typeof currentLng === 'number') {
+      const end = trip.endAddress as any;
+      if (end?.lat != null && end?.lng != null) {
+        const distKm = this.haversineDistanceKm({ lat: currentLat, lng: currentLng }, { lat: Number(end.lat), lng: Number(end.lng) });
+        if (distKm > 100) {
+          throw new BadRequestException(`No puedes finalizar aún: estás a ${distKm.toFixed(1)} km del destino (máximo permitido 100 km).`);
+        }
+      }
+    }
     const now = new Date();
     const diffMs = now.getTime() - trip.startedAt.getTime();
     // convierte ms a minutos y segundos, por ejemplo "12:34"
@@ -508,6 +633,51 @@ export class TravelsService {
         timeTravel,
       },
     );
+
+    // Notificaciones y correo al solicitar finalización
+    try {
+      const travel = await this.travelsRepo.findOne({
+        where: { id } as FindOptionsWhere<Travels>,
+        relations: this.defaultRelations,
+      });
+      await this.notifications?.create({
+        title: 'Solicitud de finalización de traslado',
+        message: `El traslado ${id} fue marcado para finalizar`,
+        roleTarget: UserRole.ADMIN,
+        category: 'TRAVEL_UPDATED',
+        entityType: 'TRAVEL',
+        entityId: id,
+        read: false,
+        userId: null,
+        data: { status: TransferStatus.REQUEST_FINISH, clientId: travel?.idClient, droverId: travel?.droverId },
+      });
+      if (travel?.idClient) {
+        await this.notifications?.create({
+          title: 'Tu traslado está por finalizar',
+          message: 'El conductor solicitó finalizar el traslado',
+          roleTarget: UserRole.CLIENT,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: id,
+          read: false,
+          userId: travel.idClient,
+        });
+      }
+      if (travel?.droverId) {
+        await this.notifications?.create({
+          title: 'Solicitud de finalización enviada',
+          message: 'Se notificó a Administración y al cliente',
+          roleTarget: UserRole.DROVER,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: id,
+          read: false,
+          userId: travel.droverId,
+        });
+      }
+      // Correo de aviso de llegada (mismo que en updateStatus)
+      this.resend.sendArrivedEmailDJT(travel);
+    } catch {}
   }
 
   async savePickupVerification(
@@ -525,6 +695,44 @@ export class TravelsService {
     });
     this.resend.sendConfirmationPickupEmailClient(travel);
     this.resend.sendConfirmationPickupEmailDJT(travel);
+
+    // Notificaciones: vehículo recogido
+    try {
+      await this.notifications?.create({
+        title: 'Vehículo recogido',
+        message: `Traslado ${id} recogido por el conductor`,
+        roleTarget: UserRole.ADMIN,
+        category: 'TRAVEL_UPDATED',
+        entityType: 'TRAVEL',
+        entityId: id,
+        read: false,
+        userId: null,
+      });
+      if (travel?.idClient) {
+        await this.notifications?.create({
+          title: 'Tu vehículo fue recogido',
+          message: `${travel.startAddress?.city} → ${travel.endAddress?.city}`,
+          roleTarget: UserRole.CLIENT,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: id,
+          read: false,
+          userId: travel.idClient,
+        });
+      }
+      if (travel?.droverId) {
+        await this.notifications?.create({
+          title: 'Recogida confirmada',
+          message: 'Has confirmado la recogida del vehículo',
+          roleTarget: UserRole.DROVER,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: id,
+          read: false,
+          userId: travel.droverId,
+        });
+      }
+    } catch {}
   }
 
   async saveDeliveryVerification(
@@ -566,5 +774,43 @@ export class TravelsService {
         'link',
       );
     }, 1000);
+
+    // Notificaciones: entrega confirmada
+    try {
+      await this.notifications?.create({
+        title: 'Traslado entregado',
+        message: `Traslado ${id} finalizado`,
+        roleTarget: UserRole.ADMIN,
+        category: 'TRAVEL_UPDATED',
+        entityType: 'TRAVEL',
+        entityId: id,
+        read: false,
+        userId: null,
+      });
+      if (travel?.idClient) {
+        await this.notifications?.create({
+          title: 'Traslado finalizado',
+          message: 'Tu vehículo ha sido entregado',
+          roleTarget: UserRole.CLIENT,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: id,
+          read: false,
+          userId: travel.idClient,
+        });
+      }
+      if (travel?.droverId) {
+        await this.notifications?.create({
+          title: 'Entrega confirmada',
+          message: 'Has completado la entrega',
+          roleTarget: UserRole.DROVER,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: id,
+          read: false,
+          userId: travel.droverId,
+        });
+      }
+    } catch {}
   }
 }

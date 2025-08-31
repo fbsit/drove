@@ -101,13 +101,15 @@ export class PdfService {
   generateQR(idTravel: string, page: string): Buffer<ArrayBufferLike> {
     try {
       console.log('generando qr', page);
-      const base_url =
+      const rawBaseUrl =
         this.configService.get<string>('FRONTEND_BASE_URL') ||
-        'http://localhost:3000/';
+        'https://test-drove.vercel.app';
+      const baseUrl = rawBaseUrl.replace(/\/+$/, '');
+      // withdrawals => flujo de recogida, delivery => flujo de entrega
       const url =
         page === 'withdrawals'
-          ? `${base_url}retiro?idTravel=${idTravel}`
-          : `${base_url}entrega?idTravel=${idTravel}`;
+          ? `${baseUrl}/verificacion/recogida/${idTravel}`
+          : `${baseUrl}/verificacion/entrega/${idTravel}`;
       const qrPng: Buffer = QrImage.imageSync(url, { type: 'png' });
       return qrPng;
     } catch (error) {
@@ -171,7 +173,14 @@ export class PdfService {
 
       // Obtener información del cliente y del chofer
       const client = await this.getUser(travel.idClient);
-      const chofer = await this.getUser(travel.idChofer);
+      // Algunos modelos usan droverId/drover en lugar de idChofer
+      const chofer = (travel as any).drover
+        ? (travel as any).drover
+        : (travel as any).droverId
+        ? await this.getUser((travel as any).droverId)
+        : (travel as any).idChofer
+        ? await this.getUser((travel as any).idChofer)
+        : null;
 
       // Calcular el tiempo de uso y normalizarlo
       const timeUse =
@@ -206,21 +215,18 @@ export class PdfService {
         (step !== 4 && detailInfo === 'chofer') ||
         (step !== 4 && detailInfo === 'selfChofer')
       ) {
-        const wixImageUrlSelfie = chofer?.selfie;
+        const wixImageUrlSelfie = chofer?.contactInfo?.selfie || chofer?.selfie;
         if (wixImageUrlSelfie && typeof wixImageUrlSelfie === 'string') {
           const imageId = wixImageUrlSelfie;
-          let directImageUrl;
-          if (!imageId.includes('static.wixstatic.com')) {
-            directImageUrl = `https://wixmp-168aa19777669ff0d074d7f2.wixmp.com/${imageId}`;
-          } else {
-            directImageUrl = imageId;
-          }
-          const imageFormat: any = wixImageUrlSelfie.includes('.png')
+          let directImageUrl = imageId;
+          // Si es dataURL (base64), incrustar directamente
+          const isDataUrl = typeof directImageUrl === 'string' && directImageUrl.startsWith('data:image/');
+          const imageFormat: any = (isDataUrl && directImageUrl.includes('image/png')) || (!isDataUrl && directImageUrl.includes('.png'))
             ? 'png'
             : 'jpg';
-          const response = await fetch(directImageUrl);
-          const arrayBuffer = await response.arrayBuffer();
-          const imageBuffer = Buffer.from(arrayBuffer);
+          const imageBuffer = isDataUrl
+            ? Buffer.from(directImageUrl.split(',')[1], 'base64')
+            : Buffer.from(await (await fetch(directImageUrl)).arrayBuffer());
           let emblemSelfieImage;
           if (imageFormat === 'jpg' || imageFormat === 'jpeg') {
             emblemSelfieImage = await pdfDoc.embedJpg(imageBuffer);
@@ -269,7 +275,7 @@ export class PdfService {
         (step !== 4 && detailInfo === 'chofer') ||
         (step !== 4 && detailInfo === 'selfChofer')
       ) {
-        page.drawText('Télefono:', {
+        page.drawText('Teléfono:', {
           x: 125,
           y: pageHeight - 90,
           size: fontSize,
@@ -473,16 +479,16 @@ export class PdfService {
         font: font,
         color: rgb(0, 0, 0),
       });
-      page.drawText('ID:', {
+      page.drawText('ID Cliente:', {
         x: 50,
-        y: pageHeight - 160 + fixVertical,
+        y: pageHeight - 162 + fixVertical,
         size: fontSize,
         font: helveticaBoldFont,
         color: rgb(0, 0, 0),
       });
-      page.drawText(travel?.idClient, {
-        x: 70,
-        y: pageHeight - 160 + fixVertical,
+      page.drawText(String(travel?.idClient || ''), {
+        x: 120,
+        y: pageHeight - 162 + fixVertical,
         size: fontSize,
         font: font,
         color: rgb(0, 0, 0),
@@ -1118,38 +1124,39 @@ export class PdfService {
                 color: rgb(0, 0, 0),
               });
               if (wixImageUrl && typeof wixImageUrl === 'string') {
-                const wixImagePattern = /^wix:image:\/\/v1\/(.+?)\//;
-                const match = wixImageUrl.match(wixImagePattern);
-                if (match && match[1]) {
-                  const imageId = match[1];
-                  const directImageUrl = `https://static.wixstatic.com/media/${imageId}`;
-                  const imageFormat: any = wixImageUrl.includes('.png')
-                    ? 'png'
-                    : 'jpg';
-                  const response = await fetch(directImageUrl);
-                  const arrayBuffer = await response.arrayBuffer();
-                  const imageBuffer = Buffer.from(arrayBuffer);
-                  let embeddedImage;
-                  if (imageFormat === 'jpg' || imageFormat === 'jpeg') {
-                    embeddedImage = await pdfDoc.embedJpg(imageBuffer);
-                  } else if (imageFormat === 'png') {
-                    embeddedImage = await pdfDoc.embedPng(imageBuffer);
-                  } else {
-                    console.warn(
-                      `Formato de imagen no soportado para ${description}`,
-                    );
-                    continue;
+                const tryEmbed = async (src: string) => {
+                  try {
+                    // data URI
+                    if (src.startsWith('data:image/')) {
+                      const [, b64] = src.split(',');
+                      const buf = Buffer.from(b64, 'base64');
+                      if (src.includes('png')) return await pdfDoc.embedPng(buf);
+                      return await pdfDoc.embedJpg(buf);
+                    }
+                    // wix -> directo
+                    const wixMatch = src.match(/^wix:image:\/\/v1\/(.+?)\//);
+                    const url = wixMatch && wixMatch[1]
+                      ? `https://static.wixstatic.com/media/${wixMatch[1]}`
+                      : src;
+                    const res = await fetch(url);
+                    const arr = await res.arrayBuffer();
+                    const buf = Buffer.from(arr);
+                    if (url.toLowerCase().endsWith('.png')) return await pdfDoc.embedPng(buf);
+                    return await pdfDoc.embedJpg(buf);
+                  } catch {
+                    return null;
                   }
-                  page.drawImage(embeddedImage, {
+                };
+                const img = await tryEmbed(wixImageUrl);
+                if (img) {
+                  page.drawImage(img, {
                     x: xPosition + 10,
                     y: currentY + 10,
                     width: imageWidth,
                     height: imageHeight,
                   });
                 } else {
-                  console.warn(
-                    `No se pudo extraer el ID de la imagen para ${description}`,
-                  );
+                  console.warn(`No fue posible incrustar imagen para ${description}`);
                 }
               } else {
                 console.warn(`No hay imagen disponible para ${description}`);
@@ -1177,9 +1184,8 @@ export class PdfService {
       const tableAddressWidth = colAddressWidth * 2;
       const tableAddressHeight = rowAddressHeight * 6;
       const AddressTabla: [string, string][] = [
+        ['Dirección', (travel.startAddress as any)?.address || travel.startAddress.city],
         ['Ciudad', travel.startAddress.city],
-        ['Latitud', travel.startAddress.lat.toString()],
-        ['Longitud', travel.startAddress.lng.toString()],
       ];
       AddressTabla.forEach((fila, filaIndex) => {
         const x = tableAddressLeft;
@@ -1254,9 +1260,8 @@ export class PdfService {
       const tableAddressDeliveryWidth = colAddressDeliveryWidth * 2;
       const tableAddressDeliveryHeight = rowAddressDeliveryHeight * 6;
       const AddressDeliveryTabla: [string, string][] = [
+        ['Dirección', (travel.endAddress as any)?.address || travel.endAddress.city],
         ['Ciudad', travel.endAddress.city],
-        ['Latitud', travel.endAddress.lat.toString()],
-        ['Longitud', travel.endAddress.lng.toString()],
       ];
       AddressDeliveryTabla.forEach((fila, filaIndex) => {
         const x = tableAddressDeliveryLeft;
@@ -1334,9 +1339,14 @@ export class PdfService {
       const colDetailWidth = 250;
       const tableDetailWidth = colDetailWidth * 2;
       const tableDetailHeight = rowDetailHeight * 2;
+      const distanceKmRaw = (detailRoute && (detailRoute as any).DistanceInKM) || travel?.distanceTravel || '';
+      const distanceFormatted = distanceKmRaw
+        ? `${Number(distanceKmRaw).toFixed(2)} Kilómetros`
+        : '—';
+      const totalCliente = (detailRoute as any)?.priceResult?.Total_Cliente;
       const detailTravelTabla = [
-        ['Distancia', `${detailRoute.DistanceInKM} Kilometros`],
-        ['Total con I.V.A', `${detailRoute?.priceResult?.Total_Cliente} €`],
+        ['Distancia', distanceFormatted],
+        ['Total con I.V.A', totalCliente ? `${totalCliente} €` : '—'],
       ];
       detailTravelTabla.forEach((fila, filaIndex) => {
         const x = tableDetailLeft;
@@ -2154,6 +2164,8 @@ export class PdfService {
           title: 'Nombre del chofer:',
           nameKey:
             droverDetail?.contactInfo?.fullName ||
+            droverDetail?.full_name ||
+            droverDetail?.name ||
             droverDetail?.contactInfo?.info?.extendedFields?.items[
               'custom.fullname'
             ] ||
@@ -2164,6 +2176,7 @@ export class PdfService {
             'Nombre Chofer',
           phoneKey:
             droverDetail?.contactInfo?.phone ||
+            droverDetail?.phone ||
             droverDetail?.detailRegister?.phones ||
             'Sin teléfono',
         };

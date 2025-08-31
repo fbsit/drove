@@ -28,7 +28,8 @@ export const useDroversManagement = () => {
           phone: drover.phone,
           status: drover.status,
           role: drover.role,
-          company_name: drover.company_name
+          company_name: drover.company_name,
+          avatar: drover?.contactInfo?.selfie || drover?.selfie || undefined,
         }));
       } catch (error) {
         console.error('[DROVERS] ❌ Error al obtener drovers:', error);

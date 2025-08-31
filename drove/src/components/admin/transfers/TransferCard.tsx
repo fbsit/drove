@@ -36,13 +36,29 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
   const assignedDriver = transfer.drivers?.full_name;
   const shouldShowAssignButton = !isCompleted && !isAssigned && !isInProgress;
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat("es-ES", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }).format(date);
+  const formatDate = (dateInput: any) => {
+    if (!dateInput) return '—';
+    try {
+      let date: Date;
+      if (typeof dateInput === 'string' || typeof dateInput === 'number') {
+        date = new Date(dateInput);
+      } else if (dateInput instanceof Date) {
+        date = dateInput;
+      } else if (typeof dateInput === 'object') {
+        const val = (dateInput as any).createdAt || (dateInput as any).created_at || null;
+        date = val ? new Date(val) : new Date();
+      } else {
+        return '—';
+      }
+      if (isNaN(date.getTime())) return '—';
+      return new Intl.DateTimeFormat('es-ES', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }).format(date);
+    } catch {
+      return '—';
+    }
   };
 
   const handleVerClick = () => {
@@ -56,7 +72,7 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
         <div className="flex items-center gap-2">
           {gamify && getGamifyIcon(transfer.status)}
           <StatusBadge status={transfer.status} />
-          <span className="ml-auto text-sm text-white/60">{formatDate(transfer.created_at)}</span>
+          <span className="ml-auto text-sm text-white/60">{formatDate(transfer.createdAt || transfer.created_at)}</span>
         </div>
         
         <div className="flex items-center gap-2">
@@ -84,10 +100,10 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
           </div>
         </div>
         
-        {/* Precio y información del conductor */}
+        {/* Precio e información del conductor (mapea correctamente los campos) */}
         <div className="flex flex-col gap-2">
           <span className="text-base font-bold text-[#6EF7FF]">
-            {parseFloat(transfer.price).toFixed(2)}&nbsp;€
+            {Number(transfer.totalPrice ?? transfer.price ?? 0).toFixed(2)}&nbsp;€
           </span>
           
           {/* Información del conductor asignado */}
@@ -110,10 +126,10 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
         
         {/* Botones de acción - Nueva fila separada */}
         <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
-          {/* Primera fila: Botón Ver siempre visible */}
+          {/* Primera fila: Botón Ver siempre visible (admin → detalle activo) */}
           <div className="flex justify-end">
             <Button variant="ghost" size="sm" onClick={handleVerClick} asChild>
-              <Link to={`/traslados/${transfer.id}`}>
+              <Link to={`/traslados/activo/${transfer.id}`}>
                 Ver <ArrowRight size={16} />
               </Link>
             </Button>
@@ -122,8 +138,8 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
           {/* Segunda fila: Botones condicionales */}
           {(shouldShowAssignButton || isAssigned || transfer.status === TransferStatus.CREATED) && (
             <div className="flex flex-col gap-2">
-              {/* Botón Asignar Drover */}
-              {shouldShowAssignButton && (
+              {/* Botón Asignar/Reasignar según estado */}
+              {shouldShowAssignButton ? (
                 <Button
                   variant="outline"
                   size="sm"
@@ -132,7 +148,16 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
                 >
                   <Link to={`/admin/asignar/${transfer.id}`}>Asignar Drover</Link>
                 </Button>
-              )}
+              ) : isAssigned ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-orange-400/50 text-orange-400 hover:bg-orange-400/10 w-full"
+                  asChild
+                >
+                  <Link to={`/admin/reasignar/${transfer.id}`}>Reasignar Drover</Link>
+                </Button>
+              ) : null}
               
               {/* Botón Reagendar para traslados created o assigned */}
               {(transfer.status === TransferStatus.CREATED || transfer.status === TransferStatus.ASSIGNED) && (

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Header } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
@@ -17,16 +17,21 @@ export class NotificationsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar notificaciones' })
-  findAll() {
-    return this.notificationsService.findAll();
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({ summary: 'Listar notificaciones del usuario actual' })
+  findAll(@Req() req: any) {
+    const userId = req.user?.sub || req.user?.id;
+    const role = String(req.user?.role || 'CLIENT').toUpperCase();
+    return this.notificationsService.findAllForUser(userId, role);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Obtener notificación por ID' })
-  @ApiParam({ name: 'id' })
-  findOne(@Param('id') id: string) {
-    return this.notificationsService.findOne(+id);
+  @Get('unread-count')
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({ summary: 'Contar notificaciones no leídas del usuario actual' })
+  unreadCount(@Req() req: any) {
+    const userId = req.user?.sub || req.user?.id;
+    const role = String(req.user?.role || 'CLIENT').toUpperCase();
+    return this.notificationsService.countUnreadForUser(userId, role);
   }
 
   @Patch(':id')
@@ -34,13 +39,16 @@ export class NotificationsController {
   @ApiParam({ name: 'id' })
   @ApiBody({ type: UpdateNotificationDto })
   update(@Param('id') id: string, @Body() updateNotificationDto: UpdateNotificationDto) {
-    return this.notificationsService.update(+id, updateNotificationDto);
+    if (updateNotificationDto && (updateNotificationDto as any).read === true) {
+      return this.notificationsService.markAsRead(id);
+    }
+    return true;
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Eliminar notificación' })
   @ApiParam({ name: 'id' })
   remove(@Param('id') id: string) {
-    return this.notificationsService.remove(+id);
+    return this.notificationsService.remove(id);
   }
 }

@@ -15,18 +15,30 @@ export const useClientsManagement = () => {
         const response = await AdminService.getClients();
         console.log('[CLIENTS] ✅ Clientes obtenidos:', response);
         
-        return response.map((client: any): Client => ({
-          id: client.id,
-          nombre: client.contactInfo.fullName || client.nombre || 'Cliente',
-          email: client.email,
-          tipo: client.company_name ? 'empresa' : 'individual',
-          estado: client.status === 'active' ? 'activo' : 'inactivo',
-          fecha: client.created_at || new Date().toISOString(),
-          full_name: client.full_name,
-          phone: client.phone,
-          company_name: client.company_name,
-          status: client.status
-        }));
+        return response.map((client: any): Client => {
+          const fullName = client?.contactInfo?.fullName || client?.full_name || client?.nombre || 'Cliente';
+          const statusRaw = (client?.status || '').toString().toUpperCase();
+          const estado = statusRaw === 'PENDING'
+            ? 'pendiente'
+            : statusRaw === 'APPROVED'
+            ? 'aprobado'
+            : statusRaw === 'REJECTED'
+            ? 'rechazado'
+            : 'pendiente';
+
+          return {
+            id: client.id,
+            nombre: fullName,
+            email: client.email,
+            tipo: client.company_name ? 'empresa' : 'persona',
+            estado,
+            fecha: client.created_at || client.createdAt || new Date().toISOString(),
+            full_name: client.full_name,
+            phone: client.phone,
+            company_name: client.company_name,
+            status: client.status,
+          } as Client & any;
+        });
       } catch (error) {
         console.error('[CLIENTS] ❌ Error al obtener clientes:', error);
         toast({

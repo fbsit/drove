@@ -1,5 +1,5 @@
 // src/admin/admin.service.ts
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, FindOptionsWhere } from 'typeorm';
 import { ResendService } from '../resend/resend.service';
@@ -9,6 +9,7 @@ import { Invoice, InvoiceStatus } from '../invoices/entities/invoice.entity';
 import { Travels } from '../travels/entities/travel.entity';
 import { TransferStatus } from '../travels/entities/travel.entity';
 import { DetailedUser, FavoriteRoute } from '../user/dtos/detailed-user.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 @Injectable()
 export class AdminService {
   constructor(
@@ -20,7 +21,10 @@ export class AdminService {
     @InjectRepository(Invoice)
     private readonly invoiceRepo: Repository<Invoice>,
     private readonly resend: ResendService,
+    private readonly notifications?: NotificationsService,
   ) {}
+
+  private readonly logger = new Logger(AdminService.name);
 
   private readonly defaultRelations = ['payments', 'client', 'drover'];
   /* ─────────── Usuarios ─────────── */
@@ -79,6 +83,7 @@ export class AdminService {
         province: user.contactInfo.state || '',
         country: user.contactInfo.country || '',
         zipCode: user.contactInfo.zip || '',
+        selfie: user.contactInfo.selfie || undefined,
       },
       totalSpent,
       tripsCount: travels.length,
@@ -261,7 +266,36 @@ export class AdminService {
     transfer.assignedBy = adminId;
     transfer.assignedAt = new Date();
     transfer.status = TransferStatus.ASSIGNED; // Asignar
-    const resultSave = await this.transferRepo.save(transfer);
+    await this.transferRepo.update({ id: transfer.id }, { droverId, assignedBy: adminId, assignedAt: transfer.assignedAt, status: TransferStatus.ASSIGNED });
+    const savedAfter = await this.transferRepo.findOne({ where: { id: transfer.id }, relations: this.defaultRelations });
+
+    // Notificaciones transversales: cliente y drover deben enterarse
+    try {
+      this.logger.debug(`Creating notifications for assignment transfer=${transfer.id} droverId=${savedAfter?.droverId} clientId=${transfer.idClient}`);
+      await this.notifications?.create({
+        title: 'Conductor asignado',
+        message: `Tu traslado ${transfer.id} fue asignado a un conductor`,
+        roleTarget: UserRole.CLIENT,
+        category: 'TRAVEL_UPDATED',
+        entityType: 'TRAVEL',
+        entityId: transfer.id,
+        read: false,
+        userId: transfer.idClient,
+      });
+      if (savedAfter?.droverId) {
+        this.logger.debug(`Notifying drover userId=${savedAfter.droverId} for transfer=${transfer.id}`);
+        await this.notifications?.create({
+          title: 'Se te asignó un traslado',
+          message: `${transfer.startAddress?.city} → ${transfer.endAddress?.city}`,
+          roleTarget: UserRole.DROVER,
+          category: 'TRAVEL_UPDATED',
+          entityType: 'TRAVEL',
+          entityId: transfer.id,
+          read: false,
+          userId: savedAfter.droverId,
+        });
+      }
+    } catch {}
 
     return true;
   }
@@ -394,6 +428,30 @@ export class AdminService {
       count: Number(r.count),
     }));
 
+    // 9) Pagos por método
+    const paymentByMethodRaw = await this.paymentRepo
+      .createQueryBuilder('p')
+      .select('COALESCE(UPPER(p.method),\'TRANSFER\')', 'method')
+      .addSelect('SUM(p.amount)', 'amount')
+      .groupBy('UPPER(p.method)')
+      .getRawMany<{ method: string; amount: string }>();
+    const paymentMethods = paymentByMethodRaw.map((r) => ({
+      method: r.method,
+      amount: Number(r.amount || 0),
+    }));
+
+    // 10) Estado de pagos (conteo)
+    const paymentStatusRaw = await this.paymentRepo
+      .createQueryBuilder('p')
+      .select('p.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('p.status')
+      .getRawMany<{ status: string; count: string }>();
+    const paymentStatus = paymentStatusRaw.map((r) => ({
+      status: r.status,
+      count: Number(r.count || 0),
+    }));
+
     return {
       totalTransfers,
       totalRevenue,
@@ -407,8 +465,8 @@ export class AdminService {
       clients,
 
       transferStatus,
-      paymentMethods: [], // si aún no los implementas
-      paymentStatus: [], // idem
+      paymentMethods,
+      paymentStatus,
 
       topClients,
       topDrovers,
@@ -428,9 +486,30 @@ export class AdminService {
     // clientType no existe en travels; métrica por tipo de cliente requeriría join con users
 
     const raw = await qb.getRawOne();
+
+    // Conteos por estado para el dashboard
+    const statusCounts = await this.transferRepo
+      .createQueryBuilder('t')
+      .select('t.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('t.status')
+      .getRawMany<{ status: string; count: string }>();
+
+    const transferStatus = statusCounts.map((r) => ({
+      status: r.status,
+      count: Number(r.count),
+    }));
+
     return {
       totalTransfers: Number(raw.totalTransfers ?? 0),
       totalRevenue: Number(raw.totalRevenue ?? 0),
+      transferStatus,
     };
+  }
+
+  /** Generación de reportes (placeholder): por ahora devuelve los mismos datos que getReportData usando filtros opcionales */
+  async generateReport(filters?: any): Promise<any> {
+    // En el futuro, usar "filters" para construir queries específicas
+    return this.getReportData();
   }
 }

@@ -1,13 +1,15 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Star, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Star, MessageSquare, QrCode } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useSupportChat } from '@/contexts/SupportChatContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const MobileDroverFooterNav = () => {
   const location = useLocation();
   const { openChat } = useSupportChat();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
 
   if (!isMobile) return null;
@@ -17,6 +19,11 @@ const MobileDroverFooterNav = () => {
       name: 'Dashboard',
       path: '/drover/dashboard',
       icon: LayoutDashboard,
+    },
+    {
+      name: 'Escanear QR',
+      action: () => navigate('/qr/scan'),
+      icon: QrCode,
     },
     {
       name: 'Traslados disponibles',

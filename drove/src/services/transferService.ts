@@ -83,7 +83,10 @@ export class TransferService {
     return await ApiService.patch(`/travels/${travelId}/verification/startTravel`);
   }
   
-  static async saveFinishTravelVerification(travelId: string, data?: { polyline: string }): Promise<any> {
+  static async saveFinishTravelVerification(
+    travelId: string,
+    data?: { polyline: string; currentLat?: number | null; currentLng?: number | null },
+  ): Promise<any> {
     return await ApiService.patch(`/travels/${travelId}/verification/finishTravel`, data);
   }
 

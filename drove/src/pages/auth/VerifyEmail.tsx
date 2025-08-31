@@ -31,7 +31,7 @@ export default function VerifyEmail() {
         await checkVerificationCode(email, code);
         toast({ title: 'Correo verificado', description: '¡Tu correo fue validado correctamente!' });
         setStatus('success');
-        setTimeout(() => navigate('/'), 3000);
+        setTimeout(() => navigate('/registro/en-revision'), 1500);
       } catch (err: any) {
         if (err?.response?.status === 410) setStatus('expired');
         else setStatus('error');

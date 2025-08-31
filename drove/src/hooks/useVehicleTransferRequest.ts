@@ -151,6 +151,39 @@ export const useVehicleTransferRequest = () => {
         !!vehicleDetails?.licensePlate?.trim();
 
       if (!hasAllVehicleFields) {
+        if (!vehicleDetails?.licensePlate?.trim()) {
+          form.setError('vehicleDetails.licensePlate' as any, { type: 'required', message: 'La matrícula es obligatoria' });
+        }
+        if (!vehicleDetails?.vin?.trim()) {
+          form.setError('vehicleDetails.vin' as any, { type: 'required', message: 'El VIN es obligatorio' });
+        }
+        return false;
+      }
+
+      // Validaciones estrictas
+      const licenseSanitized = (vehicleDetails.licensePlate || '')
+        .toUpperCase()
+        .replace(/\s|-/g, '');
+      const licenseRegex = /^(?:[0-9]{4}[A-Z]{3}|[A-Z]{3}[0-9]{4})$/; // 1234ABC o ABC1234
+      if (!licenseRegex.test(licenseSanitized)) {
+        form.setError('vehicleDetails.licensePlate' as any, {
+          type: 'validate',
+          message: 'Matrícula inválida. Formato 1234ABC o ABC1234',
+        });
+        toast({ variant: 'destructive', title: 'Matrícula inválida', description: 'Usa el formato 1234ABC o ABC1234.' });
+        return false;
+      }
+
+      const vinSanitized = (vehicleDetails.vin || '')
+        .toUpperCase()
+        .replace(/\s|-/g, '');
+      const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/; // sin I,O,Q
+      if (!vinRegex.test(vinSanitized)) {
+        form.setError('vehicleDetails.vin' as any, {
+          type: 'validate',
+          message: 'VIN inválido. Debe tener 17 caracteres (sin I, O, Q)',
+        });
+        toast({ variant: 'destructive', title: 'VIN inválido', description: 'Debe tener 17 caracteres alfanuméricos (sin I, O, Q).' });
         return false;
       }
     }
@@ -179,6 +212,44 @@ export const useVehicleTransferRequest = () => {
       if (!hasAllPickupFields) {
         return false;
       }
+
+      // Regla: permitir fechas futuras; si es HOY exigir al menos +4 horas; nunca permitir fechas pasadas
+      try {
+        const dateVal = new Date(pickupDetails.pickupDate as any);
+        const [h = '00', m = '00'] = String(pickupDetails.pickupTime || '00:00').split(':');
+        dateVal.setHours(Number(h), Number(m), 0, 0);
+
+        const now = new Date();
+        const fourHoursLater = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+
+        const isSameDay =
+          dateVal.getFullYear() === now.getFullYear() &&
+          dateVal.getMonth() === now.getMonth() &&
+          dateVal.getDate() === now.getDate();
+
+        // Fecha pasada (día anterior o mismo día pero hora en el pasado)
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        if (dateVal < startOfToday) {
+          toast({
+            variant: 'destructive',
+            title: 'Fecha inválida',
+            description: 'Selecciona hoy o una fecha futura.',
+          });
+          form.setError('pickupDetails.pickupDate' as any, { type: 'validate', message: 'No se permiten fechas pasadas' });
+          return false;
+        }
+
+        // Si es hoy, exigir +4 horas de anticipación
+        if (isSameDay && dateVal < fourHoursLater) {
+          toast({
+            variant: 'destructive',
+            title: 'Anticipación insuficiente',
+            description: 'Debes solicitar con al menos 4 horas de anticipación.',
+          });
+          form.setError('pickupDetails.pickupTime' as any, { type: 'validate', message: 'Mínimo 4 horas desde ahora' });
+          return false;
+        }
+      } catch {}
     }
     return true;
   };

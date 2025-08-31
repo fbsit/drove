@@ -223,7 +223,25 @@ const ActiveTrip: React.FC = () => {
     console.log('[FINISH_TRAVEL] 📊 Total de puntos capturados:', points?.length || 0);
 
     try {
-      await TransferService.saveFinishTravelVerification(transferId, { polyline });
+      // Obtener ubicación actual para validar en backend (regla <=100km)
+      let coords: { latitude: number; longitude: number } | null = null;
+      if (navigator.geolocation) {
+        try {
+          coords = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => resolve(pos.coords as any),
+              (err) => resolve(null),
+              { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 }
+            );
+          });
+        } catch {}
+      }
+
+      await TransferService.saveFinishTravelVerification(transferId, {
+        polyline,
+        currentLat: coords?.latitude,
+        currentLng: coords?.longitude,
+      } as any);
       toast({ title: 'Viaje finalizado', description: 'Se registró la ruta del traslado.' });
       await refetch();
     } catch (err: any) {

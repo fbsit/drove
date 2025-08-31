@@ -4,28 +4,25 @@ import { AdminService } from '@/services/adminService';
 import { toast } from '@/hooks/use-toast';
 
 interface DashboardMetrics {
-  amount: number; // Total revenue
-  users: {
-    total: number;
-    pending: number;
-  };
-  transfers: {
-    total: number;
-    active: number;
-  };
-  reviews: {
-    total: number;
-    average: number;
-  };
+  users: { total: number; pending: number };
+  transfers: { total: number; active: number };
+  reviews: { total: number; average: number };
+  completedTransfers?: number;
+  inProgressTransfers?: number;
+  assignedTransfers?: number;
+  pendingTransfers?: number;
 }
 
 export const useAdminDashboard = () => {
   const {
     data: metrics = {
-      amount: 0,
       users: { total: 0, pending: 0 },
       transfers: { total: 0, active: 0 },
       reviews: { total: 0, average: 0 },
+      completedTransfers: 0,
+      inProgressTransfers: 0,
+      assignedTransfers: 0,
+      pendingTransfers: 0,
     },
     isLoading,
     error,
@@ -61,20 +58,39 @@ export const useAdminDashboard = () => {
               ? (data.totalRevenue ?? 0) / data.totalTransfers
               : 0,
         },
+        completedTransfers: data?.transferStatus?.find?.((s: any) => s.status === 'DELIVERED')?.count ?? 0,
+        inProgressTransfers: data?.transferStatus?.find?.((s: any) => s.status === 'IN_PROGRESS')?.count ?? 0,
+        assignedTransfers: data?.transferStatus?.find?.((s: any) => s.status === 'ASSIGNED')?.count ?? 0,
+        pendingTransfers: data?.transferStatus?.find?.((s: any) => s.status === 'CREATED')?.count ?? 0,
       };
     },
     // 4. Valores placeholder hasta que llegue la data “real”
     placeholderData: {
-      amount: 0,
       users: { total: 0, pending: 0 },
       transfers: { total: 0, active: 0 },
       reviews: { total: 0, average: 0 },
+      completedTransfers: 0,
+      inProgressTransfers: 0,
+      assignedTransfers: 0,
+      pendingTransfers: 0,
     },
     refetchInterval: 300_000, // 5 min
     retry: 3,
   });
 
+  // Traslados recientes (últimos 5)
+  const { data: recentTransfers = [] } = useQuery({
+    queryKey: ['admin-dashboard-recent-transfers'],
+    queryFn: async () => {
+      const list = await AdminService.getTransfers({});
+      // ordenar por createdAt desc si viene, tomar 5
+      const arr = Array.isArray(list?.transfers) ? list.transfers : (Array.isArray(list) ? list : []);
+      return arr.sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 5);
+    },
+    staleTime: 60_000,
+  });
+
   console.log("metricas finales", metrics);
 
-  return { metrics, isLoading, error };
+  return { metrics, recentTransfers, isLoading, error };
 };

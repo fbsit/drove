@@ -9,13 +9,41 @@ import {
 } from '@/components/ui/card';
 import { Button }                      from '@/components/ui/button';
 import {
-  Check, ArrowLeft, ArrowRight, Camera, FileText, User, Loader,
+  Check, ArrowLeft, ArrowRight, Camera, FileText, User, Loader, AlertTriangle,
 } from 'lucide-react';
 import { toast }                       from 'sonner';
+import { useAuth }                    from '@/contexts/AuthContext';
 import DashboardLayout                 from '@/components/layout/DashboardLayout';
 import { TransferService }             from '@/services/transferService';
 import { usePickupVerification }       from '@/hooks/usePickupVerification';
 import { StorageService }              from '@/services/storageService';
+
+// Utilidad: comprimir imagen en el cliente antes de subir (reduce 70-85%)
+async function compressImage(file: File, maxWidth = 1600, quality = 0.75): Promise<File> {
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = URL.createObjectURL(file);
+    });
+    const scale = Math.min(1, maxWidth / (img.width || maxWidth));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round((img.width || maxWidth) * scale));
+    canvas.height = Math.max(1, Math.round((img.height || maxWidth) * scale));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return file;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const blob: Blob | null = await new Promise((resolve) =>
+      canvas.toBlob((b) => resolve(b), 'image/jpeg', quality),
+    );
+    URL.revokeObjectURL(img.src);
+    if (!blob) return file;
+    return new File([blob], file.name.replace(/\.(png|jpg|jpeg)$/i, '.jpg'), { type: 'image/jpeg' });
+  } catch {
+    return file;
+  }
+}
 
 const STEPS = {
   VEHICLE_EXTERIOR : 1,
@@ -56,10 +84,27 @@ const INTERIOR_KEYS = {
 const PickupVerification: React.FC = () => {
   const { transferId }               = useParams<{ transferId: string }>();
   const navigate                     = useNavigate();
+  const { user }                     = useAuth();
   const [currentStep, setCurrentStep] = useState(STEPS.VEHICLE_EXTERIOR);
   const [transfer, setTransfer]       = useState<any>(null);
   const [isLoading, setIsLoading]     = useState(true);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [accessWarning, setAccessWarning] = useState<string | null>(null);
+  const [accessBlocked, setAccessBlocked] = useState<boolean>(false);
+
+  const scheduledPickupText = React.useMemo(() => {
+    try {
+      const dateStr = (transfer as any)?.travelDate || (transfer as any)?.pickupDetails?.pickupDate;
+      const timeStr = (transfer as any)?.travelTime || (transfer as any)?.pickupDetails?.pickupTime;
+      if (!dateStr || !timeStr) return '';
+      const dt = new Date(dateStr);
+      const [hh = '00', mm = '00'] = String(timeStr).split(':');
+      dt.setHours(Number(hh), Number(mm), 0, 0);
+      return new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' }).format(dt);
+    } catch {
+      return '';
+    }
+  }, [transfer]);
 
   const {
     signature,
@@ -83,6 +128,40 @@ const PickupVerification: React.FC = () => {
         setIsLoading(true);
         const data = await TransferService.getTransferById(transferId);
         setTransfer(data);
+
+        // Regla: solo el drover asignado y ventana de 30 minutos
+        const assignedDroverId = data?.droverId || data?.drover?.id;
+        if (!user?.id || !assignedDroverId || String(user.id) !== String(assignedDroverId)) {
+          setAccessBlocked(true);
+          setAccessWarning('Solo el drover asignado puede realizar esta verificación.');
+          toast.warning('Solo el drover asignado puede realizar esta verificación.');
+          return;
+        }
+
+        const dateStr = data?.travelDate || data?.pickupDetails?.pickupDate;
+        const timeStr = data?.travelTime || data?.pickupDetails?.pickupTime;
+        if (dateStr && timeStr) {
+          const dt = new Date(dateStr);
+          const [hh = '00', mm = '00'] = String(timeStr).split(':');
+          dt.setHours(Number(hh), Number(mm), 0, 0);
+
+          const now = new Date();
+          const minus30 = new Date(now.getTime() - 30 * 60 * 1000);
+          const plus30  = new Date(now.getTime() + 30 * 60 * 1000);
+
+          if (dt < minus30) {
+            setAccessBlocked(true);
+            setAccessWarning('La hora de recogida ya pasó. Contacta a soporte para reprogramar.');
+            toast.warning('La hora de recogida ya pasó.');
+            return;
+          }
+          if (dt > plus30) {
+            setAccessBlocked(true);
+            setAccessWarning('Aún es muy temprano para iniciar la recogida. Vuelve dentro de 30 minutos.');
+            toast.warning('Aún es muy temprano para iniciar la recogida.');
+            return;
+          }
+        }
       } catch {
         toast.error('Error al cargar el traslado');
       } finally { setIsLoading(false); }
@@ -100,9 +179,11 @@ const PickupVerification: React.FC = () => {
     setIsUploadingImage(true);
     
     try {
+      // Comprimir imagen antes de subir para acelerar en móviles
+      const optimized = await compressImage(file, 1600, 0.75);
       // Subir imagen al storage - solo enviamos folderPath
       const folderPath = `travel/${transferId}/pickup/${type}`;
-      const imageUrl = await StorageService.uploadImage(file, folderPath);
+      const imageUrl = await StorageService.uploadImage(optimized, folderPath);
       
       if (imageUrl) {
         console.log('URL de imagen recibida:', imageUrl);
@@ -242,7 +323,7 @@ const PickupVerification: React.FC = () => {
                     />
                     <Button variant="destructive" size="icon"
                       onClick={() => removeImage(type, k)}
-                      disabled={isUploadingImage}
+                      disabled={isUploadingImage || accessBlocked}
                       className="absolute top-2 right-2 h-6 w-6">✕</Button>
                   </div>
                 ) : (
@@ -253,7 +334,7 @@ const PickupVerification: React.FC = () => {
                       <Camera className="h-8 w-8 text-white/70"/>
                     )}
                     <input type="file" accept="image/*" capture="environment" className="hidden"
-                      disabled={isUploadingImage}
+                      disabled={isUploadingImage || accessBlocked}
                       onChange={e => handleImageChange(type, k, e)}/>
                   </label>
                 )}
@@ -377,6 +458,18 @@ const PickupVerification: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto space-y-6">
+        {accessWarning && (
+          <div className="flex items-center gap-3 p-3 rounded-lg border border-amber-400 bg-amber-500/15 text-amber-100">
+            <AlertTriangle className="h-5 w-5" />
+            <div>
+              <div className="font-semibold">No puedes completar la verificación todavía</div>
+              <div className="text-sm opacity-90">{accessWarning}</div>
+              {scheduledPickupText && (
+                <div className="text-sm mt-1 opacity-90">Hora programada: {scheduledPickupText}</div>
+              )}
+            </div>
+          </div>
+        )}
         {/* encabezado */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Verificación de Recogida</h1>
@@ -406,6 +499,7 @@ const PickupVerification: React.FC = () => {
         </div>
 
         {/* tarjeta principal */}
+        {!accessBlocked && (
         <Card className="border-white/20 bg-white/5 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-white text-center">
@@ -432,14 +526,14 @@ const PickupVerification: React.FC = () => {
                 </Button>
               ) : currentStep === STEPS.CONFIRMATION ? (
                 <Button onClick={handleSubmitVerification}
-                  disabled={isSubmitting || !canProceed()}
+                  disabled={isSubmitting || !canProceed() || accessBlocked}
                   className="bg-green-500 hover:bg-green-600 text-white ml-auto">
                   {isSubmitting
                     ? (<><Loader className="mr-2 h-4 w-4 animate-spin"/>Enviando…</>)
                     : 'Enviar Verificación'}
                 </Button>
               ) : (
-                <Button onClick={handleNext} disabled={!canProceed()}
+                <Button onClick={handleNext} disabled={!canProceed() || accessBlocked}
                   className="bg-[#6EF7FF] text-[#22142A] hover:bg-[#6EF7FF]/90 disabled:opacity-50 ml-auto">
                   Siguiente <ArrowRight size={16} className="ml-2"/>
                 </Button>
@@ -447,6 +541,29 @@ const PickupVerification: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+        )}
+
+        {accessBlocked && (
+          <Card className="border-white/20 bg-white/5 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-white text-center">Recogida programada</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-white/80 text-center">
+                {scheduledPickupText ? (
+                  <p>Hora programada de recogida: <span className="font-semibold text-white">{scheduledPickupText}</span></p>
+                ) : (
+                  <p>Consulta la hora programada en el detalle del traslado.</p>
+                )}
+              </div>
+              <div className="mt-6 flex justify-center">
+                <Button onClick={() => navigate('/drover/dashboard')} className="bg-[#6EF7FF] text-[#22142A] hover:bg-[#6EF7FF]/90">
+                  Volver al Dashboard
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </DashboardLayout>
   );

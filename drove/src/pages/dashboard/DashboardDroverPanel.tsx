@@ -21,6 +21,10 @@ import { Button } from '@/components/ui/button';
 
 const DashboardDroverPanel: React.FC = () => {
   const { user } = useAuth();           // se asume user.id
+  const [tracking, setTracking] = React.useState<boolean>(() => {
+    try { return localStorage.getItem('drover_tracking_active') === '1'; } catch { return false; }
+  });
+  const watcherRef = React.useRef<number | null>(null);
 
   /* ------------------ fetch datos reales ------------------ */
   const {
@@ -49,6 +53,28 @@ const DashboardDroverPanel: React.FC = () => {
 
   console.log("valor stats",stats)
   const recentTrips  = dashboard?.recentTrips ?? [];
+
+  // Rehidratar tracking al montar si estaba activo (colocado antes de cualquier return)
+  React.useEffect(() => {
+    const active = (() => { try { return localStorage.getItem('drover_tracking_active') === '1'; } catch { return false; }})();
+    if (active && watcherRef.current == null && 'geolocation' in navigator) {
+      watcherRef.current = navigator.geolocation.watchPosition(async (pos) => {
+        try { await DroverService.updateCurrentPosition(pos.coords.latitude, pos.coords.longitude); } catch {}
+      }, () => {}, { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 });
+      setTracking(true);
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible' && active) {
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+          try { await DroverService.updateCurrentPosition(pos.coords.latitude, pos.coords.longitude); } catch {}
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
 
   /* ------------------ loading ------------------ */
   if (isLoading) {
@@ -137,8 +163,46 @@ const DashboardDroverPanel: React.FC = () => {
               </Link>
             </Button>
 
-            <Button variant="outline" className="w-full rounded-2xl h-12">
-              <Calendar size={18} className="mr-2"/> Programar Disponibilidad
+            <Button
+              variant={tracking ? 'default' : 'outline'}
+              className={`w-full rounded-2xl h-12 ${tracking ? 'bg-green-500 text-white hover:bg-green-400' : ''}`}
+              onClick={async () => {
+                if (tracking) {
+                  setTracking(false);
+                  try { localStorage.setItem('drover_tracking_active', '0'); } catch {}
+                  if (watcherRef.current != null) {
+                    navigator.geolocation.clearWatch(watcherRef.current);
+                    watcherRef.current = null;
+                  }
+                  return;
+                }
+                // Activar tracking persistente con watchPosition
+                const startWatch = () => {
+                  if (!('geolocation' in navigator)) return;
+                  watcherRef.current = navigator.geolocation.watchPosition(
+                    async (pos) => {
+                      try {
+                        await DroverService.updateCurrentPosition(pos.coords.latitude, pos.coords.longitude);
+                      } catch {}
+                    },
+                    () => {},
+                    { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 }
+                  );
+                };
+                startWatch();
+                try { localStorage.setItem('drover_tracking_active', '1'); } catch {}
+                setTracking(true);
+              }}
+            >
+              <Calendar size={18} className="mr-2"/>
+              {tracking ? 'Tracking activo (click para detener)' : 'Activar Tracking de Ubicación'}
+            </Button>
+
+            {/* Solo móvil: acceso al escáner QR */}
+            <Button asChild variant="outline" className="w-full rounded-2xl h-12 md:hidden">
+              <Link to="/qr/scan">
+                <Star size={18} className="mr-2"/> Escanear QR
+              </Link>
             </Button>
 
             <Button variant="outline" className="w-full rounded-2xl h-12">

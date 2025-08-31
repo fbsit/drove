@@ -18,18 +18,10 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    ctx.fillStyle = 'rgba(34,20,42,0.5)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.font = '16px Helvetica';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.fillText('Firme aquí', canvas.width / 2, canvas.height / 2);
+    // Fondo transparente (por defecto) para incrustar la firma sin background en el PDF
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   }, []);
 
   /* ───────── handlers ───────── */
@@ -50,14 +42,7 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
     setLastX(clientX - rect.left);
     setLastY(clientY - rect.top);
 
-    if (!hasDrawn) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.fillStyle = 'rgba(34,20,42,0.5)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        setHasDrawn(true);
-      }
-    }
+    if (!hasDrawn) setHasDrawn(true);
   };
 
   const draw = (
@@ -80,7 +65,7 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(x, y);
-    ctx.strokeStyle = '#FFFFFF';
+    ctx.strokeStyle = '#111827'; // negro/gris oscuro para buen contraste
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.stroke();
@@ -101,15 +86,7 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    ctx.fillStyle = 'rgba(34,20,42,0.5)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.font = '16px Helvetica';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.fillText('Firme aquí', canvas.width / 2, canvas.height / 2);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     setHasDrawn(false);
     onSignatureChange('');
