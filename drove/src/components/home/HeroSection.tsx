@@ -6,7 +6,7 @@ import DroveButton from '@/components/DroveButton';
 
 const HeroSection = () => {
   return (
-    <section className="px-4 py-12 md:py-20 text-center relative overflow-hidden">
+    <section className="px-4 pt-24 pb-12 md:py-20 text-center relative overflow-hidden">
       {/* Contenido principal */}
       <div className="relative z-10">
         <div className="inline-block bg-drove-accent/10 border border-drove-accent/30 rounded-full px-4 py-2 mb-6">
@@ -15,7 +15,7 @@ const HeroSection = () => {
           </span>
         </div>
 
-        <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white leading-tight">
+        <h1 className="text-4xl xl:text-6xl font-bold mb-6 text-white leading-tight">
           Transporte profesional de
           <span className="text-drove-accent block mt-2">vehículos en España</span>
         </h1>
@@ -28,7 +28,7 @@ const HeroSection = () => {
         <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
           {/* Para Clientes */}
           <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm p-8 rounded-3xl border border-white/10 hover:border-drove-accent/50 transition-all group flex flex-col">
-            <div className='flex-1 flex flex-col justify-center items-center'>
+            <div className='flex-1 flex flex-col justify-start items-center'>
               <div className="w-16 h-16 bg-drove-accent/20 rounded-full flex items-center justify-center mb-6 mx-auto group-hover:scale-110 transition-transform">
                 <Car size={32} className="text-drove-accent" />
               </div>
@@ -53,7 +53,7 @@ const HeroSection = () => {
 
           {/* Para Drovers */}
           <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm p-8 rounded-3xl border border-white/10 hover:border-drove-accent/50 transition-all group flex flex-col">
-            <div className='flex-1 flex flex-col justify-center items-center'>
+            <div className='flex-1 flex flex-col justify-start items-center'>
               <div className="w-16 h-16 bg-drove-accent/20 rounded-full flex items-center justify-center mb-6 mx-auto group-hover:scale-110 transition-transform">
                 <User size={32} className="text-drove-accent" />
               </div>

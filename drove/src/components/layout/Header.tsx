@@ -65,7 +65,7 @@ const Header = () => {
         const count = await NotificationService.getUnreadCount();
         // Nunca reducir el contador con respuestas atrasadas
         setUnreadCount((prev) => Math.max(prev, count || 0));
-      } catch {}
+      } catch { }
     };
     if (isAuthenticated && user?.id) {
       fetchCount();
@@ -82,7 +82,7 @@ const Header = () => {
         // No bajamos el contador basados en listado parcial; solo lo subimos si procede
         const unread = arr.filter((n: any) => !n.read).length;
         if (unread > unreadCount) setUnreadCount(unread);
-      } catch {}
+      } catch { }
     };
     if (isAuthenticated && user?.id) {
       fetchList();
@@ -102,7 +102,7 @@ const Header = () => {
         }
       }
     });
-    return () => { try { (unsubscribe as any)?.(); } catch {} };
+    return () => { try { (unsubscribe as any)?.(); } catch { } };
   }, [onNotification, notifOpen, notifications]);
 
   // Refetch when window gains focus for snappier UX (sin polling)
@@ -113,14 +113,14 @@ const Header = () => {
         const count = await NotificationService.getUnreadCount();
         // Si el servidor dice menos que nuestro contador local, mantenemos el mayor para evitar parpadeos
         setUnreadCount((prev) => Math.max(prev, count || 0));
-      } catch {}
+      } catch { }
       // Si recargó y el listado está vacío, obtenerlo de forma perezosa
       if (notifications.length === 0) {
         try {
           const list = await NotificationService.getNotifications();
           const arr = Array.isArray(list) ? list.slice(0, 10) : [];
           setNotifications(arr);
-        } catch {}
+        } catch { }
       }
     };
     window.addEventListener('focus', onFocus);
@@ -137,7 +137,7 @@ const Header = () => {
         // Fallback: no reducimos el contador; solo incrementamos si detectamos más
         const unread = arr.filter((n: any) => !n.read).length;
         if (unread > unreadCount) setUnreadCount(unread);
-      } catch {}
+      } catch { }
     }
   };
 
@@ -147,7 +147,7 @@ const Header = () => {
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
       // reduce badge
       setUnreadCount((c) => Math.max(0, c - 1));
-    } catch {}
+    } catch { }
   };
 
   // Deducción de ruta de destino desde la notificación
@@ -201,13 +201,13 @@ const Header = () => {
   const handlePerfilClick = () => {
     console.log("🖱️ DIRECTO - Clic en perfil - Usuario:", user?.user_type);
     setMenuOpen(false);
-    
+
     // Redirigir DIRECTAMENTE según el tipo de usuario sin pasar por ProfileRedirect
     if (!user) {
       navigate("/login");
       return;
     }
-    
+
     switch (user.role) {
       case "admin":
         console.log("🔐 DIRECTO - Redirigiendo admin a /admin/perfil");
@@ -235,7 +235,7 @@ const Header = () => {
   // Función para volver al dashboard desde perfil
   const handleBackToDashboard = () => {
     if (!user) return;
-    
+
     switch (user.role) {
       case "admin":
         navigate("/admin/dashboard");
@@ -257,14 +257,14 @@ const Header = () => {
 
   // Mostrar botón "Entrar" solo si NO está autenticado y estamos en Home
   const showEntrar = !isAuthenticated && location.pathname === "/";
-  
+
   // Mostrar botón "Panel de Control" solo si está autenticado y estamos en Home
   const showPanelButton = isAuthenticated && location.pathname === "/";
 
   // Determinar la ruta del dashboard según el tipo de usuario
   const getDashboardRoute = () => {
     if (!user) return "/dashboard";
-    
+
     switch (user.role) {
       case "admin":
         return "/admin/dashboard";
@@ -329,7 +329,7 @@ const Header = () => {
           </Link>
         )}
       </div>
-      
+
       <div className="flex items-center gap-3">
         {/* Botón "Panel de Control" si está autenticado y en Home */}
         {showPanelButton && (
@@ -343,7 +343,7 @@ const Header = () => {
             <span className="hidden sm:inline">Panel de Control</span>
           </Button>
         )}
-        
+
         {/* Botón Entrar solo en Home, si no autenticado */}
         {showEntrar && (
           <Link
@@ -357,38 +357,61 @@ const Header = () => {
         {isAuthenticated && user && (
           <div className="flex items-center gap-2 relative">
             {/* Bell badge */}
-            <div className="relative mr-1">
-              <Bell className="text-white cursor-pointer" size={20} onClick={toggleNotifications} />
+            <div className="relative mr-1 cursor-pointer" onClick={toggleNotifications}>
+              <Bell className="text-white " size={20} />
               {unreadCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 font-bold">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
-              {notifOpen && (
-                <div ref={notifRef} className="absolute right-0 mt-2 w-72 bg-[#291A38] border border-white/15 rounded-2xl shadow-lg z-[1200]">
-                  <div className="p-3 border-b border-white/10 text-white font-bold">Notificaciones</div>
-                  <div className="max-h-80 overflow-auto">
-                    {notifications.length === 0 ? (
-                      <div className="p-4 text-white/70 text-sm">Sin notificaciones</div>
-                    ) : (
-                      notifications.map((n) => (
-                        <div key={n.id} className="p-3 flex items-start gap-2 hover:bg-white/5 cursor-pointer" onClick={() => handleNotificationClick(n)}>
-                          <div className={`mt-1 h-2 w-2 rounded-full ${n.read ? 'bg-white/30' : 'bg-[#6EF7FF]'}`} />
-                          <div className="flex-1">
-                            <div className="text-white text-sm font-semibold">{n.title}</div>
-                            <div className="text-white/70 text-xs">{n.message}</div>
-                          </div>
-                          {!n.read && (
-                            <button onClick={(e) => { e.stopPropagation(); handleMarkAsRead(n.id); }} className="text-xs text-[#6EF7FF] hover:underline flex items-center gap-1">
-                              <Check size={14} />
-                            </button>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
+              <div
+                ref={notifRef}
+                className={`
+                    absolute right-0 top-full mt-2 w-72 bg-[#291A38]
+                    border border-white/15 border-t-transparent rounded-b-2xl shadow-lg z-[1200]
+                    transform transition-all duration-300 ease-out
+                    origin-top
+                    ${notifOpen ? "opacity-100 translate-y-3" : "opacity-0  translate-y-[-115%]"}
+                  `}
+              >
+                <div className="p-3 border-b border-white/10 text-white font-bold">
+                  Notificaciones
                 </div>
-              )}
+                <div className="h-80 max-h-[70dvh] overflow-auto scrollbar">
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-white/70 text-sm">Sin notificaciones</div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        className="p-3 flex items-start gap-2 hover:bg-white/5 cursor-pointer"
+                        onClick={() => handleNotificationClick(n)}
+                      >
+                        <div
+                          className={`mt-1 h-2 w-2 rounded-full ${n.read ? "bg-white/30" : "bg-[#6EF7FF]"
+                            }`}
+                        />
+                        <div className="flex-1">
+                          <div className="text-white text-sm font-semibold">{n.title}</div>
+                          <div className="text-white/70 text-xs">{n.message}</div>
+                        </div>
+                        {!n.read && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMarkAsRead(n.id);
+                            }}
+                            className="text-xs text-[#6EF7FF] hover:underline flex items-center gap-1"
+                          >
+                            <Check size={14} />
+                          </button>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
             </div>
             <span className="hidden md:block text-white font-bold">
               {getDisplayName()?.split(' ')[0]}
