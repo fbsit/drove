@@ -51,14 +51,14 @@ const SecuritySection = () => {
 
   return (
     <section className="px-4 py-16 md:py-20 bg-white/5">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <h2 className="text-2xl md:text-4xl font-bold mb-4 text-center text-white">
           Seguridad y confianza
         </h2>
         <p className="text-center text-white/70 mb-12 max-w-2xl mx-auto">
           En DROVE nos tomamos muy en serio la seguridad de tu vehículo y la transparencia en cada paso del proceso
         </p>
-        
+
         <div className="grid md:grid-cols-2 gap-8">
           {features.slice(0, 4).map((feature, index) => (
             <SecurityFeature key={index} {...feature} />

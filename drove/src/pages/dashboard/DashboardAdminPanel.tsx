@@ -1,12 +1,12 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { 
-  Car, 
-  Users, 
-  TrendingUp, 
-  Clock, 
-  CheckCircle, 
+import {
+  Car,
+  Users,
+  TrendingUp,
+  Clock,
+  CheckCircle,
   AlertCircle,
   Trophy,
   Calendar,
@@ -49,7 +49,7 @@ const DashboardAdminPanel: React.FC = () => {
     );
   }
 
-  console.log("estas son las metrics",metrics);
+  console.log("estas son las metrics", metrics);
 
   return (
     <div className="flex flex-col w-full space-y-6 md:space-y-8 pt-20">
@@ -73,9 +73,9 @@ const DashboardAdminPanel: React.FC = () => {
       </div>
 
       {/* Métricas principales */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 animate-fade-in">
+      <div className="grid grid-cols-2 xl:grid-cols-5 bg-yellow-500 gap-4 md:gap-6 animate-fade-in">
         <Card className="bg-white/10 border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <CardContent className="p-4 md:p-6">
+          <CardContent className="p-2 md:p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="bg-[#6EF7FF]/20 p-2 md:p-3 rounded-xl">
                 <Car className="h-5 w-5 md:h-6 md:w-6 text-[#6EF7FF] animate-pulse" />
@@ -92,7 +92,7 @@ const DashboardAdminPanel: React.FC = () => {
         </Card>
 
         <Card className="bg-white/10 border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <CardContent className="p-4 md:p-6">
+          <CardContent className="p-2 md:p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="bg-green-500/20 p-2 md:p-3 rounded-xl">
                 <CheckCircle className="h-5 w-5 md:h-6 md:w-6 text-green-400 animate-pulse" />
@@ -109,7 +109,7 @@ const DashboardAdminPanel: React.FC = () => {
         </Card>
 
         <Card className="bg-white/10 border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <CardContent className="p-4 md:p-6">
+          <CardContent className="p-2 md:p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="bg-blue-500/20 p-2 md:p-3 rounded-xl">
                 <Clock className="h-5 w-5 md:h-6 md:w-6 text-blue-400 animate-pulse" />
@@ -126,7 +126,7 @@ const DashboardAdminPanel: React.FC = () => {
         </Card>
 
         <Card className="bg-white/10 border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <CardContent className="p-4 md:p-6">
+          <CardContent className="p-2 md:p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="bg-purple-500/20 p-2 md:p-3 rounded-xl">
                 <UserCheck className="h-5 w-5 md:h-6 md:w-6 text-purple-400 animate-pulse" />
@@ -143,7 +143,7 @@ const DashboardAdminPanel: React.FC = () => {
         </Card>
 
         <Card className="bg-white/10 border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300 col-span-2 md:col-span-3 lg:col-span-1">
-          <CardContent className="p-4 md:p-6">
+          <CardContent className="p-2 md:p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="bg-amber-500/20 p-2 md:p-3 rounded-xl">
                 <AlertCircle className="h-5 w-5 md:h-6 md:w-6 text-amber-400 animate-pulse" />
@@ -176,7 +176,7 @@ const DashboardAdminPanel: React.FC = () => {
               </CardContent>
             </Card>
           )}
-          
+
           {metrics?.pendingPaymentsCount > 0 && (
             <Card className="bg-red-500/10 border-red-500/30">
               <CardContent className="p-4">
@@ -190,7 +190,7 @@ const DashboardAdminPanel: React.FC = () => {
               </CardContent>
             </Card>
           )}
-          
+
           {metrics?.pendingInvoicesCount > 0 && (
             <Card className="bg-blue-500/10 border-blue-500/30">
               <CardContent className="p-4">
@@ -231,8 +231,8 @@ const DashboardAdminPanel: React.FC = () => {
                 </span>
               </div>
               <div className="w-full bg-white/10 rounded-full h-2 mt-1">
-                <div 
-                  className="bg-[#6EF7FF] h-2 rounded-full transition-all duration-500" 
+                <div
+                  className="bg-[#6EF7FF] h-2 rounded-full transition-all duration-500"
                   style={{ width: `${Math.min((metrics?.completedTransfers / Math.max(metrics?.totalTransfers, 1)) * 100, 100)}%` }}
                 ></div>
               </div>

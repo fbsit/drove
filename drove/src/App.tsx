@@ -1,5 +1,4 @@
 
-import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { AppProviders } from './providers/AppProviders';
 import AppLayout from './components/layout/AppLayout';
