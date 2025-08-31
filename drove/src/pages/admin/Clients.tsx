@@ -68,7 +68,7 @@ const Clients: React.FC = () => {
   const filteredClients = clients.filter(
     (c) =>
       contains(c, search) &&
-      (statusFilter === "todos" || c.status === statusFilter),
+      (statusFilter === "todos" || c.status === statusFilter)
   );
 
   const countByStatus = (s: UserStatus) =>
@@ -145,7 +145,9 @@ const Clients: React.FC = () => {
         isLoading={isApproving || isRejecting}
       />
 
-      {filteredClients.length === 0 && <EmptyState msg="No se encontraron clientes" />}
+      {filteredClients.length === 0 && (
+        <EmptyState msg="No se encontraron clientes" />
+      )}
     </div>
   );
 };
