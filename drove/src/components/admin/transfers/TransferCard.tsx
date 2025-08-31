@@ -100,10 +100,10 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
           </div>
         </div>
         
-        {/* Precio y información del conductor */}
+        {/* Precio e información del conductor (mapea correctamente los campos) */}
         <div className="flex flex-col gap-2">
           <span className="text-base font-bold text-[#6EF7FF]">
-            {parseFloat(transfer.price).toFixed(2)}&nbsp;€
+            {Number(transfer.totalPrice ?? transfer.price ?? 0).toFixed(2)}&nbsp;€
           </span>
           
           {/* Información del conductor asignado */}
