@@ -14,14 +14,14 @@ const Reviews: React.FC = () => {
 
   const debouncedSearch = useDebouncedValue(search, 300);
 
-  const { 
-    reviews, 
-    drovers, 
-    isLoading, 
-    respondToReview, 
+  const {
+    reviews,
+    drovers,
+    isLoading,
+    respondToReview,
     markAsViewed,
     isResponding,
-    isMarkingAsViewed 
+    isMarkingAsViewed
   } = useReviewsManagement({ search: debouncedSearch, rating: ratingFilter, drover, responded: responseFilter });
 
   // Server-side (a futuro) o fuente ya filtrada por queryKey. Mostramos lo recibido
@@ -30,7 +30,7 @@ const Reviews: React.FC = () => {
   // Calcular estadísticas
   const stats = {
     totalReviews: reviews.length,
-    averageRating: reviews.length > 0 
+    averageRating: reviews.length > 0
       ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
       : "0.0",
     pendingResponses: reviews.filter(r => !r.adminResponse).length,
@@ -73,7 +73,7 @@ const Reviews: React.FC = () => {
         <p className="text-white/70">
           Administra las reseñas de los clientes, responde a comentarios y supervisa la calidad del servicio.
         </p>
-        
+
         {/* Estadísticas */}
         <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white/10 rounded-lg p-4 text-center">
@@ -102,7 +102,7 @@ const Reviews: React.FC = () => {
           placeholder="Buscar reseñas..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50"
+          className="w-full h-10 p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50"
         />
         <Select value={ratingFilter} onValueChange={setRatingFilter}>
           <SelectTrigger className="w-full p-3 rounded-lg bg-[#1A1F2C] border border-white/20 text-white">
@@ -160,24 +160,23 @@ const Reviews: React.FC = () => {
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
-                    className={`h-4 w-4 ${
-                      i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-400'
-                    }`}
+                    className={`h-4 w-4 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-400'
+                      }`}
                   />
                 ))}
                 <span className="ml-2 text-white">{review.rating}/5</span>
               </div>
             </div>
-            
+
             <p className="text-white/80 mb-4">{review.comment}</p>
-            
+
             {review.adminResponse && (
               <div className="bg-white/5 rounded p-3 mb-4">
                 <p className="text-white/70 text-sm mb-1">Respuesta del administrador:</p>
                 <p className="text-white">{review.adminResponse}</p>
               </div>
             )}
-            
+
             <div className="flex gap-2">
               <Button
                 size="sm"
@@ -188,7 +187,7 @@ const Reviews: React.FC = () => {
                 {isResponding ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4 mr-1" />}
                 {review.adminResponse ? 'Actualizar Respuesta' : 'Responder'}
               </Button>
-              
+
               {!review.isViewed && (
                 <Button
                   size="sm"

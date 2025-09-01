@@ -7,14 +7,14 @@ import {
 import { startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 
-import ReportsFilters          from '@/components/admin/reports/ReportsFilters';
-import MetricCard              from '@/components/admin/reports/MetricCard';
-import TransferStatusChart     from '@/components/admin/reports/TransferStatusChart';
-import PaymentMethodChart      from '@/components/admin/reports/PaymentMethodChart';
-import PaymentStatusChart      from '@/components/admin/reports/PaymentStatusChart';
-import TopUsersList            from '@/components/admin/reports/TopUsersList';
-import TopUsersListMobile      from '@/components/admin/reports/TopUsersListMobile';
-import { useIsMobile }         from '@/hooks/use-mobile';
+import ReportsFilters from '@/components/admin/reports/ReportsFilters';
+import MetricCard from '@/components/admin/reports/MetricCard';
+import TransferStatusChart from '@/components/admin/reports/TransferStatusChart';
+import PaymentMethodChart from '@/components/admin/reports/PaymentMethodChart';
+import PaymentStatusChart from '@/components/admin/reports/PaymentStatusChart';
+import TopUsersList from '@/components/admin/reports/TopUsersList';
+import TopUsersListMobile from '@/components/admin/reports/TopUsersListMobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useReportsManagement } from '@/hooks/admin/useReportsManagement'; // 👈 hook real
 
 const description =
@@ -24,7 +24,7 @@ const Reports: React.FC = () => {
   /* ─────────────  filtros locales  ───────────── */
   const [dateRange, setDateRange] = useState<DateRange>({
     from: startOfMonth(new Date()),
-    to:   endOfMonth(new Date()),
+    to: endOfMonth(new Date()),
   });
   const [clientType, setClientType] = useState('all');
   const isMobile = useIsMobile();
@@ -57,14 +57,14 @@ const Reports: React.FC = () => {
 
   /* ─────────────  helpers derivados  ───────────── */
   const totalTransfers = reports.transfers.toLocaleString();
-  const totalRevenue   = `€${reports.revenue.toLocaleString()}`;
-  const activeDrivers  = reports.drivers.toLocaleString();
-  const growth         = `${reports.monthlyGrowth.toFixed(1)}%`;
+  const totalRevenue = `€${reports.revenue.toLocaleString()}`;
+  const activeDrivers = reports.drivers.toLocaleString();
+  const growth = `${reports.monthlyGrowth.toFixed(1)}%`;
 
   /* Status y métodos de pago listos para gráficas */
-  const chartStatusData     = reports.transferStatus ?? [];
+  const chartStatusData = reports.transferStatus ?? [];
   const chartPaymentMethods = reports.paymentMethods ?? [];
-  const chartPaymentStatus  = reports.paymentStatus  ?? [];
+  const chartPaymentStatus = reports.paymentStatus ?? [];
 
   /* Top lists */
   const topClients = reports.topClients ?? [];
@@ -89,16 +89,16 @@ const Reports: React.FC = () => {
 
       {/* Métricas principales */}
       <div className={`grid gap-6 mb-8 ${isMobile ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'}`}>
-        <MetricCard title="Traslados Totales" value={totalTransfers} icon={Calendar}  iconColor="#6EF7FF" />
-        <MetricCard title="Ingresos Totales"   value={totalRevenue}   icon={Euro}     iconColor="#6EF7FF" />
-        <MetricCard title="Conductores Activos" value={activeDrivers} icon={Users}    iconColor="#6EF7FF" />
-        <MetricCard title="Crecimiento"         value={growth}        icon={TrendingUp} iconColor="#6EF7FF" />
+        <MetricCard title="Traslados Totales" value={totalTransfers} icon={Calendar} iconColor="#6EF7FF" />
+        <MetricCard title="Ingresos Totales" value={totalRevenue} icon={Euro} iconColor="#6EF7FF" />
+        <MetricCard title="Conductores Activos" value={activeDrivers} icon={Users} iconColor="#6EF7FF" />
+        <MetricCard title="Crecimiento" value={growth} icon={TrendingUp} iconColor="#6EF7FF" />
       </div>
 
       {/* Gráficos */}
       <div className={`grid gap-6 mb-8 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 xl:grid-cols-2'}`}>
         <TransferStatusChart data={chartStatusData} />
-        <PaymentMethodChart  data={chartPaymentMethods} />
+        <PaymentMethodChart data={chartPaymentMethods} />
       </div>
 
       <div className={`grid gap-6 mb-8 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 xl:grid-cols-2'}`}>

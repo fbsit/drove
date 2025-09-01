@@ -14,14 +14,14 @@ const Support: React.FC = () => {
 
   const debouncedSearch = useDebouncedValue(search, 300);
 
-  const { 
-    tickets, 
-    metrics, 
-    isLoading, 
-    updateTicketStatus, 
+  const {
+    tickets,
+    metrics,
+    isLoading,
+    updateTicketStatus,
     respondToTicket,
     isUpdatingStatus,
-    isResponding 
+    isResponding
   } = useSupportManagement({ search: debouncedSearch, status: statusFilter, priority: priorityFilter });
 
   // Server-side filtering
@@ -78,7 +78,7 @@ const Support: React.FC = () => {
         <p className="text-white/70">
           Administra y responde a los tickets de soporte de clientes y drovers.
         </p>
-        
+
         {/* Métricas */}
         <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="bg-white/10 rounded-lg p-4 text-center">
@@ -111,7 +111,7 @@ const Support: React.FC = () => {
           placeholder="Buscar tickets..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50"
+          className="w-full h-10 p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50"
         />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-full p-3 rounded-lg bg-[#1A1F2C] border border-white/20 text-white">

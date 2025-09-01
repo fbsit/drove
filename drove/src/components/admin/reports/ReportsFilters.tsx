@@ -36,15 +36,15 @@ const ReportsFilters: React.FC<ReportsFiltersProps> = ({
   onDatePresetSelect
 }) => {
   const dateRangeText = dateRange?.from && dateRange?.to
-    ? `${format(dateRange.from, 'dd/MM/yyyy', {locale: es})} - ${format(dateRange.to, 'dd/MM/yyyy', {locale: es})}`
+    ? `${format(dateRange.from, 'dd/MM/yyyy', { locale: es })} - ${format(dateRange.to, 'dd/MM/yyyy', { locale: es })}`
     : 'Seleccionar periodo';
 
   return (
     <div className="bg-white/10 rounded-2xl p-6 mb-8">
-      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+      <div className="flex flex-col lg:flex-row gap-4 items-start md:items-center justify-between">
         <h2 className="text-xl font-bold text-white">Filtros</h2>
-        
-        <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+
+        <div className="flex flex-col lg:flex-row gap-3 w-full lg:w-fit">
           <Popover>
             <PopoverTrigger asChild>
               <button className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white hover:bg-white/10 transition-colors">
@@ -85,9 +85,9 @@ const ReportsFilters: React.FC<ReportsFiltersProps> = ({
               />
             </PopoverContent>
           </Popover>
-          
+
           <Select value={clientType} onValueChange={setClientType}>
-            <SelectTrigger className="w-full md:w-[200px] bg-white/5 border-white/10 text-white">
+            <SelectTrigger className="w-full lg:w-[200px] bg-white/5 border-white/10 text-white">
               <SelectValue placeholder="Tipo de cliente" />
             </SelectTrigger>
             <SelectContent className="bg-[#22142A] border-white/10">

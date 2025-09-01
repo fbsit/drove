@@ -138,9 +138,9 @@ const Transfers: React.FC = () => {
       </div>
 
       {/* Lista de traslados */}
-      <div className="space-y-4">
+      <div className="grid lg:grid-cols-2 gap-4">
         {filteredTransfers.map((transfer) => (
-          <div key={transfer.id} className="bg-white/10 rounded-lg p-4">
+          <div key={transfer.id} className="bg-white/10 rounded-lg p-4 h-full text-left">
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="text-white font-bold">#{transfer?.id}</h3>
