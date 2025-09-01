@@ -1,18 +1,43 @@
-
 import React from "react";
-import { FileText, Upload, Info, Check, X, Plus, CreditCard, Banknote } from "lucide-react";
+import {
+  FileText,
+  Upload,
+  Info,
+  Check,
+  X,
+  Plus,
+  CreditCard,
+  Banknote,
+} from "lucide-react";
 import InvoiceStatusBadge from "./InvoiceStatusBadge";
 import { Button } from "@/components/ui/button";
 import InvoicePDFUpload from "./InvoicePDFUpload";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Tooltip as TooltipRoot, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Tooltip as TooltipRoot,
+  TooltipProvider,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import { toast } from "@/hooks/use-toast";
 import InvoiceInfoTooltip from "./InvoiceInfoTooltip";
 
 interface InvoiceCardProps {
   invoice: any;
-  onUploadPDF: (file: File, invoiceId: string) => Promise<"success" | "exists" | "error">;
-  onChangeStatus: (invoiceId: string, status: "emitida" | "anticipo" | "pagada") => void;
+  onUploadPDF: (
+    file: File,
+    invoiceId: string
+  ) => Promise<"success" | "exists" | "error">;
+  onChangeStatus: (
+    invoiceId: string,
+    status: "emitida" | "anticipo" | "pagada"
+  ) => void;
   onRevertStatus: (invoiceId: string) => void;
 }
 
@@ -43,12 +68,18 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
   onRevertStatus,
 }) => {
   const [uploadDialog, setUploadDialog] = React.useState(false);
-  const [confirmDialog, setConfirmDialog] = React.useState<{ open: boolean; type: any }>({ open: false, type: undefined });
+  const [confirmDialog, setConfirmDialog] = React.useState<{
+    open: boolean;
+    type: any;
+  }>({ open: false, type: undefined });
 
   // Determinar método de pago y su icono (unificado: tarjeta o débito → "Tarjeta")
   let metodoPago: string = "Transferencia";
   let metodoIcono = <Banknote size={22} className="text-[#6EF7FF]" />;
-  if (invoice.paymentMethod === "stripe" || invoice.paymentMethod === "debito") {
+  if (
+    invoice.paymentMethod === "stripe" ||
+    invoice.paymentMethod === "debito"
+  ) {
     metodoPago = "Tarjeta";
     metodoIcono = <CreditCard size={22} className="text-[#6EF7FF]" />;
   }
@@ -61,10 +92,15 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
     } else if (invoice.status === "pagada") {
       estadoPago = "Pagado";
     } else {
-      estadoPago = TRANSFER_STATUS_LABELS[invoice.transferStatus] || invoice.transferStatus;
+      estadoPago =
+        TRANSFER_STATUS_LABELS[invoice.transferStatus] ||
+        invoice.transferStatus;
     }
   } else {
-    estadoPago = (invoice.transferStatus === "pagado" || invoice.status === "pagada") ? "Pagado" : "Pendiente";
+    estadoPago =
+      invoice.transferStatus === "pagado" || invoice.status === "pagada"
+        ? "Pagado"
+        : "Pendiente";
   }
 
   // Subir/ver factura PDF
@@ -74,19 +110,24 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
   // Acciones SOLO para transferencia
   const esTransferencia = invoice.paymentMethod === "transferencia";
   // Anticipo solo es posible cuando es transferencia, tiene PDF, y está en estado "emitida"
-  const showAnticipo = esTransferencia && tienePDF && invoice.status === "emitida";
+  const showAnticipo =
+    esTransferencia && tienePDF && invoice.status === "emitida";
   // Pagada solo debe mostrarse si está "emitida" o en "anticipo" y tiene PDF
-  const showPagada = esTransferencia && tienePDF && ["emitida", "anticipo"].includes(invoice.status);
+  const showPagada =
+    esTransferencia &&
+    tienePDF &&
+    ["emitida", "anticipo"].includes(invoice.status);
   // Revertir solo aparece si está en "anticipo"
-  const showRevertir = esTransferencia && tienePDF && invoice.status === "anticipo";
+  const showRevertir =
+    esTransferencia && tienePDF && invoice.status === "anticipo";
 
   const handleUploadSuccess = () => {
     // Simular que se subió el PDF y cambiar estado a "emitida"
     onChangeStatus(invoice.id, "emitida");
-    toast({ 
-      title: "Factura subida correctamente", 
-      description: "El estado se ha actualizado a 'Emitida'.", 
-      duration: 1500 
+    toast({
+      title: "Factura subida correctamente",
+      description: "El estado se ha actualizado a 'Emitida'.",
+      duration: 1500,
     });
     setUploadDialog(false);
   };
@@ -97,31 +138,24 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
       style={{ fontFamily: "Helvetica", minWidth: 0 }}
     >
       {/* Header */}
-      <div className="flex items-center gap-2 justify-between min-w-0" tabIndex={0}>
-        <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-base font-bold text-white leading-snug truncate">#{invoice.id || invoice.transferId}</span>
-          <span className="text-xs text-white/60 truncate">{invoice.invoiceDate}</span>
+      <div
+        className="flex items-start gap-2 justify-between min-w-0 "
+        tabIndex={0}
+      >
+        <div className="flex flex-col gap-1 min-w-0 ">
+          <span className="text-base font-bold text-white text-start leading-snug truncate">
+            #{invoice.id || invoice.transferId}
+          </span>
+          <span className="text-xs text-white/60 truncate">
+            {invoice.invoiceDate}
+          </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ">
           {metodoIcono}
           <span className="text-xs text-white/80">{metodoPago}</span>
         </div>
       </div>
-      
-      {/* Cliente y estado pago */}
-      <div className="mt-2 flex flex-wrap gap-1 items-center justify-between text-sm">
-        <span title={invoice.client} className="truncate max-w-[60%] text-white font-semibold">{invoice.client}</span>
-        <span className={`truncate ml-2 text-xs rounded-xl px-2 py-1 font-bold ${
-          estadoPago === "Pagado"
-            ? "bg-green-600"
-            : estadoPago === "Anticipado por banco"
-            ? "bg-purple-600"
-            : "bg-white/10 text-white/60"
-        }`}>
-          {estadoPago}
-        </span>
-      </div>
-      
+
       {/* Estado factura */}
       <div className="flex items-center gap-2 mt-2">
         <span className="text-xs font-semibold">
@@ -131,9 +165,9 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
           </span>
         </span>
       </div>
-      
+
       {/* Acciones abajo - siempre visibles */}
-      <div className="flex flex-row flex-wrap gap-1 mt-3 items-center">
+      <div className="flex flex-wrap gap-1 mt-3 items-center">
         {/* Botón subir o ver factura SIEMPRE, según estado */}
         {!tienePDF ? (
           <Button
@@ -146,17 +180,17 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
             <span className="ml-2">Subir Factura</span>
           </Button>
         ) : (
-          <Button 
-            size="sm" 
-            variant="ghost" 
+          <Button
+            size="sm"
+            variant="ghost"
             className="rounded-2xl bg-[#22142A] hover:bg-[#403E43] text-white font-bold shadow-none"
-            onClick={() => window.open(invoice.urlPDF, '_blank')}
+            onClick={() => window.open(invoice.urlPDF, "_blank")}
           >
             <FileText size={16} />
             <span className="ml-2">Ver Factura</span>
           </Button>
         )}
-        
+
         {/* Otras acciones SOLO transferencias */}
         {esTransferencia && (
           <>
@@ -165,7 +199,9 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
                 size="sm"
                 variant="ghost"
                 className="rounded-2xl text-purple-300 hover:bg-purple-700/40 font-bold"
-                onClick={() => setConfirmDialog({ open: true, type: "anticipo" })}
+                onClick={() =>
+                  setConfirmDialog({ open: true, type: "anticipo" })
+                }
                 title="Anticipo bancario"
               >
                 <Plus size={16} />
@@ -190,7 +226,9 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
                 size="sm"
                 variant="ghost"
                 className="rounded-2xl text-slate-400 hover:bg-blue-900/50 font-bold"
-                onClick={() => setConfirmDialog({ open: true, type: "revertir" })}
+                onClick={() =>
+                  setConfirmDialog({ open: true, type: "revertir" })
+                }
                 title="Revertir estado"
               >
                 <X size={16} />
@@ -199,7 +237,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
             )}
           </>
         )}
-        
+
         {/* Información (siempre visible) */}
         <InvoiceInfoTooltip
           trigger={
@@ -220,70 +258,119 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
             notes: invoice.notes,
           }}
         />
+
+        {/* Estado pago */}
+        <div className="ml-auto flex flex-wrap gap-1 items-center justify-between text-sm ">
+          <span
+            title={invoice.client}
+            className="truncate max-w-[60%] text-white font-semibold"
+          >
+            {invoice.client}
+          </span>
+          <span
+            className={`truncate ml-2 text-xs rounded-xl px-2 py-1 font-bold ${
+              estadoPago === "Pagado"
+                ? "bg-green-600"
+                : estadoPago === "Anticipado por banco"
+                ? "bg-purple-600"
+                : "bg-white/10 text-white/60"
+            }`}
+          >
+            {estadoPago}
+          </span>
+        </div>
       </div>
 
       {/* Modal subir PDF */}
       <Dialog open={uploadDialog} onOpenChange={setUploadDialog}>
-        <DialogContent className="bg-[#22142A] text-white rounded-2xl max-w-md border-none">
+        <DialogContent className="bg-[#22142A] text-white rounded-2xl max-w-md border-none text-center">
           <DialogHeader>
-            <DialogTitle>Subir Factura PDF</DialogTitle>
+            <DialogTitle className="text-center">Subir Factura PDF</DialogTitle>
           </DialogHeader>
           <div>
             <p className="text-white/70 mb-3">
-              Adjunta el PDF emitido oficialmente en Hacienda para este traslado.
+              Adjunta el PDF emitido oficialmente en Hacienda para este
+              traslado.
             </p>
             <InvoicePDFUpload
               disabled={false}
-              onUpload={async file => {
+              onUpload={async (file) => {
                 await onUploadPDF(file, invoice.invoiceId);
               }}
             />
-            <div className="text-xs text-white/40 mt-2">Simulación: los cambios se guardan temporalmente.</div>
+            <div className="text-xs text-center text-white/40 mt-2">
+              Simulación: los cambios se guardan temporalmente.
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setUploadDialog(false)} className="rounded-2xl">
+            <Button
+              variant="ghost"
+              onClick={() => setUploadDialog(false)}
+              className="rounded-2xl"
+            >
               Cancelar
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* Modal confirmación acciones de estado */}
-      <Dialog open={confirmDialog.open} onOpenChange={() => setConfirmDialog({ open: false, type: undefined })}>
+      <Dialog
+        open={confirmDialog.open}
+        onOpenChange={() => setConfirmDialog({ open: false, type: undefined })}
+      >
         <DialogContent className="bg-[#22142A] text-white rounded-2xl max-w-sm border-none">
           <DialogHeader>
             <DialogTitle>
               {confirmDialog.type === "pagada"
                 ? "Confirmar pago"
                 : confirmDialog.type === "anticipo"
-                  ? "Confirmar anticipo bancario"
-                  : "Revertir estado"}
+                ? "Confirmar anticipo bancario"
+                : "Revertir estado"}
             </DialogTitle>
           </DialogHeader>
           <div className="py-2">
             {confirmDialog.type === "pagada" && (
-              <span>¿Seguro que deseas marcar esta factura como <b>pagada por cliente</b>?</span>
+              <span>
+                ¿Seguro que deseas marcar esta factura como{" "}
+                <b>pagada por cliente</b>?
+              </span>
             )}
             {confirmDialog.type === "anticipo" && (
-              <span>¿Seguro que deseas marcar esta factura como <b>anticipada por banco</b>?</span>
+              <span>
+                ¿Seguro que deseas marcar esta factura como{" "}
+                <b>anticipada por banco</b>?
+              </span>
             )}
             {confirmDialog.type === "revertir" && (
-              <span>¿Estás seguro de que deseas revertir esta factura a su estado inicial (emitida)?</span>
+              <span>
+                ¿Estás seguro de que deseas revertir esta factura a su estado
+                inicial (emitida)?
+              </span>
             )}
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setConfirmDialog({ open: false, type: undefined })} className="rounded-2xl">
+            <Button
+              variant="ghost"
+              onClick={() => setConfirmDialog({ open: false, type: undefined })}
+              className="rounded-2xl"
+            >
               Cancelar
             </Button>
             <Button
               variant="default"
               className="rounded-2xl bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold"
               onClick={() => {
-                if (confirmDialog.type === "pagada" || confirmDialog.type === "anticipo") {
+                if (
+                  confirmDialog.type === "pagada" ||
+                  confirmDialog.type === "anticipo"
+                ) {
                   onChangeStatus(invoice.id, confirmDialog.type);
                   toast({
                     title: "Estado actualizado",
-                    description: `Factura marcada como ${confirmDialog.type === "pagada" ? "pagada" : "anticipada"}.`,
+                    description: `Factura marcada como ${
+                      confirmDialog.type === "pagada" ? "pagada" : "anticipada"
+                    }.`,
                     duration: 1400,
                   });
                 } else if (confirmDialog.type === "revertir") {
