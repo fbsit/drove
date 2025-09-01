@@ -42,21 +42,20 @@ const estadoLabels = {
 
 const tipoBadge = (tipo) => (
   <span
-    className={`rounded-full px-2.5 py-1 text-xs font-semibold ml-1 ${
-      tipo === "empresa"
-        ? "bg-[#2c76b8] text-white flex items-center gap-1"
-        : "bg-[#6ef7ff] text-[#22142A]"
-    }`}
+    className={`flex gap-2 rounded-full px-2.5 py-1 text-xs font-semibold ml-1 ${tipo === "empresa"
+      ? "bg-[#2c76b8] text-white flex items-center gap-1"
+      : "bg-[#6ef7ff] text-[#22142A]"
+      }`}
     style={{ fontFamily: "Helvetica" }}
   >
     {tipo === "empresa" ? (
       <>
-        <Building2 size={13} className="mr-1" />
+        <Building2 size={13} />
         Empresa
       </>
     ) : (
       <>
-        <User size={13} className="mr-1" />
+        <User size={13} />
         Persona natural
       </>
     )}
@@ -134,7 +133,7 @@ const ClientProfile: React.FC = () => {
 
   // Responsive helper para chips (horizontal scroll si overflow)
   const renderVehiculosTrasladados = () => (
-    <div className="flex gap-3 overflow-x-auto py-1 pb-2">
+    <div className="flex gap-3 overflow-x-auto py-1 pb-2 justify-center">
       {client.vehiculosTrasladados?.length ? (
         client.vehiculosTrasladados.map((v, i) => (
           <div
@@ -172,7 +171,7 @@ const ClientProfile: React.FC = () => {
     ) ?? [];
 
   return (
-    <div className="max-w-2xl mx-auto mt-2 md:mt-6 bg-[#1A1F2C] rounded-2xl shadow-lg p-0 overflow-hidden border border-white/10 animate-fade-in">
+    <div className="max-w-2xl mx-auto bg-[#1A1F2C] rounded-2xl shadow-lg p-0 overflow-hidden border border-white/10 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 bg-[#2B2540] px-3 xs:px-4 md:px-8 py-5 md:py-7 border-b border-white/10">
         {/* Avatar */}
@@ -189,7 +188,7 @@ const ClientProfile: React.FC = () => {
         </div>
         {/* Info */}
         <div className="flex-1 min-w-0 w-full">
-          <div className="flex flex-wrap gap-2 items-center mb-1">
+          <div className="flex flex-wrap gap-2 items-center justify-center md:justify-start mb-1">
             <h1
               className="text-lg xs:text-xl md:text-2xl text-white font-bold break-words"
               style={{ fontFamily: "Helvetica" }}
@@ -197,110 +196,115 @@ const ClientProfile: React.FC = () => {
               {client?.contactInfo?.fullName}
             </h1>
             {tipoBadge(client.tipo)}
-            <span
-              className={`px-3 py-1 rounded-full font-semibold text-xs md:text-sm ${
-                estadoColors[client.status] || "bg-zinc-700 text-white"
-              }`}
-            >
-              {estadoLabels[client.status] || client.status}
-            </span>
+
           </div>
-          <div className="flex flex-col xs:flex-row gap-1 xs:gap-2 items-start xs:items-center mt-2 text-white/80 text-xs sm:text-sm">
-            <div className="flex items-center gap-1">
+          <div className="flex flex-col xs:flex-row gap-1 xs:gap-2 items-start xs:items-center mt-2 text-white/80 text-xs sm:text-sm ">
+            <div className="flex items-center gap-1 w-full justify-center md:justify-start">
               <Mail size={15} className="inline mr-1 opacity-70" />
               <span>{client.email}</span>
             </div>
-            <span className="hidden xs:block mx-2">|</span>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 w-full justify-center md:justify-start">
               <Phone size={15} className="inline mr-1 opacity-70" />
               <span>{client.contactInfo.phone}</span>
             </div>
           </div>
-        </div>
-        {/* Acciones rápidas */}
-        <div className="flex gap-2 items-center mt-4 md:mt-0 w-full md:w-auto justify-center">
-          {/* Aprobar (si pendiente o rechazado) */}
-          {(client.status === "PENDING" || client.status === "REJECTED") && (
-            <Dialog
-              // className="bg-black"
-              open={openAprobar}
-              onOpenChange={setOpenAprobar}
+
+          {/* Estado o Aprovar/ Rechazar (si pendiente o aprobado) */}
+          <div className="flex items-center gap-4 w-full justify-between mt-4">
+            {/* Estado */}
+            <span
+              className={`px-3 py-1 rounded-full font-semibold text-xs md:text-sm ${estadoColors[client.status] || "bg-zinc-700 text-white"
+                }`}
             >
-              <DialogTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="default"
-                  className="w-full md:w-auto rounded-2xl"
+              {estadoLabels[client.status] || client.status}
+            </span>
+            <div className="flex gap-4 items-center">
+              {/* Rechazar */}
+              {(client.status === "PENDING" || client.status === "APPROVED") && (
+                <Dialog open={openRechazar} onOpenChange={setOpenRechazar}>
+                  <DialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="w-full md:w-auto rounded-2xl"
+                    >
+                      <FileText size={17} className="mr-2" /> Rechazar
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Rechazar Cliente</DialogTitle>
+                    </DialogHeader>
+                    <div className="mt-3 mb-5 text-white/90 text-sm">
+                      ¿Seguro que deseas rechazar el acceso de este cliente?
+                      <br />
+                      El cliente no podrá operar ni visualizar su perfil.
+                    </div>
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button variant="secondary">Cancelar</Button>
+                      </DialogClose>
+                      <Button
+                        variant="destructive"
+                        onClick={() => {
+                          handleRejected();
+                        }}
+                      >
+                        Rechazar Cliente
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
+              {/* Aprobar (si pendiente o rechazado) */}
+              {(client.status === "PENDING" || client.status === "REJECTED") && (
+                <Dialog
+                  // className="bg-black"
+                  open={openAprobar}
+                  onOpenChange={setOpenAprobar}
                 >
-                  <BadgeCheck size={17} className="mr-2" /> Aprobar
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Aprobar Cliente</DialogTitle>
-                </DialogHeader>
-                <div className="mt-3 mb-5 text-white/90 text-sm">
-                  ¿Deseas aprobar el acceso de este cliente?
-                  <br />
-                  Podrá solicitar y gestionar traslados en la plataforma.
-                </div>
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button variant="secondary">Cancelar</Button>
-                  </DialogClose>
-                  <Button
-                    onClick={() => {
-                      handleApproved();
-                    }}
-                  >
-                    Aprobar Cliente
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          )}
-          {/* Rechazar (si pendiente o aprobado) */}
-          {(client.status === "PENDING" || client.status === "APPROVED") && (
-            <Dialog open={openRechazar} onOpenChange={setOpenRechazar}>
-              <DialogTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  className="w-full md:w-auto rounded-2xl"
-                >
-                  <FileText size={17} className="mr-2" /> Rechazar
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Rechazar Cliente</DialogTitle>
-                </DialogHeader>
-                <div className="mt-3 mb-5 text-white/90 text-sm">
-                  ¿Seguro que deseas rechazar el acceso de este cliente?
-                  <br />
-                  El cliente no podrá operar ni visualizar su perfil.
-                </div>
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button variant="secondary">Cancelar</Button>
-                  </DialogClose>
-                  <Button
-                    variant="destructive"
-                    onClick={() => {
-                      handleRejected();
-                    }}
-                  >
-                    Rechazar Cliente
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          )}
+                  <DialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="w-full md:w-auto rounded-2xl"
+                    >
+                      <BadgeCheck size={17} className="mr-2" /> Aprobar
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Aprobar Cliente</DialogTitle>
+                    </DialogHeader>
+                    <div className="mt-3 mb-5 text-white/90 text-sm">
+                      ¿Deseas aprobar el acceso de este cliente?
+                      <br />
+                      Podrá solicitar y gestionar traslados en la plataforma.
+                    </div>
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button variant="secondary">Cancelar</Button>
+                      </DialogClose>
+                      <Button
+                        onClick={() => {
+                          handleApproved();
+                        }}
+                      >
+                        Aprobar Cliente
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
+          </div>
+
         </div>
+
       </div>
 
       {/* Sección de tipos de vehículos trasladados */}
-      <div className="bg-[#22142A] px-3 xs:px-4 md:px-8 pt-3 pb-1">
+      <div className="bg-[#22142A] px-3 xs:px-4 md:px-8 pt-6 pb-1">
         <h3
           className="text-white font-semibold mb-2 text-base md:text-lg"
           style={{ fontFamily: "Helvetica" }}
@@ -311,7 +315,7 @@ const ClientProfile: React.FC = () => {
       </div>
 
       {/* Gamificación, métricas y estadísticas SIN calificación */}
-      <div className="bg-[#22142A] px-3 xs:px-4 md:px-8 pt-3 md:pt-4 pb-2 md:pb-5 flex flex-nowrap gap-3 xs:gap-6 overflow-x-auto items-center border-b border-white/15">
+      <div className="bg-[#22142A] pt-0 pb-6 px-4 flex flex-nowrap gap-3 xs:gap-6 overflow-x-auto items-center border-b border-white/15 justify-center">
         {/* Total traslados */}
         <div className="flex flex-col items-center gap-1 min-w-[110px] bg-[#2B2540]/90 px-3 py-3 rounded-2xl border border-[#6EF7FF]/10 shadow-inner">
           <span className="text-xs text-white/60 font-medium">Traslados</span>
@@ -368,7 +372,7 @@ const ClientProfile: React.FC = () => {
         >
           Rutas favoritas
         </h3>
-        <div className="flex flex-nowrap gap-3 overflow-x-auto pb-2">
+        <div className="flex flex-nowrap gap-3 overflow-x-auto justify-center">
           {client.rutasFavoritas?.length > 0 ? (
             client.rutasFavoritas.map((ruta, i) => (
               <div

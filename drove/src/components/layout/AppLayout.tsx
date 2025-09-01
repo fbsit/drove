@@ -62,7 +62,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <Header />
-          <main className="flex-1 p-4 pt-[100px] md:px-6 overflow-hidden">
+          <main className="flex-1 p-4 pt-[100px] md:px-6 md:pb-10 overflow-hidden">
             <div className="h-full max-w-full">
               {children}
             </div>
