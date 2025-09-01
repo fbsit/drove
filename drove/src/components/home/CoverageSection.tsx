@@ -123,7 +123,7 @@ const CoverageSection = () => {
                   </div>
                 </div>
 
-                <div className="mt-4 bg-white/10 rounded-lg p-6 w-full md:w-fit">
+                <div className=" bg-white/10 rounded-lg p-6 w-full md:w-fit">
                   <div className="flex items-center gap-2 justify-center mb-2">
                     <Clock size={16} className="text-drove-accent" />
                     <span className="text-white font-semibold">Horario de Servicio</span>

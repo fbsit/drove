@@ -305,155 +305,161 @@ const Header = () => {
 
   return (
     <header
-      className="bg-[#22142A] py-3 px-3 flex items-center justify-between fixed top-0 left-0 right-0 z-50 border-b border-white/10 h-16"
+      className="fixed top-0 left-0 right-0 z-50 "
       style={{ fontFamily: "Helvetica, Arial, sans-serif" }}
     >
-      {/* Logo o navegación de perfil */}
-      <div className="flex items-center">
-        {isProfilePage && isAuthenticated ? (
-          <div className="flex items-center gap-3">
+      <div className="bg-[#22142A] w-full p-3 flex items-center justify-between border-b border-white/10 h-16 z-50 relative">
+        {/* Logo o navegación de perfil */}
+        <div className="flex items-center">
+          {isProfilePage && isAuthenticated ? (
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackToDashboard}
+                className="flex items-center gap-2 text-white hover:bg-white/10"
+              >
+                <ArrowLeft size={16} />
+                <span className="hidden sm:inline">Dashboard</span>
+              </Button>
+              <h1 className="text-white font-bold text-lg">Mi Perfil</h1>
+            </div>
+          ) : (
+            <Link to="/" className="cursor-pointer">
+              <DroveLogo size="lg" />
+            </Link>
+          )}
+        </div>
+
+        <div className="flex items-center gap-6 z-40 relative">
+          {/* Botón "Panel de Control" si está autenticado y en Home */}
+          {showPanelButton && (
             <Button
-              variant="ghost"
+              variant="secondary"
               size="sm"
-              onClick={handleBackToDashboard}
-              className="flex items-center gap-2 text-white hover:bg-white/10"
+              onClick={() => navigate(getDashboardRoute())}
+              className="flex items-center gap-2"
             >
-              <ArrowLeft size={16} />
-              <span className="hidden sm:inline">Dashboard</span>
+              <LayoutDashboard size={16} />
+              <span className="hidden sm:inline">Panel de Control</span>
             </Button>
-            <h1 className="text-white font-bold text-lg">Mi Perfil</h1>
-          </div>
-        ) : (
-          <Link to="/" className="cursor-pointer">
-            <DroveLogo size="lg" />
-          </Link>
-        )}
-      </div>
+          )}
 
-      <div className="flex items-center gap-3">
-        {/* Botón "Panel de Control" si está autenticado y en Home */}
-        {showPanelButton && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => navigate(getDashboardRoute())}
-            className="flex items-center gap-2"
-          >
-            <LayoutDashboard size={16} />
-            <span className="hidden sm:inline">Panel de Control</span>
-          </Button>
-        )}
+          {/* Botón Entrar solo en Home, si no autenticado */}
+          {showEntrar && (
+            <Link
+              to="/login"
+              className="bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold rounded-2xl px-6 py-2 text-sm transition-colors"
+              style={{ fontFamily: "Helvetica" }}
+            >
+              Entrar
+            </Link>
+          )}
+          {isAuthenticated && user && (
+            <div className="flex items-center gap-6 relative">
+              {/* Bell badge */}
+              <div className="relative mr-1 cursor-pointer" onClick={toggleNotifications}>
+                <Bell className="text-white " size={20} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 font-bold">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
 
-        {/* Botón Entrar solo en Home, si no autenticado */}
-        {showEntrar && (
-          <Link
-            to="/login"
-            className="bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold rounded-2xl px-6 py-2 text-sm transition-colors"
-            style={{ fontFamily: "Helvetica" }}
-          >
-            Entrar
-          </Link>
-        )}
-        {isAuthenticated && user && (
-          <div className="flex items-center gap-2 relative">
-            {/* Bell badge */}
-            <div className="relative mr-1 cursor-pointer" onClick={toggleNotifications}>
-              <Bell className="text-white " size={20} />
-              {unreadCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 font-bold">
-                  {unreadCount > 99 ? '99+' : unreadCount}
+
+              </div>
+              <div className="flex gap-2 items-center">
+                <span className="hidden md:block text-white font-bold capitalize">
+                  {getDisplayName()?.split(' ')[0]}
                 </span>
-              )}
-              <div
-                ref={notifRef}
-                className={`
-                    absolute right-0 top-full mt-2 w-72 bg-[#291A38]
-                    border border-white/15 border-t-transparent rounded-b-2xl shadow-lg z-[1200]
+                <div className="relative">
+                  <div
+                    className="cursor-pointer"
+                    onClick={() => setMenuOpen(v => !v)}
+                  >
+                    <Avatar>
+                      <AvatarFallback className="bg-[#6EF7FF] text-[#22142A] font-bold">
+                        {getInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                  {/* Menú contextual avatar */}
+                  {menuOpen && (
+                    <div
+                      ref={menuRef}
+                      className="absolute right-0 top-[50px] min-w-[150px] bg-[#291A38] shadow-md border border-white/15 rounded-2xl p-2 text-sm animate-fade-in"
+                      style={{
+                        zIndex: 1200,
+                        fontFamily: "Helvetica",
+                      }}
+                    >
+                      <button
+                        className="block w-full text-left px-4 py-2 text-white hover:bg-[#6EF7FF22] rounded-2xl"
+                        onClick={handlePerfilClick}
+                      >
+                        Mi Perfil
+                      </button>
+                      <button
+                        className="block w-full text-left px-4 py-2 text-white hover:bg-[#6EF7FF22] rounded-2xl"
+                        onClick={handleLogout}
+                      >
+                        Cerrar sesión
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+      </div>
+      <div
+        ref={notifRef}
+        className={`
+                    absolute right-2 top-[50px] w-72 bg-[#291A38]
+                    border border-white/15 border-t-transparent rounded-b-2xl shadow-lg
                     transform transition-all duration-300 ease-out
                     origin-top
                     ${notifOpen ? "opacity-100 translate-y-3" : "opacity-0  translate-y-[-115%]"}
                   `}
-              >
-                <div className="p-3 border-b border-white/10 text-white font-bold">
-                  Notificaciones
-                </div>
-                <div className="h-80 max-h-[70dvh] overflow-auto scrollbar">
-                  {notifications.length === 0 ? (
-                    <div className="p-4 text-white/70 text-sm">Sin notificaciones</div>
-                  ) : (
-                    notifications.map((n) => (
-                      <div
-                        key={n.id}
-                        className="p-3 flex items-start gap-2 hover:bg-white/5 cursor-pointer"
-                        onClick={() => handleNotificationClick(n)}
-                      >
-                        <div
-                          className={`mt-1 h-2 w-2 rounded-full ${n.read ? "bg-white/30" : "bg-[#6EF7FF]"
-                            }`}
-                        />
-                        <div className="flex-1">
-                          <div className="text-white text-sm font-semibold">{n.title}</div>
-                          <div className="text-white/70 text-xs">{n.message}</div>
-                        </div>
-                        {!n.read && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleMarkAsRead(n.id);
-                            }}
-                            className="text-xs text-[#6EF7FF] hover:underline flex items-center gap-1"
-                          >
-                            <Check size={14} />
-                          </button>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-            </div>
-            <span className="hidden md:block text-white font-bold">
-              {getDisplayName()?.split(' ')[0]}
-            </span>
-            <div className="relative">
+      >
+        <div className="p-3 border-b border-white/10 text-white font-bold">
+          Notificaciones
+        </div>
+        <div className="h-80 max-h-[70dvh] overflow-auto scrollbar">
+          {notifications.length === 0 ? (
+            <div className="p-4 text-white/70 text-sm">Sin notificaciones</div>
+          ) : (
+            notifications.map((n) => (
               <div
-                className="cursor-pointer"
-                onClick={() => setMenuOpen(v => !v)}
+                key={n.id}
+                className="p-3 flex items-center gap-4 hover:bg-white/5 cursor-pointer"
+                onClick={() => handleNotificationClick(n)}
               >
-                <Avatar>
-                  <AvatarFallback className="bg-[#6EF7FF] text-[#22142A] font-bold">
-                    {getInitials()}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-              {/* Menú contextual avatar */}
-              {menuOpen && (
                 <div
-                  ref={menuRef}
-                  className="absolute right-0 top-12 mt-2 min-w-[150px] bg-[#291A38] shadow-md border border-white/15 rounded-2xl py-2 text-sm animate-fade-in"
-                  style={{
-                    zIndex: 1200,
-                    fontFamily: "Helvetica",
-                  }}
-                >
-                  <button
-                    className="block w-full text-left px-4 py-2 text-white hover:bg-[#6EF7FF22] rounded-2xl"
-                    onClick={handlePerfilClick}
-                  >
-                    Mi Perfil
-                  </button>
-                  <button
-                    className="block w-full text-left px-4 py-2 text-white hover:bg-[#6EF7FF22] rounded-2xl"
-                    onClick={handleLogout}
-                  >
-                    Cerrar sesión
-                  </button>
+                  className={`mt-1 h-2 w-2 rounded-full ${n.read ? "bg-white/30" : "bg-[#6EF7FF]"
+                    }`}
+                />
+                <div className="flex-1">
+                  <div className="text-white text-sm font-semibold">{n.title}</div>
+                  <div className="text-white/70 text-xs">{n.message}</div>
                 </div>
-              )}
-            </div>
-          </div>
-        )}
+                {!n.read && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMarkAsRead(n.id);
+                    }}
+                    className="text-xs text-[#6EF7FF] hover:underline flex items-center gap-1"
+                  >
+                    <Check size={14} />
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </header>
   );
