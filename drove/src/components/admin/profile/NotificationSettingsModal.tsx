@@ -22,9 +22,12 @@ interface Props {
 }
 
 export const NotificationSettingsModal: React.FC<Props> = ({ isOpen, onClose, preferenceUser }) => {
-  const [settings, setSettings] = useState({
-    ...preferenceUser
-  });
+  const safeDefaults = {
+    email: { newTransfers: false, droverUpdates: false, paymentAlerts: false, systemUpdates: true, weeklyReports: false },
+    push: { urgentAlerts: true, newRegistrations: false, completedTransfers: false, lowBalance: false },
+    dashboard: { realTimeUpdates: true, soundEffects: false, popupNotifications: true },
+  } as any;
+  const [settings, setSettings] = useState<any>({ ...(safeDefaults), ...(preferenceUser || {}) });
 
   const [loading, setLoading] = useState(false);
 
@@ -86,7 +89,7 @@ export const NotificationSettingsModal: React.FC<Props> = ({ isOpen, onClose, pr
                 <Label htmlFor="newTransfers" className="text-white/80">Nuevos traslados</Label>
                 <Switch
                   id="newTransfers"
-                  checked={settings.email.newTransfers}
+                  checked={!!settings?.email?.newTransfers}
                   onCheckedChange={(checked) => updateSetting('email', 'newTransfers', checked)}
                 />
               </div>
@@ -94,7 +97,7 @@ export const NotificationSettingsModal: React.FC<Props> = ({ isOpen, onClose, pr
                 <Label htmlFor="droverUpdates" className="text-white/80">Actualizaciones de drovers</Label>
                 <Switch
                   id="droverUpdates"
-                  checked={settings.email.droverUpdates}
+                  checked={!!settings?.email?.droverUpdates}
                   onCheckedChange={(checked) => updateSetting('email', 'droverUpdates', checked)}
                 />
               </div>
@@ -102,7 +105,7 @@ export const NotificationSettingsModal: React.FC<Props> = ({ isOpen, onClose, pr
                 <Label htmlFor="paymentAlerts" className="text-white/80">Alertas de pagos</Label>
                 <Switch
                   id="paymentAlerts"
-                  checked={settings.email.paymentAlerts}
+                  checked={!!settings?.email?.paymentAlerts}
                   onCheckedChange={(checked) => updateSetting('email', 'paymentAlerts', checked)}
                 />
               </div>
@@ -110,7 +113,7 @@ export const NotificationSettingsModal: React.FC<Props> = ({ isOpen, onClose, pr
                 <Label htmlFor="systemUpdates" className="text-white/80">Actualizaciones del sistema</Label>
                 <Switch
                   id="systemUpdates"
-                  checked={settings.email.systemUpdates}
+                  checked={!!settings?.email?.systemUpdates}
                   onCheckedChange={(checked) => updateSetting('email', 'systemUpdates', checked)}
                 />
               </div>
@@ -118,7 +121,7 @@ export const NotificationSettingsModal: React.FC<Props> = ({ isOpen, onClose, pr
                 <Label htmlFor="weeklyReports" className="text-white/80">Reportes semanales</Label>
                 <Switch
                   id="weeklyReports"
-                  checked={settings.email.weeklyReports}
+                  checked={!!settings?.email?.weeklyReports}
                   onCheckedChange={(checked) => updateSetting('email', 'weeklyReports', checked)}
                 />
               </div>
@@ -136,7 +139,7 @@ export const NotificationSettingsModal: React.FC<Props> = ({ isOpen, onClose, pr
                 <Label htmlFor="urgentAlerts" className="text-white/80">Alertas urgentes</Label>
                 <Switch
                   id="urgentAlerts"
-                  checked={settings.push.urgentAlerts}
+                  checked={!!settings?.push?.urgentAlerts}
                   onCheckedChange={(checked) => updateSetting('push', 'urgentAlerts', checked)}
                 />
               </div>
@@ -144,7 +147,7 @@ export const NotificationSettingsModal: React.FC<Props> = ({ isOpen, onClose, pr
                 <Label htmlFor="newRegistrations" className="text-white/80">Nuevos registros</Label>
                 <Switch
                   id="newRegistrations"
-                  checked={settings.push.newRegistrations}
+                  checked={!!settings?.push?.newRegistrations}
                   onCheckedChange={(checked) => updateSetting('push', 'newRegistrations', checked)}
                 />
               </div>
@@ -152,7 +155,7 @@ export const NotificationSettingsModal: React.FC<Props> = ({ isOpen, onClose, pr
                 <Label htmlFor="completedTransfers" className="text-white/80">Traslados completados</Label>
                 <Switch
                   id="completedTransfers"
-                  checked={settings.push.completedTransfers}
+                  checked={!!settings?.push?.completedTransfers}
                   onCheckedChange={(checked) => updateSetting('push', 'completedTransfers', checked)}
                 />
               </div>
@@ -160,7 +163,7 @@ export const NotificationSettingsModal: React.FC<Props> = ({ isOpen, onClose, pr
                 <Label htmlFor="lowBalance" className="text-white/80">Saldo bajo</Label>
                 <Switch
                   id="lowBalance"
-                  checked={settings.push.lowBalance}
+                  checked={!!settings?.push?.lowBalance}
                   onCheckedChange={(checked) => updateSetting('push', 'lowBalance', checked)}
                 />
               </div>
@@ -178,7 +181,7 @@ export const NotificationSettingsModal: React.FC<Props> = ({ isOpen, onClose, pr
                 <Label htmlFor="realTimeUpdates" className="text-white/80">Actualizaciones en tiempo real</Label>
                 <Switch
                   id="realTimeUpdates"
-                  checked={settings.dashboard.realTimeUpdates}
+                  checked={!!settings?.dashboard?.realTimeUpdates}
                   onCheckedChange={(checked) => updateSetting('dashboard', 'realTimeUpdates', checked)}
                 />
               </div>
@@ -186,7 +189,7 @@ export const NotificationSettingsModal: React.FC<Props> = ({ isOpen, onClose, pr
                 <Label htmlFor="soundEffects" className="text-white/80">Efectos de sonido</Label>
                 <Switch
                   id="soundEffects"
-                  checked={settings.dashboard.soundEffects}
+                  checked={!!settings?.dashboard?.soundEffects}
                   onCheckedChange={(checked) => updateSetting('dashboard', 'soundEffects', checked)}
                 />
               </div>
@@ -194,7 +197,7 @@ export const NotificationSettingsModal: React.FC<Props> = ({ isOpen, onClose, pr
                 <Label htmlFor="popupNotifications" className="text-white/80">Notificaciones popup</Label>
                 <Switch
                   id="popupNotifications"
-                  checked={settings.dashboard.popupNotifications}
+                  checked={!!settings?.dashboard?.popupNotifications}
                   onCheckedChange={(checked) => updateSetting('dashboard', 'popupNotifications', checked)}
                 />
               </div>

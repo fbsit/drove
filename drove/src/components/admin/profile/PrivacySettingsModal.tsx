@@ -23,9 +23,12 @@ interface Props {
 }
 
 export const PrivacySettingsModal: React.FC<Props> = ({ isOpen, onClose, preferenceUser }) => {
-  const [settings, setSettings] = useState({
-    ...preferenceUser
-  });
+  const safeDefaults = {
+    profile: { showOnlineStatus: false, allowSearch: false, showActivity: true },
+    data: { shareAnalytics: false, allowCookies: true, dataRetention: false },
+    security: { twoFactorAuth: false, loginAlerts: true, sessionTimeout: false },
+  } as any;
+  const [settings, setSettings] = useState<any>({ ...(safeDefaults), ...(preferenceUser || {}) });
 
   const [dataRequest, setDataRequest] = useState('');
   const [loading, setLoading] = useState(false);
@@ -120,7 +123,7 @@ export const PrivacySettingsModal: React.FC<Props> = ({ isOpen, onClose, prefere
                 <Label htmlFor="showOnlineStatus" className="text-white/80">Mostrar estado en línea</Label>
                 <Switch
                   id="showOnlineStatus"
-                  checked={settings.profile.showOnlineStatus}
+                  checked={!!settings?.profile?.showOnlineStatus}
                   onCheckedChange={(checked) => updateSetting('profile', 'showOnlineStatus', checked)}
                 />
               </div>
@@ -128,7 +131,7 @@ export const PrivacySettingsModal: React.FC<Props> = ({ isOpen, onClose, prefere
                 <Label htmlFor="allowSearch" className="text-white/80">Permitir búsqueda por otros usuarios</Label>
                 <Switch
                   id="allowSearch"
-                  checked={settings.profile.allowSearch}
+                  checked={!!settings?.profile?.allowSearch}
                   onCheckedChange={(checked) => updateSetting('profile', 'allowSearch', checked)}
                 />
               </div>
@@ -136,7 +139,7 @@ export const PrivacySettingsModal: React.FC<Props> = ({ isOpen, onClose, prefere
                 <Label htmlFor="showActivity" className="text-white/80">Mostrar actividad reciente</Label>
                 <Switch
                   id="showActivity"
-                  checked={settings.profile.showActivity}
+                  checked={!!settings?.profile?.showActivity}
                   onCheckedChange={(checked) => updateSetting('profile', 'showActivity', checked)}
                 />
               </div>
