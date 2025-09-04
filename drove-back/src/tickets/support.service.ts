@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { SupportTicket, TicketStatus } from './entity/support-ticket.entity';
+import { SupportTicket, TicketStatus, TicketPriority, ClientType } from './entity/support-ticket.entity';
 import { SupportMessage, MessageSender } from './entity/support-message.entity';
 import { UpdateTicketStatusDTO } from './dto/update-ticket.status.dto';
 import { RespondToTicketDTO } from './dto/respond-to-ticket.dto';
@@ -62,8 +62,8 @@ export class SupportService {
       status: TicketStatus.OPEN,
       priority: TicketPriority.MEDIUM,
       clientType: ClientType.CLIENT,
-    } as any);
-    const saved = await this.ticketRepo.save(ticket);
+    } as Partial<SupportTicket>);
+    const saved: SupportTicket = await this.ticketRepo.save(ticket);
     // registrar primer mensaje
     const msg = this.messageRepo.create({
       content: dto.message,
