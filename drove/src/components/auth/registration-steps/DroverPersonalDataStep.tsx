@@ -220,7 +220,7 @@ const DroverPersonalDataStep: React.FC<Props> = ({ data, onUpdate, onNext, onPre
           
           <Button
             type="submit"
-            className="order-1 md:order-2 bg-[#6EF7FF] hover:bg-[#6EF7FF]/80 text-[#22142A] font-bold"
+            className="order-1 md:order-2 bg-[#6EF7FF] hover:bg-[#6EF7FF]/80 text-[#22142A] font-bold w-full"
           >
             Continuar
           </Button>

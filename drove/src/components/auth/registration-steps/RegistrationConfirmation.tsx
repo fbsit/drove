@@ -1,7 +1,6 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { CheckCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, Mail, ShieldCheck, Clock } from 'lucide-react';
 import { RegistrationFormData } from '@/types/new-registration';
 
 interface Props {
@@ -17,100 +16,54 @@ const RegistrationConfirmation: React.FC<Props> = ({
   data = {},
   onPrevious
 }) => {
-  const handleConfirm = async () => {
-    if (onConfirm) {
-      await onConfirm();
-    }
-  };
-
   return (
-    <div className="text-center space-y-6">
+    <div className="text-center space-y-8">
       <div className="flex justify-center">
         <div className="w-24 h-24 bg-[#6EF7FF]/20 rounded-full flex items-center justify-center">
           <CheckCircle className="w-12 h-12 text-[#6EF7FF]" />
         </div>
       </div>
 
-      <div>
-        <h3 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: "Helvetica" }}>
-          ¡Casi listo!
+      <div className="px-2">
+        <h3 className="text-3xl font-extrabold text-white leading-tight" style={{ fontFamily: "Helvetica" }}>
+          ¡Gracias por registrarte en
+          <br />
+          DROVE!
         </h3>
-        <p className="text-white/70">
-          Revisa que toda la información sea correcta antes de confirmar tu registro.
-        </p>
       </div>
 
-      {/* Resumen de datos */}
-      <div className="bg-white/5 rounded-xl p-4 text-left space-y-3">
-        <h4 className="text-white font-semibold mb-3">Resumen de tu registro:</h4>
-        
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-white/60">Tipo de cuenta:</span>
-            <span className="text-white">{data.userType === 'client' ? 'Cliente' : 'Drover'}</span>
+      <div className="space-y-6 max-w-2xl mx-auto">
+        <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 p-6 text-center max-w-[448px] w-full mx-auto">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <Mail className="w-5 h-5 text-[#6EF7FF]" />
+            <span className="text-white font-medium">Verificación de correo</span>
           </div>
-          
-          {data.fullName && (
-            <div className="flex justify-between">
-              <span className="text-white/60">Nombre:</span>
-              <span className="text-white">{data.fullName}</span>
-            </div>
-          )}
-          
-          {data.email && (
-            <div className="flex justify-between">
-              <span className="text-white/60">Email:</span>
-              <span className="text-white">{data.email}</span>
-            </div>
-          )}
-          
-          {data.phone && (
-            <div className="flex justify-between">
-              <span className="text-white/60">Teléfono:</span>
-              <span className="text-white">{data.phone}</span>
-            </div>
-          )}
+          <p className="text-white/80 text-center leading-relaxed">
+            Te hemos enviado un correo con un <span className="font-semibold">código de verificación</span>.
+            Por favor, confirma tu correo para validar tu cuenta.
+          </p>
+        </div>
+
+        <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 p-6 text-center max-w-[448px] w-full mx-auto">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <ShieldCheck className="w-5 h-5 text-[#6EF7FF]" />
+            <span className="text-white font-medium">Proceso de aprobación</span>
+          </div>
+          <p className="text-white/80 text-center leading-relaxed">
+            Todas las cuentas deben ser <span className="font-semibold">aprobadas manualmente por nuestro equipo</span>
+            antes de poder utilizar la plataforma.
+          </p>
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-start gap-2 text-xs text-white/60">
-          <input type="checkbox" className="mt-1" defaultChecked />
-          <span>
-            Acepto los términos y condiciones de uso y la política de privacidad.
-          </span>
-        </div>
-
-      <div className="flex flex-col md:flex-row gap-4 md:justify-between">
-        {onPrevious && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onPrevious}
-            disabled={isLoading}
-            className="order-2 md:order-1 flex items-center gap-2"
-          >
-            Anterior
-          </Button>
-        )}
-
-        <Button
-          onClick={handleConfirm}
-          disabled={isLoading}
-          className="order-1 md:order-2 rounded-2xl bg-[#6EF7FF] hover:bg-[#5FE4ED] text-[#22142A] font-bold h-12"
-          style={{ fontFamily: "Helvetica" }}
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creando cuenta...
-            </>
-          ) : (
-            'Confirmar Registro'
-          )}
-        </Button>
+      <div className="flex items-center justify-center gap-2 text-white/70 mt-2">
+        <Clock className="w-4 h-4" />
+        <span>Tiempo estimado de aprobación: 24-48 horas</span>
       </div>
-      </div>
+
+      <p className="text-white/60 text-sm max-w-2xl mx-auto">
+        Recibirás una notificación por correo electrónico cuando tu cuenta sea aprobada.
+      </p>
     </div>
   );
 };

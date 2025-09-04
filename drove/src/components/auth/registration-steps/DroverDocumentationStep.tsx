@@ -304,23 +304,12 @@ const DroverDocumentationStep: React.FC<Props> = ({ data, onUpdate, onNext, onPr
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4 md:justify-between">
-          {onPrevious && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onPrevious}
-              className="order-2 md:order-1 flex items-center gap-2"
-            >
-              Anterior
-            </Button>
-          )}
-          
+        <div className="flex flex-col">
           <Button
             type="submit"
-            className="order-1 md:order-2 bg-[#6EF7FF] hover:bg-[#6EF7FF]/80 text-[#22142A] font-bold"
+            className="bg-[#6EF7FF] hover:bg-[#6EF7FF]/80 text-[#22142A] font-bold w-full"
           >
-            Continuar a Confirmación
+            Finalizar Documentación
           </Button>
         </div>
       </form>

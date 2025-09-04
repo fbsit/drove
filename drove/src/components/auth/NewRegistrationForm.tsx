@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserType, RegistrationFormData } from '@/types/new-registration';
 import { useToast } from '@/hooks/use-toast';
 import { AuthService } from '@/services/authService';
@@ -36,6 +36,16 @@ const NewRegistrationForm: React.FC<Props> = ({ onComplete, isLoading = false })
 
   const steps = getSteps();
   const totalSteps = steps.length;
+
+  // En el flujo de cliente, al llegar al último paso lanzamos automáticamente el registro
+  useEffect(() => {
+    const isClientFlow = userType === 'client';
+    const isOnLastStep = currentStep === totalSteps - 1;
+    if (isClientFlow && isOnLastStep && !isSubmitting && isFormComplete()) {
+      handleSubmit();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep, userType]);
 
   const handleUserTypeSelect = (type: UserType) => {
     setUserType(type);
@@ -161,7 +171,6 @@ const NewRegistrationForm: React.FC<Props> = ({ onComplete, isLoading = false })
               data={formData}
               onUpdate={handleStepData}
               onNext={handleNext}
-              onPrevious={handlePrevious}
             />
           );
         case 2:
@@ -195,7 +204,6 @@ const NewRegistrationForm: React.FC<Props> = ({ onComplete, isLoading = false })
               data={formData}
               onUpdate={handleStepData}
               onNext={handleNext}
-              onPrevious={handlePrevious}
             />
           );
         case 2:

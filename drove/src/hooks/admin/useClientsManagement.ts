@@ -4,15 +4,17 @@ import { AdminService } from '@/services/adminService';
 import { toast } from '@/hooks/use-toast';
 import { Client } from '@/types/admin';
 
-export const useClientsManagement = () => {
+export const useClientsManagement = (params?: { type?: 'empresa' | 'persona' | 'todos'; status?: string; search?: string }) => {
   const queryClient = useQueryClient();
 
+  const effectiveType = params?.type && params.type !== 'todos' ? params.type : undefined;
+
   const { data: clients = [], isLoading } = useQuery({
-    queryKey: ['admin-clients'],
+    queryKey: ['admin-clients', effectiveType, params?.status, params?.search],
     queryFn: async (): Promise<Client[]> => {
       console.log('[CLIENTS] 🔄 Obteniendo clientes...');
       try {
-        const response = await AdminService.getClients();
+        const response = await AdminService.getClients({ type: effectiveType, status: params?.status, search: params?.search });
         console.log('[CLIENTS] ✅ Clientes obtenidos:', response);
         
         return response.map((client: any): Client => {

@@ -108,7 +108,6 @@ const MobileRegistrationForm: React.FC<Props> = ({ onComplete, isLoading = false
               data={formData}
               onUpdate={handleStepData}
               onNext={handleNext}
-              onPrevious={handlePrevious}
             />
           );
         case 2:
@@ -142,7 +141,6 @@ const MobileRegistrationForm: React.FC<Props> = ({ onComplete, isLoading = false
               data={formData}
               onUpdate={handleStepData}
               onNext={handleNext}
-              onPrevious={handlePrevious}
             />
           );
         case 2:

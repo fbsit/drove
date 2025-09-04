@@ -1,6 +1,6 @@
 // src/pages/admin/Clients.tsx
 import React, { useState } from "react";
-import { Loader2, Users } from "lucide-react";
+import { Loader2, Users, Building2, UserRound } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -43,18 +43,12 @@ const STATUS_OPTIONS = [
   { value: UserStatus.REJECTED, label: "Rechazados" },
 ] as const;
 
-const colorClasses: Record<string, string> = {
-  green: "text-green-400",
-  yellow: "text-yellow-400",
-  red: "text-red-400",
-  white: "text-white",
-};
-
 /* -------- componente principal -------- */
 
 const Clients: React.FC = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
+  const [typeTab, setTypeTab] = useState<"todos" | "empresa" | "persona">("todos");
 
   const {
     clients = [],
@@ -63,16 +57,14 @@ const Clients: React.FC = () => {
     rejectClient,
     isApproving,
     isRejecting,
-  } = useClientsManagement();
+  } = useClientsManagement({ type: typeTab, status: statusFilter === 'todos' ? undefined : statusFilter, search });
 
   const filteredClients = clients.filter(
     (c) =>
       contains(c, search) &&
-      (statusFilter === "todos" || c.status === statusFilter),
+      (statusFilter === "todos" || c.status === statusFilter) &&
+      (typeTab === "todos" || c.tipo === typeTab)
   );
-
-  const countByStatus = (s: UserStatus) =>
-    clients.filter((c) => c.status === s).length;
 
   if (isLoading)
     return (
@@ -90,51 +82,67 @@ const Clients: React.FC = () => {
       >
         Gestión de Clientes
       </h1>
-      <p className="text-white/70 mb-4">
-        Administra y gestiona todos los clientes registrados en la plataforma.
+      <p className="text-white/70 mb-6">
+        Administra los clientes registrados en DROVE, ya sean empresas o personas, aprobando su acceso y gestionando su estado.
       </p>
 
-      {/* métricas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <Metric label="Total" value={clients.length} />
-        <Metric
-          label="Aprobados"
-          value={countByStatus(UserStatus.APPROVED)}
-          color="green"
-        />
-        <Metric
-          label="Pendientes"
-          value={countByStatus(UserStatus.PENDING)}
-          color="yellow"
-        />
-        <Metric
-          label="Rechazados"
-          value={countByStatus(UserStatus.REJECTED)}
-          color="red"
-        />
-      </div>
+      {/* tabs de tipo - estilo según referencia */}
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <div className="flex items-center w-full md:w-auto bg-white/5 rounded-2xl overflow-x-auto no-scrollbar px-1 py-1 h-10">
+          <button
+            className={`inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium min-w-[100px] flex-1 rounded-sm transition-all ${
+              typeTab === 'todos' ? 'bg-[#6EF7FF] text-[#22142A] shadow-sm' : 'text-white/70'
+            }`}
+            onClick={() => setTypeTab('todos')}
+            style={{ fontFamily: 'Helvetica' }}
+          >
+            <Users width={18} height={18} className="mr-1" /> Todos
+          </button>
+          <button
+            className={`inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium min-w-[100px] flex-1 rounded-sm transition-all ${
+              typeTab === 'empresa' ? 'bg-[#6EF7FF] text-[#22142A] shadow-sm' : 'text-white/70'
+            }`}
+            onClick={() => setTypeTab('empresa')}
+            style={{ fontFamily: 'Helvetica' }}
+          >
+            <Building2 width={18} height={18} className="mr-1" /> Empresas
+          </button>
+          <button
+            className={`inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium min-w-[130px] flex-1 rounded-sm transition-all ${
+              typeTab === 'persona' ? 'bg-[#6EF7FF] text-[#22142A] shadow-sm' : 'text-white/70'
+            }`}
+            onClick={() => setTypeTab('persona')}
+            style={{ fontFamily: 'Helvetica' }}
+          >
+            <Users width={18} height={18} className="mr-1" /> Personas
+          </button>
+        </div>
 
-      {/* filtros */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <Input
-          placeholder="Buscar en cualquier dato del cliente…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-        />
-
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="bg-white/10 border-white/20 text-white">
-            <SelectValue placeholder="Filtrar por estado" />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUS_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* estado + búsqueda */}
+        <div className="flex-1 flex flex-wrap gap-3 justify-end">
+          <div className="w-full sm:w-56">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="bg-white/10 border-white/20 text-white rounded-2xl h-10">
+                <SelectValue placeholder="Estado: Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="min-w-[260px] flex-1 sm:flex-none">
+            <Input
+              placeholder="Buscar por nombre o correo..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/60 rounded-2xl h-10"
+            />
+          </div>
+        </div>
       </div>
 
       {/* grid de clientes */}
@@ -145,34 +153,15 @@ const Clients: React.FC = () => {
         isLoading={isApproving || isRejecting}
       />
 
-      {filteredClients.length === 0 && <EmptyState msg="No se encontraron clientes" />}
+      {filteredClients.length === 0 && (
+        <div className="text-center py-12">
+          <Users className="h-12 w-12 text-white/30 mx-auto mb-3" />
+          <p className="text-white/70 text-lg">No se encontraron clientes</p>
+          <p className="text-white/50 text-sm mt-2">Ajusta los filtros para encontrar los clientes que buscas</p>
+        </div>
+      )}
     </div>
   );
 };
-
-const Metric = ({
-  label,
-  value,
-  color = "white",
-}: {
-  label: string;
-  value: number;
-  color?: "green" | "yellow" | "red" | "white";
-}) => (
-  <div className="bg-white/10 rounded-lg p-4 text-center">
-    <div className={`text-2xl font-bold ${colorClasses[color]}`}>{value}</div>
-    <div className="text-sm text-white/60">{label}</div>
-  </div>
-);
-
-const EmptyState = ({ msg }: { msg: string }) => (
-  <div className="text-center py-12">
-    <Users className="h-12 w-12 text-white/30 mx-auto mb-3" />
-    <p className="text-white/70 text-lg">{msg}</p>
-    <p className="text-white/50 text-sm mt-2">
-      Ajusta los filtros para encontrar los clientes que buscas
-    </p>
-  </div>
-);
 
 export default Clients;

@@ -87,8 +87,18 @@ export class AdminService {
   }
 
   // === GESTIÓN DE CLIENTES ===
-  static async getClients(): Promise<any[]> {
-    return await ApiService.get('/users/role/client');
+  static async getClients(params?: { type?: 'empresa' | 'persona'; status?: string; search?: string }): Promise<any[]> {
+    const qs = new URLSearchParams();
+    if (params?.type) qs.set('type', params.type);
+    if (params?.status) qs.set('status', params.status);
+    if (params?.search) qs.set('search', params.search);
+    const endpoint = qs.toString() ? `/users/role/client?${qs.toString()}` : '/users/role/client';
+    return await ApiService.get(endpoint);
+  }
+
+  // Obtener resumen/Detalle de cliente para el panel
+  static async getClientSummary(userId: string): Promise<any> {
+    return await ApiService.get(`/admin/users/${userId}`);
   }
 
   static async updateClient(clientId: string, data: any): Promise<void> {

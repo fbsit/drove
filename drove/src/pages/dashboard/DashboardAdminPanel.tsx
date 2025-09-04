@@ -52,7 +52,7 @@ const DashboardAdminPanel: React.FC = () => {
   console.log("estas son las metrics",metrics);
 
   return (
-    <div className="flex flex-col w-full space-y-6 md:space-y-8 pt-20">
+    <div className="flex flex-col w-full space-y-6 md:space-y-8 pt-16">
       {/* Header + Título */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2 md:mb-4">
         <div>
@@ -73,14 +73,14 @@ const DashboardAdminPanel: React.FC = () => {
       </div>
 
       {/* Métricas principales */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 animate-fade-in">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5 md:gap-6 animate-fade-in">
         <Card className="bg-white/10 border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <CardContent className="p-4 md:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-[#6EF7FF]/20 p-2 md:p-3 rounded-xl">
-                <Car className="h-5 w-5 md:h-6 md:w-6 text-[#6EF7FF] animate-pulse" />
+          <CardContent className="p-5 md:p-6 min-h-[140px] flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-3">
+              <div className="bg-[#6EF7FF]/20 w-10 h-10 rounded-xl flex items-center justify-center">
+                <Car className="h-6 w-6 text-[#6EF7FF]" />
               </div>
-              <span className="text-white/60 text-xs md:text-sm">Total</span>
+              <span className="text-white/60 text-xs">Total</span>
             </div>
             <div className="space-y-1">
               <h3 className="text-xl md:text-2xl font-bold text-white" style={{ fontFamily: "Helvetica" }}>
@@ -92,12 +92,12 @@ const DashboardAdminPanel: React.FC = () => {
         </Card>
 
         <Card className="bg-white/10 border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <CardContent className="p-4 md:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-green-500/20 p-2 md:p-3 rounded-xl">
-                <CheckCircle className="h-5 w-5 md:h-6 md:w-6 text-green-400 animate-pulse" />
+          <CardContent className="p-5 md:p-6 min-h-[140px] flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-3">
+              <div className="bg-green-500/20 w-10 h-10 rounded-xl flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-green-400" />
               </div>
-              <span className="text-white/60 text-xs md:text-sm">Completados</span>
+              <span className="text-white/60 text-xs">Completados</span>
             </div>
             <div className="space-y-1">
               <h3 className="text-xl md:text-2xl font-bold text-white" style={{ fontFamily: "Helvetica" }}>
@@ -109,12 +109,12 @@ const DashboardAdminPanel: React.FC = () => {
         </Card>
 
         <Card className="bg-white/10 border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <CardContent className="p-4 md:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-blue-500/20 p-2 md:p-3 rounded-xl">
-                <Clock className="h-5 w-5 md:h-6 md:w-6 text-blue-400 animate-pulse" />
+          <CardContent className="p-5 md:p-6 min-h-[140px] flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-3">
+              <div className="bg-blue-500/20 w-10 h-10 rounded-xl flex items-center justify-center">
+                <Clock className="h-6 w-6 text-blue-400" />
               </div>
-              <span className="text-white/60 text-xs md:text-sm">En progreso</span>
+              <span className="text-white/60 text-xs">En progreso</span>
             </div>
             <div className="space-y-1">
               <h3 className="text-xl md:text-2xl font-bold text-white" style={{ fontFamily: "Helvetica" }}>
@@ -126,12 +126,12 @@ const DashboardAdminPanel: React.FC = () => {
         </Card>
 
         <Card className="bg-white/10 border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <CardContent className="p-4 md:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-purple-500/20 p-2 md:p-3 rounded-xl">
-                <UserCheck className="h-5 w-5 md:h-6 md:w-6 text-purple-400 animate-pulse" />
+          <CardContent className="p-5 md:p-6 min-h-[140px] flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-3">
+              <div className="bg-purple-500/20 w-10 h-10 rounded-xl flex items-center justify-center">
+                <UserCheck className="h-6 w-6 text-purple-400" />
               </div>
-              <span className="text-white/60 text-xs md:text-sm">Asignados</span>
+              <span className="text-white/60 text-xs">Asignados</span>
             </div>
             <div className="space-y-1">
               <h3 className="text-xl md:text-2xl font-bold text-white" style={{ fontFamily: "Helvetica" }}>
@@ -143,12 +143,12 @@ const DashboardAdminPanel: React.FC = () => {
         </Card>
 
         <Card className="bg-white/10 border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300 col-span-2 md:col-span-3 lg:col-span-1">
-          <CardContent className="p-4 md:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-amber-500/20 p-2 md:p-3 rounded-xl">
-                <AlertCircle className="h-5 w-5 md:h-6 md:w-6 text-amber-400 animate-pulse" />
+          <CardContent className="p-5 md:p-6 min-h-[140px] flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-3">
+              <div className="bg-amber-500/20 w-10 h-10 rounded-xl flex items-center justify-center">
+                <AlertCircle className="h-6 w-6 text-amber-400" />
               </div>
-              <span className="text-white/60 text-xs md:text-sm">Pendientes</span>
+              <span className="text-white/60 text-xs">Pendientes</span>
             </div>
             <div className="space-y-1">
               <h3 className="text-xl md:text-2xl font-bold text-white" style={{ fontFamily: "Helvetica" }}>
@@ -207,17 +207,17 @@ const DashboardAdminPanel: React.FC = () => {
         </div>
       )}
 
-      {/* BLOQUE: Resumen de Ingresos y Accesos rápidos */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 w-full animate-fade-in">
+      {/* BLOQUE: Resumen de Ingresos y Accesos rápidos (alturas iguales) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 w-full items-stretch animate-fade-in">
         <div className="lg:col-span-2">
-          <Card className="bg-white/10 border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <Card className="bg-white/10 border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300 h-full flex flex-col">
             <CardHeader>
               <CardTitle className="flex items-center justify-between text-white">
                 <span style={{ fontFamily: "Helvetica" }}>Resumen de Ingresos</span>
                 <Euro className="h-6 w-6 text-[#6EF7FF]" />
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 flex-1 flex flex-col">
               <div className="flex justify-between items-center">
                 <span className="text-white/70">Total facturado este mes:</span>
                 <span className="text-2xl font-bold text-[#6EF7FF]" style={{ fontFamily: "Helvetica" }}>
@@ -243,14 +243,14 @@ const DashboardAdminPanel: React.FC = () => {
           </Card>
         </div>
 
-        <Card className="bg-white/10 border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <Card className="bg-white/10 border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300 h-full flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center justify-between text-white">
               <span style={{ fontFamily: "Helvetica" }}>Accesos Rápidos</span>
               <BarChart3 className="h-6 w-6 text-[#6EF7FF]" />
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 flex-1 flex flex-col">
             <Button variant="ghost" size="sm" className="w-full justify-start rounded-2xl" asChild>
               <Link to="/admin/traslados">
                 <Car className="h-4 w-4 mr-2" />

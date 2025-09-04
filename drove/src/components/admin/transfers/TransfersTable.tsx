@@ -167,8 +167,8 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                         
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-[#6EF7FF]/10 flex items-center justify-center flex-shrink-0">
-                              <User size={16} className="text-[#6EF7FF]" />
+                            <div className="w-9 h-9 rounded-full bg-[#6EF7FF]/10 flex items-center justify-center flex-shrink-0">
+                              <User size={14} className="text-[#6EF7FF]" />
                             </div>
                             <div className="min-w-0">
                               <p className="font-medium text-white truncate">
@@ -183,7 +183,7 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                         
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <Calendar size={16} className="text-white/70" />
+                            <Calendar size={14} className="text-white/70" />
                             <p className="text-white text-sm">{formatDate(transfer.createdAt || transfer.created_at)}</p>
                           </div>
                         </TableCell>
@@ -212,7 +212,7 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="border-[#6EF7FF] text-[#6EF7FF] hover:bg-[#6EF7FF] hover:text-[#22142A] text-xs"
+                                className="border-[#6EF7FF] text-[#6EF7FF] hover:bg-[#6EF7FF] hover:text-[#22142A] text-xs rounded-full px-3"
                                 asChild
                               >
                                 <Link to={`/admin/asignar/${transfer.id}`}>Asignar</Link>
@@ -227,7 +227,7 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                                   size="sm" 
                                   className="text-white/70 hover:text-white hover:bg-white/10"
                                 >
-                                  <MoreHorizontal size={16} />
+                                  <MoreHorizontal size={18} />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent className="bg-[#22142A] border-white/20">
