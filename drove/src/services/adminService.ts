@@ -87,8 +87,18 @@ export class AdminService {
   }
 
   // === GESTIÓN DE CLIENTES ===
-  static async getClients(): Promise<any[]> {
-    return await ApiService.get('/users/role/client');
+  static async getClients(params?: { type?: 'empresa' | 'persona'; status?: string; search?: string }): Promise<any[]> {
+    const qs = new URLSearchParams();
+    if (params?.type) qs.set('type', params.type);
+    if (params?.status) qs.set('status', params.status);
+    if (params?.search) qs.set('search', params.search);
+    const endpoint = qs.toString() ? `/users/role/client?${qs.toString()}` : '/users/role/client';
+    return await ApiService.get(endpoint);
+  }
+
+  // Obtener resumen/Detalle de cliente para el panel
+  static async getClientSummary(userId: string): Promise<any> {
+    return await ApiService.get(`/admin/users/${userId}`);
   }
 
   static async updateClient(clientId: string, data: any): Promise<void> {
@@ -175,6 +185,10 @@ export class AdminService {
     return await ApiService.post(`/admin/invoices/${invoiceId}/issue`, {});
   }
 
+  static async updateInvoiceStatus(invoiceId: string, status: 'emitida' | 'anticipo' | 'pagada'): Promise<void> {
+    await ApiService.put(`/admin/invoices/${invoiceId}/status`, { status });
+  }
+
   // === PAGOS ===
   static async getPayments(params?: { search?: string; status?: string; method?: string; from?: string; to?: string }): Promise<any[]> {
     const qs = new URLSearchParams();
@@ -195,6 +209,10 @@ export class AdminService {
     if (params?.priority) qs.set('priority', params.priority);
     const endpoint = qs.toString() ? `/admin/support/tickets?${qs.toString()}` : '/admin/support/tickets';
     return await ApiService.get(endpoint);
+  }
+
+  static async createSupportTicket(payload: { name: string; email: string; subject: string; message: string }): Promise<any> {
+    return await ApiService.post('/support/tickets', payload);
   }
 
   static async updateTicketStatus(ticketId: string, dto: TicketStatusDTO): Promise<void> {

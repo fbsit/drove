@@ -50,10 +50,7 @@ const adminNav = [
     icon: Truck,
   },
   {
-    label: "Facturas",
-    desc: "Gestión de facturas",
-    to: "/admin/facturas", // <-- Corrección aquí
-    icon: Euro,
+    // Facturas ahora se accede desde traslados (tab)
   },
   {
     label: "Reseñas",

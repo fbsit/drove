@@ -14,7 +14,7 @@ const getNavigationItems = (role: string | undefined) => {
         { label: "Jefes de Tráfico", to: "/admin/jefes-trafico", icon: Briefcase, description: "Gestión de jefes" },
         { label: "Drovers", to: "/admin/drovers", icon: Car, description: "Gestión de drovers" },
         { label: "Traslados", to: "/admin/traslados", icon: Calendar, description: "Gestión de traslados" },
-        { label: "Facturas", to: "/admin/facturas", icon: Euro, description: "Gestión de facturas" },
+        // Facturas integrado como tab en Traslados
         { label: "Reportes", to: "/admin/reportes", icon: BarChart2, description: "Análisis y reportes" },
       ];
     case "traffic_manager":

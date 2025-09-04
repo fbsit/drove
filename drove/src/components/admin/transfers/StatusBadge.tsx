@@ -2,29 +2,72 @@
 import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { TransferStatus } from "@/services/api/types/transfers";
+import { Zap, Trophy, Calendar, AlertTriangle, CheckCircle, UserCheck } from 'lucide-react';
 
 interface StatusBadgeProps {
   status: string;
 }
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
+  const base = "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium";
+
   switch(status) {
     case TransferStatus.DELIVERED:
-      return <Badge className="bg-green-500 hover:bg-green-600">Entregado</Badge>;
+      return (
+        <span className={`${base} bg-green-500/20 text-green-300`}>
+          <Trophy size={14} />
+          Completado
+        </span>
+      );
     case TransferStatus.IN_PROGRESS:
-      return <Badge className="bg-purple-500 hover:bg-purple-600">En Progreso</Badge>;
+      return (
+        <span className={`${base} bg-blue-500/20 text-blue-300`}>
+          <Zap size={14} />
+          En Progreso
+        </span>
+      );
     case TransferStatus.PICKED_UP:
-      return <Badge className="bg-orange-500 hover:bg-orange-600">Vehículo Recogido</Badge>;
+      return (
+        <span className={`${base} bg-amber-500/20 text-amber-300`}>
+          <CheckCircle size={14} />
+          Vehículo Recogido
+        </span>
+      );
     case TransferStatus.ASSIGNED:
-      return <Badge className="bg-indigo-500 hover:bg-indigo-600">Drover Asignado</Badge>;
+      return (
+        <span className={`${base} bg-purple-500/20 text-purple-300`}>
+          <UserCheck size={14} />
+          Asignado
+        </span>
+      );
     case TransferStatus.CREATED:
-      return <Badge className="bg-blue-500 hover:bg-blue-600">Creado</Badge>;
+      return (
+        <span className={`${base} bg-white/10 text-white`}>
+          <Calendar size={14} />
+          Creado
+        </span>
+      );
     case TransferStatus.PENDINGPAID:
-      return <Badge className="bg-yellow-500 hover:bg-yellow-600">Pendiente de Pago</Badge>;
+      return (
+        <span className={`${base} bg-yellow-500/20 text-yellow-300`}>
+          <AlertTriangle size={14} />
+          Pendiente
+        </span>
+      );
     case TransferStatus.REQUEST_FINISH:
-      return <Badge className="bg-amber-500 hover:bg-amber-600">Solicitando Entrega</Badge>;
+      return (
+        <span className={`${base} bg-amber-500/20 text-amber-300`}>
+          <AlertTriangle size={14} />
+          Solicitando Entrega
+        </span>
+      );
     case TransferStatus.CANCELLED:
-      return <Badge className="bg-red-500 hover:bg-red-600">Cancelado</Badge>;
+      return (
+        <span className={`${base} bg-red-500/20 text-red-300`}>
+          <AlertTriangle size={14} />
+          Cancelado
+        </span>
+      );
     default:
       return <Badge>{status}</Badge>;
   }

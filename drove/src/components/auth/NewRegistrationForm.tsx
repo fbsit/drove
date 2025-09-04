@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserType, RegistrationFormData } from '@/types/new-registration';
 import { useToast } from '@/hooks/use-toast';
 import { AuthService } from '@/services/authService';
@@ -15,14 +15,24 @@ import ProgressIndicator from './registration-steps/ProgressIndicator';
 interface Props {
   onComplete: (data: RegistrationFormData) => Promise<void>;
   isLoading?: boolean;
+  defaultUserType?: UserType | string | null;
 }
 
-const NewRegistrationForm: React.FC<Props> = ({ onComplete, isLoading = false }) => {
+const NewRegistrationForm: React.FC<Props> = ({ onComplete, isLoading = false, defaultUserType = null }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [userType, setUserType] = useState<UserType | null>(null);
   const [formData, setFormData] = useState<Partial<RegistrationFormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  // Prefijar el tipo de usuario si viene por URL (/registro/:userType)
+  useEffect(() => {
+    if (defaultUserType === 'client' || defaultUserType === 'drover') {
+      setUserType(defaultUserType as UserType);
+      setFormData({ userType: defaultUserType as UserType });
+      setCurrentStep(1); // saltar selección de tipo
+    }
+  }, [defaultUserType]);
 
   const getSteps = () => {
     if (!userType) return ['Tipo de cuenta'];
@@ -36,6 +46,16 @@ const NewRegistrationForm: React.FC<Props> = ({ onComplete, isLoading = false })
 
   const steps = getSteps();
   const totalSteps = steps.length;
+
+  // En el flujo de cliente, al llegar al último paso lanzamos automáticamente el registro
+  useEffect(() => {
+    const isClientFlow = userType === 'client';
+    const isOnLastStep = currentStep === totalSteps - 1;
+    if (isClientFlow && isOnLastStep && !isSubmitting && isFormComplete()) {
+      handleSubmit();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep, userType]);
 
   const handleUserTypeSelect = (type: UserType) => {
     setUserType(type);
@@ -161,7 +181,6 @@ const NewRegistrationForm: React.FC<Props> = ({ onComplete, isLoading = false })
               data={formData}
               onUpdate={handleStepData}
               onNext={handleNext}
-              onPrevious={handlePrevious}
             />
           );
         case 2:
@@ -195,7 +214,6 @@ const NewRegistrationForm: React.FC<Props> = ({ onComplete, isLoading = false })
               data={formData}
               onUpdate={handleStepData}
               onNext={handleNext}
-              onPrevious={handlePrevious}
             />
           );
         case 2:

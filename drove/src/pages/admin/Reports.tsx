@@ -70,6 +70,34 @@ const Reports: React.FC = () => {
   const topClients = reports.topClients ?? [];
   const topDrovers = reports.topDrovers ?? [];
 
+  /* ─────────────  contadores extendidos (derivados)  ───────────── */
+  const deliveredCount = chartStatusData
+    .filter((s: any) => String(s.name).toLowerCase().includes('entregado'))
+    .reduce((sum: number, s: any) => sum + Number(s.value || 0), 0);
+  const inProgressCount = chartStatusData
+    .filter((s: any) => String(s.name).toLowerCase().includes('progreso'))
+    .reduce((sum: number, s: any) => sum + Number(s.value || 0), 0);
+  const cancelledCount = chartStatusData
+    .filter((s: any) => String(s.name).toLowerCase().includes('cancel'))
+    .reduce((sum: number, s: any) => sum + Number(s.value || 0), 0);
+
+  const paidCount = chartPaymentStatus
+    .filter((p: any) => ['confirmed','paid','pagado','confirmado'].includes(String(p.name).toLowerCase()))
+    .reduce((sum: number, p: any) => sum + Number(p.value || 0), 0);
+  const pendingCount = chartPaymentStatus
+    .filter((p: any) => ['pending','pendiente'].includes(String(p.name).toLowerCase()))
+    .reduce((sum: number, p: any) => sum + Number(p.value || 0), 0);
+
+  const activeClients = Number(reports.clients || 0);
+  const revenueNum    = Number(reports.revenue || 0);
+  const cardAmount    = chartPaymentMethods
+    .filter((m: any) => String(m.name).toLowerCase().includes('tarjeta') || String(m.name).toLowerCase().includes('stripe'))
+    .reduce((sum: number, m: any) => sum + Number(m.value || 0), 0);
+  const transferAmount = chartPaymentMethods
+    .filter((m: any) => String(m.name).toLowerCase().includes('transfer'))
+    .reduce((sum: number, m: any) => sum + Number(m.value || 0), 0);
+  const anticipadosAmount = Math.max(0, revenueNum - (cardAmount + transferAmount));
+
   /* ─────────────  render  ───────────── */
   return (
     <div className="admin-page-container">
@@ -93,6 +121,21 @@ const Reports: React.FC = () => {
         <MetricCard title="Ingresos Totales"   value={totalRevenue}   icon={Euro}     iconColor="#6EF7FF" />
         <MetricCard title="Conductores Activos" value={activeDrivers} icon={Users}    iconColor="#6EF7FF" />
         <MetricCard title="Crecimiento"         value={growth}        icon={TrendingUp} iconColor="#6EF7FF" />
+      </div>
+
+      {/* Ingresos por métodos (3 cards) */}
+      <div className={`grid gap-6 mb-8 ${isMobile ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-3'}`}>
+        <MetricCard title="Pagos con Tarjeta" value={`€${cardAmount.toLocaleString()}`} icon={CreditCard} iconColor="#6EF7FF" />
+        <MetricCard title="Transferencias"     value={`€${transferAmount.toLocaleString()}`} icon={Banknote}   iconColor="#6EF7FF" />
+        <MetricCard title="Pagos Anticipados"  value={`€${anticipadosAmount.toLocaleString()}`} icon={TrendingUp} iconColor="#FFD166" />
+      </div>
+
+      {/* Estados de pagos (4 cards) */}
+      <div className={`grid gap-6 mb-8 ${isMobile ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'}`}>
+        <MetricCard title="Pagos Completados" value={paidCount.toLocaleString()}     icon={CheckCircle}  iconColor="#06D6A0" />
+        <MetricCard title="Pagos Anticipados" value={pendingCount.toLocaleString()}  icon={Clock}        iconColor="#6EF7FF" />
+        <MetricCard title="Pendientes de Pago" value={pendingCount.toLocaleString()} icon={AlertTriangle} iconColor="#F59E0B" />
+        <MetricCard title="Pagos en Proceso"   value={(chartPaymentStatus.filter((p:any)=>String(p.name).toLowerCase().includes('proceso')||String(p.name).toLowerCase().includes('process')).reduce((s:number,p:any)=>s+Number(p.value||0),0)).toLocaleString()} icon={XCircle} iconColor="#EF4444" />
       </div>
 
       {/* Gráficos */}

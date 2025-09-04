@@ -1,16 +1,16 @@
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useReviewsManagement } from "@/hooks/admin/useReviewsManagement";
 import { useDebouncedValue } from "@/hooks/useDebounce";
-import { Loader2, Star, MessageSquare, Eye } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectGroup, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
+import { Loader2, Star, MessageSquare, Users } from "lucide-react";
+import ReviewFilters from "@/components/admin/reviews/ReviewFilters";
+import ReviewCard from "@/components/admin/reviews/ReviewCard";
 
 const Reviews: React.FC = () => {
   const [search, setSearch] = useState("");
   const [ratingFilter, setRatingFilter] = useState("todas");
-  const [drover, setDrover] = useState("todos");
-  const [responseFilter, setResponseFilter] = useState("todas");
+  const [droverFilter, setDroverFilter] = useState("todos");
+  const [statusFilter, setStatusFilter] = useState("todos");
 
   const debouncedSearch = useDebouncedValue(search, 300);
 
@@ -20,37 +20,43 @@ const Reviews: React.FC = () => {
     isLoading, 
     respondToReview, 
     markAsViewed,
-    isResponding,
-    isMarkingAsViewed 
-  } = useReviewsManagement({ search: debouncedSearch, rating: ratingFilter, drover, responded: responseFilter });
+  } = useReviewsManagement({ search: debouncedSearch, rating: ratingFilter, drover: droverFilter, responded: statusFilter });
 
-  // Server-side (a futuro) o fuente ya filtrada por queryKey. Mostramos lo recibido
-  const filteredReviews = reviews;
+  // Filtro local según figma (search, rating, estado, drover)
+  const filteredReviews = useMemo(() => {
+    const term = (search || "").toLowerCase();
+    return (reviews || []).filter((r: any) => {
+      const matchesSearch = !term ||
+        r.clientName?.toLowerCase().includes(term) ||
+        r.comment?.toLowerCase().includes(term) ||
+        r.droverName?.toLowerCase().includes(term);
+      const matchesRating = ratingFilter === "todas" || Number(r.rating) === Number(ratingFilter);
+      const matchesStatus = statusFilter === "todos" || r.status === statusFilter;
+      const matchesDrover = droverFilter === "todos" || r.droverName === droverFilter;
+      return matchesSearch && matchesRating && matchesStatus && matchesDrover;
+    });
+  }, [reviews, search, ratingFilter, statusFilter, droverFilter]);
 
-  // Calcular estadísticas
+  // Estadísticas (como en figma)
   const stats = {
-    totalReviews: reviews.length,
-    averageRating: reviews.length > 0 
-      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+    averageRating: reviews.length > 0
+      ? (reviews.reduce((sum: number, r: any) => sum + (Number(r.rating) || 0), 0) / reviews.length).toFixed(1)
       : "0.0",
-    pendingResponses: reviews.filter(r => !r.adminResponse).length,
-    last30Days: reviews.filter(r => {
-      const reviewDate = new Date(r.createdAt);
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      return reviewDate >= thirtyDaysAgo;
-    }).length
+    newReviews: (reviews || []).filter((r: any) => r.status === 'nueva').length,
+    totalReviews: (reviews || []).length,
   };
 
   const handleRespond = (reviewId: string) => {
     const response = prompt("Escribe tu respuesta:");
     if (response) {
-      respondToReview(reviewId, response);
+      // La API actual es placeholder; mostrará un toast de no disponible
+      // Conservamos la llamada para mantener la UX.
+      (respondToReview as any)({ reviewId, response });
     }
   };
 
   const handleMarkAsViewed = (reviewId: string) => {
-    markAsViewed(reviewId);
+    (markAsViewed as any)(reviewId);
   };
 
   if (isLoading) {
@@ -66,151 +72,104 @@ const Reviews: React.FC = () => {
 
   return (
     <div className="admin-page-container">
-      <div className="mb-6">
-        <h1 className="text-2xl text-white mb-1" style={{ fontFamily: "Helvetica", fontWeight: "bold" }}>
-          Gestión de Reseñas
-        </h1>
-        <p className="text-white/70">
-          Administra las reseñas de los clientes, responde a comentarios y supervisa la calidad del servicio.
-        </p>
-        
-        {/* Estadísticas */}
-        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white/10 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-white">{stats.totalReviews}</div>
-            <div className="text-sm text-white/60">Total Reseñas</div>
+      {/* Hero gradient header */}
+      <section
+        className="
+          w-full
+          flex flex-col items-center justify-center text-center
+          bg-gradient-to-tr from-[#292244] via-[#242b36] to-[#191428] 
+          rounded-2xl
+          border border-[#6EF7FF33]
+          px-4 py-6 mb-5
+          shadow-[0_2px_32px_0_#6EF7FF11]
+          md:rounded-2xl md:py-8 md:px-8
+          md:flex-row md:items-end md:text-left md:mb-6
+        "
+        style={{ minHeight: 120 }}
+      >
+        <div className="flex-1 flex flex-col items-center md:items-start">
+          <h1
+            className="
+              text-xl md:text-2xl text-white font-bold mb-2
+              tracking-tight
+              leading-tight
+              drop-shadow-[0_4px_12px_rgba(110,247,255,0.18)]
+            "
+          >
+            Gestión de Reseñas
+          </h1>
+          <p className="text-sm md:text-base text-white/70 max-w-md font-normal mb-0 leading-snug">
+            Administra y responde a las reseñas de los clientes. Mantén la calidad del servicio.
+          </p>
+        </div>
+      </section>
+
+      {/* Stats cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white/10 rounded-2xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-yellow-500/20 rounded-xl">
+              <Star className="text-yellow-400" />
+            </div>
+            <div>
+              <p className="text-white/60 text-sm">Valoración Media</p>
+              <p className="text-white text-2xl font-bold">{stats.averageRating}</p>
+            </div>
           </div>
-          <div className="bg-white/10 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-[#6EF7FF]">{stats.averageRating}</div>
-            <div className="text-sm text-white/60">Rating Promedio</div>
+        </div>
+        <div className="bg-white/10 rounded-2xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-red-500/20 rounded-xl">
+              <MessageSquare className="text-red-400" />
+            </div>
+            <div>
+              <p className="text-white/60 text-sm">Reseñas Nuevas</p>
+              <p className="text-white text-2xl font-bold">{stats.newReviews}</p>
+            </div>
           </div>
-          <div className="bg-white/10 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-400">{stats.pendingResponses}</div>
-            <div className="text-sm text-white/60">Sin Responder</div>
-          </div>
-          <div className="bg-white/10 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-green-400">{stats.last30Days}</div>
-            <div className="text-sm text-white/60">Últimos 30 días</div>
+        </div>
+        <div className="bg-white/10 rounded-2xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-[#6EF7FF]/20 rounded-xl">
+              <Users className="text-[#6EF7FF]" />
+            </div>
+            <div>
+              <p className="text-white/60 text-sm">Total Reseñas</p>
+              <p className="text-white text-2xl font-bold">{stats.totalReviews}</p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="Buscar reseñas..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50"
-        />
-        <Select value={ratingFilter} onValueChange={setRatingFilter}>
-          <SelectTrigger className="w-full p-3 rounded-lg bg-[#1A1F2C] border border-white/20 text-white">
-            <SelectValue placeholder="Todas las calificaciones" />
-          </SelectTrigger>
-          <SelectContent className="bg-[#22142A] text-white border-white/10 z-30">
-            <SelectGroup>
-              <SelectItem value="todas">Todas las calificaciones</SelectItem>
-              <SelectItem value="5">5 estrellas</SelectItem>
-              <SelectItem value="4">4 estrellas</SelectItem>
-              <SelectItem value="3">3 estrellas</SelectItem>
-              <SelectItem value="2">2 estrellas</SelectItem>
-              <SelectItem value="1">1 estrella</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-        <Select value={drover} onValueChange={setDrover}>
-          <SelectTrigger className="w-full p-3 rounded-lg bg-[#1A1F2C] border border-white/20 text-white">
-            <SelectValue placeholder="Todos los drovers" />
-          </SelectTrigger>
-          <SelectContent className="bg-[#22142A] text-white border-white/10 z-30">
-            <SelectGroup>
-              <SelectItem value="todos">Todos los drovers</SelectItem>
-              {drovers.map(d => (
-                <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-        <Select value={responseFilter} onValueChange={setResponseFilter}>
-          <SelectTrigger className="w-full p-3 rounded-lg bg-[#1A1F2C] border border-white/20 text-white">
-            <SelectValue placeholder="Todas las respuestas" />
-          </SelectTrigger>
-          <SelectContent className="bg-[#22142A] text-white border-white/10 z-30">
-            <SelectGroup>
-              <SelectItem value="todas">Todas las respuestas</SelectItem>
-              <SelectItem value="respondidas">Respondidas</SelectItem>
-              <SelectItem value="sin_responder">Sin responder</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Filters panel */}
+      <ReviewFilters
+        search={search}
+        setSearch={setSearch}
+        filterRating={ratingFilter}
+        setFilterRating={setRatingFilter}
+        filterStatus={statusFilter}
+        setFilterStatus={setStatusFilter}
+        filterDrover={droverFilter}
+        setFilterDrover={setDroverFilter}
+        drovers={(drovers || []).map((d: any) => d.name)}
+      />
 
-      {/* Lista de reseñas */}
-      <div className="space-y-4">
-        {filteredReviews.map((review) => (
-          <div key={review.id} className="bg-white/10 rounded-lg p-4">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-white font-bold">{review.clientName}</h3>
-                <p className="text-white/70">Drover: {review.droverName}</p>
-                <p className="text-white/60 text-sm">Traslado #{review.transferId}</p>
-              </div>
-              <div className="flex items-center gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-4 w-4 ${
-                      i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-400'
-                    }`}
-                  />
-                ))}
-                <span className="ml-2 text-white">{review.rating}/5</span>
-              </div>
-            </div>
-            
-            <p className="text-white/80 mb-4">{review.comment}</p>
-            
-            {review.adminResponse && (
-              <div className="bg-white/5 rounded p-3 mb-4">
-                <p className="text-white/70 text-sm mb-1">Respuesta del administrador:</p>
-                <p className="text-white">{review.adminResponse}</p>
-              </div>
-            )}
-            
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={() => handleRespond(review.id)}
-                disabled={isResponding}
-                className="bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A]"
-              >
-                {isResponding ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4 mr-1" />}
-                {review.adminResponse ? 'Actualizar Respuesta' : 'Responder'}
-              </Button>
-              
-              {!review.isViewed && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleMarkAsViewed(review.id)}
-                  disabled={isMarkingAsViewed}
-                >
-                  {isMarkingAsViewed ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4 mr-1" />}
-                  Marcar como Vista
-                </Button>
-              )}
-            </div>
-          </div>
+      {/* Cards grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        {filteredReviews.map((review: any) => (
+          <ReviewCard
+            key={review.id}
+            review={review}
+            onRespond={handleRespond}
+            onMarkAsViewed={handleMarkAsViewed}
+          />
         ))}
       </div>
 
       {filteredReviews.length === 0 && (
         <div className="text-center py-12">
           <p className="text-white/70 text-lg">No se encontraron reseñas</p>
-          <p className="text-white/50 text-sm mt-2">
-            Ajusta los filtros para encontrar las reseñas que buscas
-          </p>
+          <p className="text-white/50 text-sm mt-2">Ajusta los filtros para encontrar las reseñas que buscas</p>
         </div>
       )}
     </div>

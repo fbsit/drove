@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { MapPin, Phone, CheckCircle, AlertCircle } from 'lucide-react';
+import { MapPin, Phone, CheckCircle, AlertCircle, ArrowLeft, Car, DollarSign, ShieldCheck, Route as RouteIcon, Map as MapIcon, Calendar as CalendarIcon, Clock as ClockIcon, Copy as CopyIcon, FileDown } from 'lucide-react';
 import RealTimeTripMap from '@/components/maps/RealTimeTripMap';
 import TransferStepsBar from '@/components/trips/TransferStepsBar';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -282,163 +282,184 @@ const ActiveTrip: React.FC = () => {
   }
 
   const nextStatus = getNextStatus(trip.status);
+  const [showMap, setShowMap] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* Encabezado */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2" style={{ fontFamily: "Helvetica" }}>
-             {trip.status === 'ASSIGNED' ? 'Traslado Asignado' : 'Traslado en Curso'}
-            </h1>
-            <p className="text-white/70">
-              Seguimiento en tiempo real de tu traslado
-            </p>
-            {/* Debug info para desarrollo */}
-            {trip.status === 'IN_PROGRESS' && (
-              <p className="text-[#6EF7FF] text-sm mt-1">
-                Puntos de ruta capturados: {routePoints.length}
-              </p>
-            )}
-          </div>
-          <Badge className={`${getStatusColor(trip.status)} text-white px-4 py-2`}>
-            {getStatusText(trip.status)}
-          </Badge>
+        {/* Top bar */}
+        <div className="flex items-center gap-3 text-white/80">
+          <button onClick={() => navigate(-1)} className="flex items-center gap-2 hover:text-white">
+            <ArrowLeft className="h-5 w-5" /> Volver
+          </button>
         </div>
 
-        {/* Barra de progreso */}
+        {/* Title + meta */}
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-white" style={{ fontFamily: 'Helvetica' }}>
+              Traslado #{String(trip.id).slice(0,8)}
+            </h1>
+            <p className="text-white/60 mt-2">Creado el {new Date(trip.createdAt || trip.travelDate || Date.now()).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+          </div>
+          <Badge className={`${getStatusColor(trip.status)} text-white px-4 py-2`}>{getStatusText(trip.status)}</Badge>
+        </div>
+
+        {/* Steps */}
         <TransferStepsBar trip={trip} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Mapa */}
-          <div className="lg:col-span-2">
-            <Card className="bg-white/10 border-white/20 backdrop-blur-sm h-96">
-              <CardContent className="p-0 h-full">
+        {/* Main cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Vehículo */}
+          <Card className="bg-gradient-to-br from-cyan-900/30 to-cyan-500/10 border-white/10">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Car className="h-5 w-5 text-[#6EF7FF]" /> Vehículo
+              </CardTitle>
+              <p className="text-white/60 text-sm -mt-2">Detalles del automóvil</p>
+            </CardHeader>
+            <CardContent className="text-white space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-white/60">Marca y Modelo:</span>
+                <span className="font-semibold text-right">{trip.brandVehicle || trip.vehicle?.brand} {trip.modelVehicle || trip.vehicle?.model}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-white/60">Año:</span>
+                <span>{trip.yearVehicle || '-'}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-white/60">Matrícula:</span>
+                <span className="text-[#6EF7FF] font-semibold">{trip.patentVehicle || trip.licensePlate || '-'}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-white/60">VIN:</span>
+                <span className="font-mono text-xs">{trip.bastidor || '-'}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Ganancia estimada */}
+          <Card className="bg-gradient-to-br from-green-900/20 to-green-500/10 border-white/10">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-green-300" /> Ganancia Estimada
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-green-300">€{Number(trip.totalPrice ?? 0).toFixed(2)}</div>
+              <div className="text-white/60 text-sm mt-2">Esta es tu ganancia neta estimada</div>
+            </CardContent>
+          </Card>
+
+          {/* Información */}
+          <Card className="bg-gradient-to-br from-purple-900/20 to-pink-500/10 border-white/10">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-purple-300" /> Información
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-white font-semibold">{getStatusText(trip.status)}</div>
+              <div className="text-white/60 text-sm mt-1">{trip.status === 'DELIVERED' ? 'Entregado con éxito' : 'Proceso en curso'}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Ruta del traslado */}
+        <Card className="bg-white/5 border-white/10">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div className="flex items-center gap-3">
+              <RouteIcon className="h-6 w-6 text-[#6EF7FF]" />
+              <div>
+                <CardTitle className="text-white">Ruta del Traslado</CardTitle>
+                <div className="text-white/60 text-sm">Origen y destino del vehículo</div>
+              </div>
+            </div>
+            <Button onClick={() => setShowMap((v) => !v)} variant="outline" className="rounded-2xl border-[#6EF7FF]/40 text-white bg-white/5 hover:bg-white/10">
+              <MapIcon className="h-4 w-4 mr-2 text-[#6EF7FF]" /> {showMap ? 'Ocultar Mapa' : 'Ver Mapa'}
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {showMap && (
+              <div className="rounded-xl border border-white/10 bg-white/5 h-64 md:h-72 lg:h-80 overflow-hidden">
                 <RealTimeTripMap
                   origin={{ lat: trip.startAddress.lat, lng: trip.startAddress.lng }}
                   destination={{ lat: trip.endAddress.lat, lng: trip.endAddress.lng }}
                   tripStatus={trip.status}
                 />
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Información del traslado */}
-          <div className="space-y-6">
-            <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Detalles del Traslado
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+              </div>
+            )}
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-1 h-3 w-3 rounded-full bg-green-400"></div>
                 <div>
-                  <div className="text-sm text-white/60 mb-1">Origen</div>
-                  <div className="text-white">{trip.startAddress.address}</div>
+                  <div className="text-white/60 text-sm">Origen</div>
+                  <div className="text-white font-semibold">{trip.startAddress?.address || trip.startAddress?.city}</div>
+                  <div className="text-white/40 text-xs">Punto de recogida</div>
                 </div>
-                <Separator className="bg-white/20" />
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="mt-1 h-3 w-3 rounded-full bg-rose-500"></div>
                 <div>
-                  <div className="text-sm text-white/60 mb-1">Destino</div>
-                  <div className="text-white">{trip.endAddress.address}</div>
+                  <div className="text-white/60 text-sm">Destino</div>
+                  <div className="text-white font-semibold">{trip.endAddress?.address || trip.endAddress?.city}</div>
+                  <div className="text-white/40 text-xs">Punto de entrega</div>
                 </div>
-                <Separator className="bg-white/20" />
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="text-sm text-white/60 mb-1">Fecha</div>
-                    <div className="text-white">
-                      {trip.travelDate ? new Date(trip.travelDate).toLocaleDateString() : 'No programado'}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-white/60 mb-1">Hora</div>
-                    <div className="text-white">{trip.travelTime || 'TBD'}</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="rounded-xl bg-white/5 border border-white/10 p-4 text-center">
+                <div className="text-white/60 text-sm">Distancia</div>
+                <div className="text-[#6EF7FF] text-2xl font-bold">{trip.distanceTravel || '—'}</div>
+              </div>
+              <div className="rounded-xl bg-white/5 border border-white/10 p-4 text-center">
+                <div className="text-white/60 text-sm">Duración</div>
+                <div className="text-[#6EF7FF] text-2xl font-bold">{trip.timeTravel || '—'}</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* Información del drover */}
-            {trip.droverName && (
-              <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-white">Drover Asignado</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="text-white font-medium">{trip.droverName}</div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-[#6EF7FF]" />
-                    <span className="text-white/80">{trip.droverPhone || 'No disponible'}</span>
-                  </div>
-                  <Button 
-                    size="sm"
-                    className="w-full bg-[#6EF7FF] hover:bg-[#5FE4ED] text-[#22142A]"
-                  >
-                    <Phone className="h-4 w-4 mr-2" />
-                    Llamar Drover
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
+        {/* Programación */}
+        {trip.travelDate && (
+          <Card className="bg-white/5 border-white/10">
+            <CardContent className="flex items-center gap-3 p-5 text-white">
+              <CalendarIcon className="h-5 w-5 text-[#6EF7FF]" />
+              <div>
+                <div className="text-white/60 text-sm">RECOGIDA PROGRAMADA</div>
+                <div className="text-lg font-semibold">{new Date(trip.travelDate).toLocaleDateString()} {trip.travelTime ? `- ${trip.travelTime}` : ''}</div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-            {isAssignedDrover && (trip.status === 'CREATED' || trip.status === 'PICKED_UP') && (
-              <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-white">Acciones</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Button 
-                    onClick={handleIniciarViaje}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    {trip.status === 'PICKED_UP' ? 'Iniciar Viaje' : 'Recoger Vehiculo'}
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
+        {/* Callout final */}
+        {trip.status === 'DELIVERED' && (
+          <Card className="bg-white/5 border-white/10">
+            <CardContent className="p-6 text-center">
+              <div className="w-10 h-10 rounded-full bg-green-500/20 border border-green-400/40 mx-auto flex items-center justify-center mb-3">
+                <CheckCircle className="h-6 w-6 text-green-300" />
+              </div>
+              <div className="text-white text-xl font-semibold">Traslado entregado</div>
+              <div className="text-white/70 mt-2">Este traslado ha sido marcado como entregado exitosamente.</div>
+            </CardContent>
+          </Card>
+        )}
 
-            {trip.status === 'REQUEST_FINISH' && (
-              <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-white">Acciones</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-white">Escanea el codigo QR para poder hacer la entrega.</p>
-                </CardContent>
-              </Card>
-            )}
-
-            {isAssignedDrover && trip.status === 'DELIVERED' && (
-              <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-white">Completado</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-white">Felicidades el traslado ha sido completado.</p>
-                </CardContent>
-              </Card>
-            )}
-
-            {!droverInDestination && trip.status === 'IN_PROGRESS' && (
-              <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-white">¡Has llegado al destino!</CardTitle>
-                </CardHeader>
-                <CardContent className="text-white/80">
-                  <Button 
-                    onClick={handleFinishViaje}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Finalizar Viaje
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+        {/* Footer actions */}
+        <div className="flex flex-wrap gap-3 pt-2">
+          <Button variant="outline" className="rounded-2xl bg-white/5 border-white/20 text-white" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4 mr-2" /> Volver a traslados
+          </Button>
+          <Button variant="outline" className="rounded-2xl bg-white/5 border-white/20 text-white" onClick={async () => { try { await navigator.clipboard.writeText(String(trip.id)); toast({ title: 'ID copiado', description: String(trip.id) }); } catch {} }}>
+            <CopyIcon className="h-4 w-4 mr-2" /> Copiar ID
+          </Button>
+          <Button variant="outline" disabled={!trip?.invoiceUrl && !trip?.pdfUrl} className="rounded-2xl bg-white/5 border-white/20 text-white" onClick={() => { const url = (trip as any)?.invoiceUrl || (trip as any)?.pdfUrl; if (url) window.open(url, '_blank'); }}>
+            <FileDown className="h-4 w-4 mr-2" /> Descargar PDF
+          </Button>
         </div>
+
+        {/* mapa al interior de la sección de ruta cuando showMap === true */}
       </div>
     </div>
   );

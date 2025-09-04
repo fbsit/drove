@@ -72,6 +72,8 @@ const Register = () => {
         <NewRegistrationForm
           onComplete={handleRegistrationComplete}
           isLoading={isLoading}
+          // Si llega /registro/:userType, saltar selección inicial
+          defaultUserType={paramUserType as any}
         />
       </main>
     </div>

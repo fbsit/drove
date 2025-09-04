@@ -1,2 +1,2 @@
-
-No se envia el polyline al terminar un viaje para detectar la ruta que uso el chofer
+1.- desde el home reedireccionar al fgormulario especifico
+2.- suscripcion genera un ticket en soporte para hablar

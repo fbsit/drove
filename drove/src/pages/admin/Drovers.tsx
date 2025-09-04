@@ -9,7 +9,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import DroversGrid from "@/components/admin/drovers/DroversGrid";
+import DroversTabs from "@/components/admin/drovers/DroversTabs";
 import { useDroversManagement } from "@/hooks/admin/useDroversManagement";
 import { UserStatus } from "@/constants/enums"; // PENDING | APPROVED | REJECTED
 
@@ -58,6 +58,7 @@ const colorClasses: Record<string, string> = {
 const Drovers: React.FC = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
+  const [typeFilter, setTypeFilter] = useState<'todos' | 'core' | 'flex'>("todos");
 
   const {
     drovers = [],
@@ -69,13 +70,13 @@ const Drovers: React.FC = () => {
   } = useDroversManagement();
 
   // filtro combinado texto + estado
-  const filteredDrovers = drovers.filter(
-    (d) =>
-      contains(d, search) && (statusFilter === "todos" || d.status === statusFilter),
-  );
-
-  const countByStatus = (s: UserStatus) =>
-    drovers.filter((d) => d.status === s).length;
+  const filteredDrovers = drovers.filter((d) => {
+    const matchesSearch = contains(d, search);
+    const matchesStatus = statusFilter === "todos" || d.status === statusFilter;
+    const inferredType: 'core' | 'flex' = d.company_name ? 'core' : 'flex';
+    const matchesType = typeFilter === 'todos' || inferredType === typeFilter;
+    return matchesSearch && matchesStatus && matchesType;
+  });
 
   if (isLoading)
     return (
@@ -97,38 +98,11 @@ const Drovers: React.FC = () => {
         Administra y gestiona todos los drovers registrados en la plataforma.
       </p>
 
-      {/* métricas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <Metric label="Total" value={drovers.length} />
-        <Metric
-          label="Aprobados"
-          value={countByStatus(UserStatus.APPROVED)}
-          color="green"
-        />
-        <Metric
-          label="Pendientes"
-          value={countByStatus(UserStatus.PENDING)}
-          color="yellow"
-        />
-        <Metric
-          label="Rechazados"
-          value={countByStatus(UserStatus.REJECTED)}
-          color="red"
-        />
-      </div>
-
-      {/* filtros */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <Input
-          placeholder="Buscar en cualquier dato del drover…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-        />
-
+      {/* Filtros arriba de los tabs */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="bg-white/10 border-white/20 text-white">
-            <SelectValue placeholder="Filtrar por estado" />
+          <SelectTrigger className="bg-white/10 border-white/20 text-white rounded-xl">
+            <SelectValue placeholder="Estado: Todos" />
           </SelectTrigger>
           <SelectContent>
             {STATUS_OPTIONS.map((opt) => (
@@ -138,15 +112,28 @@ const Drovers: React.FC = () => {
             ))}
           </SelectContent>
         </Select>
+
+        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+          <SelectTrigger className="bg-white/10 border-white/20 text-white rounded-xl">
+            <SelectValue placeholder="Tipo de DROVER: Todos" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos</SelectItem>
+            <SelectItem value="core">Core</SelectItem>
+            <SelectItem value="flex">Flex</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Input
+          placeholder="Buscar por nombre o correo..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="bg-white/10 border-white/20 text-white placeholder:text-white/50 rounded-xl"
+        />
       </div>
 
-      {/* grid */}
-      <DroversGrid
-        drovers={filteredDrovers}
-        onApprove={approveDrover}
-        onReject={rejectDrover}
-        isLoading={isApproving || isRejecting}
-      />
+      {/* Tabs: Fichas | Mapa */}
+      <DroversTabs drovers={filteredDrovers} />
 
       {filteredDrovers.length === 0 && <EmptyState msg="No se encontraron drovers" />}
     </div>

@@ -13,7 +13,7 @@ const description =
 const Invoices: React.FC = () => {
   /* ----------------------------- filtros locale ---------------------------- */
   const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'todos' | Invoice['status']>('todos');
+  const [filterStatus, setFilterStatus] = useState<string>('todos');
   const [filterClient, setFilterClient] = useState('');
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
 
@@ -24,43 +24,91 @@ const Invoices: React.FC = () => {
     data: invoices = [],
     isLoading,
     refetch: refetchInvoices,
-  } = useQuery<Invoice[]>({
+  } = useQuery<any[]>({
     queryKey: ['invoices', { search: debouncedSearch, status: filterStatus, clientId: filterClient, from: dateRange.from?.toISOString().slice(0,10), to: dateRange.to?.toISOString().slice(0,10) }],
     queryFn: async ({ queryKey }) => {
-      const [, params] = queryKey as [string, { search?: string; status?: string; clientId?: string; from?: string; to?: string }];
-      return AdminService.getAllInvoices({
-        search: params?.search || undefined,
-        status: params?.status && params.status !== 'todos' ? params.status : undefined,
-        clientId: params?.clientId || undefined,
-        from: params?.from,
-        to: params?.to,
-      });
+      try {
+        const [, params] = queryKey as [string, { search?: string; status?: string; clientId?: string; from?: string; to?: string }];
+        return await AdminService.getAllInvoices({
+          search: params?.search || undefined,
+          status: params?.status && params.status !== 'todos' ? params.status : undefined,
+          clientId: params?.clientId || undefined,
+          from: params?.from,
+          to: params?.to,
+        });
+      } catch (e) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'No se pudieron cargar las facturas.',
+        });
+        return [] as any[];
+      }
     },
-    onError: () =>
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'No se pudieron cargar las facturas.',
-      }),
   });
 
+
   /* ----------------------------- helpers derivadas ------------------------ */
+  const normalizedInvoices = useMemo(() => {
+    const list = Array.isArray(invoices) ? invoices : [];
+    return list.map((inv: any) => {
+      const t = inv.travel || {};
+      const vehicleFromFields = inv.vehicle
+        || [inv?.vehicle_details?.brand, inv?.vehicle_details?.model].filter(Boolean).join(' ')
+        || [inv?.brandVehicle, inv?.modelVehicle].filter(Boolean).join(' ')
+        || [t?.brandVehicle, t?.modelVehicle].filter(Boolean).join(' ');
+      const origin = inv.fromAddress
+        || inv.originAddress
+        || inv?.pickup_details?.originAddress
+        || inv?.startAddress?.address
+        || inv?.startAddress?.city
+        || t?.startAddress?.address
+        || t?.startAddress?.city
+        || '';
+      const destination = inv.toAddress
+        || inv.destinationAddress
+        || inv?.pickup_details?.destinationAddress
+        || inv?.endAddress?.address
+        || inv?.endAddress?.city
+        || t?.endAddress?.address
+        || t?.endAddress?.city
+        || '';
+      const transferId = inv.transferId || inv.travelId || inv.transfer_id || inv.tripId || t?.id;
+      return {
+        id: String(inv.id ?? inv.invoiceId ?? inv.transferId ?? Date.now()),
+        invoiceDate: inv.invoiceDate || inv.date || inv.createdAt || inv.issue_date,
+        client: inv.client || inv.client_name || inv.clientName || t?.client?.contactInfo?.fullName,
+        client_name: inv.client_name || inv.client || inv.clientName || t?.client?.contactInfo?.fullName,
+        vehicle: vehicleFromFields || undefined,
+        fromAddress: origin || undefined,
+        toAddress: destination || undefined,
+        droverName: inv.droverName || inv?.drover?.contactInfo?.fullName || inv.drover_name || t?.drover?.contactInfo?.fullName,
+        paymentMethod: inv.paymentMethod || inv.payment_method || inv.method,
+        status: inv.status,
+        transferStatus: inv.transferStatus || inv.transfer_status || inv.tripStatus || t?.status,
+        urlPDF: inv.urlPDF || inv.pdfUrl || inv.pdf_url || null,
+        transferId,
+        notes: inv.notes,
+      };
+    });
+  }, [invoices]);
+
   const clients = useMemo(
-    () => Array.from(new Set(invoices?.map((inv) => inv?.client_name))),
-    [invoices],
+    () => Array.from(new Set(normalizedInvoices?.map((inv: any) => inv?.client_name))),
+    [normalizedInvoices],
   );
 
   // Fallback: si el backend ignora filtros, aplicamos filtrado local por estado
   const filteredInvoices = React.useMemo(() => {
-    const list = Array.isArray(invoices) ? invoices : [];
+    const list = Array.isArray(normalizedInvoices) ? normalizedInvoices : [];
     if (filterStatus && filterStatus !== 'todos') {
       return list.filter((inv) => inv?.status === filterStatus);
     }
     return list;
-  }, [invoices, filterStatus]);
+  }, [normalizedInvoices, filterStatus]);
 
 
-  async function handleUploadPDF(file: File, invoiceId: string) {
+  async function handleUploadPDF(file: File, invoiceId: string): Promise<'success' | 'exists' | 'error'> {
     try {
       console.log("init");
       const form = new FormData();
@@ -78,6 +126,7 @@ const Invoices: React.FC = () => {
       });
       
       refetchInvoices();
+      return 'success';
     } catch (error) {
       console.log('Error al subir PDF:', error);
       toast({
@@ -85,30 +134,19 @@ const Invoices: React.FC = () => {
         title: 'Error al subir PDF',
         description: 'No se pudo subir el PDF de la factura. Inténtalo de nuevo.',
       });
+      return 'error';
     }
   }
 
   const changeStatusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: Invoice['status'] }) =>
-      AdminService.updateInvoiceStatus(id, status), // crea este endpoint si no existe
+    mutationFn: ({ id, status }: { id: string; status: 'emitida' | 'anticipo' | 'pagada' }) =>
+      AdminService.updateInvoiceStatus(id, status),
     onSuccess: () => refetchInvoices(),
   });
 
   /* -------------------------------- render -------------------------------- */
   return (
     <div className="admin-page-container">
-      {/* ------------- cabecera ------------- */}
-      <section
-        className="w-full flex flex-col items-center justify-center text-center bg-gradient-to-tr
-                   from-[#292244] via-[#242b36] to-[#191428] rounded-2xl border
-                   border-[#6EF7FF33] px-4 py-6 mb-5 shadow-[0_2px_32px_0_#6EF7FF11]
-                   md:flex-row md:items-end md:text-left md:py-8 md:px-8"
-      >
-        <div className="flex-1 flex flex-col items-center md:items-start">
-          <h1 className="text-xl md:text-2xl text-white font-bold mb-2">Gestión de Facturas</h1>
-          <p className="text-sm md:text-base text-white/70 max-w-md">{description}</p>
-        </div>
-      </section>
 
       {/* ------------- barra de filtros ------------- */}
       <InvoiceFiltersBar
@@ -134,7 +172,7 @@ const Invoices: React.FC = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredInvoices.map((invoice) => (
+            {filteredInvoices.map((invoice: any) => (
               <InvoiceCard
                 key={invoice.id}
                 invoice={invoice}
