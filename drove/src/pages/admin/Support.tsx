@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Loader2, MessageCircle, Clock, AlertTriangle, CheckCircle, Filter, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectGroup, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
@@ -25,8 +25,10 @@ const Support: React.FC = () => {
     isResponding 
   } = useSupportManagement({ search: debouncedSearch, status: statusFilter, priority: priorityFilter });
 
-  // Server-side filtering
-  const filteredTickets = tickets;
+  // selección de ticket y memo de lista
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const filteredTickets = useMemo(() => tickets, [tickets]);
+  const selected = useMemo(() => filteredTickets.find((t:any)=>t.id===selectedId) || filteredTickets[0], [filteredTickets, selectedId]);
 
   const handleUpdateStatus = (ticketId: string, status: string) => {
     updateTicketStatus(ticketId, status);
@@ -196,60 +198,80 @@ const Support: React.FC = () => {
         </div>
       </div>
 
-      {/* Lista de tickets */}
-      <div className="space-y-4">
-        {filteredTickets.map((ticket) => (
-          <Card key={ticket.id} className="bg-white/10 border-white/20">
-            <CardHeader>
-              <div className="flex justify-between items-start">
+      {/* Lista izquierda + detalle derecha */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Columna izquierda: lista */}
+        <div className="bg-white/10 border border-white/10 rounded-2xl overflow-hidden lg:col-span-1 max-h-[70vh] flex flex-col">
+          <div className="px-4 py-3 border-b border-white/10">
+            <h3 className="text-white font-semibold">Tickets de Soporte</h3>
+            <p className="text-white/50 text-sm">{filteredTickets.length} tickets encontrados</p>
+          </div>
+          <div className="overflow-y-auto">
+            {filteredTickets.map((t:any) => (
+              <button
+                key={t.id}
+                onClick={() => setSelectedId(t.id)}
+                className={`w-full text-left px-4 py-3 border-b border-white/10 hover:bg-white/10 transition ${selected?.id===t.id ? 'bg-white/10' : ''}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="text-white font-semibold truncate">{t.clientName}</div>
+                  <div className="flex items-center gap-2 ml-2">
+                    <span className={`px-2 py-0.5 rounded text-[10px] ${getStatusColor(t.status)} text-white`}>{t.status}</span>
+                    <span className={`text-[10px] ${getPriorityColor(t.priority)}`}>{t.priority}</span>
+                  </div>
+                </div>
+                <div className="text-white/50 text-xs truncate">{t.subject}</div>
+                <div className="mt-1 text-white/60 text-xs line-clamp-2">{t.message}</div>
+                <div className="mt-2 flex items-center gap-2 text-white/40 text-xs">
+                  <Clock size={12} /> {new Date(t.createdAt).toLocaleDateString()}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Columna derecha: detalle */}
+        <div className="lg:col-span-2">
+          {selected ? (
+            <Card className="bg-white/10 border-white/20">
+              <CardHeader className="flex flex-row items-start justify-between">
                 <div>
                   <CardTitle className="text-white flex items-center gap-2">
-                    <MessageCircle size={20} />
-                    {ticket.subject}
+                    <MessageCircle size={20} /> {selected.subject}
                   </CardTitle>
-                  <p className="text-white/60 text-sm">{ticket.clientName} - {ticket.clientEmail}</p>
+                  <p className="text-white/60 text-sm">{selected.clientName} ({selected.clientEmail})</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`px-2 py-1 rounded text-xs font-semibold ${getStatusColor(ticket.status)} text-white`}>
-                    {ticket.status.toUpperCase()}
-                  </span>
-                  <span className={`text-sm font-semibold ${getPriorityColor(ticket.priority)}`}>
-                    {ticket.priority.toUpperCase()}
-                  </span>
+                  <span className={`px-2 py-1 rounded text-xs font-semibold ${getStatusColor(selected.status)} text-white`}>{selected.status.toUpperCase()}</span>
+                  <span className={`text-sm font-semibold ${getPriorityColor(selected.priority)}`}>{selected.priority.toUpperCase()}</span>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-white/80 mb-4">{ticket.message}</p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-white/60 text-sm">
-                  <Clock size={16} />
-                  <span>Creado: {new Date(ticket.createdAt).toLocaleDateString()}</span>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-white/80 mb-4">
+                  {selected.message}
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleRespond(ticket.id)}
-                    disabled={isResponding}
-                  >
-                    {isResponding ? <Loader2 className="h-4 w-4 animate-spin" /> : "Responder"}
-                  </Button>
-                  {ticket.status !== 'resuelto' && (
-                    <Button
-                      size="sm"
-                      onClick={() => handleUpdateStatus(ticket.id, 'resuelto')}
-                      disabled={isUpdatingStatus}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      {isUpdatingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-white/60 text-sm">
+                    <Clock size={16} />
+                    <span>Creado: {new Date(selected.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => handleRespond(selected.id)} disabled={isResponding}>
+                      {isResponding ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Responder'}
                     </Button>
-                  )}
+                    {selected.status !== 'resuelto' && (
+                      <Button size="sm" onClick={() => handleUpdateStatus(selected.id, 'resuelto')} disabled={isUpdatingStatus} className="bg-green-600 hover:bg-green-700">
+                        {isUpdatingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="text-white/60">No hay tickets seleccionados</div>
+          )}
+        </div>
       </div>
 
       {filteredTickets.length === 0 && (
