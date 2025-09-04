@@ -58,9 +58,10 @@ export class SupportService {
       clientEmail: dto.email,
       clientName: dto.name,
       subject: dto.subject,
-      description: dto.message,
+      message: dto.message,
       status: TicketStatus.OPEN,
-      priority: 'normal' as any,
+      priority: TicketPriority.MEDIUM,
+      clientType: ClientType.CLIENT,
     } as any);
     const saved = await this.ticketRepo.save(ticket);
     // registrar primer mensaje
@@ -68,7 +69,6 @@ export class SupportService {
       content: dto.message,
       sender: MessageSender.CLIENT,
       senderName: dto.name,
-      ticket: saved,
       ticketId: saved.id,
     });
     await this.messageRepo.save(msg);
