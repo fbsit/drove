@@ -98,6 +98,10 @@ export class AppModule implements NestModule {
         method: RequestMethod.ALL,
       })
       .exclude({
+        path: 'support/tickets',
+        method: RequestMethod.ALL,
+      })
+      .exclude({
         path: 'pdf',
         method: RequestMethod.ALL,
       })

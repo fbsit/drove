@@ -15,14 +15,24 @@ import ProgressIndicator from './registration-steps/ProgressIndicator';
 interface Props {
   onComplete: (data: RegistrationFormData) => Promise<void>;
   isLoading?: boolean;
+  defaultUserType?: UserType | string | null;
 }
 
-const NewRegistrationForm: React.FC<Props> = ({ onComplete, isLoading = false }) => {
+const NewRegistrationForm: React.FC<Props> = ({ onComplete, isLoading = false, defaultUserType = null }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [userType, setUserType] = useState<UserType | null>(null);
   const [formData, setFormData] = useState<Partial<RegistrationFormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  // Prefijar el tipo de usuario si viene por URL (/registro/:userType)
+  useEffect(() => {
+    if (defaultUserType === 'client' || defaultUserType === 'drover') {
+      setUserType(defaultUserType as UserType);
+      setFormData({ userType: defaultUserType as UserType });
+      setCurrentStep(1); // saltar selección de tipo
+    }
+  }, [defaultUserType]);
 
   const getSteps = () => {
     if (!userType) return ['Tipo de cuenta'];

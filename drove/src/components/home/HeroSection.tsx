@@ -38,7 +38,7 @@ const HeroSection = () => {
               Solicita el transporte de tu coche, furgoneta o moto con profesionales verificados. 
               Seguimiento GPS en tiempo real y total seguridad garantizada.
             </p>
-            <Link to="/registro">
+            <Link to="/registro/client">
               <DroveButton 
                 variant="accent" 
                 size="lg"
@@ -61,7 +61,7 @@ const HeroSection = () => {
               Únete a nuestra red de drovers profesionales. Horarios flexibles, 
               pagos seguros y una plataforma que te ayuda a crecer.
             </p>
-            <Link to="/postular">
+            <Link to="/registro/drover">
               <DroveButton 
                 variant="accent" 
                 size="lg"

@@ -5,6 +5,7 @@ import { SupportTicket, TicketStatus } from './entity/support-ticket.entity';
 import { SupportMessage, MessageSender } from './entity/support-message.entity';
 import { UpdateTicketStatusDTO } from './dto/update-ticket.status.dto';
 import { RespondToTicketDTO } from './dto/respond-to-ticket.dto';
+import { PublicContactDTO } from './dto/public-contact.dto';
 
 @Injectable()
 export class SupportService {
@@ -50,5 +51,27 @@ export class SupportService {
     if (!ticket) throw new NotFoundException(`Ticket ${id} not found`);
     ticket.status = TicketStatus.CLOSED;
     return this.ticketRepo.save(ticket);
+  }
+
+  async createPublic(dto: PublicContactDTO): Promise<SupportTicket> {
+    const ticket = this.ticketRepo.create({
+      clientEmail: dto.email,
+      clientName: dto.name,
+      subject: dto.subject,
+      description: dto.message,
+      status: TicketStatus.OPEN,
+      priority: 'normal' as any,
+    } as any);
+    const saved = await this.ticketRepo.save(ticket);
+    // registrar primer mensaje
+    const msg = this.messageRepo.create({
+      content: dto.message,
+      sender: MessageSender.CLIENT,
+      senderName: dto.name,
+      ticket: saved,
+      ticketId: saved.id,
+    });
+    await this.messageRepo.save(msg);
+    return saved;
   }
 }

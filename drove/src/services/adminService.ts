@@ -211,6 +211,10 @@ export class AdminService {
     return await ApiService.get(endpoint);
   }
 
+  static async createSupportTicket(payload: { name: string; email: string; subject: string; message: string }): Promise<any> {
+    return await ApiService.post('/support/tickets', payload);
+  }
+
   static async updateTicketStatus(ticketId: string, dto: TicketStatusDTO): Promise<void> {
     await ApiService.put(`/admin/support/tickets/${ticketId}/status`, dto);
   }
