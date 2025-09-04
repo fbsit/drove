@@ -55,7 +55,7 @@ export class Travels {
   @Column({ type: 'uuid', nullable: false }) // <— columna cruda
   idClient: string;
 
-  @ManyToOne(() => User, (u) => u.travelsAsClient, { nullable: false })
+  @ManyToOne(() => User, (u) => u.travelsAsClient, { nullable: false, eager: true })
   @JoinColumn({ name: 'idClient' }) // <— FK a la misma columna
   client: User;
 
@@ -75,7 +75,7 @@ export class Travels {
   @Column({ type: 'uuid', nullable: true })
   droverId: string | null; // <— columna cruda (puede ser null)
 
-  @ManyToOne(() => User, (u) => u.travelsAsDrover, { nullable: true })
+  @ManyToOne(() => User, (u) => u.travelsAsDrover, { nullable: true, eager: true })
   @JoinColumn({ name: 'droverId' })
   drover?: User;
 

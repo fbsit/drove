@@ -86,7 +86,7 @@ export class Invoice {
   @Column({ type: 'simple-json', nullable: true })
   payments?: PaymentReference[];
 
-  @OneToOne(() => Travels, (t) => t.invoice, { nullable: true, onDelete: 'CASCADE' })
+  @OneToOne(() => Travels, (t) => t.invoice, { nullable: true, onDelete: 'CASCADE', eager: true })
   @JoinColumn({ name: 'travelId', referencedColumnName: 'id' })
   travel?: Travels;
 

@@ -32,7 +32,6 @@ export const navigationConfig: RoleMenuConfig = {
     { label: "Clientes", href: "/admin/clientes", icon: Users },
     { label: "Drovers", href: "/admin/drovers", icon: Car },
     { label: "Jefes de Tráfico", href: "/admin/jefes-trafico", icon: Briefcase },
-    { label: "Facturas", href: "/admin/facturas", icon: Euro },
     { label: "Traslados", href: "/admin/traslados", icon: Calendar },
     { label: "Reseñas", href: "/admin/resenas", icon: Star },
     { label: "Soporte", href: "/admin/soporte", icon: MessageSquare },

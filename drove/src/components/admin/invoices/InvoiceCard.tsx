@@ -1,6 +1,6 @@
 
 import React from "react";
-import { FileText, Upload, Info, Check, X, Plus, CreditCard, Banknote } from "lucide-react";
+import { FileText, Upload, Info, Check, X, Plus, CreditCard, Banknote, Eye, UserPlus, Ban, AlertTriangle } from "lucide-react";
 import InvoiceStatusBadge from "./InvoiceStatusBadge";
 import { Button } from "@/components/ui/button";
 import InvoicePDFUpload from "./InvoicePDFUpload";
@@ -10,10 +10,27 @@ import { toast } from "@/hooks/use-toast";
 import InvoiceInfoTooltip from "./InvoiceInfoTooltip";
 
 interface InvoiceCardProps {
-  invoice: any;
+  invoice: {
+    id: string;
+    invoiceDate?: string;
+    client?: string;
+    client_name?: string;
+    vehicle?: string;
+    fromAddress?: string;
+    toAddress?: string;
+    droverName?: string;
+    paymentMethod?: string;
+    status?: 'emitida' | 'anticipo' | 'pagada' | string;
+    transferStatus?: string;
+    urlPDF?: string | null;
+    transferId?: string;
+    notes?: string;
+  };
   onUploadPDF: (file: File, invoiceId: string) => Promise<"success" | "exists" | "error">;
   onChangeStatus: (invoiceId: string, status: "emitida" | "anticipo" | "pagada") => void;
   onRevertStatus: (invoiceId: string) => void;
+  onReject?: (invoiceId: string) => void;
+  onCancel?: (invoiceId: string) => void;
 }
 
 const TRANSFER_STATUS_LABELS: Record<string, string> = {
@@ -41,6 +58,8 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
   onUploadPDF,
   onChangeStatus,
   onRevertStatus,
+  onReject,
+  onCancel,
 }) => {
   const [uploadDialog, setUploadDialog] = React.useState(false);
   const [confirmDialog, setConfirmDialog] = React.useState<{ open: boolean; type: any }>({ open: false, type: undefined });
@@ -48,14 +67,14 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
   // Determinar método de pago y su icono (unificado: tarjeta o débito → "Tarjeta")
   let metodoPago: string = "Transferencia";
   let metodoIcono = <Banknote size={22} className="text-[#6EF7FF]" />;
-  if (invoice.paymentMethod === "stripe" || invoice.paymentMethod === "debito") {
+  if ((invoice.paymentMethod || '').toLowerCase() === "stripe" || (invoice.paymentMethod || '').toLowerCase() === "debito") {
     metodoPago = "Tarjeta";
     metodoIcono = <CreditCard size={22} className="text-[#6EF7FF]" />;
   }
 
   // Estado visual de pago
   let estadoPago = "";
-  if (invoice.paymentMethod === "transferencia") {
+  if ((invoice.paymentMethod || '').toLowerCase() === "transferencia") {
     if (invoice.status === "anticipo") {
       estadoPago = "Anticipado por banco";
     } else if (invoice.status === "pagada") {
@@ -99,7 +118,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
       {/* Header */}
       <div className="flex items-center gap-2 justify-between min-w-0" tabIndex={0}>
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-base font-bold text-white leading-snug truncate">#{invoice.id || invoice.transferId}</span>
+          <span className="text-base font-bold text-white leading-snug truncate">INV-{String(invoice.id).padStart(6,'0')}</span>
           <span className="text-xs text-white/60 truncate">{invoice.invoiceDate}</span>
         </div>
         <div className="flex items-center gap-2">
@@ -110,7 +129,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
       
       {/* Cliente y estado pago */}
       <div className="mt-2 flex flex-wrap gap-1 items-center justify-between text-sm">
-        <span title={invoice.client} className="truncate max-w-[60%] text-white font-semibold">{invoice.client}</span>
+        <span title={invoice.client || invoice.client_name} className="truncate max-w-[60%] text-white font-semibold">{invoice.client || invoice.client_name}</span>
         <span className={`truncate ml-2 text-xs rounded-xl px-2 py-1 font-bold ${
           estadoPago === "Pagado"
             ? "bg-green-600"
@@ -132,9 +151,18 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
         </span>
       </div>
       
-      {/* Acciones abajo - siempre visibles */}
-      <div className="flex flex-row flex-wrap gap-1 mt-3 items-center">
-        {/* Botón subir o ver factura SIEMPRE, según estado */}
+      {/* Ruta y drover (cuando existan) */}
+      {(invoice.vehicle || invoice.fromAddress || invoice.toAddress || invoice.droverName) && (
+        <div className="mt-3 rounded-xl border border-white/15 bg-white/5 p-3 text-sm text-white/80">
+          {invoice.vehicle && <div className="mb-1">{invoice.vehicle}</div>}
+          {invoice.fromAddress && <div className="mb-1">{invoice.fromAddress}</div>}
+          {invoice.toAddress && <div className="mb-1">{invoice.toAddress}</div>}
+          {invoice.droverName && <div className="flex items-center gap-1 text-white/70"><UserPlus size={14}/> Drover: {invoice.droverName}</div>}
+        </div>
+      )}
+
+      {/* Acciones */}
+      <div className="flex flex-col gap-2 mt-3">
         {!tienePDF ? (
           <Button
             size="sm"
@@ -149,15 +177,24 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
           <Button 
             size="sm" 
             variant="ghost" 
-            className="rounded-2xl bg-[#22142A] hover:bg-[#403E43] text-white font-bold shadow-none"
+            className="rounded-2xl bg-[#22142A] hover:bg-[#403E43] text-white font-bold shadow-none w-fit"
             onClick={() => window.open(invoice.urlPDF, '_blank')}
           >
             <FileText size={16} />
             <span className="ml-2">Ver Factura</span>
           </Button>
         )}
-        
-        {/* Otras acciones SOLO transferencias */}
+        <div className="flex flex-row flex-wrap gap-4 items-center text-sm">
+          <Button variant="link" className="text-white hover:text-white/80 p-0 h-auto">Asignar</Button>
+          <Button
+            variant="link"
+            className="text-white/80 hover:text-white p-0 h-auto flex items-center gap-1"
+            onClick={() => window.open(`/traslados/${invoice.transferId}`, '_self')}
+          >
+            <Eye size={14}/> Ver Traslado
+          </Button>
+        </div>
+
         {esTransferencia && (
           <>
             {showAnticipo && (
@@ -200,6 +237,26 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
           </>
         )}
         
+        {/* Rechazar / Anular */}
+        <div className="flex flex-row gap-6 items-center mt-1 text-sm">
+          <button
+            className="flex items-center gap-2 text-red-400 hover:text-red-300"
+            onClick={() => onReject?.(invoice.id)}
+            title="Rechazar"
+          >
+            <Ban size={16} />
+            <span>Rechazar</span>
+          </button>
+          <button
+            className="flex items-center gap-2 text-orange-400 hover:text-orange-300"
+            onClick={() => onCancel?.(invoice.id)}
+            title="Anular"
+          >
+            <AlertTriangle size={16} />
+            <span>Anular</span>
+          </button>
+        </div>
+
         {/* Información (siempre visible) */}
         <InvoiceInfoTooltip
           trigger={
@@ -214,9 +271,9 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
             </Button>
           }
           invoice={{
-            client: invoice.client,
-            invoiceId: invoice.invoiceId,
-            transferId: invoice.transferId,
+            client: invoice.client || invoice.client_name,
+            invoiceId: invoice.id,
+            transferId: invoice.transferId || invoice.id,
             notes: invoice.notes,
           }}
         />

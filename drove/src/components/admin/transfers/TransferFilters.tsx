@@ -28,6 +28,8 @@ interface TransferFiltersProps {
   setStatusFilter: (status: string) => void;
   dateRange: {from?: Date, to?: Date};
   setDateRange: (range: {from?: Date, to?: Date}) => void;
+  pendingOnly?: boolean;
+  setPendingOnly?: (value: boolean) => void;
 }
 
 const TransferFilters: React.FC<TransferFiltersProps> = ({
@@ -36,7 +38,9 @@ const TransferFilters: React.FC<TransferFiltersProps> = ({
   statusFilter,
   setStatusFilter,
   dateRange,
-  setDateRange
+  setDateRange,
+  pendingOnly,
+  setPendingOnly
 }) => {
   const dateRangeText = dateRange?.from && dateRange?.to
     ? `${format(dateRange.from, 'dd/MM/yyyy', {locale: es})} - ${format(dateRange.to, 'dd/MM/yyyy', {locale: es})}`
@@ -52,7 +56,7 @@ const TransferFilters: React.FC<TransferFiltersProps> = ({
 
   return (
     <div className="bg-white/10 rounded-2xl p-6 mb-8">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
         <h2 className="text-xl font-bold text-white">Listado de Traslados</h2>
         
         <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
@@ -62,7 +66,7 @@ const TransferFilters: React.FC<TransferFiltersProps> = ({
             </span>
             <Input 
               placeholder="Buscar traslados..." 
-              className="pl-10 bg-white/5 border-white/10 text-white h-10"
+              className="pl-10 bg-white/5 border-white/10 text-white h-10 focus-visible:ring-2 focus-visible:ring-[#6EF7FF]/50 focus-visible:border-[#6EF7FF]/50"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ fontFamily: "Helvetica" }}
@@ -70,7 +74,7 @@ const TransferFilters: React.FC<TransferFiltersProps> = ({
           </div>
           
           <Select onValueChange={setStatusFilter} value={statusFilter}>
-            <SelectTrigger className="w-full md:w-[180px] bg-white/5 border-white/10 text-white">
+            <SelectTrigger className="w-full md:w-[180px] h-10 bg-white/5 border-white/10 text-white focus:ring-2 focus:ring-[#6EF7FF]/50 focus:border-[#6EF7FF]/50">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent className="bg-[#22142A] border-white/10 z-50">
@@ -90,7 +94,7 @@ const TransferFilters: React.FC<TransferFiltersProps> = ({
           
           <Popover>
             <PopoverTrigger asChild>
-              <button className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white hover:bg-white/10 transition-colors">
+              <button className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-4 h-10 text-white hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#6EF7FF]/50">
                 <Calendar className="h-4 w-4 text-[#6EF7FF]" />
                 <span>{dateRangeText}</span>
               </button>
@@ -109,6 +113,16 @@ const TransferFilters: React.FC<TransferFiltersProps> = ({
             </PopoverContent>
           </Popover>
         </div>
+      </div>
+
+      <div className="flex items-center gap-2 text-white/80 text-sm">
+        <input
+          type="checkbox"
+          className="h-4 w-4 rounded border-white/20 bg-white/5"
+          checked={!!pendingOnly}
+          onChange={(e) => setPendingOnly?.(e.target.checked)}
+        />
+        <span>Solo traslados pendientes de acción</span>
       </div>
     </div>
   );

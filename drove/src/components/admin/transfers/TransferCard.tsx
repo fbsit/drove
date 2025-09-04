@@ -33,7 +33,7 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
   const isCompleted = transfer.status === TransferStatus.DELIVERED;
   const isAssigned = transfer.status === TransferStatus.ASSIGNED;
   const isInProgress = transfer.status === TransferStatus.IN_PROGRESS;
-  const assignedDriver = transfer.drivers?.full_name;
+  const assignedDriver = transfer.droverName || transfer.drivers?.full_name;
   const shouldShowAssignButton = !isCompleted && !isAssigned && !isInProgress;
 
   const formatDate = (dateInput: any) => {
@@ -72,31 +72,29 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
         <div className="flex items-center gap-2">
           {gamify && getGamifyIcon(transfer.status)}
           <StatusBadge status={transfer.status} />
-          <span className="ml-auto text-sm text-white/60">{formatDate(transfer.createdAt || transfer.created_at)}</span>
+          <span className="ml-auto text-sm text-white/60">{formatDate(transfer.scheduledDate || transfer.createdAt || transfer.created_at)}</span>
         </div>
         
         <div className="flex items-center gap-2">
           <User size={16} className="text-white/70" />
           <div>
             <p className="font-medium text-white">
-              {transfer.users?.company_name || transfer.users?.full_name}
+              {transfer.clientName || transfer.users?.company_name || transfer.users?.full_name}
             </p>
-            <p className="text-xs text-white/70">{transfer.users?.email}</p>
+            <p className="text-xs text-white/70">{transfer.clientEmail || transfer.users?.email}</p>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
           <Car size={16} className="text-white/70" />
-          <p className="text-white">
-            {transfer.vehicle_details?.brand} {transfer.vehicle_details?.model}
-          </p>
+          <p className="text-white">{transfer.brand || '—'} {transfer.model || ''}</p>
         </div>
         
         <div className="flex items-center gap-2">
           <MapPin size={16} className="text-white/70" />
           <div className="flex flex-col">
-            <span className="text-white text-sm">{transfer.pickup_details?.originAddress}</span>
-            <span className="text-xs text-white/70">{transfer.pickup_details?.destinationAddress}</span>
+            <span className="text-white text-sm">{transfer.origin || '—'}</span>
+            <span className="text-xs text-white/70">{transfer.destination || '—'}</span>
           </div>
         </div>
         

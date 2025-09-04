@@ -185,6 +185,10 @@ export class AdminService {
     return await ApiService.post(`/admin/invoices/${invoiceId}/issue`, {});
   }
 
+  static async updateInvoiceStatus(invoiceId: string, status: 'emitida' | 'anticipo' | 'pagada'): Promise<void> {
+    await ApiService.put(`/admin/invoices/${invoiceId}/status`, { status });
+  }
+
   // === PAGOS ===
   static async getPayments(params?: { search?: string; status?: string; method?: string; from?: string; to?: string }): Promise<any[]> {
     const qs = new URLSearchParams();

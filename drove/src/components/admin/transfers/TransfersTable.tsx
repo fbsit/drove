@@ -20,6 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { TransferStatus } from "@/services/api/types/transfers";
 
 interface TransfersTableProps {
   transfers: any[];
@@ -68,6 +69,31 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
       }).format(date);
     } catch {
       return '—';
+    }
+  };
+
+  const formatDateParts = (dateInput: any): { top: string; bottom: string } => {
+    if (!dateInput) return { top: '—', bottom: '' };
+    try {
+      let date: Date;
+      if (typeof dateInput === 'string' || typeof dateInput === 'number') {
+        date = new Date(dateInput);
+      } else if (dateInput instanceof Date) {
+        date = dateInput;
+      } else if (typeof dateInput === 'object') {
+        const val = (dateInput as any).createdAt || (dateInput as any).created_at || null;
+        date = val ? new Date(val) : new Date();
+      } else {
+        return { top: '—', bottom: '' };
+      }
+      if (isNaN(date.getTime())) return { top: '—', bottom: '' };
+      const top = new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short' })
+        .format(date)
+        .replace('.', '');
+      const bottom = new Intl.DateTimeFormat('es-ES', { year: 'numeric' }).format(date);
+      return { top, bottom };
+    } catch {
+      return { top: '—', bottom: '' };
     }
   };
 
@@ -126,10 +152,10 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                 </TableRow>
               ) : (
                 transfers.map((transfer) => {
-                  const isCompleted = transfer.status === "completado";
-                  const isAssigned = transfer.status === "asignado";
-                  const isInProgress = transfer.status === "en_progreso";
-                  const assignedDriver = transfer.drivers?.full_name;
+                  const isCompleted = transfer.status === TransferStatus.DELIVERED;
+                  const isAssigned = transfer.status === TransferStatus.ASSIGNED;
+                  const isInProgress = transfer.status === TransferStatus.IN_PROGRESS;
+                  const assignedDriver = transfer.droverName || transfer.drivers?.full_name;
                   const isExpanded = expandedRows.has(transfer.id);
                   const shouldShowAssignButton = !isCompleted && !isAssigned && !isInProgress;
 
@@ -137,11 +163,11 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                     <React.Fragment key={transfer.id}>
                       {/* Fila principal */}
                       <TableRow 
-                        className="border-t border-white/10 hover:bg-white/10 transition-all cursor-pointer group"
+                        className="border-t border-white/10 hover:bg-white/10 transition-all cursor-pointer group h-[72px]"
                         onClick={() => toggleRow(transfer.id)}
                       >
                         {/* Botón expandir/contraer */}
-                        <TableCell className="w-10">
+                        <TableCell className="w-10 py-0">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -161,40 +187,45 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                           </TableCell>
                         )}
                         
-                        <TableCell>
+                        <TableCell className="py-5">
                           <StatusBadge status={transfer.status} />
                         </TableCell>
                         
-                        <TableCell>
+                        <TableCell className="py-5">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-full bg-[#6EF7FF]/10 flex items-center justify-center flex-shrink-0">
                               <User size={14} className="text-[#6EF7FF]" />
                             </div>
                             <div className="min-w-0">
                               <p className="font-medium text-white truncate">
-                                {transfer.users?.company_name || transfer.users?.full_name}
+                                {transfer.clientName || transfer.users?.company_name || transfer.users?.full_name}
                               </p>
                               <p className="text-xs text-white/70 truncate">
-                                {transfer.users?.email}
+                                {transfer.clientEmail || transfer.users?.email}
                               </p>
                             </div>
                           </div>
                         </TableCell>
                         
-                        <TableCell>
+                        <TableCell className="py-5">
                           <div className="flex items-center gap-2">
                             <Calendar size={14} className="text-white/70" />
-                            <p className="text-white text-sm">{formatDate(transfer.createdAt || transfer.created_at)}</p>
+                            {(() => { const p = formatDateParts(transfer.scheduledDate || transfer.createdAt || transfer.created_at); return (
+                              <div className="leading-tight">
+                                <div className="text-white text-sm">{p.top}</div>
+                                <div className="text-white/60 text-xs">{p.bottom}</div>
+                              </div>
+                            ); })()}
                           </div>
                         </TableCell>
                         
-                        <TableCell className="text-right">
+                        <TableCell className="text-right py-5">
                           <span className="text-base font-bold text-[#6EF7FF] whitespace-nowrap">
                             {Number(transfer.totalPrice ?? transfer.price ?? 0).toFixed(2)} €
                           </span>
                         </TableCell>
                         
-                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <TableCell className="text-right py-5" onClick={(e) => e.stopPropagation()}>
                           <div className="flex justify-end items-center space-x-2">
                             {/* Mostrar nombre del drover para traslados completados, asignados o en progreso */}
                             {(isCompleted || isAssigned || isInProgress) && assignedDriver && (
@@ -286,8 +317,12 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                                   <p className="text-white">
                                     <span className="text-white/70">Marca y Modelo:</span>{" "}
                                     <span className="font-medium">
-                                      {transfer.vehicle_details?.brand} {transfer.vehicle_details?.model}
+                                      {transfer.brand || '—'} {transfer.model || ''}
                                     </span>
+                                  </p>
+                                  <p className="text-white">
+                                    <span className="text-white/70">Matrícula:</span>{" "}
+                                    <span className="font-medium">{transfer.licensePlate || '—'}</span>
                                   </p>
                                 </div>
                               </div>
@@ -303,9 +338,7 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                                     <div className="w-3 h-3 rounded-full bg-green-400 mt-1 flex-shrink-0"></div>
                                     <div>
                                       <p className="text-xs text-white/70 uppercase tracking-wide">Origen</p>
-                                      <p className="text-white text-sm">
-                                        {transfer.pickup_details?.originAddress}
-                                      </p>
+                                      <p className="text-white text-sm">{transfer.origin || '—'}</p>
                                     </div>
                                   </div>
                                   
@@ -317,9 +350,7 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                                     <div className="w-3 h-3 rounded-full bg-red-400 mt-1 flex-shrink-0"></div>
                                     <div>
                                       <p className="text-xs text-white/70 uppercase tracking-wide">Destino</p>
-                                      <p className="text-white text-sm">
-                                        {transfer.pickup_details?.destinationAddress}
-                                      </p>
+                                      <p className="text-white text-sm">{transfer.destination || '—'}</p>
                                     </div>
                                   </div>
                                 </div>
