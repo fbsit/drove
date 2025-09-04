@@ -35,12 +35,17 @@ const AdminProfile = () => {
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   
-  const [formData, setFormData] = useState(null);
+  const [formData, setFormData] = useState<any>(emptyAdmin);
 
    useEffect(() => {
     const fetchAdmin = async () => {
       try {
         const { user } = await authService.getCurrentUser(); // 👈 llamada al servicio
+        if (!user) {
+          setAdminData(emptyAdmin);
+          setFormData(emptyAdmin);
+          return;
+        }
 
         const mapped = {
           avatar: user.avatar ?? "",
