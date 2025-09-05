@@ -9,7 +9,7 @@ const BenefitCard = ({ icon: Icon, title, description }: {
   title: string;
   description: string;
 }) => (
-  <div className="bg-white/5 p-6 rounded-xl">
+  <div className="bg-white/5 p-6 rounded-xl flex flex-col items-center">
     <div className="w-12 h-12 bg-drove-accent/20 rounded-full flex items-center justify-center mb-4">
       <Icon size={24} className="text-drove-accent" />
     </div>
@@ -39,17 +39,17 @@ const DriverBenefits = () => {
 
   return (
     <section className="px-4 py-16 md:py-20">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <h2 className="text-2xl md:text-4xl font-bold mb-12 text-center text-white">
           Beneficios para choferes
         </h2>
-        
+
         <div className="grid md:grid-cols-3 gap-8">
           {benefits.map((benefit, index) => (
             <BenefitCard key={index} {...benefit} />
           ))}
         </div>
-        
+
         <div className="mt-12 text-center">
           <Link to="/registro">
             <DroveButton variant="accent" size="lg">

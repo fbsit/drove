@@ -88,29 +88,26 @@ const Clients: React.FC = () => {
 
       {/* tabs de tipo - estilo según referencia */}
       <div className="flex flex-wrap items-center gap-3 mb-6">
-        <div className="flex items-center w-full md:w-auto bg-white/5 rounded-2xl overflow-x-auto no-scrollbar px-1 py-1 h-10">
+        <div className="flex items-center w-full gap-5 bg-white/5 rounded-2xl overflow-x-auto no-scrollbar px-1 py-1">
           <button
-            className={`inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium min-w-[100px] flex-1 rounded-sm transition-all ${
-              typeTab === 'todos' ? 'bg-[#6EF7FF] text-[#22142A] shadow-sm' : 'text-white/70'
-            }`}
+            className={`inline-flex items-center border-transparent border hover:border-white/30 justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium min-w-[100px] flex-1 rounded-sm transition-all ${typeTab === 'todos' ? 'bg-[#6EF7FF] text-[#22142A] shadow-sm' : 'text-white/70'
+              }`}
             onClick={() => setTypeTab('todos')}
             style={{ fontFamily: 'Helvetica' }}
           >
             <Users width={18} height={18} className="mr-1" /> Todos
           </button>
           <button
-            className={`inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium min-w-[100px] flex-1 rounded-sm transition-all ${
-              typeTab === 'empresa' ? 'bg-[#6EF7FF] text-[#22142A] shadow-sm' : 'text-white/70'
-            }`}
+            className={`inline-flex items-center justify-center border-transparent border hover:border-white/30 whitespace-nowrap px-3 py-1.5 text-sm font-medium min-w-[100px] flex-1 rounded-sm transition-all ${typeTab === 'empresa' ? 'bg-[#6EF7FF] text-[#22142A] shadow-sm' : 'text-white/70'
+              }`}
             onClick={() => setTypeTab('empresa')}
             style={{ fontFamily: 'Helvetica' }}
           >
             <Building2 width={18} height={18} className="mr-1" /> Empresas
           </button>
           <button
-            className={`inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium min-w-[130px] flex-1 rounded-sm transition-all ${
-              typeTab === 'persona' ? 'bg-[#6EF7FF] text-[#22142A] shadow-sm' : 'text-white/70'
-            }`}
+            className={`inline-flex items-center justify-center whitespace-nowrap border-transparent border hover:border-white/30 px-3 py-1.5 text-sm font-medium min-w-[130px] flex-1 rounded-sm transition-all ${typeTab === 'persona' ? 'bg-[#6EF7FF] text-[#22142A] shadow-sm' : 'text-white/70'
+              }`}
             onClick={() => setTypeTab('persona')}
             style={{ fontFamily: 'Helvetica' }}
           >
@@ -120,7 +117,7 @@ const Clients: React.FC = () => {
 
         {/* estado + búsqueda */}
         <div className="flex-1 flex flex-wrap gap-3 justify-end">
-          <div className="w-full sm:w-56">
+          <div className="flex gap-5 w-full">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="bg-white/10 border-white/20 text-white rounded-2xl h-10">
                 <SelectValue placeholder="Estado: Todos" />
@@ -128,13 +125,11 @@ const Clients: React.FC = () => {
               <SelectContent>
                 {STATUS_OPTIONS.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
+                    Estado: {opt.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <div className="min-w-[260px] flex-1 sm:flex-none">
             <Input
               placeholder="Buscar por nombre o correo..."
               value={search}
@@ -142,6 +137,7 @@ const Clients: React.FC = () => {
               className="bg-white/10 border-white/20 text-white placeholder:text-white/60 rounded-2xl h-10"
             />
           </div>
+
         </div>
       </div>
 

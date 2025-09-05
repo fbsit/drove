@@ -107,7 +107,7 @@ const Drovers: React.FC = () => {
           <SelectContent>
             {STATUS_OPTIONS.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
+                Estado: {opt.label}
               </SelectItem>
             ))}
           </SelectContent>
@@ -118,9 +118,9 @@ const Drovers: React.FC = () => {
             <SelectValue placeholder="Tipo de DROVER: Todos" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="todos">Todos</SelectItem>
-            <SelectItem value="core">Core</SelectItem>
-            <SelectItem value="flex">Flex</SelectItem>
+            <SelectItem value="todos">Tipo de Drover: Todos</SelectItem>
+            <SelectItem value="core">Tipo de DROVER: Core</SelectItem>
+            <SelectItem value="flex">Tipo de DROVER: Flex</SelectItem>
           </SelectContent>
         </Select>
 

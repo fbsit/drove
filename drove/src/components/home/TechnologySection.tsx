@@ -13,7 +13,7 @@ const TechFeature = ({ icon: Icon, title, description }: {
         <Icon size={24} className="text-drove-accent" />
       </div>
     </div>
-    <div>
+    <div className="text-left">
       <h3 className="font-bold text-white mb-2">{title}</h3>
       <p className="text-white/70 text-sm">{description}</p>
     </div>
@@ -65,7 +65,7 @@ const TechnologySection = () => {
             Utilizamos la última tecnología para garantizar un servicio seguro, transparente y eficiente
           </p>
         </div>
-        
+
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, index) => (
             <TechFeature key={index} {...feature} />

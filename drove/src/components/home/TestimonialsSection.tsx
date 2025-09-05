@@ -1,5 +1,3 @@
-
-import React from 'react';
 import { Star, Quote } from 'lucide-react';
 
 const TestimonialCard = ({ name, role, company, rating, comment, avatar }: {
@@ -10,30 +8,31 @@ const TestimonialCard = ({ name, role, company, rating, comment, avatar }: {
   comment: string;
   avatar: string;
 }) => (
-  <div className="bg-white/5 backdrop-blur-sm p-6 rounded-2xl border border-white/10 relative">
+  <div className="bg-white/5 backdrop-blur-sm p-6 rounded-2xl border border-white/10 relative space-y-6">
     <Quote className="absolute top-4 right-4 text-drove-accent/30" size={24} />
-    
-    <div className="flex gap-1 mb-4">
-      {[...Array(5)].map((_, i) => (
-        <Star 
-          key={i} 
-          size={16} 
-          className={i < rating ? "text-yellow-400 fill-current" : "text-gray-400"} 
-        />
-      ))}
-    </div>
-    
-    <p className="text-white/80 mb-6 italic">"{comment}"</p>
-    
-    <div className="flex items-center gap-3">
+
+    <div className="flex flex-col items-center gap-3 w-full justify-center">
       <div className="w-10 h-10 bg-drove-accent/20 rounded-full flex items-center justify-center">
         <span className="text-drove-accent font-bold">{avatar}</span>
       </div>
-      <div>
+      <div >
         <p className="font-bold text-white">{name}</p>
         <p className="text-white/60 text-sm">{role}{company && `, ${company}`}</p>
       </div>
     </div>
+
+    <div className="flex gap-1 justify-center">
+      {[...Array(5)].map((_, i) => (
+        <Star
+          key={i}
+          size={16}
+          className={i < rating ? "text-yellow-400 fill-current" : "text-gray-400"}
+        />
+      ))}
+    </div>
+
+    <p className="text-white/80 mb-6 italic">"{comment}"</p>
+
   </div>
 );
 
@@ -82,7 +81,7 @@ const TestimonialsSection = () => {
             La confianza y satisfacción de nuestros usuarios es nuestra mejor carta de presentación
           </p>
         </div>
-        
+
         <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-8">
           {testimonials.map((testimonial, index) => (
             <TestimonialCard key={index} {...testimonial} />

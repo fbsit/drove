@@ -17,21 +17,21 @@ const Transfers: React.FC = () => {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
-  const [dateRange, setDateRange] = useState<{from?: Date, to?: Date}>({});
+  const [dateRange, setDateRange] = useState<{ from?: Date, to?: Date }>({});
   const [pendingOnly, setPendingOnly] = useState(false);
   const debouncedSearch = useDebouncedValue(search, 300);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [selectedTransferId, setSelectedTransferId] = useState<string>("");
   const navigate = useNavigate();
   // Usar el hook de gestión de traslados
-  const { 
-    transfers, 
-    metrics, 
-    isLoading, 
-    assignDriver, 
+  const {
+    transfers,
+    metrics,
+    isLoading,
+    assignDriver,
     updateTransferStatus,
     isAssigning: isAssigningDriver,
-    isUpdating: isUpdatingStatus 
+    isUpdating: isUpdatingStatus
   } = useTransfersManagement({ search: debouncedSearch, status: statusFilter, from: dateRange.from, to: dateRange.to });
 
   // Filtro adicional local si el checkbox de "pendientes" está activo
@@ -77,7 +77,7 @@ const Transfers: React.FC = () => {
       </div>
     );
   }
-  
+
 
   return (
     <div className="admin-page-container">
@@ -91,49 +91,49 @@ const Transfers: React.FC = () => {
       </div>
 
       <Tabs defaultValue="operativa" className="w-full">
-        <TabsList className="w-full bg-white/10 rounded-2xl mb-4">
-          <TabsTrigger value="operativa" className="flex-1 data-[state=active]:bg-[#6EF7FF] data-[state=active]:text-[#22142A]">Operativa</TabsTrigger>
-          <TabsTrigger value="facturacion" className="flex-1 data-[state=active]:bg-[#6EF7FF] data-[state=active]:text-[#22142A]">Facturación</TabsTrigger>
+        <TabsList className="w-full bg-white/10 gap-5 flex rounded-2xl mb-4">
+          <TabsTrigger value="operativa" className="flex-1 data-[state=active]:bg-[#6EF7FF] border-transparent border hover:border-white/30 data-[state=active]:text-[#22142A]">Operativa</TabsTrigger>
+          <TabsTrigger value="facturacion" className="border-transparent border hover:border-white/30 flex-1 data-[state=active]:bg-[#6EF7FF] data-[state=active]:text-[#22142A]">Facturación</TabsTrigger>
         </TabsList>
 
         <TabsContent value="operativa">
-        <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-        <div className="bg-white/10 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-white">{metrics?.totalTransfers ?? transfers.length}</div>
-          <div className="text-sm text-white/60">Total Traslados</div>
-        </div>
-        <div className="bg-white/10 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-green-400">{metrics?.completedTransfers ?? transfers.filter(t=>t.status==='DELIVERED').length}</div>
-          <div className="text-sm text-white/60">Entregados</div>
-        </div>
-        <div className="bg-white/10 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-yellow-400">{metrics?.inProgressTransfers ?? transfers.filter(t=>t.status==='IN_PROGRESS').length}</div>
-          <div className="text-sm text-white/60">En Progreso</div>
-        </div>
-        <div className="bg-white/10 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-blue-400">{metrics?.pendingTransfers ?? transfers.filter(t=>t.status==='CREATED' || t.status==='PENDINGPAID').length}</div>
-          <div className="text-sm text-white/60">Pendientes</div>
-        </div>
-        <div className="bg-white/10 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-white">{metrics?.assignedTransfers ?? transfers.filter(t=>t.status==='ASSIGNED').length}</div>
-          <div className="text-sm text-white/60">Asignados</div>
-        </div>
-        </div>
+          <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            <div className="bg-white/10 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-white">{metrics?.totalTransfers ?? transfers.length}</div>
+              <div className="text-sm text-white/60">Total Traslados</div>
+            </div>
+            <div className="bg-white/10 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-green-400">{metrics?.completedTransfers ?? transfers.filter(t => t.status === 'DELIVERED').length}</div>
+              <div className="text-sm text-white/60">Entregados</div>
+            </div>
+            <div className="bg-white/10 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-yellow-400">{metrics?.inProgressTransfers ?? transfers.filter(t => t.status === 'IN_PROGRESS').length}</div>
+              <div className="text-sm text-white/60">En Progreso</div>
+            </div>
+            <div className="bg-white/10 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-blue-400">{metrics?.pendingTransfers ?? transfers.filter(t => t.status === 'CREATED' || t.status === 'PENDINGPAID').length}</div>
+              <div className="text-sm text-white/60">Pendientes</div>
+            </div>
+            <div className="bg-white/10 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-white">{metrics?.assignedTransfers ?? transfers.filter(t => t.status === 'ASSIGNED').length}</div>
+              <div className="text-sm text-white/60">Asignados</div>
+            </div>
+          </div>
 
-        {/* Filtros */}
-        <TransferFilters
-          searchTerm={search}
-          setSearchTerm={setSearch}
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-          dateRange={dateRange}
-          setDateRange={setDateRange}
-          pendingOnly={pendingOnly}
-          setPendingOnly={setPendingOnly}
-        />
+          {/* Filtros */}
+          <TransferFilters
+            searchTerm={search}
+            setSearchTerm={setSearch}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            pendingOnly={pendingOnly}
+            setPendingOnly={setPendingOnly}
+          />
 
-        {/* Tabla de traslados (desktop) y cards (mobile) */}
-        <TransfersTable transfers={filteredTransfers} />
+          {/* Tabla de traslados (desktop) y cards (mobile) */}
+          <TransfersTable transfers={filteredTransfers} />
         </TabsContent>
 
         <TabsContent value="facturacion">

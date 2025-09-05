@@ -1,113 +1,104 @@
-
-import HeroSection from '@/components/home/HeroSection';
-import PromoBanner from '@/components/home/PromoBanner';
-import StatsSection from '@/components/home/StatsSection';
-import ProcessSection from '@/components/home/ProcessSection';
-import TechnologySection from '@/components/home/TechnologySection';
-import ClientBenefits from '@/components/home/ClientBenefits';
-import DriverBenefits from '@/components/home/DriverBenefits';
-import TestimonialsSection from '@/components/home/TestimonialsSection';
-import CoverageSection from '@/components/home/CoverageSection';
-import SecuritySection from '@/components/home/SecuritySection';
-import FAQSection from '@/components/home/FAQSection';
-import EnhancedFooter from '@/components/home/EnhancedFooter';
+import HeroSection from "@/components/home/HeroSection";
+import PromoBanner from "@/components/home/PromoBanner";
+import StatsSection from "@/components/home/StatsSection";
+import ProcessSection from "@/components/home/ProcessSection";
+import TechnologySection from "@/components/home/TechnologySection";
+import ClientBenefits from "@/components/home/ClientBenefits";
+import DriverBenefits from "@/components/home/DriverBenefits";
+import TestimonialsSection from "@/components/home/TestimonialsSection";
+import CoverageSection from "@/components/home/CoverageSection";
+import SecuritySection from "@/components/home/SecuritySection";
+import FAQSection from "@/components/home/FAQSection";
 
 export interface HomeSection {
   id: string;
   component: React.ComponentType;
-  componentName: string;  // Nuevo campo para mapeo exacto de archivos
-  priority: 'high' | 'medium' | 'low';
+  componentName: string; // Nuevo campo para mapeo exacto de archivos
+  priority: "high" | "medium" | "low";
   lazy?: boolean;
 }
 
 export const homeSections: HomeSection[] = [
   {
-    id: 'hero',
+    id: "hero",
     component: HeroSection,
-    componentName: 'HeroSection',
-    priority: 'high',
-    lazy: false
+    componentName: "HeroSection",
+    priority: "high",
+    lazy: false,
   },
   {
-    id: 'promo',
+    id: "promo",
     component: PromoBanner,
-    componentName: 'PromoBanner',
-    priority: 'high',
-    lazy: false
+    componentName: "PromoBanner",
+    priority: "high",
+    lazy: false,
   },
   {
-    id: 'stats',
+    id: "stats",
     component: StatsSection,
-    componentName: 'StatsSection',
-    priority: 'medium',
-    lazy: true
+    componentName: "StatsSection",
+    priority: "medium",
+    lazy: true,
   },
   {
-    id: 'process',
+    id: "process",
     component: ProcessSection,
-    componentName: 'ProcessSection',
-    priority: 'medium',
-    lazy: true
+    componentName: "ProcessSection",
+    priority: "medium",
+    lazy: true,
   },
   {
-    id: 'technology',
+    id: "technology",
     component: TechnologySection,
-    componentName: 'TechnologySection',
-    priority: 'medium',
-    lazy: true
+    componentName: "TechnologySection",
+    priority: "medium",
+    lazy: true,
   },
   {
-    id: 'client-benefits',
+    id: "client-benefits",
     component: ClientBenefits,
-    componentName: 'ClientBenefits',
-    priority: 'low',
-    lazy: true
+    componentName: "ClientBenefits",
+    priority: "low",
+    lazy: true,
   },
   {
-    id: 'driver-benefits',
+    id: "driver-benefits",
     component: DriverBenefits,
-    componentName: 'DriverBenefits',
-    priority: 'low',
-    lazy: true
+    componentName: "DriverBenefits",
+    priority: "low",
+    lazy: true,
   },
   {
-    id: 'testimonials',
+    id: "testimonials",
     component: TestimonialsSection,
-    componentName: 'TestimonialsSection',
-    priority: 'low',
-    lazy: true
+    componentName: "TestimonialsSection",
+    priority: "low",
+    lazy: true,
   },
   {
-    id: 'coverage',
+    id: "coverage",
     component: CoverageSection,
-    componentName: 'CoverageSection',
-    priority: 'low',
-    lazy: true
+    componentName: "CoverageSection",
+    priority: "low",
+    lazy: true,
   },
   {
-    id: 'security',
+    id: "security",
     component: SecuritySection,
-    componentName: 'SecuritySection',
-    priority: 'low',
-    lazy: true
+    componentName: "SecuritySection",
+    priority: "low",
+    lazy: true,
   },
   {
-    id: 'faq',
+    id: "faq",
     component: FAQSection,
-    componentName: 'FAQSection',
-    priority: 'low',
-    lazy: true
+    componentName: "FAQSection",
+    priority: "low",
+    lazy: true,
   },
-  {
-    id: 'footer',
-    component: EnhancedFooter,
-    componentName: 'EnhancedFooter',
-    priority: 'medium',
-    lazy: false
-  }
 ];
 
 export const layoutConfig = {
   headerOffset: 32, // mt-32 equivalent
-  containerClasses: "min-h-screen flex flex-col bg-drove"
+  containerClasses: "min-h-screen flex flex-col bg-drove",
 };
