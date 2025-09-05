@@ -8,11 +8,11 @@ interface AnimatedCounterProps {
   prefix?: string;
 }
 
-const AnimatedCounter: React.FC<AnimatedCounterProps> = ({ 
-  end, 
-  duration = 2000, 
-  suffix = '', 
-  prefix = '' 
+const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
+  end,
+  duration = 2000,
+  suffix = '',
+  prefix = ''
 }) => {
   const [count, setCount] = useState(0);
 
@@ -23,9 +23,9 @@ const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
     const animate = (currentTime: number) => {
       if (!startTime) startTime = currentTime;
       const progress = Math.min((currentTime - startTime) / duration, 1);
-      
+
       setCount(Math.floor(progress * end));
-      
+
       if (progress < 1) {
         animationFrame = requestAnimationFrame(animate);
       }

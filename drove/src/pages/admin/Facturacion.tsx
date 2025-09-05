@@ -10,15 +10,15 @@ const Facturacion: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState("todos");
   const [method, setMethod] = useState("todos");
 
-  const { 
-    pendingPayments, 
-    pendingInvoices, 
-    allInvoices, 
-    isLoading, 
-    confirmPayment, 
+  const {
+    pendingPayments,
+    pendingInvoices,
+    allInvoices,
+    isLoading,
+    confirmPayment,
     issueInvoice,
     isConfirmingPayment,
-    isIssuingInvoice 
+    isIssuingInvoice
   } = useBillingManagement();
 
   // Combinar todos los elementos de facturación
@@ -31,11 +31,11 @@ const Facturacion: React.FC = () => {
   // Filtrar elementos
   const filteredItems = allBillingItems.filter(item => {
     const matchesSearch = item.client?.toLowerCase().includes(search.toLowerCase()) ||
-                         item.transferId?.toLowerCase().includes(search.toLowerCase());
-    
+      item.transferId?.toLowerCase().includes(search.toLowerCase());
+
     const matchesStatus = statusFilter === "todos" || item.invoiceStatus === statusFilter;
     const matchesMethod = method === "todos" || item.method === method;
-    
+
     return matchesSearch && matchesStatus && matchesMethod;
   });
 
@@ -59,7 +59,7 @@ const Facturacion: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="admin-page-container">
+      <div className="">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-[#6EF7FF]" />
           <span className="ml-2 text-white">Cargando facturación...</span>
@@ -69,7 +69,7 @@ const Facturacion: React.FC = () => {
   }
 
   return (
-    <div className="admin-page-container">
+    <div className="">
       <div className="mb-6">
         <h1 className="text-2xl text-white mb-1" style={{ fontFamily: "Helvetica", fontWeight: "bold" }}>
           Gestión de Facturación
@@ -77,7 +77,7 @@ const Facturacion: React.FC = () => {
         <p className="text-white/70">
           Administra pagos pendientes, emite facturas y supervisa el estado financiero de los traslados.
         </p>
-        
+
         {/* Métricas */}
         <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white/10 rounded-lg p-4 text-center">

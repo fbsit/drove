@@ -52,11 +52,11 @@ const ClientBenefits = () => {
 
   return (
     <section className="px-4 py-16 md:py-20 bg-white/5">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <h2 className="text-2xl md:text-4xl font-bold mb-12 text-center text-white">
           Beneficios para clientes
         </h2>
-        
+
         <div className="grid md:grid-cols-3 gap-8">
           {benefits.map((benefit, index) => (
             <BenefitCard key={index} {...benefit} />

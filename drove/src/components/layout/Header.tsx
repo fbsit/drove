@@ -26,30 +26,53 @@ const Header = () => {
   const isProfilePage = location.pathname.includes('/perfil');
 
   // Maneja click fuera para cerrar el menú rápido del avatar
+  // Maneja click fuera para cerrar el menú rápido del avatar (excluye el botón avatar)
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const menuBtn = document.getElementById("menu-btn");
+
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(target) &&
+        menuBtn &&
+        !menuBtn.contains(target)
+      ) {
         setMenuOpen(false);
       }
     };
+
     if (menuOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpen]);
 
+
   // Cerrar popover de notificaciones al hacer clic fuera
+  // Cerrar popover de notificaciones al hacer clic fuera (excluye el botón campana)
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const bellBtn = document.getElementById("notif-bell");
+
+      // si se clickeó fuera del popup y fuera del botón de campana → cerrar
+      if (
+        notifRef.current &&
+        !notifRef.current.contains(target) &&
+        bellBtn &&
+        !bellBtn.contains(target)
+      ) {
         setNotifOpen(false);
       }
     };
+
     if (notifOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [notifOpen]);
+
 
   // Acción logout
   const handleLogout = async () => {
@@ -65,7 +88,7 @@ const Header = () => {
         const count = await NotificationService.getUnreadCount();
         // Nunca reducir el contador con respuestas atrasadas
         setUnreadCount((prev) => Math.max(prev, count || 0));
-      } catch {}
+      } catch { }
     };
     if (isAuthenticated && user?.id) {
       fetchCount();
@@ -82,7 +105,7 @@ const Header = () => {
         // No bajamos el contador basados en listado parcial; solo lo subimos si procede
         const unread = arr.filter((n: any) => !n.read).length;
         if (unread > unreadCount) setUnreadCount(unread);
-      } catch {}
+      } catch { }
     };
     if (isAuthenticated && user?.id) {
       fetchList();
@@ -102,7 +125,7 @@ const Header = () => {
         }
       }
     });
-    return () => { try { (unsubscribe as any)?.(); } catch {} };
+    return () => { try { (unsubscribe as any)?.(); } catch { } };
   }, [onNotification, notifOpen, notifications]);
 
   // Refetch when window gains focus for snappier UX (sin polling)
@@ -113,33 +136,40 @@ const Header = () => {
         const count = await NotificationService.getUnreadCount();
         // Si el servidor dice menos que nuestro contador local, mantenemos el mayor para evitar parpadeos
         setUnreadCount((prev) => Math.max(prev, count || 0));
-      } catch {}
+      } catch { }
       // Si recargó y el listado está vacío, obtenerlo de forma perezosa
       if (notifications.length === 0) {
         try {
           const list = await NotificationService.getNotifications();
           const arr = Array.isArray(list) ? list.slice(0, 10) : [];
           setNotifications(arr);
-        } catch {}
+        } catch { }
       }
     };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, [isAuthenticated, notifications.length]);
 
-  const toggleNotifications = async () => {
-    setNotifOpen((v) => !v);
-    if (!notifOpen) {
-      try {
-        const list = await NotificationService.getNotifications();
-        const arr = Array.isArray(list) ? list.slice(0, 10) : [];
-        setNotifications(arr);
-        // Fallback: no reducimos el contador; solo incrementamos si detectamos más
-        const unread = arr.filter((n: any) => !n.read).length;
-        if (unread > unreadCount) setUnreadCount(unread);
-      } catch {}
-    }
+  const toggleNotifications = () => {
+    setNotifOpen(prev => {
+      const next = !prev;
+
+      if (next) {
+        (async () => {
+          try {
+            const list = await NotificationService.getNotifications();
+            const arr = Array.isArray(list) ? list.slice(0, 10) : [];
+            setNotifications(arr);
+            const unread = arr.filter((n: any) => !n.read).length;
+            if (unread > unreadCount) setUnreadCount(unread);
+          } catch { }
+        })();
+      }
+
+      return next;
+    });
   };
+
 
   const handleMarkAsRead = async (id: string) => {
     try {
@@ -147,7 +177,7 @@ const Header = () => {
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
       // reduce badge
       setUnreadCount((c) => Math.max(0, c - 1));
-    } catch {}
+    } catch { }
   };
 
   // Deducción de ruta de destino desde la notificación
@@ -201,13 +231,13 @@ const Header = () => {
   const handlePerfilClick = () => {
     console.log("🖱️ DIRECTO - Clic en perfil - Usuario:", user?.user_type);
     setMenuOpen(false);
-    
+
     // Redirigir DIRECTAMENTE según el tipo de usuario sin pasar por ProfileRedirect
     if (!user) {
       navigate("/login");
       return;
     }
-    
+
     switch (user.role) {
       case "admin":
         console.log("🔐 DIRECTO - Redirigiendo admin a /admin/perfil");
@@ -235,7 +265,7 @@ const Header = () => {
   // Función para volver al dashboard desde perfil
   const handleBackToDashboard = () => {
     if (!user) return;
-    
+
     switch (user.role) {
       case "admin":
         navigate("/admin/dashboard");
@@ -257,14 +287,14 @@ const Header = () => {
 
   // Mostrar botón "Entrar" solo si NO está autenticado y estamos en Home
   const showEntrar = !isAuthenticated && location.pathname === "/";
-  
+
   // Mostrar botón "Panel de Control" solo si está autenticado y estamos en Home
   const showPanelButton = isAuthenticated && location.pathname === "/";
 
   // Determinar la ruta del dashboard según el tipo de usuario
   const getDashboardRoute = () => {
     if (!user) return "/dashboard";
-    
+
     switch (user.role) {
       case "admin":
         return "/admin/dashboard";
@@ -305,132 +335,166 @@ const Header = () => {
 
   return (
     <header
-      className="bg-[#22142A] py-3 px-3 flex items-center justify-between fixed top-0 left-0 right-0 z-50 border-b border-white/10 h-16"
+      className="fixed top-0 left-0 right-0 z-50 "
       style={{ fontFamily: "Helvetica, Arial, sans-serif" }}
     >
-      {/* Logo o navegación de perfil */}
-      <div className="flex items-center">
-        {isProfilePage && isAuthenticated ? (
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBackToDashboard}
-              className="flex items-center gap-2 text-white hover:bg-white/10"
-            >
-              <ArrowLeft size={16} />
-              <span className="hidden sm:inline">Dashboard</span>
-            </Button>
-            <h1 className="text-white font-bold text-lg">Mi Perfil</h1>
-          </div>
-        ) : (
-          <Link to="/" className="cursor-pointer">
-            <DroveLogo size="lg" />
-          </Link>
-        )}
-      </div>
-      
-      <div className="flex items-center gap-3">
-        {/* Botón "Panel de Control" si está autenticado y en Home */}
-        {showPanelButton && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => navigate(getDashboardRoute())}
-            className="flex items-center gap-2"
-          >
-            <LayoutDashboard size={16} />
-            <span className="hidden sm:inline">Panel de Control</span>
-          </Button>
-        )}
-        
-        {/* Botón Entrar solo en Home, si no autenticado */}
-        {showEntrar && (
-          <Link
-            to="/login"
-            className="bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold rounded-2xl px-6 py-2 text-sm transition-colors"
-            style={{ fontFamily: "Helvetica" }}
-          >
-            Entrar
-          </Link>
-        )}
-        {isAuthenticated && user && (
-          <div className="flex items-center gap-2 relative">
-            {/* Bell badge */}
-            <div className="relative mr-1">
-              <Bell className="text-white cursor-pointer" size={20} onClick={toggleNotifications} />
-              {unreadCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 font-bold">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
-              )}
-              {notifOpen && (
-                <div ref={notifRef} className="absolute right-0 mt-2 w-72 bg-[#291A38] border border-white/15 rounded-2xl shadow-lg z-[1200]">
-                  <div className="p-3 border-b border-white/10 text-white font-bold">Notificaciones</div>
-                  <div className="max-h-80 overflow-auto">
-                    {notifications.length === 0 ? (
-                      <div className="p-4 text-white/70 text-sm">Sin notificaciones</div>
-                    ) : (
-                      notifications.map((n) => (
-                        <div key={n.id} className="p-3 flex items-start gap-2 hover:bg-white/5 cursor-pointer" onClick={() => handleNotificationClick(n)}>
-                          <div className={`mt-1 h-2 w-2 rounded-full ${n.read ? 'bg-white/30' : 'bg-[#6EF7FF]'}`} />
-                          <div className="flex-1">
-                            <div className="text-white text-sm font-semibold">{n.title}</div>
-                            <div className="text-white/70 text-xs">{n.message}</div>
-                          </div>
-                          {!n.read && (
-                            <button onClick={(e) => { e.stopPropagation(); handleMarkAsRead(n.id); }} className="text-xs text-[#6EF7FF] hover:underline flex items-center gap-1">
-                              <Check size={14} />
-                            </button>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-            <span className="hidden md:block text-white font-bold">
-              {getDisplayName()?.split(' ')[0]}
-            </span>
-            <div className="relative">
-              <div
-                className="cursor-pointer"
-                onClick={() => setMenuOpen(v => !v)}
+      <div className="bg-[#22142A] w-full p-3 flex items-center justify-between border-b border-white/10 h-16 z-50 relative">
+        {/* Logo o navegación de perfil */}
+        <div className="flex items-center">
+          {isProfilePage && isAuthenticated ? (
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackToDashboard}
+                className="flex items-center gap-2 text-white hover:bg-white/10"
               >
-                <Avatar>
-                  <AvatarFallback className="bg-[#6EF7FF] text-[#22142A] font-bold">
-                    {getInitials()}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-              {/* Menú contextual avatar */}
-              {menuOpen && (
-                <div
-                  ref={menuRef}
-                  className="absolute right-0 top-12 mt-2 min-w-[150px] bg-[#291A38] shadow-md border border-white/15 rounded-2xl py-2 text-sm animate-fade-in"
-                  style={{
-                    zIndex: 1200,
-                    fontFamily: "Helvetica",
-                  }}
-                >
-                  <button
-                    className="block w-full text-left px-4 py-2 text-white hover:bg-[#6EF7FF22] rounded-2xl"
-                    onClick={handlePerfilClick}
-                  >
-                    Mi Perfil
-                  </button>
-                  <button
-                    className="block w-full text-left px-4 py-2 text-white hover:bg-[#6EF7FF22] rounded-2xl"
-                    onClick={handleLogout}
-                  >
-                    Cerrar sesión
-                  </button>
-                </div>
-              )}
+                <ArrowLeft size={16} />
+                <span className="hidden sm:inline">Dashboard</span>
+              </Button>
+              <h1 className="text-white font-bold text-lg">Mi Perfil</h1>
             </div>
-          </div>
-        )}
+          ) : (
+            <Link to="/" className="cursor-pointer">
+              <DroveLogo size="lg" />
+            </Link>
+          )}
+        </div>
+
+        <div className="flex items-center gap-6 z-40 relative">
+          {/* Botón "Panel de Control" si está autenticado y en Home */}
+          {showPanelButton && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => navigate(getDashboardRoute())}
+              className="flex items-center gap-2"
+            >
+              <LayoutDashboard size={16} />
+              <span className="hidden sm:inline">Panel de Control</span>
+            </Button>
+          )}
+
+          {/* Botón Entrar solo en Home, si no autenticado */}
+          {showEntrar && (
+            <Link
+              to="/login"
+              className="bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold rounded-2xl px-6 py-2 text-sm transition-colors"
+              style={{ fontFamily: "Helvetica" }}
+            >
+              Entrar
+            </Link>
+          )}
+          {isAuthenticated && user && (
+            <div className="flex items-center gap-6 relative">
+              {/* Bell badge */}
+              <div
+                id="notif-bell"
+                className="relative mr-1 cursor-pointer"
+                onClick={toggleNotifications}
+              >
+                <Bell className="text-white" size={20} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 font-bold">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex gap-2 items-center">
+                <span className="hidden md:block text-white font-bold capitalize">
+                  {getDisplayName()?.split(' ')[0]}
+                </span>
+                <div className="relative">
+                  <div
+                    id="menu-btn"
+                    className="cursor-pointer"
+                    onClick={() => setMenuOpen(v => !v)}
+                  >
+                    <Avatar>
+                      <AvatarFallback className="bg-[#6EF7FF] text-[#22142A] font-bold">
+                        {getInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+
+                  {/* Menú contextual avatar */}
+                  {menuOpen && (
+                    <div
+                      ref={menuRef}
+                      className="absolute right-0 top-[50px] min-w-[150px] bg-[#291A38] shadow-md border border-white/15 rounded-2xl p-2 text-sm animate-fade-in"
+                      style={{
+                        zIndex: 1200,
+                        fontFamily: "Helvetica",
+                      }}
+                    >
+                      <button
+                        className="block w-full text-left px-4 py-2 text-white hover:bg-[#6EF7FF22] rounded-2xl"
+                        onClick={handlePerfilClick}
+                      >
+                        Mi Perfil
+                      </button>
+                      <button
+                        className="block w-full text-left px-4 py-2 text-white hover:bg-[#6EF7FF22] rounded-2xl"
+                        onClick={handleLogout}
+                      >
+                        Cerrar sesión
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+      </div>
+      <div
+        ref={notifRef}
+        className={`
+                    absolute right-2 top-[50px] w-72 bg-[#291A38]
+                    border border-white/15 border-t-transparent rounded-b-2xl shadow-lg
+                    transform transition-all duration-300 ease-out
+                    origin-top
+                    ${notifOpen ? "opacity-100 translate-y-3" : "opacity-0  translate-y-[-115%]"}
+                  `}
+      >
+        <div className="p-3 border-b border-white/10 text-white font-bold">
+          Notificaciones
+        </div>
+        <div className="h-80 max-h-[70dvh] overflow-auto scrollbar">
+          {notifications.length === 0 ? (
+            <div className="p-4 text-white/70 text-sm">Sin notificaciones</div>
+          ) : (
+            notifications.map((n) => (
+              <div
+                key={n.id}
+                className="p-3 flex items-center gap-4 hover:bg-white/5 cursor-pointer"
+                onClick={() => handleNotificationClick(n)}
+              >
+                <div
+                  className={`mt-1 h-2 w-2 rounded-full ${n.read ? "bg-white/30" : "bg-[#6EF7FF]"
+                    }`}
+                />
+                <div className="flex-1">
+                  <div className="text-white text-sm font-semibold">{n.title}</div>
+                  <div className="text-white/70 text-xs">{n.message}</div>
+                </div>
+                {!n.read && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMarkAsRead(n.id);
+                    }}
+                    className="text-xs text-[#6EF7FF] hover:underline flex items-center gap-1"
+                  >
+                    <Check size={14} />
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </header>
   );

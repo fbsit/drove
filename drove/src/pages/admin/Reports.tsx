@@ -7,14 +7,14 @@ import {
 import { startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 
-import ReportsFilters          from '@/components/admin/reports/ReportsFilters';
-import MetricCard              from '@/components/admin/reports/MetricCard';
-import TransferStatusChart     from '@/components/admin/reports/TransferStatusChart';
-import PaymentMethodChart      from '@/components/admin/reports/PaymentMethodChart';
-import PaymentStatusChart      from '@/components/admin/reports/PaymentStatusChart';
-import TopUsersList            from '@/components/admin/reports/TopUsersList';
-import TopUsersListMobile      from '@/components/admin/reports/TopUsersListMobile';
-import { useIsMobile }         from '@/hooks/use-mobile';
+import ReportsFilters from '@/components/admin/reports/ReportsFilters';
+import MetricCard from '@/components/admin/reports/MetricCard';
+import TransferStatusChart from '@/components/admin/reports/TransferStatusChart';
+import PaymentMethodChart from '@/components/admin/reports/PaymentMethodChart';
+import PaymentStatusChart from '@/components/admin/reports/PaymentStatusChart';
+import TopUsersList from '@/components/admin/reports/TopUsersList';
+import TopUsersListMobile from '@/components/admin/reports/TopUsersListMobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useReportsManagement } from '@/hooks/admin/useReportsManagement'; // 👈 hook real
 
 const description =
@@ -24,7 +24,7 @@ const Reports: React.FC = () => {
   /* ─────────────  filtros locales  ───────────── */
   const [dateRange, setDateRange] = useState<DateRange>({
     from: startOfMonth(new Date()),
-    to:   endOfMonth(new Date()),
+    to: endOfMonth(new Date()),
   });
   const [clientType, setClientType] = useState('all');
   const isMobile = useIsMobile();
@@ -57,14 +57,14 @@ const Reports: React.FC = () => {
 
   /* ─────────────  helpers derivados  ───────────── */
   const totalTransfers = reports.transfers.toLocaleString();
-  const totalRevenue   = `€${reports.revenue.toLocaleString()}`;
-  const activeDrivers  = reports.drivers.toLocaleString();
-  const growth         = `${reports.monthlyGrowth.toFixed(1)}%`;
+  const totalRevenue = `€${reports.revenue.toLocaleString()}`;
+  const activeDrivers = reports.drivers.toLocaleString();
+  const growth = `${reports.monthlyGrowth.toFixed(1)}%`;
 
   /* Status y métodos de pago listos para gráficas */
-  const chartStatusData     = reports.transferStatus ?? [];
+  const chartStatusData = reports.transferStatus ?? [];
   const chartPaymentMethods = reports.paymentMethods ?? [];
-  const chartPaymentStatus  = reports.paymentStatus  ?? [];
+  const chartPaymentStatus = reports.paymentStatus ?? [];
 
   /* Top lists */
   const topClients = reports.topClients ?? [];
@@ -82,15 +82,15 @@ const Reports: React.FC = () => {
     .reduce((sum: number, s: any) => sum + Number(s.value || 0), 0);
 
   const paidCount = chartPaymentStatus
-    .filter((p: any) => ['confirmed','paid','pagado','confirmado'].includes(String(p.name).toLowerCase()))
+    .filter((p: any) => ['confirmed', 'paid', 'pagado', 'confirmado'].includes(String(p.name).toLowerCase()))
     .reduce((sum: number, p: any) => sum + Number(p.value || 0), 0);
   const pendingCount = chartPaymentStatus
-    .filter((p: any) => ['pending','pendiente'].includes(String(p.name).toLowerCase()))
+    .filter((p: any) => ['pending', 'pendiente'].includes(String(p.name).toLowerCase()))
     .reduce((sum: number, p: any) => sum + Number(p.value || 0), 0);
 
   const activeClients = Number(reports.clients || 0);
-  const revenueNum    = Number(reports.revenue || 0);
-  const cardAmount    = chartPaymentMethods
+  const revenueNum = Number(reports.revenue || 0);
+  const cardAmount = chartPaymentMethods
     .filter((m: any) => String(m.name).toLowerCase().includes('tarjeta') || String(m.name).toLowerCase().includes('stripe'))
     .reduce((sum: number, m: any) => sum + Number(m.value || 0), 0);
   const transferAmount = chartPaymentMethods
@@ -100,7 +100,7 @@ const Reports: React.FC = () => {
 
   /* ─────────────  render  ───────────── */
   return (
-    <div className="admin-page-container">
+    <div className="">
       <div className="mb-6">
         <h1 className="text-2xl text-white font-bold mb-1">Reportes y Análisis</h1>
         <p className="text-white/70">{description}</p>
@@ -117,31 +117,31 @@ const Reports: React.FC = () => {
 
       {/* Métricas principales */}
       <div className={`grid gap-6 mb-8 ${isMobile ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'}`}>
-        <MetricCard title="Traslados Totales" value={totalTransfers} icon={Calendar}  iconColor="#6EF7FF" />
-        <MetricCard title="Ingresos Totales"   value={totalRevenue}   icon={Euro}     iconColor="#6EF7FF" />
-        <MetricCard title="Conductores Activos" value={activeDrivers} icon={Users}    iconColor="#6EF7FF" />
-        <MetricCard title="Crecimiento"         value={growth}        icon={TrendingUp} iconColor="#6EF7FF" />
+        <MetricCard title="Traslados Totales" value={totalTransfers} icon={Calendar} iconColor="#6EF7FF" />
+        <MetricCard title="Ingresos Totales" value={totalRevenue} icon={Euro} iconColor="#6EF7FF" />
+        <MetricCard title="Conductores Activos" value={activeDrivers} icon={Users} iconColor="#6EF7FF" />
+        <MetricCard title="Crecimiento" value={growth} icon={TrendingUp} iconColor="#6EF7FF" />
       </div>
 
       {/* Ingresos por métodos (3 cards) */}
       <div className={`grid gap-6 mb-8 ${isMobile ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-3'}`}>
         <MetricCard title="Pagos con Tarjeta" value={`€${cardAmount.toLocaleString()}`} icon={CreditCard} iconColor="#6EF7FF" />
-        <MetricCard title="Transferencias"     value={`€${transferAmount.toLocaleString()}`} icon={Banknote}   iconColor="#6EF7FF" />
-        <MetricCard title="Pagos Anticipados"  value={`€${anticipadosAmount.toLocaleString()}`} icon={TrendingUp} iconColor="#FFD166" />
+        <MetricCard title="Transferencias" value={`€${transferAmount.toLocaleString()}`} icon={Banknote} iconColor="#6EF7FF" />
+        <MetricCard title="Pagos Anticipados" value={`€${anticipadosAmount.toLocaleString()}`} icon={TrendingUp} iconColor="#FFD166" />
       </div>
 
       {/* Estados de pagos (4 cards) */}
       <div className={`grid gap-6 mb-8 ${isMobile ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'}`}>
-        <MetricCard title="Pagos Completados" value={paidCount.toLocaleString()}     icon={CheckCircle}  iconColor="#06D6A0" />
-        <MetricCard title="Pagos Anticipados" value={pendingCount.toLocaleString()}  icon={Clock}        iconColor="#6EF7FF" />
+        <MetricCard title="Pagos Completados" value={paidCount.toLocaleString()} icon={CheckCircle} iconColor="#06D6A0" />
+        <MetricCard title="Pagos Anticipados" value={pendingCount.toLocaleString()} icon={Clock} iconColor="#6EF7FF" />
         <MetricCard title="Pendientes de Pago" value={pendingCount.toLocaleString()} icon={AlertTriangle} iconColor="#F59E0B" />
-        <MetricCard title="Pagos en Proceso"   value={(chartPaymentStatus.filter((p:any)=>String(p.name).toLowerCase().includes('proceso')||String(p.name).toLowerCase().includes('process')).reduce((s:number,p:any)=>s+Number(p.value||0),0)).toLocaleString()} icon={XCircle} iconColor="#EF4444" />
+        <MetricCard title="Pagos en Proceso" value={(chartPaymentStatus.filter((p: any) => String(p.name).toLowerCase().includes('proceso') || String(p.name).toLowerCase().includes('process')).reduce((s: number, p: any) => s + Number(p.value || 0), 0)).toLocaleString()} icon={XCircle} iconColor="#EF4444" />
       </div>
 
       {/* Gráficos */}
       <div className={`grid gap-6 mb-8 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 xl:grid-cols-2'}`}>
         <TransferStatusChart data={chartStatusData} />
-        <PaymentMethodChart  data={chartPaymentMethods} />
+        <PaymentMethodChart data={chartPaymentMethods} />
       </div>
 
       <div className={`grid gap-6 mb-8 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 xl:grid-cols-2'}`}>

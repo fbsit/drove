@@ -10,9 +10,8 @@ interface Props {
 
 const TrafficManagersSearchBar: React.FC<Props> = ({ value, onChange, isMobile }) => (
   <div
-    className={`flex items-center bg-white/10 rounded-2xl border border-white/15 shadow-inner px-3 py-2 w-full max-w-xl ${
-      isMobile ? "text-base" : "text-sm"
-    }`}
+    className={`flex items-center bg-white/10 rounded-2xl border border-white/15 shadow-inner px-3 py-2 w-full ${isMobile ? "text-base" : "text-sm"
+      }`}
     style={{
       minWidth: isMobile ? "0" : 260,
       width: "100%",
@@ -20,7 +19,7 @@ const TrafficManagersSearchBar: React.FC<Props> = ({ value, onChange, isMobile }
       fontFamily: "Helvetica"
     }}
   >
-    <Search className="mr-2" strokeWidth={2.3} size={isMobile ? 19 : 17} color="#6EF7FF"/>
+    <Search className="mr-2" strokeWidth={2.3} size={isMobile ? 19 : 17} color="#6EF7FF" />
     <input
       type="text"
       value={value}

@@ -14,14 +14,14 @@ const Soporte: React.FC = () => {
   const [agentFilter, setAgentFilter] = useState("todos");
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
-  const { 
-    tickets, 
-    metrics, 
-    isLoading, 
-    updateTicketStatus, 
+  const {
+    tickets,
+    metrics,
+    isLoading,
+    updateTicketStatus,
     respondToTicket,
     isUpdatingStatus,
-    isResponding 
+    isResponding
   } = useSupportManagement();
 
   const filteredTickets = useMemo(() => {
@@ -59,7 +59,7 @@ const Soporte: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="admin-page-container">
+      <div className="">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-[#6EF7FF]" />
           <span className="ml-2 text-white">Cargando tickets de soporte...</span>
@@ -75,7 +75,7 @@ const Soporte: React.FC = () => {
   const totalTickets = (tickets || []).length;
 
   return (
-    <div className="admin-page-container">
+    <div className="">
       {/* Hero */}
       <section
         className="
@@ -100,50 +100,50 @@ const Soporte: React.FC = () => {
       {/* Métricas dentro de una card */}
       <div className="bg-white/10 rounded-2xl p-4 md:p-5 border border-white/10 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white/10 rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/10 rounded-xl">
-              <MessageSquare className="text-white" />
-            </div>
-            <div>
-              <p className="text-white/60 text-sm">Tickets Nuevos</p>
-              <p className="text-white text-2xl font-bold">{(metrics as any)?.open ?? (metrics as any)?.openTickets ?? newTickets}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white/10 rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-yellow-500/20 rounded-xl">
-              <Clock className="text-yellow-400" />
-            </div>
-            <div>
-              <p className="text-white/60 text-sm">Tickets Abiertos</p>
-              <p className="text-white text-2xl font-bold">{metrics?.open ?? openTickets}</p>
+          <div className="bg-white/10 rounded-2xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/10 rounded-xl">
+                <MessageSquare className="text-white" />
+              </div>
+              <div>
+                <p className="text-white/60 text-sm">Tickets Nuevos</p>
+                <p className="text-white text-2xl font-bold">{(metrics as any)?.open ?? (metrics as any)?.openTickets ?? newTickets}</p>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="bg-white/10 rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-500/20 rounded-xl">
-              <AlertTriangle className="text-red-400" />
-            </div>
-            <div>
-              <p className="text-white/60 text-sm">Tickets Urgentes</p>
-              <p className="text-white text-2xl font-bold">{metrics?.urgent ?? urgentTickets}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white/10 rounded-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-[#6EF7FF]/20 rounded-xl">
-              <CheckCircle className="text-[#6EF7FF]" />
-            </div>
-            <div>
-              <p className="text-white/60 text-sm">Total Tickets</p>
-              <p className="text-white text-2xl font-bold">{metrics?.total ?? totalTickets}</p>
+          <div className="bg-white/10 rounded-2xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-yellow-500/20 rounded-xl">
+                <Clock className="text-yellow-400" />
+              </div>
+              <div>
+                <p className="text-white/60 text-sm">Tickets Abiertos</p>
+                <p className="text-white text-2xl font-bold">{metrics?.open ?? openTickets}</p>
+              </div>
             </div>
           </div>
-        </div>
+          <div className="bg-white/10 rounded-2xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-500/20 rounded-xl">
+                <AlertTriangle className="text-red-400" />
+              </div>
+              <div>
+                <p className="text-white/60 text-sm">Tickets Urgentes</p>
+                <p className="text-white text-2xl font-bold">{metrics?.urgent ?? urgentTickets}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white/10 rounded-2xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-[#6EF7FF]/20 rounded-xl">
+                <CheckCircle className="text-[#6EF7FF]" />
+              </div>
+              <div>
+                <p className="text-white/60 text-sm">Total Tickets</p>
+                <p className="text-white text-2xl font-bold">{metrics?.total ?? totalTickets}</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -224,11 +224,10 @@ const Soporte: React.FC = () => {
                     <p className="text-white font-medium truncate">{t.clientName}</p>
                     <p className="text-white/60 text-xs truncate">{t.subject}</p>
                   </div>
-                  <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                    t.status === 'abierto' ? 'bg-blue-500 text-white' :
-                    t.status === 'en_progreso' ? 'bg-yellow-500 text-black' :
-                    t.status === 'resuelto' ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'
-                  }`}>{t.status.replace('_',' ')}</span>
+                  <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${t.status === 'abierto' ? 'bg-blue-500 text-white' :
+                      t.status === 'en_progreso' ? 'bg-yellow-500 text-black' :
+                        t.status === 'resuelto' ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'
+                    }`}>{t.status.replace('_', ' ')}</span>
                 </button>
               ))}
             </div>
@@ -244,19 +243,17 @@ const Soporte: React.FC = () => {
                     <p className="text-white/60 text-sm">{selectedTicket.clientName} ({selectedTicket.clientEmail})</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold text-white ${
-                      selectedTicket.priority === 'urgente' ? 'bg-red-500' :
-                      selectedTicket.priority === 'alta' ? 'bg-orange-500' :
-                      selectedTicket.priority === 'media' ? 'bg-yellow-500 text-black' :
-                      'bg-green-500'
-                    }`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold text-white ${selectedTicket.priority === 'urgente' ? 'bg-red-500' :
+                        selectedTicket.priority === 'alta' ? 'bg-orange-500' :
+                          selectedTicket.priority === 'media' ? 'bg-yellow-500 text-black' :
+                            'bg-green-500'
+                      }`}>
                       {selectedTicket.priority}
                     </span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                      selectedTicket.status === 'abierto' ? 'bg-blue-500 text-white' :
-                      selectedTicket.status === 'en_progreso' ? 'bg-yellow-500 text-black' :
-                      selectedTicket.status === 'resuelto' ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'
-                    }`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${selectedTicket.status === 'abierto' ? 'bg-blue-500 text-white' :
+                        selectedTicket.status === 'en_progreso' ? 'bg-yellow-500 text-black' :
+                          selectedTicket.status === 'resuelto' ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'
+                      }`}>
                       {selectedTicket.status.replace('_', ' ')}
                     </span>
                   </div>

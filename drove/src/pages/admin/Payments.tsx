@@ -31,7 +31,7 @@ const Payments: React.FC = () => {
   const filteredPayments = payments;
 
   const getStatusBadge = (status: string) => {
-    switch(status) {
+    switch (status) {
       case "completado":
         return <Badge className="bg-green-600 text-white">Completado</Badge>;
       case "pendiente":
@@ -48,7 +48,7 @@ const Payments: React.FC = () => {
   };
 
   return (
-    <div className="admin-page-container">
+    <div className="">
       <div className="flex justify-between items-start mb-6">
         <div>
           <h1 className="text-2xl text-white mb-1" style={{ fontFamily: "Helvetica", fontWeight: "bold" }}>

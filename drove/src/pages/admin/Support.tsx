@@ -15,20 +15,20 @@ const Support: React.FC = () => {
 
   const debouncedSearch = useDebouncedValue(search, 300);
 
-  const { 
-    tickets, 
-    metrics, 
-    isLoading, 
-    updateTicketStatus, 
+  const {
+    tickets,
+    metrics,
+    isLoading,
+    updateTicketStatus,
     respondToTicket,
     isUpdatingStatus,
-    isResponding 
+    isResponding
   } = useSupportManagement({ search: debouncedSearch, status: statusFilter, priority: priorityFilter });
 
   // selección de ticket y memo de lista
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const filteredTickets = useMemo(() => tickets, [tickets]);
-  const selected = useMemo(() => filteredTickets.find((t:any)=>t.id===selectedId) || filteredTickets[0], [filteredTickets, selectedId]);
+  const selected = useMemo(() => filteredTickets.find((t: any) => t.id === selectedId) || filteredTickets[0], [filteredTickets, selectedId]);
 
   const handleUpdateStatus = (ticketId: string, status: string) => {
     updateTicketStatus(ticketId, status);
@@ -63,7 +63,7 @@ const Support: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="admin-page-container">
+      <div className="">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-[#6EF7FF]" />
           <span className="ml-2 text-white">Cargando tickets de soporte...</span>
@@ -73,13 +73,13 @@ const Support: React.FC = () => {
   }
 
   // Contadores según diseño (fallback computado desde tickets)
-  const countNuevos   = (tickets || []).filter((t: any) => t.status === 'abierto').length;
+  const countNuevos = (tickets || []).filter((t: any) => t.status === 'abierto').length;
   const countAbiertos = (tickets || []).filter((t: any) => t.status === 'en_progreso').length;
   const countUrgentes = (tickets || []).filter((t: any) => t.priority === 'urgente').length;
-  const countTotal    = (tickets || []).length;
+  const countTotal = (tickets || []).length;
 
   return (
-    <div className="admin-page-container">
+    <div className="">
       {/* Hero */}
       <section
         className="
@@ -207,11 +207,11 @@ const Support: React.FC = () => {
             <p className="text-white/50 text-sm">{filteredTickets.length} tickets encontrados</p>
           </div>
           <div className="overflow-y-auto">
-            {filteredTickets.map((t:any) => (
+            {filteredTickets.map((t: any) => (
               <button
                 key={t.id}
                 onClick={() => setSelectedId(t.id)}
-                className={`w-full text-left px-4 py-3 border-b border-white/10 hover:bg-white/10 transition ${selected?.id===t.id ? 'bg-white/10' : ''}`}
+                className={`w-full text-left px-4 py-3 border-b border-white/10 hover:bg-white/10 transition ${selected?.id === t.id ? 'bg-white/10' : ''}`}
               >
                 <div className="flex items-center justify-between">
                   <div className="text-white font-semibold truncate">{t.clientName}</div>

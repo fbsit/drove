@@ -7,7 +7,7 @@ const SecurityFeature = ({ icon: Icon, title, description }: {
   title: string;
   description: string;
 }) => (
-  <div className="bg-drove/70 p-6 rounded-xl flex gap-4">
+  <div className="bg-drove/70 p-6 rounded-xl flex gap-4 w-full xl:max-w-[48%] text-left">
     <div className="flex-shrink-0">
       <div className="w-12 h-12 bg-drove-accent/20 rounded-full flex items-center justify-center">
         <Icon size={24} className="text-drove-accent" />
@@ -50,22 +50,19 @@ const SecuritySection = () => {
   ];
 
   return (
-    <section className="px-4 py-16 md:py-20 bg-white/5">
-      <div className="max-w-5xl mx-auto">
+    <section className="px-4 pt-16 md:pt-20 bg-white/5">
+      <div className="max-w-6xl mx-auto">
         <h2 className="text-2xl md:text-4xl font-bold mb-4 text-center text-white">
           Seguridad y confianza
         </h2>
         <p className="text-center text-white/70 mb-12 max-w-2xl mx-auto">
           En DROVE nos tomamos muy en serio la seguridad de tu vehículo y la transparencia en cada paso del proceso
         </p>
-        
-        <div className="grid md:grid-cols-2 gap-8">
-          {features.slice(0, 4).map((feature, index) => (
+
+        <div className="flex flex-wrap gap-8 justify-center">
+          {features.map((feature, index) => (
             <SecurityFeature key={index} {...feature} />
           ))}
-          <div className="md:col-span-2">
-            <SecurityFeature {...features[4]} />
-          </div>
         </div>
       </div>
     </section>

@@ -80,14 +80,14 @@ const Drovers: React.FC = () => {
 
   if (isLoading)
     return (
-      <div className="admin-page-container flex items-center justify-center h-64">
+      <div className=" flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-[#6EF7FF]" />
         <span className="ml-2 text-white">Cargando drovers…</span>
       </div>
     );
 
   return (
-    <div className="admin-page-container">
+    <div className="">
       <h1
         className="text-2xl font-bold text-white mb-1"
         style={{ fontFamily: "Helvetica" }}
@@ -107,7 +107,7 @@ const Drovers: React.FC = () => {
           <SelectContent>
             {STATUS_OPTIONS.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
+                Estado: {opt.label}
               </SelectItem>
             ))}
           </SelectContent>
@@ -118,9 +118,9 @@ const Drovers: React.FC = () => {
             <SelectValue placeholder="Tipo de DROVER: Todos" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="todos">Todos</SelectItem>
-            <SelectItem value="core">Core</SelectItem>
-            <SelectItem value="flex">Flex</SelectItem>
+            <SelectItem value="todos">Tipo de Drover: Todos</SelectItem>
+            <SelectItem value="core">Tipo de DROVER: Core</SelectItem>
+            <SelectItem value="flex">Tipo de DROVER: Flex</SelectItem>
           </SelectContent>
         </Select>
 
