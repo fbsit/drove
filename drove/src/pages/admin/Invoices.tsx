@@ -25,7 +25,7 @@ const Invoices: React.FC = () => {
     isLoading,
     refetch: refetchInvoices,
   } = useQuery<any[]>({
-    queryKey: ['invoices', { search: debouncedSearch, status: filterStatus, clientId: filterClient, from: dateRange.from?.toISOString().slice(0,10), to: dateRange.to?.toISOString().slice(0,10) }],
+    queryKey: ['invoices', { search: debouncedSearch, status: filterStatus, clientId: filterClient, from: dateRange.from?.toISOString().slice(0, 10), to: dateRange.to?.toISOString().slice(0, 10) }],
     queryFn: async ({ queryKey }) => {
       try {
         const [, params] = queryKey as [string, { search?: string; status?: string; clientId?: string; from?: string; to?: string }];
@@ -114,17 +114,17 @@ const Invoices: React.FC = () => {
       const form = new FormData();
       form.append('file', file);
       form.append('invoiceId', invoiceId);
-      
+
       // El backend debería responder 200 + { success: true } o 204 (No Content)
       const result = await AdminService.uploadInvoice(form);
       console.log("resultado", result);
-      
+
       // Si llegamos aquí, la petición fue exitosa (no se lanzó error)
       toast({
         title: 'PDF subido',
         description: 'El PDF de la factura se ha subido correctamente.',
       });
-      
+
       refetchInvoices();
       return 'success';
     } catch (error) {
@@ -146,7 +146,7 @@ const Invoices: React.FC = () => {
 
   /* -------------------------------- render -------------------------------- */
   return (
-    <div className="admin-page-container">
+    <div className="">
 
       {/* ------------- barra de filtros ------------- */}
       <InvoiceFiltersBar

@@ -80,14 +80,14 @@ const Drovers: React.FC = () => {
 
   if (isLoading)
     return (
-      <div className="admin-page-container flex items-center justify-center h-64">
+      <div className=" flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-[#6EF7FF]" />
         <span className="ml-2 text-white">Cargando drovers…</span>
       </div>
     );
 
   return (
-    <div className="admin-page-container">
+    <div className="">
       <h1
         className="text-2xl font-bold text-white mb-1"
         style={{ fontFamily: "Helvetica" }}

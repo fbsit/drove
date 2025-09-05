@@ -26,30 +26,53 @@ const Header = () => {
   const isProfilePage = location.pathname.includes('/perfil');
 
   // Maneja click fuera para cerrar el menú rápido del avatar
+  // Maneja click fuera para cerrar el menú rápido del avatar (excluye el botón avatar)
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const menuBtn = document.getElementById("menu-btn");
+
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(target) &&
+        menuBtn &&
+        !menuBtn.contains(target)
+      ) {
         setMenuOpen(false);
       }
     };
+
     if (menuOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpen]);
 
+
   // Cerrar popover de notificaciones al hacer clic fuera
+  // Cerrar popover de notificaciones al hacer clic fuera (excluye el botón campana)
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const bellBtn = document.getElementById("notif-bell");
+
+      // si se clickeó fuera del popup y fuera del botón de campana → cerrar
+      if (
+        notifRef.current &&
+        !notifRef.current.contains(target) &&
+        bellBtn &&
+        !bellBtn.contains(target)
+      ) {
         setNotifOpen(false);
       }
     };
+
     if (notifOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [notifOpen]);
+
 
   // Acción logout
   const handleLogout = async () => {
@@ -127,19 +150,26 @@ const Header = () => {
     return () => window.removeEventListener('focus', onFocus);
   }, [isAuthenticated, notifications.length]);
 
-  const toggleNotifications = async () => {
-    setNotifOpen((v) => !v);
-    if (!notifOpen) {
-      try {
-        const list = await NotificationService.getNotifications();
-        const arr = Array.isArray(list) ? list.slice(0, 10) : [];
-        setNotifications(arr);
-        // Fallback: no reducimos el contador; solo incrementamos si detectamos más
-        const unread = arr.filter((n: any) => !n.read).length;
-        if (unread > unreadCount) setUnreadCount(unread);
-      } catch { }
-    }
+  const toggleNotifications = () => {
+    setNotifOpen(prev => {
+      const next = !prev;
+
+      if (next) {
+        (async () => {
+          try {
+            const list = await NotificationService.getNotifications();
+            const arr = Array.isArray(list) ? list.slice(0, 10) : [];
+            setNotifications(arr);
+            const unread = arr.filter((n: any) => !n.read).length;
+            if (unread > unreadCount) setUnreadCount(unread);
+          } catch { }
+        })();
+      }
+
+      return next;
+    });
   };
+
 
   const handleMarkAsRead = async (id: string) => {
     try {
@@ -358,22 +388,26 @@ const Header = () => {
           {isAuthenticated && user && (
             <div className="flex items-center gap-6 relative">
               {/* Bell badge */}
-              <div className="relative mr-1 cursor-pointer" onClick={toggleNotifications}>
-                <Bell className="text-white " size={20} />
+              <div
+                id="notif-bell"
+                className="relative mr-1 cursor-pointer"
+                onClick={toggleNotifications}
+              >
+                <Bell className="text-white" size={20} />
                 {unreadCount > 0 && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 font-bold">
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
-
-
               </div>
+
               <div className="flex gap-2 items-center">
                 <span className="hidden md:block text-white font-bold capitalize">
                   {getDisplayName()?.split(' ')[0]}
                 </span>
                 <div className="relative">
                   <div
+                    id="menu-btn"
                     className="cursor-pointer"
                     onClick={() => setMenuOpen(v => !v)}
                   >
@@ -383,6 +417,7 @@ const Header = () => {
                       </AvatarFallback>
                     </Avatar>
                   </div>
+
                   {/* Menú contextual avatar */}
                   {menuOpen && (
                     <div

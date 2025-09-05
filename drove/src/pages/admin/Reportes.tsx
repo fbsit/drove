@@ -12,12 +12,12 @@ const Reportes: React.FC = () => {
   });
   const [reportType, setReportType] = useState("transfers");
 
-  const { 
-    reports, 
-    analytics, 
-    isLoading, 
+  const {
+    reports,
+    analytics,
+    isLoading,
     generateReport,
-    isGeneratingReport 
+    isGeneratingReport
   } = useReportsManagement();
 
   const handleGenerateReport = () => {
@@ -26,7 +26,7 @@ const Reportes: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="admin-page-container">
+      <div className="">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-[#6EF7FF]" />
           <span className="ml-2 text-white">Cargando reportes...</span>
@@ -36,7 +36,7 @@ const Reportes: React.FC = () => {
   }
 
   return (
-    <div className="admin-page-container">
+    <div className="">
       <div className="mb-6">
         <h1 className="text-2xl text-white mb-1" style={{ fontFamily: "Helvetica", fontWeight: "bold" }}>
           Reportes y Analytics

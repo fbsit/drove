@@ -14,11 +14,11 @@ const Reviews: React.FC = () => {
 
   const debouncedSearch = useDebouncedValue(search, 300);
 
-  const { 
-    reviews, 
-    drovers, 
-    isLoading, 
-    respondToReview, 
+  const {
+    reviews,
+    drovers,
+    isLoading,
+    respondToReview,
     markAsViewed,
   } = useReviewsManagement({ search: debouncedSearch, rating: ratingFilter, drover: droverFilter, responded: statusFilter });
 
@@ -61,7 +61,7 @@ const Reviews: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="admin-page-container">
+      <div className="">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-[#6EF7FF]" />
           <span className="ml-2 text-white">Cargando reseñas...</span>
@@ -71,7 +71,7 @@ const Reviews: React.FC = () => {
   }
 
   return (
-    <div className="admin-page-container">
+    <div className="">
       {/* Hero gradient header */}
       <section
         className="

@@ -79,7 +79,7 @@ const JefesDeTrafico = () => {
       <header className="w-full flex flex-col items-center justify-center pb-5 animate-fade-in">
         <div className="w-full max-w-3xl px-4">
           <h1
-            className="text-2xl md:text-3xl text-white font-montserrat font-bold mb-2 text-center"
+            className="text-2xl text-white font-bold mb-2 text-center"
             style={{
               letterSpacing: "-0.03em",
             }}
@@ -101,10 +101,10 @@ const JefesDeTrafico = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-5 w-full">
+      <div className="grid grid-cols-5 gap-8 w-full">
         {/* Métricas integradas, coherentes con dashboard */}
         <section
-          className="w-full col-span-full pb-5 lg:pb-0 lg:col-span-3 grid grid-cols-3 gap-2 justify-center max-w-3xl px-2 sm:px-6 mb-1"
+          className="w-full col-span-full pb-5 lg:pb-0 lg:col-span-3 grid grid-cols-3 gap-5 justify-center max-w-3xl mb-1"
           style={{ minHeight: 58 }}
         >
           <div className="bg-white/10 rounded-2xl p-4 border border-white/15 shadow-md flex flex-col justify-center items-center min-w-0">

@@ -36,7 +36,7 @@ const DashboardAdminPanel: React.FC = () => {
   const recentTransfers = transfers.slice(0, 5);
 
   return (
-    <div className="pt-16 flex flex-col w-full space-y-6 md:space-y-8">
+    <div className="flex flex-col w-full space-y-6 md:space-y-8">
       {/* Header + Título */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2 md:mb-4">
         <div className="w-full text-center md:text-start">
