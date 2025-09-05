@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Zap } from "lucide-react";
+import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -14,7 +14,7 @@ const MobileAdminFab: React.FC<Props> = ({ onClick }) => (
     className={cn(
       "fixed z-[1100] left-1/2 -translate-x-1/2 bottom-7 md:hidden flex items-center justify-center",
       "rounded-full shadow-2xl bg-[#6EF7FF] hover:bg-[#32dfff]",
-      "w-16 h-16 transition-all duration-200",
+      "w-12 h-12 transition-all duration-200",
       "hover:shadow-[0_0_32px_8px_#6EF7FFCC] hover:scale-105 active:scale-95",
       "focus:outline-none animate-fab-glow",
       "border-4 border-white/30"
@@ -26,7 +26,7 @@ const MobileAdminFab: React.FC<Props> = ({ onClick }) => (
     }}
   >
     <span className="fab-pulse-icon">
-      <Zap size={34} color="#22142A" strokeWidth={2.9} />
+      <Menu size={24} color="#22142A" strokeWidth={2.9} />
     </span>
     <style>
       {`

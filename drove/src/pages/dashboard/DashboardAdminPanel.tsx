@@ -55,8 +55,8 @@ const DashboardAdminPanel: React.FC = () => {
       </div>
 
       {/* Métricas principales */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 animate-fade-in">
-        <div className="bg-white/10 rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
+      <div className="animate-fade-in gap-x-[4%] gap-y-4 flex flex-wrap xl:flex-nowrap xl:gap-x-4 justify-center ">
+        <div className="bg-white/10 w-[48%] xl:w-full rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
           <div className="flex flex-col gap-2 items-center mb-4">
             <div className="bg-[#6EF7FF]/20 p-2 md:p-3 rounded-xl">
               <Car className="h-5 w-5 md:h-6 md:w-6 text-[#6EF7FF] animate-pulse" />
@@ -69,7 +69,7 @@ const DashboardAdminPanel: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white/10 rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <div className="w-[48%] bg-white/10 xl:w-full rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
           <div className="flex flex-col gap-2 items-center mb-4">
             <div className="bg-green-500/20 p-2 md:p-3 rounded-xl">
               <CheckCircle className="h-5 w-5 md:h-6 md:w-6 text-green-400 animate-pulse" />
@@ -82,7 +82,7 @@ const DashboardAdminPanel: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white/10 rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <div className="bg-white/10 w-[48%] xl:w-full rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
           <div className="flex flex-col gap-2 items-center mb-4">
             <div className="bg-blue-500/20 p-2 md:p-3 rounded-xl">
               <Clock className="h-5 w-5 md:h-6 md:w-6 text-blue-400 animate-pulse" />
@@ -95,7 +95,7 @@ const DashboardAdminPanel: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white/10 rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <div className="bg-white/10 w-[48%] xl:w-full rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
           <div className="flex flex-col gap-2 items-center mb-4">
             <div className="bg-purple-500/20 p-2 md:p-3 rounded-xl">
               <UserCheck className="h-5 w-5 md:h-6 md:w-6 text-purple-400 animate-pulse" />
@@ -108,7 +108,7 @@ const DashboardAdminPanel: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white/10 rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <div className="bg-white/10 w-[48%] xl:w-full rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
           <div className="flex flex-col gap-2 items-center mb-4">
             <div className="bg-amber-500/20 p-2 md:p-3 rounded-xl">
               <AlertCircle className="h-5 w-5 md:h-6 md:w-6 text-amber-400 animate-pulse" />
@@ -123,8 +123,8 @@ const DashboardAdminPanel: React.FC = () => {
       </div>
 
       {/* BLOQUE: Resumen de Ingresos y Accesos rápidos */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 w-full animate-fade-in">
-        <div className="lg:col-span-2 bg-white/10 rounded-2xl p-6 border border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300 mb-2">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 md:gap-8 w-full animate-fade-in">
+        <div className="xl:col-span-2 bg-white/10 rounded-2xl p-6 border border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-300 mb-2">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-white" style={{ fontFamily: "Helvetica" }}>
               Resumen de Ingresos

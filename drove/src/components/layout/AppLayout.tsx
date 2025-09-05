@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { SidebarProvider } from "@/components/ui/sidebar";
 import Header from './Header';
@@ -17,12 +16,20 @@ function GlobalSupportChatFab() {
 
 // Componente para navegación móvil admin
 function AdminMobileNavGlobal() {
-  const [openNavSheet, setOpenNavSheet] = React.useState(false);
+  const [openNavSheet, setOpenNavSheet] = useState(false);
   const { user, isAuthenticated } = useAuth();
-  const location = window.location.pathname;
+  const [isClient, setIsClient] = useState(false);
+  const location = useLocation();
 
-  const isAdmin = isAuthenticated && user?.user_type === "admin";
-  const isHome = location === "/";
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) return null;
+
+  // 👉 ahora usamos role directamente
+  const isAdmin = isAuthenticated && user?.role === "ADMIN";
+  const isHome = location.pathname === "/";
 
   if (!isAdmin || isHome) return null;
 
@@ -62,7 +69,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <Header />
-          <main className="flex-1 pt-14 md:pt-20 p-4 md:p-6 lg:pt-[100px] lg:px-20 overflow-hidden">
+          <main className="flex-1 py-24 px-4 md:px-8 md:pt-[100px] lg:px-20 overflow-hidden">
             <div className="h-full max-w-full">
               {children}
             </div>

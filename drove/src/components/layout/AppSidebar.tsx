@@ -24,7 +24,7 @@ export default function AppSidebar() {
   const { state } = useSidebar();
   const { navItems } = useNavigationMenus();
 
-  console.log("navItems",navItems)
+  console.log("navItems", navItems)
 
   const handleLogout = async () => {
     await logout();
@@ -32,24 +32,24 @@ export default function AppSidebar() {
   };
 
   if (!isAuthenticated || !user) return null;
-  
+
   const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar 
-      side="left" 
-      variant="sidebar" 
+    <Sidebar
+      side="left"
+      variant="sidebar"
       collapsible="icon"
       className="border-r border-white/10"
     >
       {/* Espaciador para el header fijo */}
       <div className="h-16 shrink-0" />
-      
+
       {/* Contenido del sidebar */}
-      <div className="flex-1 flex flex-col h-full relative">
+      <div className="flex-1 flex flex-col h-1 relative">
         {/* Botón trigger redondo */}
         <SidebarTrigger />
-        
+
         <SidebarContent className="flex-1 flex flex-col px-0 pb-6 overflow-y-auto">
           <SidebarGroup>
             <SidebarGroupContent>
@@ -88,7 +88,7 @@ export default function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        
+
         <SidebarFooter className="px-2 pb-4 pt-2 border-t border-white/10 mt-auto">
           <button
             className="flex items-center w-full px-2 py-3 rounded-2xl gap-2 text-white hover:bg-white/10 transition-colors font-medium mt-1 justify-start"

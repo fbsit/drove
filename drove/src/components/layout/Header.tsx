@@ -455,14 +455,14 @@ const Header = () => {
                     absolute right-2 top-[50px] w-72 bg-[#291A38]
                     border border-white/15 border-t-transparent rounded-b-2xl shadow-lg
                     transform transition-all duration-300 ease-out
-                    origin-top
+                    origin-top 
                     ${notifOpen ? "opacity-100 translate-y-3" : "opacity-0  translate-y-[-115%]"}
                   `}
       >
         <div className="p-3 border-b border-white/10 text-white font-bold">
           Notificaciones
         </div>
-        <div className="h-80 max-h-[70dvh] overflow-auto scrollbar">
+        <div className="h-80 max-h-[65dvh] overflow-auto scrollbar">
           {notifications.length === 0 ? (
             <div className="p-4 text-white/70 text-sm">Sin notificaciones</div>
           ) : (

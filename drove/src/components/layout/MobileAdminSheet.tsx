@@ -1,15 +1,13 @@
-
 import React from "react";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Link, useLocation } from "react-router-dom";
 import {
-  // Lucide icons permitidos para navegación
   BarChart,
   Users,
   FileText,
   Euro,
   Truck,
-  Gauge, // Cambia Dashboard por Gauge
+  Gauge,
   ArrowLeft,
   Car,
   Briefcase,
@@ -17,63 +15,28 @@ import {
   MessageSquare,
 } from "lucide-react";
 
-// Menú admin tipo premium con experiencia gamificable DOve/Uber
+// Menú admin tipo premium
 const adminNav = [
-  {
-    label: "Dashboard",
-    desc: "Panel principal",
-    to: "/admin/dashboard",
-    icon: Gauge, // Antes Dashboard (no existe), usa Gauge
-  },
-  {
-    label: "Clientes",
-    desc: "Gestión de clientes",
-    to: "/admin/clientes",
-    icon: Users,
-  },
-  {
-    label: "Drovers",
-    desc: "Gestión de drovers",
-    to: "/admin/drovers",
-    icon: Car, // Cambiado de Users a Car
-  },
-  {
-    label: "Jefes de Tráfico",
-    desc: "Gestión de jefes",
-    to: "/admin/jefes-trafico",
-    icon: Briefcase, // Cambiado de Users a Briefcase
-  },
-  {
-    label: "Traslados",
-    desc: "Gestión de traslados",
-    to: "/admin/traslados",
-    icon: Truck,
-  },
-  {
-    // Facturas ahora se accede desde traslados (tab)
-  },
-  {
-    label: "Reseñas",
-    desc: "Gestión de reseñas",
-    to: "/admin/resenas",
-    icon: Star, // Nueva sección agregada
-  },
-  {
-    label: "Soporte",
-    desc: "Tickets de soporte",
-    to: "/admin/soporte",
-    icon: MessageSquare, // Nueva sección agregada
-  },
-  {
-    label: "Reportes",
-    desc: "Análisis y reportes",
-    to: "/admin/reportes",
-    icon: BarChart,
-  },
+  { label: "Dashboard", desc: "Panel principal", to: "/admin/dashboard", icon: Gauge },
+  { label: "Clientes", desc: "Gestión de clientes", to: "/admin/clientes", icon: Users },
+  { label: "Drovers", desc: "Gestión de drovers", to: "/admin/drovers", icon: Car },
+  { label: "Jefes de Tráfico", desc: "Gestión de jefes", to: "/admin/jefes-trafico", icon: Briefcase },
+  { label: "Traslados", desc: "Gestión de traslados", to: "/admin/traslados", icon: Truck },
+  { label: "Facturas", desc: "Gestión de facturas", to: "/admin/facturas", icon: Euro },
+  { label: "Reseñas", desc: "Gestión de reseñas", to: "/admin/resenas", icon: Star },
+  { label: "Soporte", desc: "Tickets de soporte", to: "/admin/soporte", icon: MessageSquare },
+  { label: "Reportes", desc: "Análisis y reportes", to: "/admin/reportes", icon: BarChart },
 ];
 
-// Item menú ultra visual, botones premium, highlight activo, descripción, bolita digital
-function MenuProItem({ to, icon: Icon, label, desc, active, onClick }: {
+// Item de menú
+function MenuProItem({
+  to,
+  icon: Icon,
+  label,
+  desc,
+  active,
+  onClick,
+}: {
   to: string;
   icon: React.ElementType;
   label: string;
@@ -92,31 +55,26 @@ function MenuProItem({ to, icon: Icon, label, desc, active, onClick }: {
           : "bg-white/5 border-transparent text-white hover:bg-[#3acea722] hover:border-[#3acea7] hover:text-[#3acea7]"}
         relative group
       `}
-      style={{
-        fontFamily: "Helvetica",
-        minHeight: 62,
-        cursor: "pointer"
-      }}
+      style={{ fontFamily: "Helvetica", minHeight: 62, cursor: "pointer" }}
       onClick={onClick}
     >
-      <div className={`
+      <div
+        className={`
         rounded-xl flex items-center justify-center
         w-12 h-12 transition
         ${active
-          ? "bg-[#d9fdff] text-[#22142A]"
-          : "bg-[#232938] text-[#6EF7FF] group-hover:bg-[#22343b]/80"}
+            ? "bg-[#d9fdff] text-[#22142A]"
+            : "bg-[#232938] text-[#6EF7FF] group-hover:bg-[#22343b]/80"}
         shadow
-      `}>
+      `}
+      >
         <Icon size={26} />
       </div>
       <div className="flex flex-col min-w-0">
         <span className={`font-bold text-base ${active ? "text-[#22142A]" : "text-white"}`}>{label}</span>
         <span className={`text-xs mt-0.5 ${active ? "text-[#242b3c]" : "text-white/70"}`}>{desc}</span>
       </div>
-      {/* Bolita activa */}
-      {active && (
-        <span className="absolute top-3 right-4 w-2 h-2 bg-[#3acea7] rounded-full" />
-      )}
+      {active && <span className="absolute top-3 right-4 w-2 h-2 bg-[#3acea7] rounded-full" />}
     </Link>
   );
 }
@@ -131,13 +89,14 @@ const MobileAdminSheet: React.FC<Props> = ({ open, onOpenChange }) => {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetTitle className="hidden">Menú de navegación</SheetTitle>
       <SheetContent
         side="bottom"
         className={`
           p-0 bg-gradient-to-tr from-[#1e1532] via-[#241536] to-[#292244]
           rounded-t-2xl w-full max-w-full md:hidden border-none
           shadow-2xl border-t-4 border-[#6EF7FF30] z-[1200]
-          flex flex-col
+          flex flex-col max-h-[95dvh] scrollbar overflow-y-auto pt-10
         `}
         style={{
           fontFamily: "Helvetica",
@@ -145,27 +104,36 @@ const MobileAdminSheet: React.FC<Props> = ({ open, onOpenChange }) => {
           boxShadow: "0 -18px 70px #16131fa0",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "flex-start"
+          justifyContent: "flex-start",
         }}
       >
+        {/* Requerido por Radix UI para accesibilidad */}
+        <SheetHeader>
+          <SheetTitle className="sr-only">Menú de navegación</SheetTitle>
+          <SheetDescription className="sr-only">
+            Opciones de navegación para administradores
+          </SheetDescription>
+        </SheetHeader>
+
         {/* Drag bar */}
-        <div className="w-full flex justify-center items-center py-4 select-none">
+        {/* <div className="w-full flex justify-center items-center py-4 select-none">
           <div className="w-14 h-2 bg-white/20 rounded-full"></div>
-        </div>
+        </div> */}
+
         {/* Cabecera menú */}
-        <div className="w-full px-7 pb-3 mb-1">
+        {/* <div className="w-full px-7 pb-3 mb-1">
           <div className="flex items-center gap-3">
-            <Gauge size={25} className="text-[#6EF7FF]" /> {/* Remplazado Dashboard por Gauge */}
+            <Gauge size={25} className="text-[#6EF7FF]" />
             <div>
               <span className="block font-bold text-lg text-white leading-tight">Navegación</span>
               <span className="block text-xs text-white/60 leading-tight">Ir a sección del sistema</span>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Menú principal */}
         <nav className="flex flex-col gap-0 px-2">
-          {adminNav.map(item => {
+          {adminNav.map((item) => {
             const isActive = location.pathname.startsWith(item.to);
             return (
               <MenuProItem
@@ -183,7 +151,7 @@ const MobileAdminSheet: React.FC<Props> = ({ open, onOpenChange }) => {
 
         <div className="flex-1" />
 
-        {/* Botón cerrar grande centrado + texto */}
+        {/* Botón cerrar grande */}
         <div className="w-full flex flex-col items-center pb-9 mt-4">
           <button
             aria-label="Cerrar menú"
@@ -197,7 +165,7 @@ const MobileAdminSheet: React.FC<Props> = ({ open, onOpenChange }) => {
             `}
             style={{
               fontFamily: "Helvetica",
-              boxShadow: "0 6px 36px #6EF7FF33,0 2px 8px #16131fa0"
+              boxShadow: "0 6px 36px #6EF7FF33,0 2px 8px #16131fa0",
             }}
           >
             <ArrowLeft size={28} color="#22142A" />
