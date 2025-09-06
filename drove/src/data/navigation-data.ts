@@ -50,7 +50,6 @@ export const navigationConfig: RoleMenuConfig = {
   ],
   drover: [
     { label: "Dashboard", href: "/drover/dashboard", icon: Gauge },
-    { label: "Traslados disponibles", href: "/drover/viajes-disponibles", icon: Calendar },
     { label: "Reseñas", href: "/drover/resenas", icon: Star },
   ]
 };

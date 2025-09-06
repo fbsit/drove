@@ -26,11 +26,6 @@ const MobileDroverFooterNav = () => {
       icon: QrCode,
     },
     {
-      name: 'Traslados disponibles',
-      path: '/drover/viajes-disponibles',
-      icon: Star,
-    },
-    {
       name: 'Reseñas',
       path: '/drover/resenas',
       icon: Star,

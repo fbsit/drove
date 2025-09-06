@@ -103,21 +103,21 @@ const TransferCard: React.FC<any> = ({ transfer }) => {
 
   return (
     <>
-      <Card className={`w-full max-w-full bg-white/15 ${statusConfig.bgGradient} border-white/20 hover:bg-white/15 transition-all duration-300 hover:shadow-lg group`}>
+      <Card className={`w-full max-w-full bg-gradient-to-r from-[#E7F7EE] to-[#EDFBF7] border border-black/10 transition-all duration-300 hover:shadow-lg group rounded-2xl`}>
         <CardContent className="p-4 md:p-6">
           <div className="flex flex-col lg:flex-row lg:items-center gap-4">
             {/* Información principal */}
             <div className="flex-1 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-                <div className="flex items-center gap-2 text-white">
-                  <Car className="h-4 w-4 text-white flex-shrink-0" />
-                  <span className="text-white transition-colors duration-300 font-semibold">
-                    {transfer.brandVehicle} {transfer.modelVehicle}
+                <div className="flex items-center gap-2 text-black">
+                  <Car className="h-4 w-4 text-[#6EF7FF] flex-shrink-0" />
+                  <span className="text-black transition-colors duration-300 font-semibold">
+                    {(transfer.brand || transfer.brandVehicle || '').trim()} {(transfer.model || transfer.modelVehicle || '').trim()}
                   </span>
-                  <span className="text-white transition-colors duration-300 text-sm">#{transfer.licensePlate}</span>
+                  <span className="text-black/60 transition-colors duration-300 text-sm">#{transfer.licensePlate || transfer.patentVehicle}</span>
                 </div>
                 <div className="flex items-center gap-2 ">
-                  <Badge className={`${statusConfig.color} flex text-white items-center gap-1 text-xs font-medium`}>
+                  <Badge className={`${statusConfig.color} flex items-center gap-1 text-xs font-medium`}>
                     {statusConfig.icon}
                     {statusConfig.label}
                   </Badge>
@@ -133,22 +133,22 @@ const TransferCard: React.FC<any> = ({ transfer }) => {
 
               <div className="space-y-2">
                 <div className="flex items-start gap-2 text-sm">
-                  <MapPin className="h-3 w-3 text-white group-hover:text-white/70 transition-colors duration-300 mt-0.5 flex-shrink-0" />
+                  <MapPin className="h-3 w-3 text-black/60 group-hover:text-white/70 transition-colors duration-300 mt-0.5 flex-shrink-0" />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-                      <span className="text-white group-hover:text-white/90 transition-colors duration-300 truncate">{transfer?.originAddress}</span>
-                      <span className="text-white group-hover:text-white/70 transition-colors duration-300 hidden sm:inline">→</span>
-                      <span className="text-white group-hover:text-white/90 transition-colors duration-300 truncate">{transfer?.destinationAddress}</span>
+                      <span className="text-black/80 group-hover:text-white/90 transition-colors duration-300 truncate">{transfer?.originAddress}</span>
+                      <span className="text-black/60 group-hover:text-white/70 transition-colors duration-300 hidden sm:inline">→</span>
+                      <span className="text-black/80 group-hover:text-white/90 transition-colors duration-300 truncate">{transfer?.destinationAddress}</span>
                     </div>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-3 w-3 text-white group-hover:text-white/70 transition-colors duration-300 flex-shrink-0" />
-                  <span className="text-white group-hover:text-white/90 transition-colors duration-300">
+                  <Calendar className="h-3 w-3 text-black/60 group-hover:text-white/70 transition-colors duration-300 flex-shrink-0" />
+                  <span className="text-black/80 group-hover:text-white/90 transition-colors duration-300">
                     {transfer.pickupDate ? formatDate(transfer.pickupDate) : formatDate(transfer.created_at)}
                     {transfer.pickupTime && (
-                      <span className="text-white group-hover:text-white/70 transition-colors duration-300"> - {transfer.pickupTime}</span>
+                      <span className="text-black/60 group-hover:text-white/70 transition-colors duration-300"> - {transfer.pickupTime}</span>
                     )}
                     {/* Indicador de fecha actualizada */}
                     {transfer.isRescheduled && (
@@ -198,14 +198,14 @@ const TransferCard: React.FC<any> = ({ transfer }) => {
 
           {/* Información adicional para estados específicos */}
           {(transfer.status === TransferStatus.IN_PROGRESS || transfer.status === TransferStatus.ASSIGNED) && (
-            <div className="mt-4 p-3 bg-white/20 rounded-xl border border-black/10">
+            <div className="mt-4 p-3 bg-black/10 rounded-xl border border-black/10">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-white transition-colors duration-300">
+                <span className="text-black/80 transition-colors duration-300">
                   {transfer.status === TransferStatus.IN_PROGRESS ? 'Tu vehículo está en camino' : 'Un drover está asignado a tu traslado'}
                 </span>
                 {transfer.status === TransferStatus.IN_PROGRESS && (
                   <Link to={`/cliente/traslados/${transfer.id}`}>
-                    <Button size="sm" className="bg-[#6EF7FF]/20 text-[#6EF7FF] hover:bg-[#6EF7FF]/30 text-xs py-1 px-2 h-auto">
+                    <Button size="sm" className="bg-[#6EF7FF]/10 text-[#6EF7FF] hover:bg-[#6EF7FF]/20 text-xs py-1 px-2 h-auto rounded-xl">
                       Seguimiento en vivo
                     </Button>
                   </Link>

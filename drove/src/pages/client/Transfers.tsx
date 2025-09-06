@@ -171,7 +171,7 @@ const Transfers: React.FC = () => {
   /* ---------------------------------------------------------------------- */
   return (
     <DashboardLayout pageTitle="Mis Traslados">
-      <div className="px-4 space-y-6">
+      <div className="px-4 space-y-6 max-w-[846px] mx-auto">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white mb-2">Mis Traslados</h1>
           <p className="text-white/70">Gestiona y supervisa tus traslados de vehículos</p>

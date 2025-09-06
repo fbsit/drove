@@ -27,6 +27,7 @@ import {
   BarChart3,
   Save,
   X,
+  Building2,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -104,10 +105,27 @@ const ClientProfile: React.FC = () => {
   }
 
   /* ------------------ helpers ------------------ */
-  const mapProfile = useCallback((data: any): ClientProfileData => ({
-    ...data,
-    full_name: data.full_name ?? data.fullName,
-  }), []);
+  const mapProfile = useCallback((data: any): ClientProfileData => {
+    // Normaliza distintas formas que puede traer el backend
+    const contact = data.contactInfo ?? {};
+    const normalizedContact = {
+      ...contact,
+      fullName: contact.fullName ?? data.full_name ?? data.fullName ?? '',
+      phone: contact.phone ?? data.phone ?? contact.phones?.[0] ?? '',
+      address: contact.address ?? data.address ?? '',
+    };
+
+    return {
+      ...data,
+      full_name: data.full_name ?? data.fullName ?? normalizedContact.fullName,
+      email: data.email ?? contact.email ?? '',
+      company_name: data.company_name ?? data.company ?? '',
+      selfie: data.selfie ?? contact.selfie ?? data.avatar ?? data.avatar_url ?? '',
+      contactInfo: normalizedContact,
+      created_at: data.created_at ?? data.createdAt ?? '',
+      role: data.role ?? 'Cliente',
+    } as ClientProfileData as any;
+  }, []);
 
   /* ------------------ fetch perfil + stats ------------------ */
   useEffect(() => {
@@ -119,12 +137,13 @@ const ClientProfile: React.FC = () => {
 
         // Perfil
         const profileRaw = await UserService.getUserProfile();
-        const profile = mapProfile(profileRaw);
+        const profile = mapProfile((profileRaw as any)?.user ?? profileRaw);
         setClientData(profile);
         setFormData(profile);
 
         // Traslados para KPIs
-        const travels = await TransferService.getTravelsByClient(clientId);
+        const idForStats = clientId || (profile as any)?.id;
+        const travels = idForStats ? await TransferService.getTravelsByClient(String(idForStats)) : [];
         const total = travels.length;
         const completed = travels.filter((t: any) => t.status === "DELIVERED").length;
         const pending = total - completed;
@@ -226,14 +245,20 @@ const ClientProfile: React.FC = () => {
   /* ------------------ render ------------------ */
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] p-3 md:p-8">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-[880px] mx-auto">
         {/* Header */}
         <ProfileHeader
-          avatar={clientData.selfie}
-          fullName={clientData.contactInfo.fullName || clientData.fullName || ""}
-          role={clientData.role || "Cliente"}
-          email={clientData.email || ""}
-          company={clientData.company_name || ""}
+          avatar={(clientData as any).selfie}
+          fullName={(clientData as any).contactInfo?.fullName || (clientData as any).full_name || (clientData as any).fullName || ""}
+          role={(clientData as any).role || "Cliente"}
+          email={(clientData as any).email || ""}
+          company={(clientData as any).company_name || ""}
+          verified={Boolean((clientData as any)?.is_approved ?? (clientData as any)?.isApproved ?? (clientData as any)?.approved ?? (clientData as any)?.verified)}
+          lastLoginAt={(() => {
+            const fromProfile = (clientData as any)?.last_login_at || (clientData as any)?.lastLoginAt || '';
+            if (fromProfile) return fromProfile;
+            try { return localStorage.getItem('last_login_at') || ''; } catch { return ''; }
+          })()}
         />
 
         {/* KPIs */}
@@ -288,7 +313,9 @@ const ProfileHeader: React.FC<{
   role: string;
   email: string;
   company: string;
-}> = ({ avatar, fullName, role, email, company }) => (
+  verified?: boolean;
+  lastLoginAt?: string;
+}> = ({ avatar, fullName, role, email, company, verified, lastLoginAt }) => (
   <div className="mb-6">
     <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-4 md:p-6 border border-white/20">
       <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
@@ -308,6 +335,22 @@ const ProfileHeader: React.FC<{
           <p className="text-[#6EF7FF]">{role}</p>
           <p className="text-white/70">{email}</p>
           {company && <p className="text-white/60 text-sm">{company}</p>}
+          <div className="flex flex-wrap gap-2 justify-center md:justify-start mt-2">
+            {verified ? (
+              <span className="bg-green-500/20 text-green-300 px-3 py-1 rounded-full text-xs flex items-center gap-1">
+                <CheckCircle size={14} /> Verificado
+              </span>
+            ) : (
+              <span className="bg-amber-500/20 text-amber-300 px-3 py-1 rounded-full text-xs flex items-center gap-1">
+                <Clock size={14} /> No verificado
+              </span>
+            )}
+            {lastLoginAt ? (
+              <span className="bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full text-xs flex items-center gap-1">
+                <Clock size={14} /> Último acceso: {new Date(lastLoginAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>
@@ -316,7 +359,7 @@ const ProfileHeader: React.FC<{
 
 /* KPI cards */
 const ClientKPIs: React.FC<{ stats: ClientStats }> = ({ stats }) => (
-  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
     <KpiCard title="Total Traslados" value={stats.totalTransfers} icon={Car} color="blue" />
     <KpiCard title="Completados" value={stats.completedTransfers} icon={CheckCircle} color="green" />
     <KpiCard title="Pendientes" value={stats.pendingTransfers} icon={Clock} color="yellow" />
@@ -324,11 +367,12 @@ const ClientKPIs: React.FC<{ stats: ClientStats }> = ({ stats }) => (
   </div>
 );
 
-const colorClasses: Record<string, { bg: string; border: string; icon: string }> = {
-  blue: { bg: "bg-blue-500/30", border: "border-blue-400/40", icon: "text-blue-600" },
-  green: { bg: "bg-green-500/30", border: "border-green-400/40", icon: "text-green-600" },
-  yellow: { bg: "bg-yellow-500/30", border: "border-yellow-400/40", icon: "text-yellow-600" },
-  purple: { bg: "bg-purple-500/30", border: "border-purple-400/40", icon: "text-purple-600" },
+const colorClasses: Record<string, { container: string; icon: string }> = {
+  // Colores suaves y altura similar a la maqueta
+  blue:   { container: "bg-gradient-to-br from-[#E9F1FF] to-[#D7E8FF]", icon: "text-[#2E3192]" },
+  green:  { container: "bg-gradient-to-br from-[#E8F8EF] to-[#D6F1E3]", icon: "text-[#27AE60]" },
+  yellow: { container: "bg-gradient-to-br from-[#FFF4DB] to-[#FBE7B4]", icon: "text-[#D9A400]" },
+  purple: { container: "bg-gradient-to-br from-[#F2E9FF] to-[#E1D1FF]", icon: "text-[#9B51E0]" },
 };
 
 const KpiCard: React.FC<{
@@ -339,9 +383,9 @@ const KpiCard: React.FC<{
 }> = ({ title, value, icon: Icon, color }) => {
   const cls = colorClasses[color];
   return (
-    <Card className={`${cls.bg} ${cls.border} backdrop-blur-sm`}>
-      <CardContent className="p-3 text-center">
-        <div className="bg-white/90 p-2 rounded-xl w-fit mx-auto mb-2">
+    <Card className={`${cls.container} rounded-2xl`}>
+      <CardContent className="p-4 md:p-5 text-center min-h-[112px] flex flex-col justify-center">
+        <div className="bg-white p-2.5 rounded-xl w-fit mx-auto mb-2 shadow-sm">
           <Icon size={18} className={cls.icon} />
         </div>
         <h3 className="text-black text-xs font-bold">{title}</h3>
@@ -389,8 +433,6 @@ const InfoAndSettings: React.FC<any> = ({
           )}
         </div>
       </CardHeader>
-      {console.log(formData)}
-
       <CardContent className="space-y-3 pt-0">
         {/* Nombre */}
         <Field
@@ -404,6 +446,7 @@ const InfoAndSettings: React.FC<any> = ({
         <Field
           label="Email"
           value={formData.email || ""}
+          icon={<Mail size={14} className="text-[#6EF7FF]" />}
           suffix={!isEditing && (
             <Button variant="ghost" size="iconSm" onClick={openEmailModal}>
               <Edit size={12} />
@@ -417,22 +460,43 @@ const InfoAndSettings: React.FC<any> = ({
           label="Teléfono"
           value={(formData?.contactInfo?.phone || formData?.contactInfo?.phones?.[0]) ?? ''}
           isEditing={isEditing}
-          onChange={(v: string) => handleInputChange("phone", v)}
+          icon={<Phone size={14} className="text-[#6EF7FF]" />}
+          onChange={(v: string) => handleInputChange('contactInfo.phone', v)}
+        />
+
+        {/* Empresa */}
+        <Field
+          label="Empresa"
+          value={formData.company_name || ''}
+          isEditing={isEditing}
+          icon={<Building2 size={14} className="text-[#6EF7FF]" />}
+          onChange={(v: string) => handleInputChange('company_name', v)}
+        />
+
+        {/* Documento */}
+        <Field
+          label="Documento"
+          value={formData?.contactInfo?.documentId || formData?.contactInfo?.identificationNumber || ''}
+          isEditing={isEditing}
+          icon={<FileText size={14} className="text-[#6EF7FF]" />}
+          onChange={(v: string) => handleInputChange('contactInfo.documentId', v)}
         />
 
         {/* Dirección */}
         <Field
           label="Dirección"
-          value={`${formData.contactInfo.address ?? ""}`}
+          value={`${formData.contactInfo?.address ?? ''}`}
           isEditing={isEditing}
-          onChange={(v: string) => handleInputChange("address", v)}
+          icon={<MapPin size={14} className="text-[#6EF7FF]" />}
+          onChange={(v: string) => handleInputChange('contactInfo.address', v)}
         />
 
         {/* Cliente desde */}
         <Field
           label="Cliente desde"
-          value={new Date(createdAt).toLocaleDateString("es-ES")}
+          value={new Date(createdAt).toLocaleDateString('es-ES')}
           readOnly
+          icon={<Calendar size={14} className="text-[#6EF7FF]" />}
         />
       </CardContent>
     </Card>
@@ -443,18 +507,18 @@ const InfoAndSettings: React.FC<any> = ({
       <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
         <CardHeader className="pb-2">
           <CardTitle className="text-white flex items-center gap-2">
-            <Key size={16} /> Configuración
+            <Key size={16} /> Configuración de Cuenta
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 pt-0">
-          <Button variant="outline" className="w-full justify-start" onClick={openPasswordModal}>
-            <Key size={12} className="mr-2" /> Cambiar contraseña
+        <CardContent className="space-y-3 pt-0">
+          <Button variant="outline" className="w-full justify-start h-10 rounded-xl border-white/40 text-white hover:bg-white/10" onClick={openPasswordModal}>
+            <Key size={14} className="mr-2" /> Cambiar Contraseña
           </Button>
-          <Button variant="outline" className="w-full justify-start" onClick={openNotifModal}>
-            <Bell size={12} className="mr-2" /> Notificaciones
+          <Button variant="outline" className="w-full justify-start h-10 rounded-xl border-white/40 text-white hover:bg-white/10" onClick={openNotifModal}>
+            <Bell size={14} className="mr-2" /> Configurar Notificaciones
           </Button>
-          <Button variant="outline" className="w-full justify-start" onClick={openPrivacyModal}>
-            <Shield size={12} className="mr-2" /> Privacidad
+          <Button variant="outline" className="w-full justify-start h-10 rounded-xl border-white/40 text-white hover:bg-white/10" onClick={openPrivacyModal}>
+            <Shield size={14} className="mr-2" /> Configuración de Privacidad
           </Button>
         </CardContent>
       </Card>
@@ -466,7 +530,7 @@ const InfoAndSettings: React.FC<any> = ({
             <BarChart3 size={16} /> Accesos Rápidos
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 pt-0">
+        <CardContent className="space-y-3 pt-0">
           <LinkButton to="/solicitar-traslado" icon={Car}>
             Solicitar traslado
           </LinkButton>
@@ -490,19 +554,29 @@ const Field: React.FC<{
   onChange?: (v: string) => void;
   readOnly?: boolean;
   suffix?: React.ReactNode;
-}> = ({ label, value, isEditing, onChange, readOnly, suffix }) => (
+  icon?: React.ReactNode;
+}> = ({ label, value, isEditing, onChange, readOnly, suffix, icon }) => (
   <div>
-    <Label className="text-white/80 text-sm">{label}</Label>
+    <Label className="text-white/90 text-sm">{label}</Label>
     {isEditing ? (
       <Input
         value={value}
         onChange={(e) => onChange?.(e.target.value)}
-        className="mt-1 bg-white/5 border-white/20 text-white rounded-2xl h-9"
+        className="mt-1 bg-white/10 border-white/25 text-white placeholder:text-white/60 rounded-2xl h-10 text-center"
       />
     ) : (
-      <div className="mt-1 bg-white/5 rounded-2xl p-2 flex items-center justify-between">
-        <span className="text-white/90">{value}</span>
-        {suffix}
+      <div className="mt-1 bg-white/10 rounded-2xl px-4 py-3 border border-white/20 backdrop-blur-sm relative">
+        {icon && (
+          <div className="absolute left-3 top-1/2 -translate-y-1/2">
+            {icon}
+          </div>
+        )}
+        {suffix && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2">
+            {suffix}
+          </div>
+        )}
+        <span className="block text-white text-center w-full px-8">{value || '—'}</span>
       </div>
     )}
   </div>
@@ -516,7 +590,7 @@ const LinkButton: React.FC<{ to: string; icon: any; children: React.ReactNode }>
 }) => (
   <Button
     asChild
-    className="w-full justify-start bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold rounded-xl"
+    className="w-full justify-start h-10 bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold rounded-xl"
   >
     <Link to={to}>
       <Icon size={12} className="mr-2" /> {children}

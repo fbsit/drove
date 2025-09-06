@@ -40,7 +40,9 @@ const AdminProfile = () => {
    useEffect(() => {
     const fetchAdmin = async () => {
       try {
-        const { user } = await authService.getCurrentUser(); // 👈 llamada al servicio
+        // getCurrentUser devuelve directamente el usuario; pero contemplamos { user } para compatibilidad
+        const resp: any = await authService.getCurrentUser();
+        const user = resp?.user ?? resp;
         if (!user) {
           setAdminData(emptyAdmin);
           setFormData(emptyAdmin);
@@ -48,14 +50,14 @@ const AdminProfile = () => {
         }
 
         const mapped = {
-          avatar: user.avatar ?? "",
-          fullName: user.full_name ?? user.fullName ?? "",
-          role: user.role ?? "",
-          email: user.email ?? "",
-          phone: user.phone ?? "",
-          address: user.address ?? "",
-          city: user.city ?? "",
-          created_at: user.created_at ?? user.createdAt ?? "",
+          avatar: (user as any)?.avatar ?? (user as any)?.selfie ?? "",
+          fullName: (user as any)?.full_name ?? (user as any)?.fullName ?? (user as any)?.contactInfo?.fullName ?? "",
+          role: (user as any)?.role ?? 'Administrador',
+          email: (user as any)?.email ?? (user as any)?.contactInfo?.email ?? "",
+          phone: (user as any)?.phone ?? (user as any)?.contactInfo?.phone ?? (user as any)?.contactInfo?.phones?.[0] ?? "",
+          address: (user as any)?.address ?? (user as any)?.contactInfo?.address ?? "",
+          city: (user as any)?.city ?? (user as any)?.contactInfo?.city ?? "",
+          created_at: (user as any)?.created_at ?? (user as any)?.createdAt ?? "",
         };
 
         setAdminData(mapped);
@@ -118,7 +120,7 @@ const AdminProfile = () => {
               {/* Información básica */}
               <div className="flex-1 text-center md:text-left">
                 <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-                  {adminData.fullName}
+                  {adminData.fullName || 'Administrador'}
                 </h1>
                 <p className="text-[#6EF7FF] text-lg mb-2">{adminData.role}</p>
                 <p className="text-white/70 mb-4">{adminData.email}</p>
@@ -234,7 +236,7 @@ const AdminProfile = () => {
                   />
                 ) : (
                   <div className="mt-1 p-3 bg-white/5 rounded-2xl">
-                    <p className="text-white">{formData.fullName}</p>
+                    <p className="text-white">{formData.fullName || '—'}</p>
                   </div>
                 )}
               </div>
@@ -245,7 +247,7 @@ const AdminProfile = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Mail size={16} className="text-[#6EF7FF]" />
-                      <p className="text-white">{formData.email}</p>
+                      <p className="text-white">{formData.email || '—'}</p>
                     </div>
                     {!isEditing && (
                       <Button
@@ -274,7 +276,7 @@ const AdminProfile = () => {
                   <div className="mt-1 p-3 bg-white/5 rounded-2xl">
                     <div className="flex items-center gap-2">
                       <Phone size={16} className="text-[#6EF7FF]" />
-                      <p className="text-white">{formData.phone}</p>
+                      <p className="text-white">{formData.phone || '—'}</p>
                     </div>
                   </div>
                 )}
@@ -293,7 +295,7 @@ const AdminProfile = () => {
                   <div className="mt-1 p-3 bg-white/5 rounded-2xl">
                     <div className="flex items-center gap-2">
                       <MapPin size={16} className="text-[#6EF7FF]" />
-                      <p className="text-white">{formData.address}, {formData.city}</p>
+                      <p className="text-white">{formData.address || '—'}{formData.city ? `, ${formData.city}` : ''}</p>
                     </div>
                   </div>
                 )}
@@ -304,7 +306,7 @@ const AdminProfile = () => {
                 <div className="mt-1 p-3 bg-white/5 rounded-2xl">
                   <div className="flex items-center gap-2">
                     <Calendar size={16} className="text-[#6EF7FF]" />
-                    <p className="text-white">{new Date(adminData.created_at).toLocaleDateString('es-ES')}</p>
+                    <p className="text-white">{adminData.created_at ? new Date(adminData.created_at).toLocaleDateString('es-ES') : '—'}</p>
                   </div>
                 </div>
               </div>

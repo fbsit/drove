@@ -36,6 +36,9 @@ export class AuthService {
     console.log("response",response)
     if (response.access_token) {
       localStorage.setItem('auth_token', response.access_token);
+      try {
+        localStorage.setItem('last_login_at', new Date().toISOString());
+      } catch {}
     }
 
     return response;
