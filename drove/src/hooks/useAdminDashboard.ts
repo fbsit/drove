@@ -83,9 +83,78 @@ export const useAdminDashboard = () => {
     queryKey: ['admin-dashboard-recent-transfers'],
     queryFn: async () => {
       const list = await AdminService.getTransfers({});
-      // ordenar por createdAt desc si viene, tomar 5
-      const arr = Array.isArray(list?.transfers) ? list.transfers : (Array.isArray(list) ? list : []);
-      return arr.sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 5);
+      // Normalizar estructura y asegurar campos de cliente, drover y estado real
+      const toUpper = (v: any) => (typeof v === 'string' ? v.toUpperCase() : v);
+      const mapStatus = (raw: any) => {
+        const s = String(raw || '').toUpperCase();
+        const map: Record<string, string> = {
+          DELIVERED: 'DELIVERED',
+          COMPLETED: 'DELIVERED',
+          IN_PROGRESS: 'IN_PROGRESS',
+          ASSIGNED: 'ASSIGNED',
+          CREATED: 'CREATED',
+          PENDINGPAID: 'PENDINGPAID',
+          PENDING_PAID: 'PENDINGPAID',
+          REQUEST_FINISH: 'REQUEST_FINISH',
+          CANCELLED: 'CANCELLED',
+        };
+        return map[s] || s || 'CREATED';
+      };
+
+      const rawArray = Array.isArray((list as any)?.transfers)
+        ? (list as any).transfers
+        : Array.isArray(list)
+          ? (list as any)
+          : [];
+
+      const normalized = rawArray.map((t: any) => {
+        const clientName =
+          t.clientName ||
+          t.client?.name ||
+          t.client?.company_name ||
+          t.users?.company_name ||
+          t.users?.full_name ||
+          t.client_full_name ||
+          t.client?.full_name ||
+          '';
+
+        const clientEmail = t.clientEmail || t.client?.email || t.users?.email || '';
+
+        const droverName =
+          t.droverName ||
+          t.drover?.full_name ||
+          t.driver?.full_name ||
+          t.drivers?.full_name ||
+          t.assigned_driver_name ||
+          '';
+
+        const status = mapStatus(t.status || t.transferStatus || t.transfer_status || t.state);
+
+        return {
+          id: t.id || t._id,
+          status,
+          users: t.users || { company_name: clientName, full_name: clientName, email: clientEmail },
+          clientName,
+          clientEmail,
+          drivers: t.drivers || (droverName ? { full_name: droverName } : undefined),
+          droverName,
+          createdAt: t.createdAt || t.created_at || t.scheduledDate || t.pickup_details?.pickupDate,
+          scheduledDate: t.scheduledDate || t.pickup_details?.pickupDate,
+          totalPrice: t.totalPrice ?? t.price ?? t.amount ?? 0,
+          price: t.price ?? t.totalPrice ?? 0,
+          origin: t.origin || t.fromAddress || t.pickup_details?.originAddress,
+          destination: t.destination || t.toAddress || t.pickup_details?.destinationAddress,
+          brand: t.brand || t.vehicle?.brand,
+          model: t.model || t.vehicle?.model,
+          licensePlate: t.licensePlate || t.vehicle?.licensePlate,
+          ...t,
+        };
+      });
+
+      // ordenar por fecha y devolver solo los 5 más recientes
+      return normalized
+        .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+        .slice(0, 5);
     },
     staleTime: 60_000,
   });

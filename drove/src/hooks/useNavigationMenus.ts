@@ -11,19 +11,8 @@ export const useNavigationMenus = () => {
     if (!user?.role) return [];
 
     const baseItems = navigationConfig[user.role.toLocaleLowerCase() as keyof typeof navigationConfig] || [];
-    
-    // Para clientes, agregar "Completar Perfil" si es necesario
-    if (user.role.toLocaleLowerCase() === 'client' && needsProfileCompletion) {
-      return [
-        ...baseItems,
-        { 
-          label: "Completar Perfil", 
-          href: "/cliente/perfil", 
-          icon: navigationConfig.admin[1].icon // Users icon
-        }
-      ];
-    }
 
+    // Eliminamos la opción de "Completar Perfil" para clientes
     return baseItems;
   }, [user?.role, needsProfileCompletion]);
 

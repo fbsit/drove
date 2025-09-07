@@ -238,7 +238,8 @@ const Header = () => {
       return;
     }
 
-    switch (user.role) {
+    const role = String((user as any)?.role || (user as any)?.user_type || '').toLowerCase();
+    switch (role) {
       case "admin":
         console.log("🔐 DIRECTO - Redirigiendo admin a /admin/perfil");
         navigate("/admin/perfil");
@@ -256,8 +257,8 @@ const Header = () => {
         navigate("/trafico/perfil");
         break;
       default:
-        console.log("⚠️ DIRECTO - Tipo no reconocido:", user.role, "- redirigiendo a /admin/perfil");
-        navigate("/admin/perfil");
+        console.log("⚠️ DIRECTO - Tipo no reconocido:", (user as any)?.role, "- redirigiendo a /cliente/perfil por defecto");
+        navigate("/cliente/perfil");
         break;
     }
   };
@@ -266,7 +267,8 @@ const Header = () => {
   const handleBackToDashboard = () => {
     if (!user) return;
 
-    switch (user.role) {
+    const role = String((user as any)?.role || (user as any)?.user_type || '').toLowerCase();
+    switch (role) {
       case "admin":
         navigate("/admin/dashboard");
         break;
@@ -295,7 +297,8 @@ const Header = () => {
   const getDashboardRoute = () => {
     if (!user) return "/dashboard";
 
-    switch (user.role) {
+    const role = String((user as any)?.role || (user as any)?.user_type || '').toLowerCase();
+    switch (role) {
       case "admin":
         return "/admin/dashboard";
       case "traffic_manager":

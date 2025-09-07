@@ -47,11 +47,11 @@ const NewRegistrationForm: React.FC<Props> = ({ onComplete, isLoading = false, d
   const steps = getSteps();
   const totalSteps = steps.length;
 
-  // En el flujo de cliente, al llegar al último paso lanzamos automáticamente el registro
+  // Auto-enviar al llegar al último paso (cliente y drover)
   useEffect(() => {
-    const isClientFlow = userType === 'client';
     const isOnLastStep = currentStep === totalSteps - 1;
-    if (isClientFlow && isOnLastStep && !isSubmitting && isFormComplete()) {
+    const isSupportedFlow = userType === 'client' || userType === 'drover';
+    if (isSupportedFlow && isOnLastStep && !isSubmitting && isFormComplete()) {
       handleSubmit();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

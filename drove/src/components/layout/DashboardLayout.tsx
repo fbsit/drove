@@ -46,7 +46,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       </div>
       
       {/* MAIN: contenido principal - sin padding en móvil, centrado automático */}
-      <main className={`flex-1 min-h-screen w-full mx-auto ${
+      <main className={`flex-1 min-h-screen w-full max-w-[890px] mx-auto ${
         isMobile ? 'px-3' : 'md:px-4 px-0'
       }`}>
         {children}

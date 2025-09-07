@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserService } from '@/services/userService';
+import UserService from '@/services/userService';
+import DroverService from '@/services/droverService';
 import { toast } from '@/hooks/use-toast';
 import { User, Mail, Phone, Calendar, Shield, Award, Clock3, TrendingUp, Activity, Euro, Star } from 'lucide-react';
 
@@ -20,6 +21,36 @@ const DroverProfile = () => {
     city: user?.city || '',
     address: user?.address || ''
   });
+
+  const [stats, setStats] = useState<any>({ totalEarnings: 0, monthlyAvg: 0, rating: 0, completed: 0, avgTimePerTrip: 'N/A', medals: 0 });
+
+  React.useEffect(() => {
+    const load = async () => {
+      try {
+        const profile = await UserService.getUserProfile();
+        const p: any = profile?.user || profile || {};
+        const nextForm = {
+          full_name: p.full_name || p.fullName || (user as any)?.full_name || (user as any)?.fullName || (user as any)?.contactInfo?.fullName || '',
+          email: p.email || (user as any)?.email || '',
+          phone: p.phone || p?.contactInfo?.phone || (user as any)?.phone || (user as any)?.contactInfo?.phone || '',
+          city: p.city || p?.contactInfo?.city || (user as any)?.city || (user as any)?.contactInfo?.city || '',
+          address: p.address || p?.contactInfo?.address || (user as any)?.address || (user as any)?.contactInfo?.address || ''
+        };
+        setFormData(nextForm);
+        const dash = await (DroverService as any).getDroverDashboard?.() || await (DroverService as any).getDroverStats?.();
+        const s: any = dash?.stats || dash?.metrics || dash || {};
+        setStats({
+          totalEarnings: s.totalEarnings ?? 0,
+          monthlyAvg: s.avgPerTrip ?? s.monthlyAvg ?? 0,
+          rating: s.rating ?? 0,
+          completed: s.completedTransfers ?? s.completed ?? 0,
+          avgTimePerTrip: s.avgTimePerTrip ?? s.avgDuration ?? 'N/A',
+          medals: s.medals ?? 0,
+        });
+      } catch (e) { console.error('[DROVER_PROFILE] fetch error', e); }
+    };
+    load();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -100,7 +131,7 @@ const DroverProfile = () => {
             <CardContent className="p-6 text-center">
               <div className="bg-white/90 p-3 rounded-2xl w-fit mx-auto mb-3"><Euro size={24} className="text-emerald-600" /></div>
               <div className="text-black font-bold text-sm mb-1">Ganancias totales</div>
-              <div className="text-2xl font-bold text-black">€0</div>
+              <div className="text-2xl font-bold text-black">€{Number(stats.totalEarnings||0).toLocaleString()}</div>
               <div className="text-black/70 text-xs mt-1">desde alta</div>
             </CardContent>
           </Card>
@@ -108,15 +139,15 @@ const DroverProfile = () => {
             <CardContent className="p-6 text-center">
               <div className="bg-white/90 p-3 rounded-2xl w-fit mx-auto mb-3"><TrendingUp size={24} className="text-blue-600" /></div>
               <div className="text-black font-bold text-sm mb-1">Promedio mensual</div>
-              <div className="text-2xl font-bold text-black">€0</div>
-              <div className="text-black/70 text-xs mt-1">0 meses</div>
+              <div className="text-2xl font-bold text-black">€{Number(stats.monthlyAvg||0).toLocaleString(undefined,{minimumFractionDigits:2})}</div>
+              <div className="text-black/70 text-xs mt-1">promedio</div>
             </CardContent>
           </Card>
           <Card className="bg-gradient-to-br from-yellow-500/30 to-yellow-600/10 border-yellow-400/40 border backdrop-blur-sm">
             <CardContent className="p-6 text-center">
               <div className="bg-white/90 p-3 rounded-2xl w-fit mx-auto mb-3"><Star size={24} className="text-yellow-600" /></div>
               <div className="text-black font-bold text-sm mb-1">Calificación</div>
-              <div className="text-2xl font-bold text-black">0</div>
+              <div className="text-2xl font-bold text-black">{Number(stats.rating||0).toFixed(1)}</div>
               <div className="text-black/70 text-xs mt-1">de 5 estrellas</div>
             </CardContent>
           </Card>
@@ -124,7 +155,7 @@ const DroverProfile = () => {
             <CardContent className="p-6 text-center">
               <div className="bg-white/90 p-3 rounded-2xl w-fit mx-auto mb-3"><Activity size={24} className="text-purple-600" /></div>
               <div className="text-black font-bold text-sm mb-1">Traslados</div>
-              <div className="text-2xl font-bold text-black">0</div>
+              <div className="text-2xl font-bold text-black">{Number(stats.completed||0)}</div>
               <div className="text-black/70 text-xs mt-1">completados</div>
             </CardContent>
           </Card>
@@ -132,7 +163,7 @@ const DroverProfile = () => {
             <CardContent className="p-6 text-center">
               <div className="bg-white/90 p-3 rounded-2xl w-fit mx-auto mb-3"><Clock3 size={24} className="text-sky-600" /></div>
               <div className="text-black font-bold text-sm mb-1">Tiempo promedio</div>
-              <div className="text-2xl font-bold text-black">N/A</div>
+              <div className="text-2xl font-bold text-black">{String(stats.avgTimePerTrip||'N/A')}</div>
               <div className="text-black/70 text-xs mt-1">por traslado</div>
             </CardContent>
           </Card>
@@ -140,7 +171,7 @@ const DroverProfile = () => {
             <CardContent className="p-6 text-center">
               <div className="bg-white/90 p-3 rounded-2xl w-fit mx-auto mb-3"><Award size={24} className="text-orange-600" /></div>
               <div className="text-black font-bold text-sm mb-1">Medallas</div>
-              <div className="text-2xl font-bold text-black">0</div>
+              <div className="text-2xl font-bold text-black">{Number(stats.medals||0)}</div>
               <div className="text-black/70 text-xs mt-1">logros</div>
             </CardContent>
           </Card>

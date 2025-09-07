@@ -58,6 +58,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const userData = await AuthService.getCurrentUser();
       if (userData) {
         authState.setUser(userData as any);
+        // Persistir último acceso si viene del backend o si no existe
+        try {
+          const backendLast = (userData as any)?.last_login_at || (userData as any)?.lastLoginAt || null;
+          const stored = localStorage.getItem('last_login_at');
+          if (backendLast) {
+            localStorage.setItem('last_login_at', String(backendLast));
+          } else if (!stored) {
+            // Primer hidrato sin dato de backend: usar hora actual como aproximación
+            localStorage.setItem('last_login_at', new Date().toISOString());
+          }
+        } catch {}
       } else {
         authState.setUser(null);
       }
