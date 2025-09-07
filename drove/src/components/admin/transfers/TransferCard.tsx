@@ -29,7 +29,7 @@ const getGamifyIcon = (status: string) => {
 
 const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
-  
+
   const isCompleted = transfer.status === TransferStatus.DELIVERED;
   const isAssigned = transfer.status === TransferStatus.ASSIGNED;
   const isInProgress = transfer.status === TransferStatus.IN_PROGRESS;
@@ -68,14 +68,14 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
 
   return (
     <>
-      <div className="rounded-2xl bg-white/5 border border-white/10 p-5 mb-4 shadow-sm flex flex-col gap-3">
+      <div className="rounded-2xl bg-white/5 border border-white/10 p-5 shadow-sm flex flex-col gap-3 w-full lg:w-[49%] ">
         <div className="flex items-center gap-2">
           {gamify && getGamifyIcon(transfer.status)}
           <StatusBadge status={transfer.status} />
           <span className="ml-auto text-sm text-white/60">{formatDate(transfer.scheduledDate || transfer.createdAt || transfer.created_at)}</span>
         </div>
-        
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center justify-center gap-2">
           <User size={16} className="text-white/70" />
           <div>
             <p className="font-medium text-white">
@@ -84,35 +84,35 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
             <p className="text-xs text-white/70">{transfer.clientEmail || transfer.users?.email}</p>
           </div>
         </div>
-        
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center justify-center gap-2">
           <Car size={16} className="text-white/70" />
           <p className="text-white">{transfer.brand || '—'} {transfer.model || ''}</p>
         </div>
-        
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center justify-center gap-2">
           <MapPin size={16} className="text-white/70" />
           <div className="flex flex-col">
             <span className="text-white text-sm">{transfer.origin || '—'}</span>
             <span className="text-xs text-white/70">{transfer.destination || '—'}</span>
           </div>
         </div>
-        
+
         {/* Precio e información del conductor (mapea correctamente los campos) */}
         <div className="flex flex-col gap-2">
           <span className="text-base font-bold text-[#6EF7FF]">
             {Number(transfer.totalPrice ?? transfer.price ?? 0).toFixed(2)}&nbsp;€
           </span>
-          
+
           {/* Información del conductor asignado */}
           {(isAssigned || isInProgress) && assignedDriver && (
-            <div className="text-white/90 text-sm flex items-center gap-1">
+            <div className="text-white/90 text-sm flex items-center gap-1 justify-center">
               <UserCheck size={14} className={isAssigned ? "text-indigo-400" : "text-purple-400"} />
               <span className="mr-1">{isAssigned ? "Asignado a:" : "Conducido por:"}</span>
               <span className="font-semibold">{assignedDriver}</span>
             </div>
           )}
-          
+
           {/* Información del conductor para traslados completados */}
           {isCompleted && assignedDriver && (
             <div className="text-white/90 text-sm">
@@ -121,18 +121,11 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
             </div>
           )}
         </div>
-        
+
         {/* Botones de acción - Nueva fila separada */}
         <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
           {/* Primera fila: Botón Ver siempre visible (admin → detalle activo) */}
-          <div className="flex justify-end">
-            <Button variant="ghost" size="sm" onClick={handleVerClick} asChild>
-              <Link to={`/traslados/activo/${transfer.id}`}>
-                Ver <ArrowRight size={16} />
-              </Link>
-            </Button>
-          </div>
-          
+
           {/* Segunda fila: Botones condicionales */}
           {(shouldShowAssignButton || isAssigned || transfer.status === TransferStatus.CREATED) && (
             <div className="flex flex-col gap-2">
@@ -156,7 +149,7 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
                   <Link to={`/admin/reasignar/${transfer.id}`}>Reasignar Drover</Link>
                 </Button>
               ) : null}
-              
+
               {/* Botón Reagendar para traslados created o assigned */}
               {(transfer.status === TransferStatus.CREATED || transfer.status === TransferStatus.ASSIGNED) && (
                 <Button
@@ -169,7 +162,7 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
                   Reagendar
                 </Button>
               )}
-              
+
               {/* Botón Reasignar solo para traslados asignados */}
               {isAssigned && (
                 <Button
@@ -186,9 +179,17 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
               )}
             </div>
           )}
+
+          <div className="flex justify-end">
+            <Button variant="ghost" size="sm" onClick={handleVerClick} asChild>
+              <Link to={`/traslados/activo/${transfer.id}`}>
+                Ver <ArrowRight size={16} />
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
-      
+
       <RescheduleModal
         isOpen={showRescheduleModal}
         onClose={() => setShowRescheduleModal(false)}

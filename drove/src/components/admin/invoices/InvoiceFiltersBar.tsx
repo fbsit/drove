@@ -24,8 +24,8 @@ interface InvoiceFiltersBarProps {
   setFilterClient: (value: string) => void;
   filterDrover: string;
   setFilterDrover: (value: string) => void;
-  dateRange: {from?: Date, to?: Date};
-  setDateRange: (value: {from?: Date, to?: Date}) => void;
+  dateRange: { from?: Date, to?: Date };
+  setDateRange: (value: { from?: Date, to?: Date }) => void;
   clients: string[];
   drovers: string[];
 }
@@ -80,12 +80,12 @@ export default function InvoiceFiltersBar({
       </div>
 
       {/* Fila de chips (filtros pill) */}
-      <div className="flex gap-3 flex-wrap md:flex-nowrap">
+      <div className="flex gap-x-[2%] gap-3 xl:gap-x-3 flex-wrap xl:flex-nowrap justify-center">
         {/* Estado de factura */}
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="h-10 rounded-2xl bg-[#1B1E28] text-white border-white/10 w-[180px] justify-between">
-            <div className="flex items-center gap-2"><span className="text-white/70">Todos los...</span></div>
-            <ChevronDown size={16} />
+          <SelectTrigger className="h-10 rounded-2xl bg-[#1B1E28] text-white border-white/10 justify-between w-full md:w-[49%] xl:w-full">
+            <div className="flex items-center gap-2"><span className="text-white/70">Todos los estados</span></div>
+
           </SelectTrigger>
           <SelectContent className="bg-[#22142A] text-white border-white/10 z-30">
             <SelectGroup>
@@ -98,9 +98,9 @@ export default function InvoiceFiltersBar({
 
         {/* Estado de traslado (placeholder) */}
         <Select value={filterTransfer} onValueChange={setFilterTransfer}>
-          <SelectTrigger className="h-10 rounded-2xl bg-[#1B1E28] text-white border-white/10 w-[180px] justify-between">
-            <div className="flex items-center gap-2"><span className="text-white/70">Todos los...</span></div>
-            <ChevronDown size={16} />
+          <SelectTrigger className="h-10 rounded-2xl bg-[#1B1E28] text-white border-white/10 w-full md:w-[49%] xl:w-full justify-between">
+            <div className="flex items-center gap-2"><span className="text-white/70">Todos los traslados</span></div>
+
           </SelectTrigger>
           <SelectContent className="bg-[#22142A] text-white border-white/10 z-30">
             <SelectGroup>
@@ -116,9 +116,9 @@ export default function InvoiceFiltersBar({
 
         {/* Drover (placeholder) */}
         <Select value={filterDrover} onValueChange={setFilterDrover}>
-          <SelectTrigger className="h-10 rounded-2xl bg-[#1B1E28] text-white border-white/10 w-[180px] justify-between">
-            <div className="flex items-center gap-2"><span className="text-white/70">Todos los...</span></div>
-            <ChevronDown size={16} />
+          <SelectTrigger className="h-10 rounded-2xl bg-[#1B1E28] text-white border-white/10 w-full md:w-[49%] xl:w-full justify-between">
+            <div className="flex items-center gap-2"><span className="text-white/70">Todos los drovers</span></div>
+
           </SelectTrigger>
           <SelectContent className="bg-[#22142A] text-white border-white/10 z-30">
             <SelectGroup>
@@ -132,11 +132,11 @@ export default function InvoiceFiltersBar({
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className="h-10 rounded-2xl bg-[#1B1E28] text-white border-white/10 px-4 flex items-center gap-2 w-[180px] justify-between"
+              className="h-10 rounded-2xl bg-[#1B1E28] text-white border-white/10 px-4 flex items-center gap-2 w-full md:w-[49%] xl:w-full justify-between"
             >
               <CalendarDays size={16} className="text-[#6EF7FF]" />
               <span>Rango de fechas</span>
-              <ChevronDown size={16} />
+
             </Button>
           </PopoverTrigger>
           <PopoverContent className="bg-[#22142A] text-white border-white/10 rounded-2xl w-fit">

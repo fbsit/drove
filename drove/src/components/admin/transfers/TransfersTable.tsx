@@ -116,11 +116,11 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
   return (
     <>
       {/* Vista móvil - Cards */}
-      <div className="block md:hidden">
+      <div className="block xl:hidden">
         {transfers.length === 0 ? (
           <div className="text-center text-white py-8">No hay traslados disponibles</div>
         ) : (
-          <div className="space-y-4">
+          <div className="flex flex-col lg:flex-row lg:flex-wrap gap-4 lg:gap-x-[2%]">
             {transfers.map((transfer) => (
               <TransferCard key={transfer.id} transfer={transfer} gamify={gamify} />
             ))}
@@ -129,7 +129,7 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
       </div>
 
       {/* Vista desktop - Tabla moderna y expandible */}
-      <div className="hidden md:block">
+      <div className="hidden xl:block">
         <div className="rounded-2xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-sm">
           <Table>
             <TableHeader>
@@ -162,7 +162,7 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                   return (
                     <React.Fragment key={transfer.id}>
                       {/* Fila principal */}
-                      <TableRow 
+                      <TableRow
                         className="border-t border-white/10 hover:bg-white/10 transition-all cursor-pointer group h-[72px]"
                         onClick={() => toggleRow(transfer.id)}
                       >
@@ -186,11 +186,11 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                             {getGamifyIcon(transfer.status)}
                           </TableCell>
                         )}
-                        
+
                         <TableCell className="py-5">
                           <StatusBadge status={transfer.status} />
                         </TableCell>
-                        
+
                         <TableCell className="py-5">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-full bg-[#6EF7FF]/10 flex items-center justify-center flex-shrink-0">
@@ -206,38 +206,39 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                             </div>
                           </div>
                         </TableCell>
-                        
+
                         <TableCell className="py-5">
                           <div className="flex items-center gap-2">
                             <Calendar size={14} className="text-white/70" />
-                            {(() => { const p = formatDateParts(transfer.scheduledDate || transfer.createdAt || transfer.created_at); return (
-                              <div className="leading-tight">
-                                <div className="text-white text-sm">{p.top}</div>
-                                <div className="text-white/60 text-xs">{p.bottom}</div>
-                              </div>
-                            ); })()}
+                            {(() => {
+                              const p = formatDateParts(transfer.scheduledDate || transfer.createdAt || transfer.created_at); return (
+                                <div className="leading-tight">
+                                  <div className="text-white text-sm">{p.top}</div>
+                                  <div className="text-white/60 text-xs">{p.bottom}</div>
+                                </div>
+                              );
+                            })()}
                           </div>
                         </TableCell>
-                        
+
                         <TableCell className="text-right py-5">
                           <span className="text-base font-bold text-[#6EF7FF] whitespace-nowrap">
                             {Number(transfer.totalPrice ?? transfer.price ?? 0).toFixed(2)} €
                           </span>
                         </TableCell>
-                        
+
                         <TableCell className="text-right py-5" onClick={(e) => e.stopPropagation()}>
                           <div className="flex justify-end items-center space-x-2">
                             {/* Mostrar nombre del drover para traslados completados, asignados o en progreso */}
                             {(isCompleted || isAssigned || isInProgress) && assignedDriver && (
-                              <span className={`text-white/90 text-xs px-2 py-1 rounded-full whitespace-nowrap ${
-                                isCompleted ? 'bg-green-500/20' : 
-                                isInProgress ? 'bg-blue-500/20' : 
-                                'bg-purple-500/20'
-                              }`}>
+                              <span className={`text-white/90 text-xs px-2 py-1 rounded-full whitespace-nowrap ${isCompleted ? 'bg-green-500/20' :
+                                isInProgress ? 'bg-blue-500/20' :
+                                  'bg-purple-500/20'
+                                }`}>
                                 {assignedDriver}
                               </span>
                             )}
-                            
+
                             {/* Botón Asignar Drover si NO está completado, NO está asignado y NO está en progreso */}
                             {shouldShowAssignButton && (
                               <Button
@@ -249,13 +250,13 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                                 <Link to={`/admin/asignar/${transfer.id}`}>Asignar</Link>
                               </Button>
                             )}
-                            
+
                             {/* Dropdown de acciones */}
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
                                   className="text-white/70 hover:text-white hover:bg-white/10"
                                 >
                                   <MoreHorizontal size={18} />
@@ -263,7 +264,7 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                               </DropdownMenuTrigger>
                               <DropdownMenuContent className="bg-[#22142A] border-white/20">
                                 <DropdownMenuItem asChild>
-                                  <Link 
+                                  <Link
                                     to={`/traslados/activo/${transfer.id}`}
                                     className="flex items-center gap-2 text-white hover:bg-white/10 cursor-pointer"
                                   >
@@ -271,10 +272,10 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                                     Ver Detalle
                                   </Link>
                                 </DropdownMenuItem>
-                                
+
                                 {isAssigned && (
                                   <>
-                                    <DropdownMenuItem 
+                                    <DropdownMenuItem
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleRescheduleClick(transfer);
@@ -284,9 +285,9 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                                       <Calendar size={16} />
                                       Reprogramar
                                     </DropdownMenuItem>
-                                    
+
                                     <DropdownMenuItem asChild>
-                                      <Link 
+                                      <Link
                                         to={`/admin/reasignar/${transfer.id}`}
                                         className="flex items-center gap-2 text-orange-400 hover:bg-orange-400/10 cursor-pointer"
                                       >
@@ -341,11 +342,11 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                                       <p className="text-white text-sm">{transfer.origin || '—'}</p>
                                     </div>
                                   </div>
-                                  
+
                                   <div className="flex items-center gap-3 pl-1">
                                     <div className="w-1 h-8 bg-white/20 rounded-full"></div>
                                   </div>
-                                  
+
                                   <div className="flex items-start gap-3">
                                     <div className="w-3 h-3 rounded-full bg-red-400 mt-1 flex-shrink-0"></div>
                                     <div>

@@ -3,13 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  ArrowLeft, 
-  MapPin, 
-  Clock, 
-  Car, 
-  User, 
-  Phone, 
+import {
+  ArrowLeft,
+  MapPin,
+  Clock,
+  Car,
+  User,
+  Phone,
   Mail,
   Package,
   AlertCircle
@@ -70,7 +70,7 @@ const TransferDetail = () => {
     try {
       setLoading(true);
       const response = await TransferService.getTravelById(transferId!);
-      
+
       // Mapear la respuesta de la API al formato esperado
       const mappedData: TransferData = {
         id: response?.id || transferId!,
@@ -106,7 +106,7 @@ const TransferDetail = () => {
         } : undefined,
         createdAt: response?.created_at || response?.createdAt || new Date().toISOString(),
       };
-      
+
       setTransferData(mappedData);
     } catch (error) {
       console.error('Error al cargar el traslado:', error);
@@ -153,7 +153,7 @@ const TransferDetail = () => {
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-white text-xl mb-2">Error</h2>
           <p className="text-white/70 mb-4">{error || 'No se encontró el traslado'}</p>
-          <Button onClick={() => navigate('/cliente/traslados')} variant="outline">
+          <Button onClick={() => navigate('/cliente/traslados')} variant="outline" className='hidden'>
             <ArrowLeft size={16} className="mr-2" />
             Volver
           </Button>
@@ -172,11 +172,12 @@ const TransferDetail = () => {
               variant="outline"
               size="sm"
               onClick={() => navigate('/cliente/traslados')}
+              className='hidden'
             >
               <ArrowLeft size={16} />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-white">Detalle del Traslado</h1>
+              <h1 className="lg:text-left text-2xl font-bold text-white">Detalle del Traslado</h1>
               <p className="text-white/70">#{transferData.id}</p>
             </div>
           </div>

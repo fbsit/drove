@@ -102,23 +102,23 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
   const handleUploadSuccess = () => {
     // Simular que se subió el PDF y cambiar estado a "emitida"
     onChangeStatus(invoice.id, "emitida");
-    toast({ 
-      title: "Factura subida correctamente", 
-      description: "El estado se ha actualizado a 'Emitida'.", 
-      duration: 1500 
+    toast({
+      title: "Factura subida correctamente",
+      description: "El estado se ha actualizado a 'Emitida'.",
+      duration: 1500
     });
     setUploadDialog(false);
   };
 
   return (
     <div
-      className="rounded-2xl bg-white/10 px-4 py-3 shadow-lg flex flex-col hover:shadow-[0_2px_24px_0_#6EF7FF22] transition-all duration-200 relative group"
+      className="rounded-2xl bg-white/10 px-4 py-3 shadow-lg flex flex-col hover:shadow-[0_2px_24px_0_#6EF7FF22] transition-all duration-200 relative group justify-between"
       style={{ fontFamily: "Helvetica", minWidth: 0 }}
     >
       {/* Header */}
       <div className="flex items-center gap-2 justify-between min-w-0" tabIndex={0}>
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-base font-bold text-white leading-snug truncate">INV-{String(invoice.id).padStart(6,'0')}</span>
+          <span className="text-base font-bold text-white leading-snug truncate">INV-{String(invoice.id).padStart(6, '0')}</span>
           <span className="text-xs text-white/60 truncate">{invoice.invoiceDate}</span>
         </div>
         <div className="flex items-center gap-2">
@@ -126,21 +126,20 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
           <span className="text-xs text-white/80">{metodoPago}</span>
         </div>
       </div>
-      
+
       {/* Cliente y estado pago */}
       <div className="mt-2 flex flex-wrap gap-1 items-center justify-between text-sm">
         <span title={invoice.client || invoice.client_name} className="truncate max-w-[60%] text-white font-semibold">{invoice.client || invoice.client_name}</span>
-        <span className={`truncate ml-2 text-xs rounded-xl px-2 py-1 font-bold ${
-          estadoPago === "Pagado"
-            ? "bg-green-600"
-            : estadoPago === "Anticipado por banco"
+        <span className={`truncate ml-2 text-xs rounded-xl px-2 py-1 font-bold ${estadoPago === "Pagado"
+          ? "bg-green-600"
+          : estadoPago === "Anticipado por banco"
             ? "bg-purple-600"
             : "bg-white/10 text-white/60"
-        }`}>
+          }`}>
           {estadoPago}
         </span>
       </div>
-      
+
       {/* Estado factura */}
       <div className="flex items-center gap-2 mt-2">
         <span className="text-xs font-semibold">
@@ -150,14 +149,14 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
           </span>
         </span>
       </div>
-      
+
       {/* Ruta y drover (cuando existan) */}
       {(invoice.vehicle || invoice.fromAddress || invoice.toAddress || invoice.droverName) && (
         <div className="mt-3 rounded-xl border border-white/15 bg-white/5 p-3 text-sm text-white/80">
           {invoice.vehicle && <div className="mb-1">{invoice.vehicle}</div>}
           {invoice.fromAddress && <div className="mb-1">{invoice.fromAddress}</div>}
           {invoice.toAddress && <div className="mb-1">{invoice.toAddress}</div>}
-          {invoice.droverName && <div className="flex items-center gap-1 text-white/70"><UserPlus size={14}/> Drover: {invoice.droverName}</div>}
+          {invoice.droverName && <div className="flex items-center gap-1 text-white/70"><UserPlus size={14} /> Drover: {invoice.droverName}</div>}
         </div>
       )}
 
@@ -174,9 +173,9 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
             <span className="ml-2">Subir Factura</span>
           </Button>
         ) : (
-          <Button 
-            size="sm" 
-            variant="ghost" 
+          <Button
+            size="sm"
+            variant="ghost"
             className="rounded-2xl bg-[#22142A] hover:bg-[#403E43] text-white font-bold shadow-none w-fit"
             onClick={() => window.open(invoice.urlPDF, '_blank')}
           >
@@ -184,14 +183,14 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
             <span className="ml-2">Ver Factura</span>
           </Button>
         )}
-        <div className="flex flex-row flex-wrap gap-4 items-center text-sm">
+        <div className="flex flex-row flex-wrap gap-4 items-center text-sm justify-center">
           <Button variant="link" className="text-white hover:text-white/80 p-0 h-auto">Asignar</Button>
           <Button
             variant="link"
             className="text-white/80 hover:text-white p-0 h-auto flex items-center gap-1"
             onClick={() => window.open(`/traslados/${invoice.transferId}`, '_self')}
           >
-            <Eye size={14}/> Ver Traslado
+            <Eye size={14} /> Ver Traslado
           </Button>
         </div>
 
@@ -236,9 +235,9 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
             )}
           </>
         )}
-        
+
         {/* Rechazar / Anular */}
-        <div className="flex flex-row gap-6 items-center mt-1 text-sm">
+        <div className="flex flex-row gap-6 items-center mt-1 text-sm justify-center">
           <button
             className="flex items-center gap-2 text-red-400 hover:text-red-300"
             onClick={() => onReject?.(invoice.id)}
@@ -263,11 +262,12 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
             <Button
               size="icon"
               variant="ghost"
-              className="rounded-2xl text-[#6EF7FF] ml-1 hover:bg-[#6EF7FF]/10"
+              className="rounded-2xl text-[#6EF7FF] ml-1 hover:bg-[#6EF7FF]/10 w-fit px-4"
               aria-label="Información de factura"
               tabIndex={0}
             >
               <Info size={18} />
+              <span>Ver más información</span>
             </Button>
           }
           invoice={{
@@ -304,7 +304,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* Modal confirmación acciones de estado */}
       <Dialog open={confirmDialog.open} onOpenChange={() => setConfirmDialog({ open: false, type: undefined })}>
         <DialogContent className="bg-[#22142A] text-white rounded-2xl max-w-sm border-none">

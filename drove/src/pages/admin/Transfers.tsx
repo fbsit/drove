@@ -97,24 +97,24 @@ const Transfers: React.FC = () => {
         </TabsList>
 
         <TabsContent value="operativa">
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-            <div className="bg-white/10 rounded-lg p-4 text-center">
+          <div className="mt-4 flex flex-wrap lg:flex-nowrap gap-x-[4%] gap-y-4 lg:gap-x-4 mb-6 justify-center">
+            <div className="bg-white/10 rounded-lg p-8 text-center w-[48%] lg:w-full">
               <div className="text-2xl font-bold text-white">{metrics?.totalTransfers ?? transfers.length}</div>
               <div className="text-sm text-white/60">Total Traslados</div>
             </div>
-            <div className="bg-white/10 rounded-lg p-4 text-center">
+            <div className="bg-white/10 rounded-lg p-8 text-center w-[48%] lg:w-full">
               <div className="text-2xl font-bold text-green-400">{metrics?.completedTransfers ?? transfers.filter(t => t.status === 'DELIVERED').length}</div>
               <div className="text-sm text-white/60">Entregados</div>
             </div>
-            <div className="bg-white/10 rounded-lg p-4 text-center">
+            <div className="bg-white/10 rounded-lg p-8 text-center w-[48%] lg:w-full">
               <div className="text-2xl font-bold text-yellow-400">{metrics?.inProgressTransfers ?? transfers.filter(t => t.status === 'IN_PROGRESS').length}</div>
               <div className="text-sm text-white/60">En Progreso</div>
             </div>
-            <div className="bg-white/10 rounded-lg p-4 text-center">
+            <div className="bg-white/10 rounded-lg p-8 text-center w-[48%] lg:w-full">
               <div className="text-2xl font-bold text-blue-400">{metrics?.pendingTransfers ?? transfers.filter(t => t.status === 'CREATED' || t.status === 'PENDINGPAID').length}</div>
               <div className="text-sm text-white/60">Pendientes</div>
             </div>
-            <div className="bg-white/10 rounded-lg p-4 text-center">
+            <div className="bg-white/10 rounded-lg p-8 text-center w-[48%] lg:w-full">
               <div className="text-2xl font-bold text-white">{metrics?.assignedTransfers ?? transfers.filter(t => t.status === 'ASSIGNED').length}</div>
               <div className="text-sm text-white/60">Asignados</div>
             </div>

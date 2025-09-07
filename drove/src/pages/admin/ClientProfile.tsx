@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Mail, Phone, BadgeCheck, User, Building2, Award, TrendingUp, FileText, Car, Route } from "lucide-react";
+import { ArrowLeft, Mail, Phone, BadgeCheck, User, Building2, Award, TrendingUp, FileText, Car, Route, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogClose } from "@/components/ui/dialog";
@@ -22,11 +22,10 @@ const estadoLabels = {
 };
 
 const tipoBadge = tipo => (
-  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ml-1 ${
-    tipo === "empresa"
-      ? "bg-[#2c76b8] text-white flex items-center gap-1"
-      : "bg-[#6ef7ff] text-[#22142A]"
-  }`} style={{ fontFamily: "Helvetica" }}>
+  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ml-1 ${tipo === "empresa"
+    ? "bg-[#2c76b8] text-white flex items-center gap-1"
+    : "bg-[#6ef7ff] text-[#22142A]"
+    }`} style={{ fontFamily: "Helvetica" }}>
     {tipo === "empresa"
       ? (<><Building2 size={13} className="mr-1" />Empresa</>)
       : (<><User size={13} className="mr-1" />Persona natural</>)
@@ -102,7 +101,7 @@ const ClientProfile: React.FC = () => {
     return (
       <div className="p-8 text-white">
         <Button variant="outline" onClick={() => navigate(-1)}>
-          <ArrowLeft size={18} className="mr-2" /> Volver
+          <ArrowLeft size={16} className="mr-2" /> Volver a Clientes
         </Button>
         <div className="mt-16 text-center text-xl">Cliente no encontrado</div>
       </div>
@@ -171,10 +170,70 @@ const ClientProfile: React.FC = () => {
     ) ?? [];
 
   return (
-    <div className="max-w-5xl mx-auto mt-6 bg-transparent p-0 animate-fade-in">
+    <div className="bg-transparent p-0 animate-fade-in">
+      {/* Fila de botones */}
+      <div className="flex items-center justify-between px-3 xs:px-4 md:px-0 gap-2 mb-3">
+        <Button
+          variant="outline"
+          onClick={() => navigate(-1)}
+          className="rounded-xl border-2 border-white/20 bg-transparent text-[#6EF7FF] hover:bg-[#6EF7FF] hover:text-[#22142A] h-10 px-6 py-2"
+        >
+          <ArrowLeft size={16} className="mr-2" /> Volver a Clientes
+        </Button>
+        {(client.status === "PENDING" || client.status === "REJECTED") && (
+          <Dialog open={openAprobar} onOpenChange={setOpenAprobar}>
+            <DialogTrigger asChild>
+              <Button className="ml-auto rounded-xl bg-green-700 text-white hover:text-green-900 hover:bg-green-200 font-bold h-10 px-6 py-2">
+                <BadgeCheck className="mr-2" size={17} /> Aprobar
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Aprobar Cliente</DialogTitle>
+              </DialogHeader>
+              <div className="mt-3 mb-5 text-white/90 text-sm">
+                ¿Deseas aprobar el acceso de este cliente?<br />
+                Podrá solicitar y gestionar traslados en la plataforma.
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="secondary">Cancelar</Button>
+                </DialogClose>
+                <Button onClick={handleApproved}>Aprobar Cliente</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {(client.status === "PENDING" || client.status === "APPROVED") && (
+          <Dialog open={openRechazar} onOpenChange={setOpenRechazar}>
+            <DialogTrigger asChild>
+              <Button variant="destructive" className="rounded-xl bg-red-500 text-white hover:bg-red-600 h-10 px-6 py-2">
+                <UserX size={16} className="mr-2" /> Rechazar
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Rechazar Cliente</DialogTitle>
+              </DialogHeader>
+              <div className="mt-3 mb-5 text-white/90 text-sm">
+                ¿Seguro que deseas rechazar el acceso de este cliente?<br />
+                El cliente no podrá operar ni visualizar su perfil.
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="secondary">Cancelar</Button>
+                </DialogClose>
+                <Button variant="destructive" onClick={handleRejected}>Rechazar Cliente</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
+
       {/* Header */}
-      <div className="rounded-2xl bg-white/5 border border-white/15">
-        <div className="p-4 sm:p-6">
+      <div className="rounded-2xl gap-4 md:gap-6 bg-[#2B2540] px-3 md:px-8 py-5 md:py-7 shadow-lg border border-white/10">
+        <div className="">
           <div className="flex flex-col lg:flex-row items-center gap-4 lg:gap-6">
             {/* Avatar a la izquierda */}
             <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center rounded-full bg-[#6ef7ff]/90 shadow-lg border-4 border-white overflow-hidden text-2xl sm:text-3xl font-bold uppercase text-[#22142A]">
@@ -186,67 +245,8 @@ const ClientProfile: React.FC = () => {
             </div>
 
             {/* Contenido a la derecha */}
-            <div className="flex-1 min-w-0 text-center lg:text-left">
-              {/* Fila de botones */}
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-center justify-center lg:justify-start mb-3">
-                <Button
-                  variant="outline"
-                  onClick={() => navigate(-1)}
-                  className="rounded-xl border-2 border-[#6EF7FF] bg-transparent text-[#6EF7FF] hover:bg-[#6EF7FF] hover:text-[#22142A] h-10 px-6 py-2"
-                >
-                  <ArrowLeft className="mr-2" size={18} /> Volver
-                </Button>
-
-                {(client.status === "PENDING" || client.status === "REJECTED") && (
-                  <Dialog open={openAprobar} onOpenChange={setOpenAprobar}>
-                    <DialogTrigger asChild>
-                      <Button className="rounded-xl bg-[#6EF7FF] text-[#22142A] hover:bg-[#32dfff] font-bold h-10 px-6 py-2">
-                        <BadgeCheck className="mr-2" size={17} /> Aprobar
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Aprobar Cliente</DialogTitle>
-                      </DialogHeader>
-                      <div className="mt-3 mb-5 text-white/90 text-sm">
-                        ¿Deseas aprobar el acceso de este cliente?<br/>
-                        Podrá solicitar y gestionar traslados en la plataforma.
-                      </div>
-                      <DialogFooter>
-                        <DialogClose asChild>
-                          <Button variant="secondary">Cancelar</Button>
-                        </DialogClose>
-                        <Button onClick={handleApproved}>Aprobar Cliente</Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                )}
-
-                {(client.status === "PENDING" || client.status === "APPROVED") && (
-                  <Dialog open={openRechazar} onOpenChange={setOpenRechazar}>
-                    <DialogTrigger asChild>
-                      <Button className="rounded-xl bg-red-500 text-white hover:bg-red-600 h-10 px-6 py-2">
-                        <FileText className="mr-2" size={17} /> Rechazar
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Rechazar Cliente</DialogTitle>
-                      </DialogHeader>
-                      <div className="mt-3 mb-5 text-white/90 text-sm">
-                        ¿Seguro que deseas rechazar el acceso de este cliente?<br />
-                        El cliente no podrá operar ni visualizar su perfil.
-                      </div>
-                      <DialogFooter>
-                        <DialogClose asChild>
-                          <Button variant="secondary">Cancelar</Button>
-                        </DialogClose>
-                        <Button variant="destructive" onClick={handleRejected}>Rechazar Cliente</Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                )}
-              </div>
+            <div></div>
+            <div className="flex-1 min-w-0 text-center lg:text-left bg-yellow-900">
 
               {/* Fila del nombre y chips */}
               <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 items-center justify-center lg:justify-start mb-3">
@@ -296,116 +296,116 @@ const ClientProfile: React.FC = () => {
 
       {/* Secciones en acordeón dentro de una sola Card */}
       <div className="rounded-lg overflow-hidden border bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border-white/15">
-      <Accordion type="multiple" className="space-y-0">
-        {/* Tipos de vehículos */}
-        <AccordionItem value="vehiculos" className="rounded-t-lg border-b border-white/10">
-          <AccordionTrigger className="w-full p-4 hover:bg-white/10 transition-colors">
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Car className="w-5 h-5 text-blue-600" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-white">Tipos de vehículos trasladados</p>
-                  <p className="text-xs text-white/60">{vehiculosCount} tipo(s) diferentes</p>
+        <Accordion type="multiple" className="space-y-0">
+          {/* Tipos de vehículos */}
+          <AccordionItem value="vehiculos" className="rounded-t-lg border-b border-white/10">
+            <AccordionTrigger className="w-full p-4 hover:bg-white/10 transition-colors">
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <Car className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-semibold text-white">Tipos de vehículos trasladados</p>
+                    <p className="text-xs text-white/60">{vehiculosCount} tipo(s) diferentes</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="px-4 pb-4">
-            {renderVehiculosTrasladados()}
-          </AccordionContent>
-        </AccordionItem>
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-4">
+              {renderVehiculosTrasladados()}
+            </AccordionContent>
+          </AccordionItem>
 
-        {/* Rutas favoritas */}
-        <AccordionItem value="rutas" className="rounded-none border-t border-b border-white/10">
-          <AccordionTrigger className="w-full p-4 hover:bg-white/10 transition-colors">
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                  <Route className="w-5 h-5 text-green-600" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-white">Rutas favoritas</p>
-                  <p className="text-xs text-white/60">{rutasCount} ruta(s) frecuentes</p>
+          {/* Rutas favoritas */}
+          <AccordionItem value="rutas" className="rounded-none border-t border-b border-white/10">
+            <AccordionTrigger className="w-full p-4 hover:bg-white/10 transition-colors">
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <Route className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-semibold text-white">Rutas favoritas</p>
+                    <p className="text-xs text-white/60">{rutasCount} ruta(s) frecuentes</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="px-4 pb-4">
-            <div className="flex flex-nowrap gap-3 overflow-x-auto pb-2">
-              {client.rutasFavoritas?.length > 0 ? client.rutasFavoritas.map((ruta, i) => (
-                <div key={i}
-                  className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-[#2B2540] text-white/90 border border-[#6EF7FF]/15 min-w-[170px] max-w-xs whitespace-nowrap relative"
-                >
-                  <TrendingUp className="text-[#6EF7FF]" size={18} />
-                  <span className="overflow-hidden text-ellipsis text-sm font-medium max-w-[76px]">{ruta.origen}</span>
-                  <span className="text-white/60">&#8594;</span>
-                  <span className="overflow-hidden text-ellipsis text-sm font-medium max-w-[76px]">{ruta.destino}</span>
-                  <span className="ml-2 flex-shrink-0">
-                    <span className="inline-block bg-[#6EF7FF] text-[#22142A] px-2 py-0.5 rounded-full text-xs font-bold min-w-[40px] text-center">
-                      {ruta.veces} <span className="font-normal">traslados</span>
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-4">
+              <div className="flex flex-nowrap gap-3 overflow-x-auto pb-2">
+                {client.rutasFavoritas?.length > 0 ? client.rutasFavoritas.map((ruta, i) => (
+                  <div key={i}
+                    className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-[#2B2540] text-white/90 border border-[#6EF7FF]/15 min-w-[170px] max-w-xs whitespace-nowrap relative"
+                  >
+                    <TrendingUp className="text-[#6EF7FF]" size={18} />
+                    <span className="overflow-hidden text-ellipsis text-sm font-medium max-w-[76px]">{ruta.origen}</span>
+                    <span className="text-white/60">&#8594;</span>
+                    <span className="overflow-hidden text-ellipsis text-sm font-medium max-w-[76px]">{ruta.destino}</span>
+                    <span className="ml-2 flex-shrink-0">
+                      <span className="inline-block bg-[#6EF7FF] text-[#22142A] px-2 py-0.5 rounded-full text-xs font-bold min-w-[40px] text-center">
+                        {ruta.veces} <span className="font-normal">traslados</span>
+                      </span>
                     </span>
-                  </span>
-                </div>
-              )) : (
-                <div className="text-white/60">Sin rutas destacadas aún.</div>
-              )}
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+                  </div>
+                )) : (
+                  <div className="text-white/60">Sin rutas destacadas aún.</div>
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-        {/* Sección de traslados realizados eliminada según requerimiento */}
+          {/* Sección de traslados realizados eliminada según requerimiento */}
 
-        {/* Datos del cliente */}
-        <AccordionItem value="datos" className="rounded-b-lg border-t border-white/10">
-          <AccordionTrigger className="w-full p-4 hover:bg-white/10 transition-colors">
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-purple-600" />
+          {/* Datos del cliente */}
+          <AccordionItem value="datos" className="rounded-b-lg border-t border-white/10">
+            <AccordionTrigger className="w-full p-4 hover:bg-white/10 transition-colors">
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-semibold text-white">Datos del cliente</p>
+                    <p className="text-xs text-white/60">Información personal y contacto</p>
+                  </div>
                 </div>
-                <div className="text-left">
-                  <p className="font-semibold text-white">Datos del cliente</p>
-                  <p className="text-xs text-white/60">Información personal y contacto</p>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-white/90 text-sm md:text-base break-words">
+                <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+                  <div className="text-white/60 text-xs uppercase tracking-wide">Nombre</div>
+                  <div className="mt-1">{client.contactInfo.fullName}</div>
+                </div>
+                <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+                  <div className="text-white/60 text-xs uppercase tracking-wide">Tipo</div>
+                  <div className="mt-1">{client.tipo === "empresa" ? "Empresa" : "Persona natural"}</div>
+                </div>
+                <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+                  <div className="text-white/60 text-xs uppercase tracking-wide">Email</div>
+                  <div className="mt-1 break-all">{client.email}</div>
+                </div>
+                <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+                  <div className="text-white/60 text-xs uppercase tracking-wide">Teléfono</div>
+                  <div className="mt-1">{client.contactInfo.phone}</div>
+                </div>
+                <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+                  <div className="text-white/60 text-xs uppercase tracking-wide">Fecha registro</div>
+                  <div className="mt-1">{client.fecha}</div>
+                </div>
+                <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+                  <div className="text-white/60 text-xs uppercase tracking-wide">Ciudad</div>
+                  <div className="mt-1">{client.ciudad}</div>
+                </div>
+                <div className="md:col-span-2 rounded-xl bg-white/5 border border-white/10 p-4">
+                  <div className="text-white/60 text-xs uppercase tracking-wide">Dirección</div>
+                  <div className="mt-1">{client.direccion}</div>
                 </div>
               </div>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="px-4 pb-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-white/90 text-sm md:text-base break-words">
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4">
-                <div className="text-white/60 text-xs uppercase tracking-wide">Nombre</div>
-                <div className="mt-1">{client.contactInfo.fullName}</div>
-              </div>
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4">
-                <div className="text-white/60 text-xs uppercase tracking-wide">Tipo</div>
-                <div className="mt-1">{client.tipo === "empresa" ? "Empresa" : "Persona natural"}</div>
-              </div>
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4">
-                <div className="text-white/60 text-xs uppercase tracking-wide">Email</div>
-                <div className="mt-1 break-all">{client.email}</div>
-              </div>
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4">
-                <div className="text-white/60 text-xs uppercase tracking-wide">Teléfono</div>
-                <div className="mt-1">{client.contactInfo.phone}</div>
-              </div>
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4">
-                <div className="text-white/60 text-xs uppercase tracking-wide">Fecha registro</div>
-                <div className="mt-1">{client.fecha}</div>
-              </div>
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4">
-                <div className="text-white/60 text-xs uppercase tracking-wide">Ciudad</div>
-                <div className="mt-1">{client.ciudad}</div>
-              </div>
-              <div className="md:col-span-2 rounded-xl bg-white/5 border border-white/10 p-4">
-                <div className="text-white/60 text-xs uppercase tracking-wide">Dirección</div>
-                <div className="mt-1">{client.direccion}</div>
-              </div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
 
       {/* Botón volver movido al top bar */}
