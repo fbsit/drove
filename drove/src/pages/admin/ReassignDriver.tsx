@@ -56,7 +56,7 @@ interface LocalTransferDetail {
 // Datos simulados para drovers (excluyendo el drover actual)
 const simulatedDrivers: Driver[] = [
   {
-    id: "2", 
+    id: "2",
     contactInfo: {
       fullName: "Ana López Rodríguez",
       email: "ana.lopez@email.com",
@@ -129,7 +129,7 @@ const simulatedTransferWithDriver: LocalTransferDetail = {
   year: "2021",
   licensePlate: "ABC-1234",
   originAddress: "Calle Gran Vía 28, Madrid",
-  destinationAddress: "Avenida Diagonal 150, Barcelona", 
+  destinationAddress: "Avenida Diagonal 150, Barcelona",
   pickupDate: "2024-01-25T10:00:00Z",
   pickupTime: "10:00",
   totalPrice: 320,
@@ -183,7 +183,7 @@ export const ReassignDriver: React.FC = () => {
     (async () => {
       try {
         setIsLoading(true);
-        
+
         // Simulamos la carga del traslado con drover asignado
         setTimeout(() => {
           setTransfer(simulatedTransferWithDriver);
@@ -210,7 +210,7 @@ export const ReassignDriver: React.FC = () => {
 
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(driver => 
+      filtered = filtered.filter(driver =>
         driver.contactInfo.fullName.toLowerCase().includes(searchLower) ||
         driver.contactInfo.email.toLowerCase().includes(searchLower) ||
         driver.contactInfo.phone.includes(searchTerm)
@@ -246,7 +246,7 @@ export const ReassignDriver: React.FC = () => {
 
   // Función para obtener el mensaje de validación
   const getValidationMessage = () => {
-    if (!reasonType) return "Selecciona un motivo de reasignación";
+    if (!reasonType) return "Reasingar";
     if (reasonType === 'otro' && !reasonText.trim()) return "Describe el motivo de reasignación";
     return "";
   };
@@ -260,21 +260,21 @@ export const ReassignDriver: React.FC = () => {
       });
       return;
     }
-    
+
     try {
       setIsSubmitting(true);
-      
+
       const selectedDriver = drivers.find(d => d.id === selectedDriverId);
-      
+
       // Simulamos la reasignación
       setTimeout(() => {
-        toast({ 
+        toast({
           title: 'Drover reasignado correctamente',
-          description: `${transfer?.currentDriver?.fullName} → ${selectedDriver?.contactInfo.fullName}` 
+          description: `${transfer?.currentDriver?.fullName} → ${selectedDriver?.contactInfo.fullName}`
         });
         navigate('/admin/traslados');
       }, 1500);
-      
+
     } catch {
       toast({
         variant: 'destructive',
@@ -289,13 +289,13 @@ export const ReassignDriver: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#22142A]">
         <Loader className="h-8 w-8 text-white animate-spin" />
-        <span className="ml-2 text-white">Cargando1...</span>
+        <span className="ml-2 text-white">Cargando...</span>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="">
       <div className="flex items-center gap-3 mb-8">
         <RefreshCcw className="h-8 w-8 text-orange-400" />
         <h1 className="text-3xl font-bold text-white">Reasignar Drover</h1>
@@ -355,7 +355,7 @@ export const ReassignDriver: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            
+
             {reasonType === 'otro' && (
               <div>
                 <Label htmlFor="reason-text" className="text-white">Descripción del motivo *</Label>
@@ -395,7 +395,7 @@ export const ReassignDriver: React.FC = () => {
           )}
         </h2>
       </div>
-      
+
       {/* Lista de drovers */}
       {filteredAndSortedDrivers.length === 0 ? (
         <Card className="bg-white/10 text-white border-none">
@@ -413,11 +413,8 @@ export const ReassignDriver: React.FC = () => {
               {filteredAndSortedDrivers.map((d) => (
                 <Card
                   key={d.id}
-                  className={`cursor-pointer transition hover:scale-105 w-full max-w-sm sm:max-w-none ${
-                    selectedDriverId === d.id
-                      ? 'border-2 border-orange-400 bg-orange-500/20'
-                      : 'bg-white/10'
-                  } text-white ${d.status === 'ocupado' ? 'opacity-70' : ''}`}
+                  className={`w-full max-w-sm sm:max-w-none bg-white/10
+                     text-white ${d.status === 'ocupado' ? 'opacity-70' : ''}`}
                   onClick={() => d.status === 'disponible' && setSelectedDriverId(d.id)}
                 >
                   <CardContent className="p-6">
@@ -432,7 +429,7 @@ export const ReassignDriver: React.FC = () => {
                             .toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 text-left">
                         <p className="font-bold text-lg truncate">{d.contactInfo.fullName}</p>
                         <p className="text-sm text-gray-300 truncate">{d.contactInfo.email}</p>
                         <div className="flex items-center gap-2 mt-2">
@@ -442,7 +439,7 @@ export const ReassignDriver: React.FC = () => {
                         </div>
                         <span className="text-sm font-medium text-green-400">Disponible</span>
                       </div>
-                      {selectedDriverId === d.id && <Check className="text-orange-400 flex-shrink-0" />}
+                      {/* {selectedDriverId === d.id && <Check className="text-orange-400 flex-shrink-0" />} */}
                     </div>
 
                     <div className="space-y-3 pt-4 border-t border-white/10">
@@ -462,35 +459,33 @@ export const ReassignDriver: React.FC = () => {
                     </div>
 
                     {/* Botón de confirmación integrado en la card seleccionada */}
-                    {selectedDriverId === d.id && (
-                      <div className="mt-4 pt-4 border-t border-orange-400/30">
-                        {!canReassign && (
-                          <p className="text-sm text-orange-200 mb-3 text-center">
-                            {getValidationMessage()}
-                          </p>
+                    <div className="mt-4 pt-4 border-t border-orange-400/30">
+                      {!canReassign && (
+                        <p className="text-sm text-orange-200 mb-3 text-center">
+                          {getValidationMessage()}
+                        </p>
+                      )}
+                      <Button
+                        disabled={isSubmitting || !canReassign}
+                        className="w-full bg-orange-400 text-[#22142A] hover:bg-orange-500 disabled:bg-orange-400/50 disabled:text-[#22142A]/60"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleReassign();
+                        }}
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader className="mr-2 h-4 w-4 animate-spin" />
+                            Reasignando...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCcw className="mr-2 h-4 w-4" />
+                            Confirmar Reasignación
+                          </>
                         )}
-                        <Button
-                          disabled={isSubmitting || !canReassign}
-                          className="w-full bg-orange-400 text-[#22142A] hover:bg-orange-500 disabled:bg-orange-400/50 disabled:text-[#22142A]/60"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleReassign();
-                          }}
-                        >
-                          {isSubmitting ? (
-                            <>
-                              <Loader className="mr-2 h-4 w-4 animate-spin" />
-                              Reasignando...
-                            </>
-                          ) : (
-                            <>
-                              <RefreshCcw className="mr-2 h-4 w-4" />
-                              Confirmar Reasignación
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    )}
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}

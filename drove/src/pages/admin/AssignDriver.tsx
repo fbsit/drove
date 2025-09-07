@@ -23,10 +23,10 @@ interface Driver {
   rating: number;
   completedTrips: number;
   status: 'disponible' | 'ocupado' | 'APPROVED';
-  location: { 
-    address: string; 
-    city: string; 
-    distance: string; 
+  location: {
+    address: string;
+    city: string;
+    distance: string;
   };
   contactInfo: {
     fullName: string;
@@ -112,8 +112,8 @@ export const AssignDriver: React.FC = () => {
 
   useEffect(() => {
     fetchTransferDetails();
-  },[]);  
-  
+  }, []);
+
   /* filtros UI */
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] =
@@ -225,16 +225,16 @@ export const AssignDriver: React.FC = () => {
   }
 
   const statusColor = (s: string) =>
-    s === 'disponible' ? 'text-green-400'
+    s === 'disponible' ? 'text-blue-400'
       : s === 'ocupado' ? 'text-yellow-400'
         : s === 'APPROVED' ? 'text-green-400'
-        : 'text-gray-400';
+          : 'text-gray-400';
 
   const statusText = (s: string) =>
     s === 'disponible' ? 'Disponible'
       : s === 'ocupado' ? 'Ocupado'
         : s === 'APPROVED' ? 'Aprobado'
-        : 'Desconocido';
+          : 'Desconocido';
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -278,14 +278,11 @@ export const AssignDriver: React.FC = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredAndSortedDrivers.map(d => (
             <Card
               key={d.id}
-              className={`cursor-pointer transition hover:scale-105 ${selectedDriverId === d.id
-                  ? 'border-2 border-[#6EF7FF] bg-white/20'
-                  : 'bg-white/10'
-                } text-white ${(d.status === 'ocupado') && 'opacity-70'}`}
+              className={`text-left transition bg-white/10 text-white ${(d.status === 'ocupado') && 'opacity-70'}`}
               onClick={() => (d.status === 'disponible' || d.status === 'APPROVED') && setSelectedDriverId(d.id)}
             >
               <CardContent className="p-6">
@@ -308,7 +305,6 @@ export const AssignDriver: React.FC = () => {
                       {statusText(d?.status)}
                     </span>
                   </div>
-                  {selectedDriverId === d?.id && <Check className="text-[#6EF7FF]" />}
                 </div>
 
                 {/* contacto */}

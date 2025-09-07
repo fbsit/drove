@@ -134,7 +134,7 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-[#6EF7FF] text-[#6EF7FF] hover:bg-[#6EF7FF] hover:text-[#22142A] w-full"
+                  className="border-[#6EF7FF] text-[#6EF7FF] hover:bg-[#6EF7FF] hover:text-white w-full"
                   asChild
                 >
                   <Link to={`/admin/asignar/${transfer.id}`}>Asignar Drover</Link>
@@ -143,7 +143,7 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-orange-400/50 text-orange-400 hover:bg-orange-400/10 w-full"
+                  className="border-orange-400/50 text-orange-400 hover:bg-orange-400/10 hover:text-white w-full"
                   asChild
                 >
                   <Link to={`/admin/reasignar/${transfer.id}`}>Reasignar Drover</Link>
@@ -155,7 +155,7 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-purple-400/50 text-purple-400 hover:bg-purple-400/10 w-full"
+                  className="border-purple-400/50 text-purple-400 hover:bg-purple-400/10 hover:text-white w-full"
                   onClick={() => setShowRescheduleModal(true)}
                 >
                   <Calendar size={14} className="mr-1" />
@@ -168,7 +168,7 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-orange-400/50 text-orange-400 hover:bg-orange-400/10 w-full"
+                  className="border-orange-400/50 text-orange-400 hover:bg-orange-400/10 hover:text-white w-full"
                   asChild
                 >
                   <Link to={`/admin/reasignar/${transfer.id}`}>

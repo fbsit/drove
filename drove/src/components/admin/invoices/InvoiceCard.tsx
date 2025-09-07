@@ -156,7 +156,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
           {invoice.vehicle && <div className="mb-1">{invoice.vehicle}</div>}
           {invoice.fromAddress && <div className="mb-1">{invoice.fromAddress}</div>}
           {invoice.toAddress && <div className="mb-1">{invoice.toAddress}</div>}
-          {invoice.droverName && <div className="flex items-center gap-1 text-white/70"><UserPlus size={14} /> Drover: {invoice.droverName}</div>}
+          {invoice.droverName && <div className="flex items-center justify-center gap-1 text-white/70"><UserPlus size={14} /> Drover: {invoice.droverName}</div>}
         </div>
       )}
 
@@ -281,7 +281,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
 
       {/* Modal subir PDF */}
       <Dialog open={uploadDialog} onOpenChange={setUploadDialog}>
-        <DialogContent className="bg-[#22142A] text-white rounded-2xl max-w-md border-none">
+        <DialogContent className="bg-[#22142A] text-white rounded-2xl max-w-md border-none text-center">
           <DialogHeader>
             <DialogTitle>Subir Factura PDF</DialogTitle>
           </DialogHeader>

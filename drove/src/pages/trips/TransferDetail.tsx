@@ -163,10 +163,10 @@ const TransferDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#22142A] p-4">
+    <div className="min-h-screen bg-[#22142A] p-4 text-left ">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row gap-4 md:items-center items-start justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="outline"
@@ -273,7 +273,7 @@ const TransferDetail = () => {
         </Card>
 
         {/* Información de contactos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
           {/* Cliente */}
           <Card className="bg-white/10 border-white/20">
             <CardHeader>
