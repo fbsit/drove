@@ -13,6 +13,8 @@ import { EditPasswordModal } from '@/components/admin/profile/EditPasswordModal'
 import { NotificationSettingsModal } from '@/components/admin/profile/NotificationSettingsModal';
 import { PrivacySettingsModal } from '@/components/admin/profile/PrivacySettingsModal';
 import authService from "@/services/authService";
+import UserService from "@/services/userService";
+import { StorageService } from "@/services/storageService";
 
 
 const emptyAdmin = {
@@ -112,9 +114,37 @@ const AdminProfile = () => {
                     />
                   </div>
                 </div>
-                <button className="absolute bottom-0 right-0 bg-[#6EF7FF] hover:bg-[#32dfff] rounded-full p-2 transition-colors">
+                <input
+                  id="admin-avatar-input"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      const url = await StorageService.uploadImageDrover(file, 'avatars/admin');
+                      if (url) {
+                        setAdminData(prev => ({ ...prev, avatar: url }));
+                        setFormData(prev => ({ ...prev, avatar: url }));
+                        try {
+                          const current: any = await authService.getCurrentUser();
+                          const userId = (current as any)?.id || (current as any)?.user?.id;
+                          if (userId) {
+                            await UserService.updateUser(userId, { avatar: url });
+                          }
+                        } catch {}
+                      }
+                    } catch (err) {
+                      console.error('Error subiendo avatar', err);
+                    } finally {
+                      if (e.target) e.target.value = '';
+                    }
+                  }}
+                />
+                <label htmlFor="admin-avatar-input" className="absolute bottom-0 right-0 bg-[#6EF7FF] hover:bg-[#32dfff] rounded-full p-2 transition-colors cursor-pointer">
                   <Camera size={16} className="text-[#22142A]" />
-                </button>
+                </label>
               </div>
 
               {/* Información básica */}
