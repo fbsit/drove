@@ -46,6 +46,7 @@ const ActiveTrip: React.FC = () => {
   const [routePoints, setRoutePoints] = useState<Array<{ lat: number; lng: number; timestamp: number }>>([]);
   const watchId = useRef<number>();
   const routeTrackingInterval = useRef<NodeJS.Timeout>();
+  const [showMap, setShowMap] = useState(false);
   
 
   const { data: trip, isLoading, refetch } = useQuery({
@@ -282,7 +283,6 @@ const ActiveTrip: React.FC = () => {
   }
 
   const nextStatus = getNextStatus(trip.status);
-  const [showMap, setShowMap] = useState(false);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] p-4 md:p-8">
