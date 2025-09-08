@@ -38,6 +38,7 @@ const AdminProfile = () => {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const [formData, setFormData] = useState<any>(emptyAdmin);
+  const [contactInfo, setContactInfo] = useState<any | null>(null);
 
   useEffect(() => {
     const fetchAdmin = async () => {
@@ -64,6 +65,7 @@ const AdminProfile = () => {
 
         setAdminData(mapped);
         setFormData(mapped);
+        setContactInfo((user as any)?.contactInfo ?? null);
       } catch (err) {
         console.error("Error obteniendo usuario:", err);
       }
@@ -131,7 +133,10 @@ const AdminProfile = () => {
                           const current: any = await authService.getCurrentUser();
                           const userId = (current as any)?.id || (current as any)?.user?.id;
                           if (userId) {
-                            await UserService.updateUser(userId, { contactInfo: { selfie: url } });
+                            const ci = (current as any)?.contactInfo || contactInfo || {};
+                            const fullContact = { ...ci, selfie: url };
+                            await UserService.updateUser(userId, { contactInfo: fullContact });
+                            setContactInfo(fullContact);
                           }
                         } catch {}
                       }
