@@ -236,7 +236,7 @@ const DashboardDroverPanel: React.FC = () => {
                 {/* Pie con ganancia a la izquierda y botón a la derecha */}
                 <div className="flex items-center justify-between">
                   <div className="text-[#6EF7FF] text-lg font-bold">Ganancia: €{(+t.totalPrice).toLocaleString()}</div>
-                  <button className="px-5 py-2 h-9 rounded-2xl bg-[#6EF7FF] text-[#22142A] text-sm hover:bg-[#22142A] hover:text-white transition-colors">Ver detalles</button>
+                  <Link to={`/traslados/activo/${t.id}`} className="px-5 py-2 h-9 rounded-2xl bg-[#6EF7FF] text-[#22142A] text-sm hover:bg-[#22142A] hover:text-white transition-colors">Ver detalles</Link>
                 </div>
               </div>
             ))}
