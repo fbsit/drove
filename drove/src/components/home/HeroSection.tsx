@@ -1,11 +1,22 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { User, Car } from "lucide-react";
 import DroveButton from "@/components/DroveButton";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+
+  const handleRegisterClick = (path: string) => {
+    const authToken = localStorage.getItem("auth_token");
+    if (authToken) {
+      alert("Ya estás registrado. Cierra sesión para crear otra cuenta.");
+    } else {
+      navigate(path);
+    }
+  };
+
   return (
-    <section className="px-4 pb-20 text-center relative overflow-hidden">
+    <section className="px-4 pt-40 pb-20 text-center relative overflow-hidden">
       {/* Contenido principal */}
       <div className="relative z-10">
         <div className="inline-block bg-drove-accent/10 border border-drove-accent/30 rounded-full px-4 py-2 mb-6">
@@ -42,15 +53,14 @@ const HeroSection = () => {
               profesionales verificados. Seguimiento GPS en tiempo real y total
               seguridad garantizada.
             </p>
-            <Link to="/registro/client">
-              <DroveButton
-                variant="accent"
-                size="lg"
-                className="w-full group-hover:scale-105 transition-transform"
-              >
-                Solicitar transporte
-              </DroveButton>
-            </Link>
+            <DroveButton
+              variant="accent"
+              size="lg"
+              className="w-full group-hover:scale-105 transition-transform"
+              onClick={() => handleRegisterClick("/registro/client")}
+            >
+              Solicitar transporte
+            </DroveButton>
           </div>
 
           {/* Para Drovers */}
@@ -67,15 +77,14 @@ const HeroSection = () => {
                 flexibles, pagos seguros y una plataforma que te ayuda a crecer.
               </p>
             </div>
-            <Link to="/registro/drover">
-              <DroveButton
-                variant="accent"
-                size="lg"
-                className="w-full group-hover:scale-105 transition-transform"
-              >
-                Postular como Drover
-              </DroveButton>
-            </Link>
+            <DroveButton
+              variant="accent"
+              size="lg"
+              className="w-full group-hover:scale-105 transition-transform"
+              onClick={() => handleRegisterClick("/registro/drover")}
+            >
+              Postular como Drover
+            </DroveButton>
           </div>
         </div>
 
