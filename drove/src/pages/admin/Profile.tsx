@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { 
-  User, Mail, Phone, MapPin, Edit, Calendar, Shield, 
+import {
+  User, Mail, Phone, MapPin, Edit, Calendar, Shield,
   Settings, Key, Bell, Camera, CheckCircle, Clock,
   Users, Car, TrendingUp, BarChart3, Save, X
 } from 'lucide-react';
@@ -12,7 +12,7 @@ import { EditEmailModal } from '@/components/admin/profile/EditEmailModal';
 import { EditPasswordModal } from '@/components/admin/profile/EditPasswordModal';
 import { NotificationSettingsModal } from '@/components/admin/profile/NotificationSettingsModal';
 import { PrivacySettingsModal } from '@/components/admin/profile/PrivacySettingsModal';
-import authService from "@/services/authService";  
+import authService from "@/services/authService";
 
 
 const emptyAdmin = {
@@ -34,10 +34,10 @@ const AdminProfile = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-  
+
   const [formData, setFormData] = useState<any>(emptyAdmin);
 
-   useEffect(() => {
+  useEffect(() => {
     const fetchAdmin = async () => {
       try {
         // getCurrentUser devuelve directamente el usuario; pero contemplamos { user } para compatibilidad
@@ -91,12 +91,12 @@ const AdminProfile = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  
+
   console.log("isEditing", isEditing);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
+    <div>
+      <div>
         {/* Header con foto de perfil */}
         <div className="mb-8">
           <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-6 md:p-8 border border-white/20">
@@ -105,8 +105,8 @@ const AdminProfile = () => {
               <div className="relative">
                 <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-[#6EF7FF] to-[#32dfff] p-1">
                   <div className="w-full h-full rounded-full bg-[#22142A] flex items-center justify-center overflow-hidden">
-                    <img 
-                      src={adminData.avatar} 
+                    <img
+                      src={adminData.avatar}
                       alt="Avatar"
                       className="w-full h-full object-cover rounded-full"
                     />
@@ -124,7 +124,7 @@ const AdminProfile = () => {
                 </h1>
                 <p className="text-[#6EF7FF] text-lg mb-2">{adminData.role}</p>
                 <p className="text-white/70 mb-4">{adminData.email}</p>
-                
+
                 <div className="flex flex-wrap gap-2 justify-center md:justify-start">
                   <span className="bg-green-500/20 text-green-300 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                     <CheckCircle size={14} />
@@ -141,15 +141,15 @@ const AdminProfile = () => {
               <div className="flex gap-3">
                 {isEditing ? (
                   <>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={handleCancel}
                       className="border-white/20 text-white hover:bg-white/10 rounded-2xl"
                     >
                       <X className="mr-2" size={18} />
                       Cancelar
                     </Button>
-                    <Button 
+                    <Button
                       onClick={handleSave}
                       className="bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold rounded-2xl"
                     >
@@ -158,7 +158,7 @@ const AdminProfile = () => {
                     </Button>
                   </>
                 ) : (
-                  <Button 
+                  <Button
                     onClick={() => setIsEditing(true)}
                     className="bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold rounded-2xl"
                   >
@@ -172,44 +172,44 @@ const AdminProfile = () => {
         </div>
 
         {/* Estadísticas rápidas - ARREGLADO EL CONTRASTE */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card className="bg-gradient-to-br from-blue-500/30 to-blue-600/10 border-blue-400/40 backdrop-blur-sm">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
+          <Card className="bg-white/10 border-white/20">
             <CardContent className="p-6 text-center">
               <div className="bg-white/90 p-3 rounded-2xl w-fit mx-auto mb-3">
                 <Users size={24} className="text-blue-600" />
               </div>
-              <h3 className="text-black font-bold text-sm mb-1">Usuarios Totales</h3>
-              <p className="text-2xl font-bold text-black">{adminStats.totalUsers.toLocaleString()}</p>
+              <h3 className="text-white font-bold text-sm mb-1">Usuarios Totales</h3>
+              <p className="text-2xl font-bold text-white">{adminStats.totalUsers.toLocaleString()}</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-500/30 to-green-600/10 border-green-400/40 backdrop-blur-sm">
+          <Card className="bg-white/10 border-white/20">
             <CardContent className="p-6 text-center">
               <div className="bg-white/90 p-3 rounded-2xl w-fit mx-auto mb-3">
                 <Car size={24} className="text-green-600" />
               </div>
-              <h3 className="text-black font-bold text-sm mb-1">Drovers Activos</h3>
-              <p className="text-2xl font-bold text-black">{adminStats.activeDrivers}</p>
+              <h3 className="text-white font-bold text-sm mb-1">Drovers Activos</h3>
+              <p className="text-2xl font-bold text-white">{adminStats.activeDrivers}</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-yellow-500/30 to-yellow-600/10 border-yellow-400/40 backdrop-blur-sm">
+          <Card className="bg-white/10 border-white/20">
             <CardContent className="p-6 text-center">
               <div className="bg-white/90 p-3 rounded-2xl w-fit mx-auto mb-3">
                 <Clock size={24} className="text-yellow-600" />
               </div>
-              <h3 className="text-black font-bold text-sm mb-1">Pendientes</h3>
-              <p className="text-2xl font-bold text-black">{adminStats.pendingApprovals}</p>
+              <h3 className="text-white font-bold text-sm mb-1">Pendientes</h3>
+              <p className="text-2xl font-bold text-white">{adminStats.pendingApprovals}</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-500/30 to-purple-600/10 border-purple-400/40 backdrop-blur-sm">
+          <Card className="bg-white/10 border-white/20">
             <CardContent className="p-6 text-center">
               <div className="bg-white/90 p-3 rounded-2xl w-fit mx-auto mb-3">
                 <TrendingUp size={24} className="text-purple-600" />
               </div>
-              <h3 className="text-black font-bold text-sm mb-1">Ingresos Mes</h3>
-              <p className="text-2xl font-bold text-black">{adminStats.monthlyRevenue}</p>
+              <h3 className="text-white font-bold text-sm mb-1">Ingresos Mes</h3>
+              <p className="text-2xl font-bold text-white">{adminStats.monthlyRevenue}</p>
             </CardContent>
           </Card>
         </div>
@@ -228,7 +228,7 @@ const AdminProfile = () => {
               <div>
                 <Label htmlFor="fullName" className="text-white/80">Nombre Completo</Label>
                 {isEditing ? (
-                  <Input 
+                  <Input
                     id="fullName"
                     value={formData.fullName}
                     onChange={(e) => handleInputChange('full_name', e.target.value)}
@@ -240,7 +240,7 @@ const AdminProfile = () => {
                   </div>
                 )}
               </div>
-              
+
               <div>
                 <Label htmlFor="email" className="text-white/80">Email</Label>
                 <div className="mt-1 p-3 bg-white/5 rounded-2xl">
@@ -262,11 +262,11 @@ const AdminProfile = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div>
                 <Label htmlFor="phone" className="text-white/80">Teléfono</Label>
                 {isEditing ? (
-                  <Input 
+                  <Input
                     id="phone"
                     value={formData.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
@@ -285,7 +285,7 @@ const AdminProfile = () => {
               <div>
                 <Label htmlFor="address" className="text-white/80">Dirección</Label>
                 {isEditing ? (
-                  <Input 
+                  <Input
                     id="address"
                     value={formData.address}
                     onChange={(e) => handleInputChange('address', e.target.value)}
@@ -314,9 +314,9 @@ const AdminProfile = () => {
           </Card>
 
           {/* Configuración y seguridad - ACTUALIZADO */}
-          <div className="space-y-6">
+          <div className="flex flex-col gap-6">
             {/* Configuración de cuenta */}
-            <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
+            <Card className="bg-white/10 border-white/20 backdrop-blur-sm flex-1 justify-between">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Settings size={20} />
@@ -324,17 +324,17 @@ const AdminProfile = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setShowPasswordModal(true)}
                   className="w-full justify-start border-white/20 text-white hover:bg-white/10 rounded-2xl"
                 >
                   <Key className="mr-2" size={16} />
                   Cambiar Contraseña
                 </Button>
-                
-                <Button 
-                  variant="outline" 
+
+                <Button
+                  variant="outline"
                   onClick={() => setShowNotificationModal(true)}
                   className="w-full justify-start border-white/20 text-white hover:bg-white/10 rounded-2xl"
                 >
@@ -342,8 +342,8 @@ const AdminProfile = () => {
                   Configurar Notificaciones
                 </Button>
 
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setShowPrivacyModal(true)}
                   className="w-full justify-start border-white/20 text-white hover:bg-white/10 rounded-2xl"
                 >
@@ -354,7 +354,7 @@ const AdminProfile = () => {
             </Card>
 
             {/* Accesos rápidos */}
-            <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
+            <Card className="bg-white/10 border-white/20 backdrop-blur-sm flex-1 justify-between">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <BarChart3 size={20} />
@@ -362,21 +362,21 @@ const AdminProfile = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button 
+                <Button
                   className="w-full justify-start bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold rounded-2xl"
                 >
                   <Users className="mr-2" size={16} />
                   Gestionar Usuarios
                 </Button>
-                
-                <Button 
+
+                <Button
                   className="w-full justify-start bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold rounded-2xl"
                 >
                   <Car className="mr-2" size={16} />
                   Ver Drovers
                 </Button>
 
-                <Button 
+                <Button
                   className="w-full justify-start bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold rounded-2xl"
                 >
                   <TrendingUp className="mr-2" size={16} />
