@@ -18,9 +18,9 @@ export default function ClientComboBox({ value, options, onValueChange }: Client
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button 
+        <Button
           variant="outline"
-          className="rounded-2xl bg-[#1A1F2C] text-white font-normal border-white/10 w-[180px] justify-between"
+          className="h-10 px-4 rounded-2xl bg-[#1A1F2C] text-white font-normal border-white/10 justify-between w-full md:w-[49%] xl:w-full"
         >
           <span className={displayValue ? "" : "text-white/40"}>
             {displayValue || "Cliente"}

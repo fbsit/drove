@@ -1,7 +1,7 @@
-import React, { Suspense } from 'react';
-import { layoutConfig } from '@/data/home-sections';
-import { useHomeLayout } from '@/hooks/useHomeLayout';
-import EnhancedFooter from '@/components/home/EnhancedFooter';
+import React, { Suspense } from "react";
+import { layoutConfig } from "@/data/home-sections";
+import { useHomeLayout } from "@/hooks/useHomeLayout";
+import EnhancedFooter from "@/components/home/EnhancedFooter";
 
 const Index = () => {
   const { renderSection, prioritySections } = useHomeLayout();
@@ -9,10 +9,12 @@ const Index = () => {
   return (
     <div className={layoutConfig.containerClasses}>
       {/* Main content */}
-      <main className="flex-1" style={{ marginTop: `${layoutConfig.headerOffset}px` }}>
+      <main className="flex-1">
         {/* Secciones de alta prioridad - Sin lazy loading */}
         {prioritySections.high.map((section) => (
-          <React.Fragment key={section.id}>{renderSection(section)}</React.Fragment>
+          <React.Fragment key={section.id}>
+            {renderSection(section)}
+          </React.Fragment>
         ))}
 
         {/* Secciones de media y baja prioridad - Con lazy loading */}
@@ -24,10 +26,14 @@ const Index = () => {
           }
         >
           {prioritySections.medium.map((section) => (
-            <React.Fragment key={section.id}>{renderSection(section)}</React.Fragment>
+            <React.Fragment key={section.id}>
+              {renderSection(section)}
+            </React.Fragment>
           ))}
           {prioritySections.low.map((section) => (
-            <React.Fragment key={section.id}>{renderSection(section)}</React.Fragment>
+            <React.Fragment key={section.id}>
+              {renderSection(section)}
+            </React.Fragment>
           ))}
         </Suspense>
       </main>

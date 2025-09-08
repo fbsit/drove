@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import Header from './Header';
-import AppSidebar from './AppSidebar';
+import Header from "./Header";
+import AppSidebar from "./AppSidebar";
 import MobileAdminFab from "./MobileAdminFab";
 import MobileAdminSheet from "./MobileAdminSheet";
-import DroverSupportChatFab from './DroverSupportChatFab';
+import DroverSupportChatFab from "./DroverSupportChatFab";
 import SupportChatModal from "../support/SupportChatModal";
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from "@/contexts/AuthContext";
 
 // Componente para el FAB de soporte global
 function GlobalSupportChatFab() {
@@ -55,7 +55,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     return (
       <div className="min-h-screen w-full bg-[#22142A]">
         <Header />
-        {children}
+        <main className="flex-1 overflow-hidden">
+          <div className="h-full max-w-full">{children}</div>
+        </main>
         <GlobalSupportChatFab />
         <SupportChatModal />
       </div>
@@ -69,10 +71,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <Header />
-          <main className="flex-1 py-24 px-4 md:px-8 md:pt-[100px] lg:px-20 overflow-hidden">
-            <div className="h-full max-w-full">
-              {children}
-            </div>
+          <main className="flex-1 py-24 px-4 md:px-8 md:pt-[100px] xl:px-20 overflow-hidden">
+            <div className="h-full max-w-full">{children}</div>
             <GlobalSupportChatFab />
           </main>
         </div>

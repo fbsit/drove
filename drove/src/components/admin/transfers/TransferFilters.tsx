@@ -26,8 +26,8 @@ interface TransferFiltersProps {
   setSearchTerm: (term: string) => void;
   statusFilter: string;
   setStatusFilter: (status: string) => void;
-  dateRange: {from?: Date, to?: Date};
-  setDateRange: (range: {from?: Date, to?: Date}) => void;
+  dateRange: { from?: Date, to?: Date };
+  setDateRange: (range: { from?: Date, to?: Date }) => void;
   pendingOnly?: boolean;
   setPendingOnly?: (value: boolean) => void;
 }
@@ -43,7 +43,7 @@ const TransferFilters: React.FC<TransferFiltersProps> = ({
   setPendingOnly
 }) => {
   const dateRangeText = dateRange?.from && dateRange?.to
-    ? `${format(dateRange.from, 'dd/MM/yyyy', {locale: es})} - ${format(dateRange.to, 'dd/MM/yyyy', {locale: es})}`
+    ? `${format(dateRange.from, 'dd/MM/yyyy', { locale: es })} - ${format(dateRange.to, 'dd/MM/yyyy', { locale: es })}`
     : 'Seleccionar fechas';
 
   const handleDateRangeSelect = (range: DateRange | undefined) => {
@@ -56,25 +56,25 @@ const TransferFilters: React.FC<TransferFiltersProps> = ({
 
   return (
     <div className="bg-white/10 rounded-2xl p-6 mb-8">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
-        <h2 className="text-xl font-bold text-white">Listado de Traslados</h2>
-        
-        <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-          <div className="relative w-full md:w-64 flex items-center">
+      <div className="flex flex-col items-start md:items-center justify-between gap-4 mb-4">
+        <h2 className="text-xl font-bold text-white w-full text-center lg:text-left">Listado de Traslados</h2>
+
+        <div className="flex flex-col lg:flex-row gap-3 w-full">
+          <div className="relative lg:w-1/3 flex items-center">
             <span className="absolute left-3 inset-y-0 flex items-center pointer-events-none h-full">
               <Search className="h-5 w-5 text-white/50" />
             </span>
-            <Input 
-              placeholder="Buscar traslados..." 
+            <Input
+              placeholder="Buscar traslados..."
               className="pl-10 bg-white/5 border-white/10 text-white h-10 focus-visible:ring-2 focus-visible:ring-[#6EF7FF]/50 focus-visible:border-[#6EF7FF]/50"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ fontFamily: "Helvetica" }}
             />
           </div>
-          
+
           <Select onValueChange={setStatusFilter} value={statusFilter}>
-            <SelectTrigger className="w-full md:w-[180px] h-10 bg-white/5 border-white/10 text-white focus:ring-2 focus:ring-[#6EF7FF]/50 focus:border-[#6EF7FF]/50">
+            <SelectTrigger className="h-10 bg-white/5 border-white/10 text-white focus:ring-2 focus:ring-[#6EF7FF]/50 focus:border-[#6EF7FF]/50 lg:w-1/3">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent className="bg-[#22142A] border-white/10 z-50">
@@ -91,10 +91,10 @@ const TransferFilters: React.FC<TransferFiltersProps> = ({
               </SelectGroup>
             </SelectContent>
           </Select>
-          
+
           <Popover>
             <PopoverTrigger asChild>
-              <button className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-4 h-10 text-white hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#6EF7FF]/50">
+              <button className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-4 h-10 text-white hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#6EF7FF]/50 lg:w-1/3">
                 <Calendar className="h-4 w-4 text-[#6EF7FF]" />
                 <span>{dateRangeText}</span>
               </button>
