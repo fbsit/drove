@@ -98,8 +98,8 @@ const MobileTransferRequest = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] py-4 px-4 pb-24">
-      <div className="max-w-md mx-auto">
+    <div>
+      <div>
         {/* Progress Bar */}
         <div className="mb-6">
           <div className="flex justify-between items-center mb-2">
@@ -107,7 +107,7 @@ const MobileTransferRequest = () => {
             <span className="text-white/60 text-sm">{getStepProgress()}%</span>
           </div>
           <div className="w-full bg-white/10 rounded-full h-2">
-            <div 
+            <div
               className="bg-[#6EF7FF] h-2 rounded-full transition-all duration-300 ease-out"
               style={{ width: `${getStepProgress()}%` }}
             />
