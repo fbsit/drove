@@ -52,7 +52,7 @@ const AdminProfile = () => {
         }
 
         const mapped = {
-          avatar: (user as any)?.avatar ?? (user as any)?.selfie ?? "",
+          avatar: (user as any)?.avatar ?? (user as any)?.selfie ?? (user as any)?.contactInfo?.selfie ?? "",
           fullName: (user as any)?.full_name ?? (user as any)?.fullName ?? (user as any)?.contactInfo?.fullName ?? "",
           role: (user as any)?.role ?? 'Administrador',
           email: (user as any)?.email ?? (user as any)?.contactInfo?.email ?? "",
@@ -131,7 +131,7 @@ const AdminProfile = () => {
                           const current: any = await authService.getCurrentUser();
                           const userId = (current as any)?.id || (current as any)?.user?.id;
                           if (userId) {
-                            await UserService.updateUser(userId, { avatar: url });
+                            await UserService.updateUser(userId, { contactInfo: { selfie: url } });
                           }
                         } catch {}
                       }
