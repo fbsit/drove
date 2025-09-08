@@ -39,8 +39,8 @@ export class RoutesService {
       // Construir las cadenas de coordenadas
       const origins = `${originLat},${originLng}`;
       const destinations = `${destinationLat},${destinationLng}`;
-      // Construir la URL de la solicitud
-      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origins}&destinations=${destinations}&key=${apiKey}`;
+      // Construir la URL de la solicitud (métrico y español para consistencia)
+      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origins}&destinations=${destinations}&units=metric&language=es&region=cl&key=${apiKey}`;
 
       const response = await fetch(url, {
         method: 'GET',

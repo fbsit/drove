@@ -200,8 +200,8 @@ export class TravelsService {
       checkoutUrl = await this.stripeService.createCheckoutSession({
         transferId: savedTravel.id,
         amountEUR: savedTravel.totalPrice!,
-        successUrl: `https://test-drove.vercel.app/paymentSuccess?travel=${savedTravel.id}`,
-        cancelUrl: `https://test-drove.vercel.app/paymentCancel?travel=${savedTravel.id}`,
+        successUrl: `https://drove.up.railway.app/paymentSuccess?travel=${savedTravel.id}`,
+        cancelUrl: `https://drove.up.railway.app/paymentCancel?travel=${savedTravel.id}`,
       });
       payment.paymentIntentId = checkoutUrl ?? 'mock_intent';
       await this.paymentRepo.save(payment);
@@ -242,7 +242,7 @@ export class TravelsService {
     const userDetails = await this.userRepo.findOne({
       where: { id: user.sub },
     });
-    const url = `https://test-drove.vercel.app/transfers/${travelInfo.id}`;
+    const url = `https://drove.up.railway.app/transfers/${travelInfo.id}`;
     await this.resend.sendTransferRequestCreatedEmail(
       userDetails?.email || '',
       userDetails?.contactInfo?.fullName || '',
