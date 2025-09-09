@@ -38,6 +38,11 @@ const haversineMeters = (
   return 2 * R * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 };
 
+// Limitar memoria: máximo de puntos guardados y muestreo
+const MAX_ROUTE_POINTS = 5000; // guarda como máximo 5k puntos
+const CAPTURE_INTERVAL_MS = 15000; // captura cada 15s
+const MAX_POLYLINE_POINTS = 2000; // límite al generar el polyline
+
 const ActiveTrip: React.FC = () => {
   const { transferId } = useParams<{ transferId: string }>();
   const navigate = useNavigate();
@@ -91,8 +96,12 @@ const ActiveTrip: React.FC = () => {
                 );
                 if (distance < 10) return prev;
               }
-              console.log('[ROUTE_TRACKING] 📍 Nuevo punto capturado:', newPoint);
-              return [...prev, newPoint];
+              // Añadir y recortar para no superar MAX_ROUTE_POINTS
+              const next = [...prev, newPoint];
+              if (next.length > MAX_ROUTE_POINTS) {
+                return next.slice(next.length - MAX_ROUTE_POINTS);
+              }
+              return next;
             });
           },
           (error) => console.error('[ROUTE_TRACKING] ❌ Error GPS:', error),
@@ -102,7 +111,7 @@ const ActiveTrip: React.FC = () => {
 
       // Captura inmediata y luego intervalos
       capturePosition();
-      routeTrackingInterval.current = setInterval(capturePosition, 10000);
+      routeTrackingInterval.current = setInterval(capturePosition, CAPTURE_INTERVAL_MS);
     }
 
     return () => {
@@ -116,9 +125,10 @@ const ActiveTrip: React.FC = () => {
   // Generar polyline string a partir de los puntos
   const generatePolyline = (points: Array<{ lat: number; lng: number; timestamp: number }>): string => {
     if (points.length === 0) return '';
-    
-    // Convertir puntos a formato simple "lat,lng;lat,lng;..."
-    return points
+    // Downsample para limitar tamaño de payload
+    const stride = Math.max(1, Math.ceil(points.length / MAX_POLYLINE_POINTS));
+    const reduced = points.filter((_, idx) => idx % stride === 0);
+    return reduced
       .map(point => `${point.lat.toFixed(6)},${point.lng.toFixed(6)}`)
       .join(';');
   };
@@ -227,8 +237,8 @@ const ActiveTrip: React.FC = () => {
       }
     }
     const polyline = generatePolyline(points || []);
-    console.log('[FINISH_TRAVEL] 🏁 Enviando polyline:', polyline);
-    console.log('[FINISH_TRAVEL] 📊 Total de puntos capturados:', points?.length || 0);
+    console.log('[FINISH_TRAVEL] 🏁 Polyline chars:', polyline.length);
+    console.log('[FINISH_TRAVEL] 📊 Puntos capturados:', points?.length || 0);
 
     try {
       setIsFinishing(true);
@@ -259,6 +269,8 @@ const ActiveTrip: React.FC = () => {
       } as any);
       toast({ title: 'Viaje finalizado', description: 'Se registró la ruta del traslado.' });
       await refetch();
+      // Liberar memoria de la ruta tras finalizar
+      setRoutePoints([]);
     } catch (err: any) {
       console.error('[FINISH_TRAVEL] ❌ Error al finalizar viaje', err);
       toast({ variant: 'destructive', title: 'Error al finalizar', description: err?.message || 'Intenta de nuevo.' });
