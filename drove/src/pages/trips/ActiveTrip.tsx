@@ -48,6 +48,7 @@ const ActiveTrip: React.FC = () => {
   const routeTrackingInterval = useRef<NodeJS.Timeout>();
   const [showMap, setShowMap] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
+  const [distanceToDestinationKm, setDistanceToDestinationKm] = useState<number | null>(null);
   
 
   const { data: trip, isLoading, refetch } = useQuery({
@@ -132,7 +133,10 @@ const ActiveTrip: React.FC = () => {
             { lat: trip.endAddress.lat, lng: trip.endAddress.lng }
           );
 
-          setDroverInDestination(distance <= 100);
+          // distance está en metros; permitimos finalizar a <= 100 km
+          const km = distance / 1000;
+          setDistanceToDestinationKm(Number(km.toFixed(1)));
+          setDroverInDestination(distance <= 100_000);
         },
         (err) => console.error('[GEO] ❌', err),
         {
@@ -150,7 +154,7 @@ const ActiveTrip: React.FC = () => {
         navigator.geolocation.clearWatch(watchId.current);
       }
     };
-  }, [trip?.endAddress]);
+  }, [trip?.endAddress, trip?.status]);
 
   const getNextStatus = (currentStatus: string): string | null => {
     console.log("currentStatus", currentStatus);
@@ -463,13 +467,20 @@ const ActiveTrip: React.FC = () => {
           </Button>
 
           {isAssignedDrover && trip.status === 'IN_PROGRESS' && droverInDestination && (
-            <Button
-              onClick={handleFinishViaje}
-              disabled={isFinishing}
-              className="rounded-2xl bg-[#6EF7FF] text-[#22142A] hover:bg-[#6EF7FF]/80"
-            >
-              {isFinishing ? 'Finalizando…' : 'Finalizar viaje'}
-            </Button>
+            <div className="flex items-center gap-3">
+              {distanceToDestinationKm != null && (
+                <span className="text-white/70 text-sm">
+                  Distancia al destino: <span className="text-[#6EF7FF] font-semibold">{distanceToDestinationKm} km</span>
+                </span>
+              )}
+              <Button
+                onClick={handleFinishViaje}
+                disabled={isFinishing}
+                className="rounded-2xl bg-[#6EF7FF] text-[#22142A] hover:bg-[#6EF7FF]/80"
+              >
+                {isFinishing ? 'Finalizando…' : 'Finalizar viaje'}
+              </Button>
+            </div>
           )}
         </div>
 
