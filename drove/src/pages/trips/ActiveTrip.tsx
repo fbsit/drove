@@ -12,6 +12,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TransferService } from '@/services/transferService';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TripStep {
   id: string;
@@ -49,6 +50,7 @@ const ActiveTrip: React.FC = () => {
   const [showMap, setShowMap] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
   const [distanceToDestinationKm, setDistanceToDestinationKm] = useState<number | null>(null);
+  const isMobile = useIsMobile();
   
 
   const { data: trip, isLoading, refetch } = useQuery({
@@ -230,6 +232,12 @@ const ActiveTrip: React.FC = () => {
 
     try {
       setIsFinishing(true);
+      // Si por alguna razón el viaje no tiene startedAt, intenta marcar inicio antes de finalizar
+      if (!trip.startedAt) {
+        try {
+          await TransferService.saveInitTravelVerification(transferId);
+        } catch {}
+      }
       // Obtener ubicación actual para validar en backend (regla <=100km)
       let coords: { latitude: number; longitude: number } | null = null;
       if (navigator.geolocation) {
@@ -373,6 +381,22 @@ const ActiveTrip: React.FC = () => {
           </Card>
         </div>
 
+        {/* Acciones principales bajo el mapa (desktop) */}
+        {isAssignedDrover && !isMobile && (
+          <div className="flex gap-3">
+            {trip.status === 'PICKED_UP' && (
+              <Button onClick={handleIniciarViaje} className="flex-1 rounded-2xl bg-[#6EF7FF] text-[#22142A] hover:bg-[#6EF7FF]/80 text-lg py-6">
+                Iniciar viaje
+              </Button>
+            )}
+            {trip.status === 'IN_PROGRESS' && (
+              <Button onClick={handleFinishViaje} disabled={!droverInDestination || isFinishing} className="flex-1 rounded-2xl bg-green-400 text-[#22142A] hover:bg-green-300 disabled:opacity-60 text-lg py-6">
+                {isFinishing ? 'Finalizando…' : 'Finalizar viaje'}
+              </Button>
+            )}
+          </div>
+        )}
+
         {/* Ruta del traslado */}
         <Card className="bg-white/5 border-white/10">
           <CardHeader className="flex flex-row items-center justify-between">
@@ -455,7 +479,7 @@ const ActiveTrip: React.FC = () => {
         )}
 
         {/* Footer actions */}
-        <div className="flex flex-wrap gap-3 pt-2">
+        <div className={`flex flex-wrap gap-3 pt-2 ${isMobile ? 'pb-24' : ''}`}>
           <Button variant="outline" className="rounded-2xl bg-white/5 border-white/20 text-white" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4 mr-2" /> Volver a traslados
           </Button>
@@ -483,6 +507,24 @@ const ActiveTrip: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* Barra de acciones fija en mobile */}
+        {isMobile && isAssignedDrover && (
+          <div className="fixed bottom-0 left-0 right-0 bg-[#1b1323]/90 border-t border-white/10 p-3 backdrop-blur-md z-50">
+            <div className="max-w-6xl mx-auto flex items-center gap-3">
+              {trip.status === 'PICKED_UP' && (
+                <Button onClick={handleIniciarViaje} className="flex-1 rounded-2xl bg-[#6EF7FF] text-[#22142A] hover:bg-[#6EF7FF]/80">
+                  Iniciar viaje
+                </Button>
+              )}
+              {trip.status === 'IN_PROGRESS' && (
+                <Button onClick={handleFinishViaje} disabled={!droverInDestination || isFinishing} className="flex-1 rounded-2xl bg-green-400 text-[#22142A] hover:bg-green-300 disabled:opacity-60">
+                  {isFinishing ? 'Finalizando…' : 'Finalizar viaje'}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* mapa al interior de la sección de ruta cuando showMap === true */}
       </div>

@@ -94,29 +94,50 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
 
   return (
     <div className="space-y-2">
-      <canvas
-        ref={canvasRef}
-        width={400}
-        height={150}
-        data-testid="signature-canvas"
-        onMouseDown={startDrawing}
-        onMouseMove={draw}
-        onMouseUp={endDrawing}
-        onMouseLeave={endDrawing}
-        onTouchStart={startDrawing}
-        onTouchMove={draw}
-        onTouchEnd={endDrawing}
-        className="border border-white/20 rounded-md cursor-crosshair w-full touch-none"
-      />
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        onClick={clearCanvas}
-        className="text-sm"
-      >
-        Borrar firma
-      </Button>
+      <div className="relative">
+        <canvas
+          ref={canvasRef}
+          width={400}
+          height={150}
+          data-testid="signature-canvas"
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={endDrawing}
+          onMouseLeave={endDrawing}
+          onTouchStart={startDrawing}
+          onTouchMove={draw}
+          onTouchEnd={endDrawing}
+          className="border border-white/20 rounded-md cursor-crosshair w-full touch-none bg-white"
+        />
+        {!hasDrawn && (
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+            <span className="text-xs text-black/40 bg-white/70 px-2 py-1 rounded">Firme aquí</span>
+          </div>
+        )}
+      </div>
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={clearCanvas}
+          className="text-sm"
+        >
+          Borrar firma
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            // fuerza emitir el valor actual (por si solo tocó y salió)
+            if (canvasRef.current) onSignatureChange(canvasRef.current.toDataURL());
+          }}
+          className="text-sm"
+        >
+          Guardar
+        </Button>
+      </div>
     </div>
   );
 };
