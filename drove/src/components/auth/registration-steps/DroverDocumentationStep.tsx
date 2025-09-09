@@ -1,25 +1,101 @@
-import React, { useState } from "react";
-import { Upload, Camera, FileText, Shield } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Upload, Camera, FileText, Shield, Loader2, CheckCircle2 } from "lucide-react";
+import { RegistrationFormData } from '@/types/new-registration';
+import { StorageService } from '@/services/storageService';
 
-const DroverDocumentationStep: React.FC<{ onNext: () => void }> = ({ onNext }) => {
-  const [formData, setFormData] = useState({
-    profilePhoto: null as File | null,
-    licenseFront: null as File | null,
-    licenseBack: null as File | null,
-    backgroundCheck: null as File | null,
+interface Props {
+  data: Partial<RegistrationFormData>;
+  onUpdate: (data: Partial<RegistrationFormData>) => void;
+  onNext: () => void;
+  onPrevious?: () => void;
+}
+
+const DroverDocumentationStep: React.FC<Props> = ({ data, onUpdate, onNext }) => {
+  type Key = 'profilePhoto' | 'licenseFront' | 'licenseBack' | 'backgroundCheck';
+
+  const [uploads, setUploads] = useState<Record<Key, {
+    file: File | null;
+    url: string | null;
+    loading: boolean;
+    error: string | null;
+  }>>({
+    profilePhoto: {
+      file: null,
+      url: typeof data.profilePhoto === 'string' ? (data.profilePhoto as string) : null,
+      loading: false,
+      error: null,
+    },
+    licenseFront: {
+      file: null,
+      url: typeof data.licenseFront === 'string' ? (data.licenseFront as string) : null,
+      loading: false,
+      error: null,
+    },
+    licenseBack: {
+      file: null,
+      url: typeof data.licenseBack === 'string' ? (data.licenseBack as string) : null,
+      loading: false,
+      error: null,
+    },
+    backgroundCheck: {
+      file: null,
+      url: typeof data.backgroundCheck === 'string' ? (data.backgroundCheck as string) : null,
+      loading: false,
+      error: null,
+    },
   });
 
-  const handleFileChange = (field: keyof typeof formData, file: File | null) => {
-    setFormData((prev) => ({ ...prev, [field]: file }));
+  // Sincronizar URLs al padre cuando cambian
+  useEffect(() => {
+    onUpdate({
+      profilePhoto: uploads.profilePhoto.url || undefined,
+      licenseFront: uploads.licenseFront.url || undefined,
+      licenseBack: uploads.licenseBack.url || undefined,
+      backgroundCheck: uploads.backgroundCheck.url || undefined,
+    });
+  }, [uploads, onUpdate]);
+
+  const startUpload = async (field: Key, file: File) => {
+    setUploads(prev => ({
+      ...prev,
+      [field]: { ...prev[field], file, loading: true, error: null },
+    }));
+
+    try {
+      const url = await StorageService.uploadImageDrover(file, 'registrations/drover');
+      if (!url) throw new Error('No se pudo subir el archivo');
+      setUploads(prev => ({
+        ...prev,
+        [field]: { ...prev[field], url, loading: false },
+      }));
+    } catch (err: any) {
+      setUploads(prev => ({
+        ...prev,
+        [field]: { ...prev[field], loading: false, error: err?.message || 'Error al subir' },
+      }));
+    }
   };
+
+  const handleFileChange = (field: Key, file: File | null) => {
+    if (!file) return;
+    startUpload(field, file);
+  };
+
+  const allUploaded =
+    !!uploads.profilePhoto.url &&
+    !!uploads.licenseFront.url &&
+    !!uploads.licenseBack.url &&
+    !!uploads.backgroundCheck.url;
+
+  const anyLoading =
+    uploads.profilePhoto.loading ||
+    uploads.licenseFront.loading ||
+    uploads.licenseBack.loading ||
+    uploads.backgroundCheck.loading;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.profilePhoto || !formData.licenseFront || !formData.licenseBack || !formData.backgroundCheck) {
-      alert("Faltan documentos obligatorios");
-      return;
-    }
-    console.log("Datos del formulario:", formData);
+    if (!allUploaded || anyLoading) return;
     onNext();
   };
 
@@ -30,18 +106,18 @@ const DroverDocumentationStep: React.FC<{ onNext: () => void }> = ({ onNext }) =
     icon: Icon,
     accept,
   }: {
-    field: keyof typeof formData;
+    field: Key;
     label: string;
     description: string;
     icon: any;
     accept: string;
   }) => {
-    const file = formData[field];
+    const { url, loading, error } = uploads[field];
     return (
       <div
         className={`
     border-2 border-dashed rounded-2xl p-6 text-center transition-colors
-    ${file ? "bg-green-500/10 border-green-400" : "border-white/20"}
+    ${url ? "bg-green-500/10 border-green-400" : "border-white/20"}
   `}
       >
         <div className="flex justify-center mb-4">
@@ -59,6 +135,7 @@ const DroverDocumentationStep: React.FC<{ onNext: () => void }> = ({ onNext }) =
             accept={accept}
             onChange={(e) => handleFileChange(field, e.target.files?.[0] || null)}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            disabled={loading}
           />
           <div
             className="
@@ -70,14 +147,21 @@ const DroverDocumentationStep: React.FC<{ onNext: () => void }> = ({ onNext }) =
       transition cursor-pointer
     "
           >
-            <Upload className="w-4 h-4" />
-            <span>Subir archivo</span>
+            {loading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : url ? (
+              <CheckCircle2 className="w-4 h-4 text-green-400" />
+            ) : (
+              <Upload className="w-4 h-4" />
+            )}
+            <span>{loading ? 'Subiendo…' : url ? 'Subido' : 'Subir archivo'}</span>
           </div>
         </div>
-
-
-        {file && (
-          <p className="mt-2 text-[#6EF7FF] text-sm font-medium">✓ {file.name}</p>
+        {error && (
+          <p className="mt-2 text-red-400 text-sm">{error}</p>
+        )}
+        {url && !error && (
+          <p className="mt-2 text-[#6EF7FF] text-sm font-medium">Archivo subido</p>
         )}
       </div>
     );
@@ -121,9 +205,14 @@ const DroverDocumentationStep: React.FC<{ onNext: () => void }> = ({ onNext }) =
 
       <button
         type="submit"
-        className="mt-6 w-full px-6 py-3 rounded-2xl font-bold bg-[#6EF7FF] text-[#22142A] hover:bg-[#32dfff] transition"
+        disabled={!allUploaded || anyLoading}
+        className={`mt-6 w-full px-6 py-3 rounded-2xl font-bold transition ${
+          !allUploaded || anyLoading
+            ? 'bg-white/20 text-white/60 cursor-not-allowed'
+            : 'bg-[#6EF7FF] text-[#22142A] hover:bg-[#32dfff]'
+        }`}
       >
-        Finalizar Documentación
+        {anyLoading ? 'Subiendo archivos…' : 'Finalizar Documentación'}
       </button>
     </form>
   );
