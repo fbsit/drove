@@ -47,6 +47,7 @@ const ActiveTrip: React.FC = () => {
   const watchId = useRef<number>();
   const routeTrackingInterval = useRef<NodeJS.Timeout>();
   const [showMap, setShowMap] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
   
 
   const { data: trip, isLoading, refetch } = useQuery({
@@ -224,6 +225,7 @@ const ActiveTrip: React.FC = () => {
     console.log('[FINISH_TRAVEL] 📊 Total de puntos capturados:', points?.length || 0);
 
     try {
+      setIsFinishing(true);
       // Obtener ubicación actual para validar en backend (regla <=100km)
       let coords: { latitude: number; longitude: number } | null = null;
       if (navigator.geolocation) {
@@ -248,6 +250,8 @@ const ActiveTrip: React.FC = () => {
     } catch (err: any) {
       console.error('[FINISH_TRAVEL] ❌ Error al finalizar viaje', err);
       toast({ variant: 'destructive', title: 'Error al finalizar', description: err?.message || 'Intenta de nuevo.' });
+    } finally {
+      setIsFinishing(false);
     }
   };
 
@@ -457,6 +461,16 @@ const ActiveTrip: React.FC = () => {
           <Button variant="outline" disabled={!trip?.invoiceUrl && !trip?.pdfUrl} className="rounded-2xl bg-white/5 border-white/20 text-white" onClick={() => { const url = (trip as any)?.invoiceUrl || (trip as any)?.pdfUrl; if (url) window.open(url, '_blank'); }}>
             <FileDown className="h-4 w-4 mr-2" /> Descargar PDF
           </Button>
+
+          {isAssignedDrover && trip.status === 'IN_PROGRESS' && droverInDestination && (
+            <Button
+              onClick={handleFinishViaje}
+              disabled={isFinishing}
+              className="rounded-2xl bg-[#6EF7FF] text-[#22142A] hover:bg-[#6EF7FF]/80"
+            >
+              {isFinishing ? 'Finalizando…' : 'Finalizar viaje'}
+            </Button>
+          )}
         </div>
 
         {/* mapa al interior de la sección de ruta cuando showMap === true */}
