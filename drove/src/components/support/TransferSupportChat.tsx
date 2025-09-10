@@ -1,9 +1,12 @@
 
 import React, { useState, useRef, useEffect } from "react";
-import { User, Check, MessageCircle } from "lucide-react";
+import { User as UserIcon, Check, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLocation } from "react-router-dom";
+import { AdminService } from "@/services/adminService";
 
 type Message = {
   id: string;
@@ -14,22 +17,8 @@ type Message = {
 
 type TicketStatus = "pendiente" | "en_progreso" | "resuelto";
 
-// Simulación de conversación y estado
-const MOCK_TICKET_STATUS: TicketStatus = "pendiente";
-const MOCK_MESSAGES: Message[] = [
-  {
-    id: "1",
-    sender: "user",
-    text: "Hola, tengo una duda sobre la recogida.",
-    timestamp: "09:12",
-  },
-  {
-    id: "2",
-    sender: "soporte",
-    text: "¡Hola! Gracias por contactar con soporte DROVE. Un agente revisará tu mensaje en breve.",
-    timestamp: "09:15",
-  },
-];
+// Estado inicial por defecto
+const INITIAL_STATUS: TicketStatus = "pendiente";
 
 const statusLabels: Record<TicketStatus, string> = {
   pendiente: "Pendiente de agente",
@@ -50,9 +39,17 @@ const statusIcons: Record<TicketStatus, JSX.Element> = {
 };
 
 const TransferSupportChat: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>(MOCK_MESSAGES);
+  const { user } = useAuth();
+  const location = useLocation();
+  const transferId = React.useMemo(() => {
+    const m = location.pathname.match(/traslados\/activo\/(\w+)/);
+    return m?.[1] || undefined;
+  }, [location.pathname]);
+
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [status, setStatus] = useState<TicketStatus>(MOCK_TICKET_STATUS);
+  const [status, setStatus] = useState<TicketStatus>(INITIAL_STATUS);
+  const [ticketId, setTicketId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,35 +59,69 @@ const TransferSupportChat: React.FC = () => {
     }
   }, [messages]);
 
-  // Simulación: cuando el usuario envía, aparece una auto-respuesta tras 2s si está pendiente
-  const handleSend = () => {
-    if (!input.trim()) return;
-    const newMsg: Message = {
-      id: crypto.randomUUID(),
-      sender: "user",
-      text: input,
-      timestamp: new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
-    };
-    setMessages((msgs) => [...msgs, newMsg]);
-    setInput("");
+  // Cargar/conectar con tickets reales
+  const loadOrCreateTicket = React.useCallback(async () => {
+    try {
+      // Buscar ticket existente del usuario (por email) y/o por asunto del traslado
+      const tickets = await AdminService.getSupportTickets({} as any);
+      const email = (user as any)?.email || '';
+      const subjectHint = transferId ? `Traslado ${transferId}` : '';
+      const mine = (tickets || []).filter((t: any) => (t.clientEmail || '').toLowerCase() === email.toLowerCase());
+      const target =
+        mine.find((t: any) => subjectHint && (t.subject || '').includes(subjectHint)) ||
+        mine[0] ||
+        (tickets || [])[0];
 
-    if (status === "pendiente") {
-      toast({
-        title: "¡Gracias!",
-        description: "Un agente DROVE atenderá tu consulta muy pronto.",
-      });
-      setTimeout(() => {
-        setMessages((msgs) => [
-          ...msgs,
-          {
-            id: crypto.randomUUID(),
-            sender: "soporte",
-            text: "¡Hemos recibido tu mensaje! Un agente está en camino para ayudarte en tu traslado.",
-            timestamp: new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
-          },
-        ]);
-        setStatus("en_progreso");
-      }, 2000);
+      if (target) {
+        setTicketId(target.id);
+        // mapear mensajes
+        const serverMsgs = (target.messages || []).map((m: any) => ({
+          id: String(m.id),
+          sender: (m.senderName || '').toLowerCase().includes('admin') ? 'soporte' : 'user',
+          text: m.content || m.message || '',
+          timestamp: new Date(m.createdAt || Date.now()).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+        })) as Message[];
+        setMessages(serverMsgs);
+        setStatus('en_progreso');
+      } else {
+        setTicketId(null);
+        setMessages([]);
+        setStatus('pendiente');
+      }
+    } catch (e: any) {
+      console.error('[SUPPORT] load tickets error', e);
+    }
+  }, [user, transferId]);
+
+  useEffect(() => {
+    loadOrCreateTicket();
+    const id = setInterval(loadOrCreateTicket, 15000);
+    return () => clearInterval(id);
+  }, [loadOrCreateTicket]);
+
+  const handleSend = async () => {
+    if (!input.trim()) return;
+    const payloadText = input.trim();
+    setInput('');
+
+    try {
+      // si no hay ticket aún, crearlo con el primer mensaje
+      if (!ticketId) {
+        const name = (user as any)?.full_name || (user as any)?.name || 'Usuario';
+        const email = (user as any)?.email || '';
+        const subject = transferId ? `Traslado ${transferId}` : 'Soporte de traslado';
+        await AdminService.createSupportTicket({ name, email, subject, message: payloadText } as any);
+        toast({ title: 'Mensaje enviado', description: 'Creamos un ticket de soporte para tu consulta.' });
+        await loadOrCreateTicket();
+        return;
+      }
+
+      // si ya existe ticket, agregamos respuesta (usamos endpoint de respuesta existente)
+      await AdminService.respondToTicket(ticketId, { response: payloadText } as any);
+      await loadOrCreateTicket();
+    } catch (e: any) {
+      console.error('[SUPPORT] send message error', e);
+      toast({ variant: 'destructive', title: 'Error', description: e?.message || 'No se pudo enviar el mensaje.' });
     }
   };
 
@@ -139,37 +170,46 @@ const TransferSupportChat: React.FC = () => {
           scrollBehavior: "smooth",
         }}
       >
-        {messages.map((msg) => (
-          <div key={msg.id} className={`flex mb-2 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
-            {msg.sender === "soporte" && getAvatar("soporte")}
+        {messages.map((msg, idx) => {
+          const prev = messages[idx - 1];
+          const isGroupStart = !prev || prev.sender !== msg.sender;
+          const marginTop = isGroupStart ? 16 : 6; // mayor separación entre remitentes
+          return (
             <div
-              className={`max-w-[70%] p-2 md:p-2.5 rounded-2xl text-sm shadow font-medium ${
-                msg.sender === "user"
-                  ? "bg-[#6EF7FF] text-[#22142A] rounded-br-sm"
-                  : "bg-white/10 text-white rounded-bl-sm border border-[#6EF7FF]"
-              }`}
-              style={{
-                // Mejora texto sobre fondo cian: ¡nunca blanco puro sobre cian!
-                color: msg.sender === "user" ? "#22142A" : "white",
-                fontFamily: msg.sender === "soporte" ? "Helvetica" : "Helvetica"
-              }}
+              key={msg.id}
+              className={`w-full flex ${msg.sender === "user" ? "justify-end" : "justify-start"} items-end`}
+              style={{ marginTop }}
             >
-              {msg.text}
-              <span 
-                className={`block mt-1 text-[11px] font-normal pl-1 ${
-                  msg.sender === "user" 
-                    ? "text-[#22142A]/60" 
-                    : "text-white/90"
+              {msg.sender === "soporte" && getAvatar("soporte")}
+              <div
+                className={`max-w-[70%] p-2 md:p-2.5 rounded-2xl text-sm shadow font-medium ${
+                  msg.sender === "user"
+                    ? "bg-[#6EF7FF] text-[#22142A] rounded-br-sm"
+                    : "bg-white/10 text-white rounded-bl-sm border border-[#6EF7FF]"
                 }`}
+                style={{
+                  // Mejora texto sobre fondo cian: ¡nunca blanco puro sobre cian!
+                  color: msg.sender === "user" ? "#22142A" : "white",
+                  fontFamily: msg.sender === "soporte" ? "Helvetica" : "Helvetica"
+                }}
               >
-                {msg.timestamp}
-              </span>
+                {msg.text}
+                <span 
+                  className={`block mt-1 text-[11px] font-normal pl-1 ${
+                    msg.sender === "user" 
+                      ? "text-[#22142A]/60" 
+                      : "text-white/90"
+                  }`}
+                >
+                  {msg.timestamp}
+                </span>
+              </div>
+              {msg.sender === "user" && getAvatar("user")}
             </div>
-            {msg.sender === "user" && getAvatar("user")}
-          </div>
-        ))}
+          );
+        })}
       </div>
-
+      
       {/* Input */}
       <div className="w-full flex flex-row items-center gap-2 p-3 pt-2 border-t border-white/10 bg-[#22142A] rounded-b-2xl" style={{ minHeight: 58 }}>
         <Input
@@ -183,7 +223,7 @@ const TransferSupportChat: React.FC = () => {
           style={{ fontFamily: "Helvetica" }}
         />
         <Button
-          className="rounded-2xl bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold px-4 py-2 shadow-lg text-base transition-all duration-150"
+          className="rounded-2xl bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold px-4 py-2 shadow-lg text-base transition-all duración-150"
           disabled={status === "resuelto" || !input.trim()}
           onClick={handleSend}
           style={{ fontFamily: "Montserrat, Helvetica", fontWeight: 700 }}

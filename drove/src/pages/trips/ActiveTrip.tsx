@@ -5,12 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { MapPin, Phone, CheckCircle, AlertCircle, ArrowLeft, Car, DollarSign, ShieldCheck, Route as RouteIcon, Map as MapIcon, Calendar as CalendarIcon, Clock as ClockIcon, Copy as CopyIcon, FileDown } from 'lucide-react';
+import { MapPin, Phone, CheckCircle, AlertCircle, ArrowLeft, Car, DollarSign, ShieldCheck, Route as RouteIcon, Map as MapIcon, Calendar as CalendarIcon, Clock as ClockIcon, Copy as CopyIcon, FileDown, User, Mail, Navigation, MessageCircle, Check } from 'lucide-react';
 import RealTimeTripMap from '@/components/maps/RealTimeTripMap';
 import TransferStepsBar from '@/components/trips/TransferStepsBar';
+import MobileTripActionBar from '@/components/trips/MobileTripActionBar';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TransferService } from '@/services/transferService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSupportChat } from '@/contexts/SupportChatContext';
 import { toast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -56,6 +58,7 @@ const ActiveTrip: React.FC = () => {
   const [isFinishing, setIsFinishing] = useState(false);
   const [distanceToDestinationKm, setDistanceToDestinationKm] = useState<number | null>(null);
   const isMobile = useIsMobile();
+  const { toggleChat } = useSupportChat();
   
 
   const { data: trip, isLoading, refetch } = useQuery({
@@ -316,10 +319,25 @@ const ActiveTrip: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Top bar */}
-        <div className="flex items-center gap-3 text-white/80">
+        <div className="flex items-center justify-between text-white/80">
           <button onClick={() => navigate(-1)} className="flex items-center gap-2 hover:text-white">
             <ArrowLeft className="h-5 w-5" /> Volver
           </button>
+          {/* Desktop only QR button */}
+          {!isMobile && (
+            <Button
+              variant="secondary"
+              className="rounded-2xl bg-white/10 text-white hover:bg-white/20"
+              onClick={() => navigate('/qr/scan')}
+            >
+              ESCANEAR QR
+            </Button>
+          )}
+        </div>
+
+        {/* Steps moved above title */}
+        <div className="mt-2">
+          <TransferStepsBar trip={trip} />
         </div>
 
         {/* Title + meta */}
@@ -333,8 +351,6 @@ const ActiveTrip: React.FC = () => {
           <Badge className={`${getStatusColor(trip.status)} text-white px-4 py-2`}>{getStatusText(trip.status)}</Badge>
         </div>
 
-        {/* Steps */}
-        <TransferStepsBar trip={trip} />
 
         {/* Main cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -433,49 +449,104 @@ const ActiveTrip: React.FC = () => {
                 />
               </div>
             )}
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="mt-1 h-3 w-3 rounded-full bg-green-400"></div>
-                <div>
-                  <div className="text-white/60 text-sm">Origen</div>
-                  <div className="text-white font-semibold">{trip.startAddress?.address || trip.startAddress?.city}</div>
-                  <div className="text-white/40 text-xs">Punto de recogida</div>
+            {/* Origen/Destino a la izquierda y métricas a la derecha */}
+            <div className="grid grid-cols-1 lg:grid-cols-[2fr_1.3fr] gap-6 items-start">
+              <div className="space-y-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-400/10 border border-green-400/30 flex items-center justify-center">
+                    <Navigation className="text-green-300" />
+                  </div>
+                  <div>
+                    <div className="text-white/60 text-sm">Origen</div>
+                    <div className="text-white font-semibold">{trip.startAddress?.address || trip.startAddress?.city}</div>
+                    <div className="text-white/40 text-xs">Punto de recogida</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-rose-500/20 to-pink-400/10 border border-rose-400/30 flex items-center justify-center">
+                    <MapPin className="text-rose-300" />
+                  </div>
+                  <div>
+                    <div className="text-white/60 text-sm">Destino</div>
+                    <div className="text-white font-semibold">{trip.endAddress?.address || trip.endAddress?.city}</div>
+                    <div className="text-white/40 text-xs">Punto de entrega</div>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                <div className="mt-1 h-3 w-3 rounded-full bg-rose-500"></div>
-                <div>
-                  <div className="text-white/60 text-sm">Destino</div>
-                  <div className="text-white font-semibold">{trip.endAddress?.address || trip.endAddress?.city}</div>
-                  <div className="text-white/40 text-xs">Punto de entrega</div>
+              <div className="w-full">
+                <div className="grid grid-cols-2 gap-5">
+                  <div className="rounded-2xl bg-white/5 border border-white/10 p-6 text-center min-w-[185px]">
+                    <div className="text-white/60 text-sm">Distancia</div>
+                    <div className="text-[#6EF7FF] text-2xl font-bold">{trip.distanceTravel || '—'}</div>
+                  </div>
+                  <div className="rounded-2xl bg-white/5 border border-white/10 p-6 text-center min-w-[185px]">
+                    <div className="text-white/60 text-sm">Duración</div>
+                    <div className="text-[#6EF7FF] text-2xl font-bold">{trip.timeTravel || '—'}</div>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4 text-center">
-                <div className="text-white/60 text-sm">Distancia</div>
-                <div className="text-[#6EF7FF] text-2xl font-bold">{trip.distanceTravel || '—'}</div>
+
+            {/* Recogida programada dentro de la card de ruta */}
+            {trip.travelDate && (
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="flex items-center gap-2 text-white/70 text-sm">
+                  <CalendarIcon className="h-5 w-5 text-[#6EF7FF]" />
+                  <span className="uppercase tracking-wide">RECOGIDA PROGRAMADA</span>
+                </div>
+                <div className="mt-3 text-center text-white text-lg font-semibold">
+                  {new Date(trip.travelDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}
+                  {trip.travelTime ? ` a las ${trip.travelTime}` : ''}
+                </div>
               </div>
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4 text-center">
-                <div className="text-white/60 text-sm">Duración</div>
-                <div className="text-[#6EF7FF] text-2xl font-bold">{trip.timeTravel || '—'}</div>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Programación */}
-        {trip.travelDate && (
-          <Card className="bg-white/5 border-white/10">
-            <CardContent className="flex items-center gap-3 p-5 text-white">
-              <CalendarIcon className="h-5 w-5 text-[#6EF7FF]" />
-              <div>
-                <div className="text-white/60 text-sm">RECOGIDA PROGRAMADA</div>
-                <div className="text-lg font-semibold">{new Date(trip.travelDate).toLocaleDateString()} {trip.travelTime ? `- ${trip.travelTime}` : ''}</div>
+        {/* Contactos: Entrega y Recepción */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Persona que recibe (primero) */}
+          <Card className="w-full md:max-w-sm justify-self-start bg-gradient-to-br from-[#f2b8d4]/25 via-[#f5c6e5]/20 to-white/5 border-rose-300/30">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center">
+                  <User className="text-[#6EF7FF]" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-white font-semibold">Receptor</div>
+                  <div className="text-white/60 text-sm">Recibe el vehículo</div>
+                </div>
+              </div>
+              <div className="mt-4 space-y-2 text-white">
+                <div className="font-semibold">{trip.personReceive?.fullName || '—'}</div>
+                <div className="text-white/70 text-sm">DNI: {trip.personReceive?.dni || '—'}</div>
+                <div className="flex items-center gap-2 text-white/80 text-sm"><Phone className="h-4 w-4 text-[#6EF7FF]" /> {trip.personReceive?.phone || '—'}</div>
+                <div className="flex items-center gap-2 text-white/80 text-sm"><Mail className="h-4 w-4 text-[#6EF7FF]" /> {trip.personReceive?.email || '—'}</div>
               </div>
             </CardContent>
           </Card>
-        )}
+
+          {/* Persona que entrega (segundo) */}
+          <Card className="w-full md:max-w-sm justify-self-start bg-gradient-to-br from-white/5 to-[#6EF7FF]/5 border-white/10">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center">
+                  <User className="text-[#6EF7FF]" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-white font-semibold">Entregador</div>
+                  <div className="text-white/60 text-sm">Entrega el vehículo</div>
+                </div>
+              </div>
+              <div className="mt-4 space-y-2 text-white">
+                <div className="font-semibold">{trip.personDelivery?.fullName || '—'}</div>
+                <div className="text-white/70 text-sm">DNI: {trip.personDelivery?.dni || '—'}</div>
+                <div className="flex items-center gap-2 text-white/80 text-sm"><Phone className="h-4 w-4 text-[#6EF7FF]" /> {trip.personDelivery?.phone || '—'}</div>
+                <div className="flex items-center gap-2 text-white/80 text-sm"><Mail className="h-4 w-4 text-[#6EF7FF]" /> {trip.personDelivery?.email || '—'}</div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Callout final */}
         {trip.status === 'DELIVERED' && (
@@ -521,20 +592,48 @@ const ActiveTrip: React.FC = () => {
         </div>
 
         {/* Barra de acciones fija en mobile */}
-        {isMobile && isAssignedDrover && (
-          <div className="fixed bottom-0 left-0 right-0 bg-[#1b1323]/90 border-t border-white/10 p-3 backdrop-blur-md z-50">
-            <div className="max-w-6xl mx-auto flex items-center gap-3">
-              {trip.status === 'PICKED_UP' && (
-                <Button onClick={handleIniciarViaje} className="flex-1 rounded-2xl bg-[#6EF7FF] text-[#22142A] hover:bg-[#6EF7FF]/80">
-                  Iniciar viaje
-                </Button>
-              )}
-              {trip.status === 'IN_PROGRESS' && (
-                <Button onClick={handleFinishViaje} disabled={!droverInDestination || isFinishing} className="flex-1 rounded-2xl bg-green-400 text-[#22142A] hover:bg-green-300 disabled:opacity-60">
-                  {isFinishing ? 'Finalizando…' : 'Finalizar viaje'}
-                </Button>
-              )}
-            </div>
+        {isMobile && (
+          <MobileTripActionBar
+            trip={trip}
+            transferId={transferId!}
+            isAssignedDrover={isAssignedDrover}
+            droverInDestination={droverInDestination}
+            distanceToDestinationKm={distanceToDestinationKm}
+            isFinishing={isFinishing}
+            onStart={handleIniciarViaje}
+            onFinish={handleFinishViaje}
+          />
+        )}
+
+        {/* Botones flotantes solo desktop (abajo a la derecha) */}
+        {!isMobile && isAssignedDrover && (
+          <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-4">
+            {trip.status === 'PICKED_UP' && (
+              <button
+                onClick={handleIniciarViaje}
+                className="px-6 py-3 rounded-2xl bg-white/10 text-white/80 backdrop-blur-md border border-white/15 shadow-[0_10px_25px_rgba(0,0,0,0.35)] hover:bg-white/15 flex items-center gap-3"
+              >
+                <Check className="h-5 w-5 text-white/70" />
+                Iniciar Traslado
+              </button>
+            )}
+            {trip.status === 'IN_PROGRESS' && (
+              <button
+                onClick={handleFinishViaje}
+                disabled={!droverInDestination || isFinishing}
+                className="px-6 py-3 rounded-2xl bg-white/10 text-white/80 backdrop-blur-md border border-white/15 shadow-[0_10px_25px_rgba(0,0,0,0.35)] hover:bg-white/15 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
+              >
+                <Check className="h-5 w-5 text-white/70" />
+                Finalizar Traslado
+              </button>
+            )}
+            <button
+              onClick={toggleChat}
+              className="w-14 h-14 rounded-full bg-[#6EF7FF] text-[#22142A] shadow-[0_10px_25px_rgba(0,0,0,0.35)] flex items-center justify-center hover:bg-[#5beff6]"
+              aria-label="Abrir chat de soporte"
+            >
+              <MessageCircle className="h-6 w-6" />
+            </button>
           </div>
         )}
 
