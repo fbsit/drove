@@ -30,7 +30,12 @@ const Register = () => {
       
       toast({
         title: "¡Bienvenido a DROVE!",
-        description: "Tu cuenta ha sido creada exitosamente. Te enviamos un correo para verificar tu cuenta.",
+        description: (
+          <div>
+            <div>Tu cuenta ha sido creada exitosamente.</div>
+            <div>Te enviamos un correo para verificar tu cuenta.</div>
+          </div>
+        ),
       });
       
       // Redirigir al login con mensaje de éxito

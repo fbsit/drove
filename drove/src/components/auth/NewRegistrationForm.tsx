@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { UserType, RegistrationFormData } from "@/types/new-registration";
 import { useToast } from "@/hooks/use-toast";
 import { AuthService } from "@/services/authService";
+import { StorageService } from "@/services/storageService";
 import UserTypeSelection from "./registration-steps/UserTypeSelection";
 import ClientBasicDataStep from "./registration-steps/ClientBasicDataStep";
 import ClientFiscalDataStep from "./registration-steps/ClientFiscalDataStep";
@@ -104,6 +105,36 @@ const NewRegistrationForm: React.FC<Props> = ({
     try {
       console.log("Enviando datos de registro:", formData);
 
+      // Para drover, subir archivos y usar URLs (el backend espera strings)
+      let selfieUrl: string | undefined;
+      let licenseFrontUrl: string | undefined;
+      let licenseBackUrl: string | undefined;
+      let backgroundCheckUrl: string | undefined;
+
+      if (formData.userType === "drover") {
+        const upload = async (input?: File | string) => {
+          if (!input) return undefined;
+          if (typeof input === "string") return input;
+          const url = await StorageService.uploadImageDrover(
+            input,
+            "registrations/drover",
+          );
+          if (!url) throw new Error("No se pudo subir uno de los documentos");
+          return url;
+        };
+
+        const [s, lf, lb, bg] = await Promise.all([
+          upload(formData.profilePhoto as any),
+          upload(formData.licenseFront as any),
+          upload(formData.licenseBack as any),
+          upload(formData.backgroundCheck as any),
+        ]);
+        selfieUrl = s;
+        licenseFrontUrl = lf;
+        licenseBackUrl = lb;
+        backgroundCheckUrl = bg;
+      }
+
       // Preparar datos para el servicio de autenticación
       const registrationData = {
         email: formData.email!,
@@ -119,12 +150,12 @@ const NewRegistrationForm: React.FC<Props> = ({
           state: formData.province || "",
           zip: formData.postalCode || "",
           country: formData.country || "España",
-          // Campos específicos para drover
-          licenseFront: formData.licenseFront,
-          licenseBack: formData.licenseBack,
-          selfie: formData.profilePhoto,
-          imageUpload2: formData.backgroundCheck,
-          pdfUpload: formData.backgroundCheck,
+          // Campos específicos para drover (como strings/URLs)
+          licenseFront: licenseFrontUrl ?? (formData.licenseFront as unknown as string),
+          licenseBack: licenseBackUrl ?? (formData.licenseBack as unknown as string),
+          selfie: selfieUrl ?? (formData.profilePhoto as unknown as string),
+          imageUpload2: backgroundCheckUrl ?? (formData.backgroundCheck as unknown as string),
+          pdfUpload: backgroundCheckUrl ?? (formData.backgroundCheck as unknown as string),
           profileComplete: true,
         },
       };

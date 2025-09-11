@@ -6,6 +6,7 @@ import { MapPin, Clock, Navigation, Euro } from 'lucide-react';
 import { VehicleTransferFormData } from '@/types/vehicle-transfer-request';
 import { LatLngCity } from '@/types/lat-lng-city';
 import { TarifaService } from '@/services/tarifaService';
+import RouteService from '@/services/routeService';
 
 interface RouteDisplayProps {
   form: UseFormReturn<VehicleTransferFormData>;
@@ -29,24 +30,70 @@ export const RouteDisplay: React.FC<RouteDisplayProps> = ({
     }
   }, [originAddress, destinationAddress]);
 
+  const parseDistanceKm = (text: string): number => {
+    if (!text) return 0;
+    const lower = text.toLowerCase().trim();
+    if (lower.includes('km')) {
+      const num = lower.replace(/km.*/,'').replace(/[^0-9,.]/g,'').replace(/,/g,'.');
+      const val = parseFloat(num);
+      return isNaN(val) ? 0 : val;
+    }
+    if (lower.includes('m')) {
+      const num = lower.replace(/m.*/,'').replace(/[^0-9,.]/g,'').replace(/,/g,'.');
+      const meters = parseFloat(num);
+      const km = isNaN(meters) ? 0 : meters / 1000;
+      return km;
+    }
+    const fallback = parseFloat(lower.replace(/[^0-9,.]/g,'').replace(/,/g,'.'));
+    return isNaN(fallback) ? 0 : fallback;
+  };
+
+  const parseDurationMinutes = (text: string): number => {
+    if (!text) return 0;
+    const lower = text.toLowerCase();
+    // handle formats like "8 hours 23 mins", "8 h 23 min", "2h 10m"
+    let hours = 0; let mins = 0;
+    const hMatch = lower.match(/(\d+[\.,]?\d*)\s*h|hours?/);
+    const mMatch = lower.match(/(\d+[\.,]?\d*)\s*m|mins?/);
+    if (hMatch) {
+      const hStr = (hMatch[0].match(/\d+[\.,]?\d*/) || ['0'])[0].replace(',', '.');
+      hours = parseFloat(hStr) || 0;
+    }
+    if (mMatch) {
+      const mStr = (mMatch[0].match(/\d+[\.,]?\d*/) || ['0'])[0].replace(',', '.');
+      mins = parseFloat(mStr) || 0;
+    }
+    if (!hMatch && !mMatch) {
+      const onlyNum = parseFloat(lower.replace(/[^0-9,.]/g,'').replace(/,/g,'.'));
+      return isNaN(onlyNum) ? 0 : Math.round(onlyNum);
+    }
+    return Math.round(hours * 60 + mins);
+  };
+
   const calculateRoute = async () => {
     setLoading(true);
     try {
-      // Simulate route calculation
-      const distanceKm = Math.round(Math.random() * 100 + 10);
-      const durationMinutes = Math.round(distanceKm * 1.2);
-      
-      const distanceStr = `${distanceKm} km`;
+      const origin = originAddress;
+      const dest = destinationAddress;
+      const resp = await RouteService.getDistance(
+        Number(origin.lat),
+        Number(origin.lng),
+        Number(dest.lat),
+        Number(dest.lng)
+      );
+
+      const distanceKm = parseDistanceKm(resp?.distance);
+      const durationMinutes = parseDurationMinutes(resp?.duration);
+
+      const distanceStr = `${Math.round(distanceKm)} km`;
       const durationStr = `${Math.floor(durationMinutes / 60)}h ${durationMinutes % 60}min`;
-      
+
       setDistance(distanceStr);
       setDuration(durationStr);
-      
-      // Calculate price using TarifaService
+
       const calculatedPrice = await TarifaService.getPriceByDistance(distanceKm);
       setPrice(calculatedPrice);
-      
-      // Update form with calculated values
+
       form.setValue('transferDetails', {
         ...form.getValues('transferDetails'),
         distance: distanceKm,
@@ -55,6 +102,7 @@ export const RouteDisplay: React.FC<RouteDisplayProps> = ({
       });
     } catch (error) {
       console.error('Error calculating route:', error);
+      // fallback simple: haversine approx if API fails (optional)
     } finally {
       setLoading(false);
     }

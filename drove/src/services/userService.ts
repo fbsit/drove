@@ -23,7 +23,7 @@ export class UserService {
   }
 
   static async updateUser(userId: string, userData: any): Promise<any> {
-    return await ApiService.put(`/users/${userId}`, userData);
+    return await ApiService.patch(`/users/${userId}`, userData);
   }
 
   static async deleteUser(userId: string): Promise<void> {

@@ -13,6 +13,8 @@ import { EditPasswordModal } from '@/components/admin/profile/EditPasswordModal'
 import { NotificationSettingsModal } from '@/components/admin/profile/NotificationSettingsModal';
 import { PrivacySettingsModal } from '@/components/admin/profile/PrivacySettingsModal';
 import authService from "@/services/authService";
+import UserService from "@/services/userService";
+import { StorageService } from "@/services/storageService";
 
 
 const emptyAdmin = {
@@ -36,6 +38,7 @@ const AdminProfile = () => {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const [formData, setFormData] = useState<any>(emptyAdmin);
+  const [contactInfo, setContactInfo] = useState<any | null>(null);
 
   useEffect(() => {
     const fetchAdmin = async () => {
@@ -50,7 +53,7 @@ const AdminProfile = () => {
         }
 
         const mapped = {
-          avatar: (user as any)?.avatar ?? (user as any)?.selfie ?? "",
+          avatar: (user as any)?.avatar ?? (user as any)?.selfie ?? (user as any)?.contactInfo?.selfie ?? "",
           fullName: (user as any)?.full_name ?? (user as any)?.fullName ?? (user as any)?.contactInfo?.fullName ?? "",
           role: (user as any)?.role ?? 'Administrador',
           email: (user as any)?.email ?? (user as any)?.contactInfo?.email ?? "",
@@ -62,6 +65,7 @@ const AdminProfile = () => {
 
         setAdminData(mapped);
         setFormData(mapped);
+        setContactInfo((user as any)?.contactInfo ?? null);
       } catch (err) {
         console.error("Error obteniendo usuario:", err);
       }
@@ -112,9 +116,40 @@ const AdminProfile = () => {
                     />
                   </div>
                 </div>
-                <button className="absolute bottom-0 right-0 bg-[#6EF7FF] hover:bg-[#32dfff] rounded-full p-2 transition-colors">
+                <input
+                  id="admin-avatar-input"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      const url = await StorageService.uploadImageDrover(file, 'avatars/admin');
+                      if (url) {
+                        setAdminData(prev => ({ ...prev, avatar: url }));
+                        setFormData(prev => ({ ...prev, avatar: url }));
+                        try {
+                          const current: any = await authService.getCurrentUser();
+                          const userId = (current as any)?.id || (current as any)?.user?.id;
+                          if (userId) {
+                            const ci = (current as any)?.contactInfo || contactInfo || {};
+                            const fullContact = { ...ci, selfie: url };
+                            await UserService.updateUser(userId, { contactInfo: fullContact });
+                            setContactInfo(fullContact);
+                          }
+                        } catch {}
+                      }
+                    } catch (err) {
+                      console.error('Error subiendo avatar', err);
+                    } finally {
+                      if (e.target) e.target.value = '';
+                    }
+                  }}
+                />
+                <label htmlFor="admin-avatar-input" className="absolute bottom-0 right-0 bg-[#6EF7FF] hover:bg-[#32dfff] rounded-full p-2 transition-colors cursor-pointer">
                   <Camera size={16} className="text-[#22142A]" />
-                </button>
+                </label>
               </div>
 
               {/* Información básica */}

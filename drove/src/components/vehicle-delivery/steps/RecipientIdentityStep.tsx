@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Camera, Loader } from 'lucide-react'
 import { toast } from 'sonner'
 import { StorageService } from '@/services/storageService'
+import { optimizeImageForUpload } from '@/lib/image'
 
 const REQUIRED = {
   idFrontPhoto: 'Documento de identidad (frontal)',
@@ -37,7 +38,8 @@ const RecipientIdentityStep: React.FC<Props> = ({
   onDataChanged,
 }) => {
   const [imageUrls, setImageUrls] = useState<Record<ImgKey, string>>({} as any)
-  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  // Loading por campo para subidas en paralelo
+  const [uploading, setUploading] = useState<Record<string, boolean>>({})
   const [idNumber, setIdNumber] = useState('')
   const [hasDamage, setHasDamage] = useState(false)
   const [damageDescription, setDamageDescription] = useState('')
@@ -46,11 +48,12 @@ const RecipientIdentityStep: React.FC<Props> = ({
   const keys = Object.keys(REQUIRED) as ImgKey[]
 
   const handleImageUpload = async (key: ImgKey, file: File) => {
-    setIsUploadingImage(true)
+    setUploading(prev => ({ ...prev, [key]: true }))
     
     try {
+      const optimized = await optimizeImageForUpload(file, 1600, 0.75)
       const folderPath = `travel/${transferId}/delivery/identity`
-      const imageUrl = await StorageService.uploadImage(file, folderPath)
+      const imageUrl = await StorageService.uploadImage(optimized, folderPath)
       
       if (imageUrl) {
         setImageUrls(prev => ({ ...prev, [key]: imageUrl }))
@@ -62,7 +65,7 @@ const RecipientIdentityStep: React.FC<Props> = ({
       console.error('Error uploading image:', error)
       toast.error('Error al subir la imagen')
     } finally {
-      setIsUploadingImage(false)
+      setUploading(prev => ({ ...prev, [key]: false }))
     }
   }
 
@@ -85,7 +88,8 @@ const RecipientIdentityStep: React.FC<Props> = ({
   useEffect(() => {
     const allImgs = keys.every(k => Boolean(imageUrls[k]))
     const dmgOk = !hasDamage || damageDescription.trim() !== ''
-    const formValid = idNumber.trim() !== '' && allImgs && dmgOk
+    const isUploadingAny = Object.values(uploading).some(Boolean)
+    const formValid = idNumber.trim() !== '' && allImgs && dmgOk && !isUploadingAny
 
     onDataChanged(!formValid)
 
@@ -108,6 +112,7 @@ const RecipientIdentityStep: React.FC<Props> = ({
     hasDamage,
     damageDescription,
     imageUrls,
+    uploading,
   ])
 
   return (
@@ -145,7 +150,7 @@ const RecipientIdentityStep: React.FC<Props> = ({
                       variant="destructive"
                       size="icon"
                       onClick={() => removeImage(key)}
-                      disabled={isUploadingImage}
+                      disabled={!!uploading[key]}
                       className="absolute top-2 right-2 h-6 w-6"
                     >
                       ✕
@@ -153,7 +158,7 @@ const RecipientIdentityStep: React.FC<Props> = ({
                   </div>
                 ) : (
                   <label className="w-full h-full flex items-center justify-center cursor-pointer hover:bg-white/20 rounded-lg transition-colors">
-                    {isUploadingImage ? (
+                    {uploading[key] ? (
                       <Loader className="h-8 w-8 text-white/70 animate-spin" />
                     ) : (
                       <Camera className="h-8 w-8 text-white/70" />
@@ -163,7 +168,7 @@ const RecipientIdentityStep: React.FC<Props> = ({
                       accept="image/*"
                       capture="environment"
                       className="hidden"
-                      disabled={isUploadingImage}
+                      disabled={!!uploading[key]}
                       onChange={e => handleImageChange(key, e)}
                     />
                   </label>

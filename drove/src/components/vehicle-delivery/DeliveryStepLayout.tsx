@@ -127,7 +127,7 @@ const DeliveryStepLayout: React.FC<DeliveryStepLayoutProps> = ({
             <Button 
               variant="default"
               onClick={onNextStep}
-              disabled={isLoading}
+              disabled={isLoading || isNextDisabled}
             >
               {isLoading ? (
                 <>

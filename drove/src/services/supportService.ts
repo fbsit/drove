@@ -11,8 +11,7 @@ export class SupportService {
   }
 
   static async createTicket(ticketData: any): Promise<any> {
-    // Si se requiere público, crear endpoint; por ahora admin namespace no tiene POST create
-    return await ApiService.post('/admin/support/tickets', ticketData);
+    return await ApiService.post('/support/tickets', ticketData);
   }
 
   static async updateTicket(ticketId: string, ticketData: any): Promise<any> {
@@ -21,6 +20,10 @@ export class SupportService {
 
   static async closeTicket(ticketId: string): Promise<any> {
     return await ApiService.put(`/admin/support/tickets/${ticketId}/close`, {});
+  }
+
+  static async respondToTicket(ticketId: string, response: string): Promise<any> {
+    return await ApiService.post(`/admin/support/tickets/${ticketId}/respond`, { response });
   }
 }
 

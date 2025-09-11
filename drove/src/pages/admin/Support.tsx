@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState } from "react";
-import { Loader2, MessageCircle, Clock, AlertTriangle, CheckCircle, Filter, Search } from "lucide-react";
+import { Loader2, MessageCircle, Clock, AlertTriangle, CheckCircle, Filter, Search, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectGroup, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,11 +34,12 @@ const Support: React.FC = () => {
     updateTicketStatus(ticketId, status);
   };
 
-  const handleRespond = (ticketId: string) => {
-    const response = prompt("Escribe tu respuesta:");
-    if (response) {
-      respondToTicket(ticketId, response);
-    }
+  const [replyText, setReplyText] = useState('');
+
+  const submitInlineReply = () => {
+    if (!selected?.id || !replyText.trim()) return;
+    respondToTicket({ ticketId: selected.id, response: replyText.trim() } as any);
+    setReplyText('');
   };
 
   const getPriorityColor = (priority: string) => {
@@ -79,6 +80,7 @@ const Support: React.FC = () => {
   const countTotal = (tickets || []).length;
 
   return (
+    <>
     <div className="">
       {/* Hero */}
       <section
@@ -247,8 +249,38 @@ const Support: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-white/80 mb-4">
-                  {selected.message}
+                {/* Conversación completa */}
+                <div className="space-y-3 mb-4">
+                  {((selected.messages || []).length === 0) ? (
+                    // Si el ticket no tiene historial en backend, mostramos el mensaje inicial del cliente
+                    <div className="bg-white/5 text-white rounded-xl px-4 py-3 border border-white/10">
+                      <div className="flex items-center justify-between text-white/80 text-xs mb-1">
+                        <span className="font-semibold">{selected.clientName}</span>
+                        <span>{new Date(selected.createdAt).toLocaleString()}</span>
+                      </div>
+                      <div className="text-sm">{selected.message}</div>
+                    </div>
+                  ) : (
+                    (selected.messages || [])
+                      .slice()
+                      .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+                      .map((m: any) => {
+                        const isAdmin = String(m.sender).toLowerCase() === 'admin';
+                        const bubble = isAdmin
+                          ? 'bg-[#29485a] text-white border border-[#6EF7FF33]'
+                          : 'bg-white/5 text-white border border-white/10';
+                        const name = m.senderName || (isAdmin ? 'Admin Support' : selected.clientName || 'Usuario');
+                        return (
+                          <div key={m.id} className={`${bubble} rounded-xl px-4 py-3`}>
+                            <div className="flex items-center justify-between text-white/80 text-xs mb-1">
+                              <span className="font-semibold">{name}</span>
+                              <span>{new Date(m.timestamp).toLocaleString()}</span>
+                            </div>
+                            <div className="text-sm">{m.content}</div>
+                          </div>
+                        );
+                      })
+                  )}
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-white/60 text-sm">
@@ -256,15 +288,26 @@ const Support: React.FC = () => {
                     <span>Creado: {new Date(selected.createdAt).toLocaleDateString()}</span>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => handleRespond(selected.id)} disabled={isResponding}>
-                      {isResponding ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Responder'}
-                    </Button>
                     {selected.status !== 'resuelto' && (
                       <Button size="sm" onClick={() => handleUpdateStatus(selected.id, 'resuelto')} disabled={isUpdatingStatus} className="bg-green-600 hover:bg-green-700">
                         {isUpdatingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
                       </Button>
                     )}
                   </div>
+                </div>
+                {/* Responder inline */}
+                <div className="w-full flex flex-row items-center gap-2 mt-4">
+                  <Input
+                    className="rounded-2xl flex-1 text-base placeholder:text-white/60 bg-white/5 border border-white/10 focus:ring-2 focus:ring-[#6EF7FF] text-white"
+                    placeholder="Escribe tu respuesta..."
+                    maxLength={500}
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') submitInlineReply(); }}
+                  />
+                  <Button className="rounded-2xl bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold px-4 py-2" disabled={!replyText.trim() || isResponding} onClick={submitInlineReply}>
+                    {isResponding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -284,6 +327,9 @@ const Support: React.FC = () => {
         </div>
       )}
     </div>
+
+    {/* Modal eliminado; respuesta inline */}
+    </>
   );
 };
 

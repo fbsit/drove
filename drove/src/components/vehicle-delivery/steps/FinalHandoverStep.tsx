@@ -8,6 +8,7 @@ import { Camera, Loader } from 'lucide-react'
 import { toast } from 'sonner'
 import { StorageService } from '@/services/storageService'
 import SignaturePad from '@/components/vehicle-delivery/SignaturePad'
+import { optimizeImageForUpload } from '@/lib/image'
 
 const REQUIRED = {
   delivery_document: 'Documento de entrega firmado',
@@ -34,7 +35,8 @@ const FinalHandoverStep: React.FC<Props> = ({
   onDataChanged,
 }) => {
   const [imageUrls, setImageUrls] = useState<Record<ImgKey, string>>({} as any)
-  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  // Loading por campo para subidas en paralelo
+  const [uploading, setUploading] = useState<Record<string, boolean>>({})
   const [comments, setComments] = useState('')
   const [droverSig, setDroverSig] = useState('')
   const [clientSig, setClientSig] = useState('')
@@ -43,11 +45,12 @@ const FinalHandoverStep: React.FC<Props> = ({
   const keys = Object.keys(REQUIRED) as ImgKey[]
 
   const handleImageUpload = async (key: ImgKey, file: File) => {
-    setIsUploadingImage(true)
+    setUploading(prev => ({ ...prev, [key]: true }))
     
     try {
+      const optimized = await optimizeImageForUpload(file, 1600, 0.75)
       const folderPath = `travel/${transferId}/delivery/documents`
-      const imageUrl = await StorageService.uploadImage(file, folderPath)
+      const imageUrl = await StorageService.uploadImage(optimized, folderPath)
       
       if (imageUrl) {
         setImageUrls(prev => ({ ...prev, [key]: imageUrl }))
@@ -59,7 +62,7 @@ const FinalHandoverStep: React.FC<Props> = ({
       console.error('Error uploading image:', error)
       toast.error('Error al subir la imagen')
     } finally {
-      setIsUploadingImage(false)
+      setUploading(prev => ({ ...prev, [key]: false }))
     }
   }
 
@@ -82,7 +85,8 @@ const FinalHandoverStep: React.FC<Props> = ({
   useEffect(() => {
     const allImgs = keys.every(k => Boolean(imageUrls[k]))
     const allSigs = droverSig !== '' && clientSig !== ''
-    const formValid = allImgs && allSigs
+    const isUploadingAny = Object.values(uploading).some(Boolean)
+    const formValid = allImgs && allSigs && !isUploadingAny
 
     onDataChanged(!formValid)
 
@@ -99,7 +103,7 @@ const FinalHandoverStep: React.FC<Props> = ({
       onDataReady(null as any)
       readyRef.current = false
     }
-  }, [imageUrls, droverSig, clientSig, comments])
+  }, [imageUrls, droverSig, clientSig, comments, uploading])
 
   return (
     <div className="space-y-6">
@@ -125,7 +129,7 @@ const FinalHandoverStep: React.FC<Props> = ({
                       variant="destructive"
                       size="icon"
                       onClick={() => removeImage(key)}
-                      disabled={isUploadingImage}
+                      disabled={!!uploading[key]}
                       className="absolute top-2 right-2 h-6 w-6"
                     >
                       ✕
@@ -133,7 +137,7 @@ const FinalHandoverStep: React.FC<Props> = ({
                   </div>
                 ) : (
                   <label className="w-full h-full flex items-center justify-center cursor-pointer hover:bg-white/20 rounded-lg transition-colors">
-                    {isUploadingImage ? (
+                    {uploading[key] ? (
                       <Loader className="h-8 w-8 text-white/70 animate-spin" />
                     ) : (
                       <Camera className="h-8 w-8 text-white/70" />
@@ -143,7 +147,7 @@ const FinalHandoverStep: React.FC<Props> = ({
                       accept="image/*"
                       capture="environment"
                       className="hidden"
-                      disabled={isUploadingImage}
+                      disabled={!!uploading[key]}
                       onChange={e => handleImageChange(key, e)}
                     />
                   </label>

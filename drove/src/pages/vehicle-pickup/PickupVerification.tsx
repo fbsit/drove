@@ -17,6 +17,7 @@ import DashboardLayout                 from '@/components/layout/DashboardLayout
 import { TransferService }             from '@/services/transferService';
 import { usePickupVerification }       from '@/hooks/usePickupVerification';
 import { StorageService }              from '@/services/storageService';
+import SignatureCanvas                 from '@/components/SignatureCanvas';
 
 // Utilidad: comprimir imagen en el cliente antes de subir (reduce 70-85%)
 async function compressImage(file: File, maxWidth = 1600, quality = 0.75): Promise<File> {
@@ -88,7 +89,8 @@ const PickupVerification: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(STEPS.VEHICLE_EXTERIOR);
   const [transfer, setTransfer]       = useState<any>(null);
   const [isLoading, setIsLoading]     = useState(true);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  // Loading por campo (permite subidas en paralelo)
+  const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [accessWarning, setAccessWarning] = useState<string | null>(null);
   const [accessBlocked, setAccessBlocked] = useState<boolean>(false);
 
@@ -169,14 +171,15 @@ const PickupVerification: React.FC = () => {
   }, [transferId]);
 
   /* ──────────────────────────────── image upload helpers ──────────────────────────── */
+  const fieldId = (type: 'exterior' | 'interior', key: string) => `${type}:${key}`;
   const handleImageUpload = async (
     type: 'exterior' | 'interior',
     key: string,
     file: File
   ) => {
     if (!transferId) return;
-
-    setIsUploadingImage(true);
+    const id = fieldId(type, key);
+    setUploading(prev => ({ ...prev, [id]: true }));
     
     try {
       // Comprimir imagen antes de subir para acelerar en móviles
@@ -202,7 +205,7 @@ const PickupVerification: React.FC = () => {
       console.error('Error uploading image:', error);
       toast.error('Error al subir la imagen');
     } finally {
-      setIsUploadingImage(false);
+      setUploading(prev => ({ ...prev, [id]: false }));
     }
   };
 
@@ -272,6 +275,8 @@ const PickupVerification: React.FC = () => {
       await submitVerification(data);
       setCurrentStep(STEPS.SUMMARY);
       toast.success('Verificación enviada');
+      // Invalidar y refetch del viaje para que la vista activa muestre estado actualizado
+      try { (window as any).__queryClient?.invalidateQueries?.({ queryKey: ['active-trip', transferId] }); } catch {}
       navigate(`/traslados/activo/${transferId}`);
     } catch (error) {
       console.error('Error al enviar verificación:', error);
@@ -294,6 +299,8 @@ const PickupVerification: React.FC = () => {
     : s === STEPS.CONFIRMATION    ? <User   size={20}/>
     : s === STEPS.SIGNATURE_COMMENTS ? <FileText size={20}/>
     : <Camera size={20}/>;
+
+  const isUploadingAny = React.useMemo(() => Object.values(uploading).some(Boolean), [uploading]);
 
   const renderStep = () => {
     /* exterior / interior UI idénticos → helper */
@@ -323,18 +330,18 @@ const PickupVerification: React.FC = () => {
                     />
                     <Button variant="destructive" size="icon"
                       onClick={() => removeImage(type, k)}
-                      disabled={isUploadingImage || accessBlocked}
+                      disabled={!!uploading[fieldId(type, k)] || accessBlocked}
                       className="absolute top-2 right-2 h-6 w-6">✕</Button>
                   </div>
                 ) : (
                   <label className="w-full h-full flex items-center justify-center cursor-pointer hover:bg-white/20 rounded-lg transition-colors">
-                    {isUploadingImage ? (
+                    {uploading[fieldId(type, k)] ? (
                       <Loader className="h-8 w-8 text-white/70 animate-spin" />
                     ) : (
                       <Camera className="h-8 w-8 text-white/70"/>
                     )}
                     <input type="file" accept="image/*" capture="environment" className="hidden"
-                      disabled={isUploadingImage || accessBlocked}
+                      disabled={!!uploading[fieldId(type, k)] || accessBlocked}
                       onChange={e => handleImageChange(type, k, e)}/>
                   </label>
                 )}
@@ -389,13 +396,8 @@ const PickupVerification: React.FC = () => {
         return (
           <>
             <label className="block text-white mb-2">Firma del cliente</label>
-            <div className="bg-white rounded-lg p-4 h-40 flex items-center justify-center mb-6">
-              { signature
-                ? <p className="text-gray-600">Firma capturada</p>
-                : <div className="w-full h-full border-2 border-dashed border-gray-300 rounded flex items-center justify-center cursor-pointer"
-                    onClick={() => setSignature('firma_base64')}>
-                    <p className="text-gray-400">Toca para firmar</p>
-                  </div> }
+            <div className="bg-white rounded-lg p-4 mb-6">
+              <SignatureCanvas onSignatureChange={(data) => setSignature(data)} />
             </div>
             <label className="block text-white mb-2">Comentarios adicionales</label>
             <textarea
@@ -526,14 +528,14 @@ const PickupVerification: React.FC = () => {
                 </Button>
               ) : currentStep === STEPS.CONFIRMATION ? (
                 <Button onClick={handleSubmitVerification}
-                  disabled={isSubmitting || !canProceed() || accessBlocked}
+                  disabled={isSubmitting || !canProceed() || accessBlocked || isUploadingAny}
                   className="bg-green-500 hover:bg-green-600 text-white ml-auto">
                   {isSubmitting
                     ? (<><Loader className="mr-2 h-4 w-4 animate-spin"/>Enviando…</>)
                     : 'Enviar Verificación'}
                 </Button>
               ) : (
-                <Button onClick={handleNext} disabled={!canProceed() || accessBlocked}
+                <Button onClick={handleNext} disabled={!canProceed() || accessBlocked || isUploadingAny}
                   className="bg-[#6EF7FF] text-[#22142A] hover:bg-[#6EF7FF]/90 disabled:opacity-50 ml-auto">
                   Siguiente <ArrowRight size={16} className="ml-2"/>
                 </Button>
