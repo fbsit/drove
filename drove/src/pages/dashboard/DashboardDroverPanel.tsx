@@ -26,7 +26,7 @@ const DashboardDroverPanel: React.FC = () => {
     try { return localStorage.getItem('drover_tracking_active') === '1'; } catch { return false; }
   });
   const [available, setAvailable] = React.useState<boolean>(() => {
-    try { return localStorage.getItem('drover_available') !== '0'; } catch { return true; }
+    try { return localStorage.getItem('drover_available') === '1'; } catch { return false; }
   });
   const watcherRef = React.useRef<number | null>(null);
 
@@ -227,7 +227,8 @@ const DashboardDroverPanel: React.FC = () => {
                       const s = String(t.status || '').toUpperCase();
                       if (s === 'DELIVERED') return <span className="text-white text-xs px-3 py-1 rounded-full bg-green-500">Completado</span>;
                       if (s === 'IN_PROGRESS') return <span className="text-black text-xs px-3 py-1 rounded-full bg-yellow-400">En progreso</span>;
-                      if (s === 'REQUEST_FINISH' || s === 'RESCHEDULED') return <span className="text-amber-400 text-xs px-2 py-1 rounded-full bg-amber-500/20 border border-amber-500/30">Reprogramado</span>;
+                      if (s === 'REQUEST_FINISH') return <span className="text-amber-400 text-xs px-2 py-1 rounded-full bg-amber-500/20 border border-amber-500/30">Solicitando entrega</span>;
+                      if (s === 'RESCHEDULED') return <span className="text-amber-400 text-xs px-2 py-1 rounded-full bg-amber-500/20 border border-amber-500/30">Reprogramado</span>;
                       if (s === 'CANCELLED') return <span className="text-white text-xs px-3 py-1 rounded-full bg-red-500">Cancelado</span>;
                       return <span className="text-white text-xs px-3 py-1 rounded-full" style={{background:'#6366F1'}}>Asignado</span>;
                     })()}

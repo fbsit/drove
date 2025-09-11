@@ -174,37 +174,43 @@ const TransferSupportChat: React.FC = () => {
           const prev = messages[idx - 1];
           const isGroupStart = !prev || prev.sender !== msg.sender;
           const marginTop = isGroupStart ? 16 : 6; // mayor separación entre remitentes
+          const isUser = msg.sender === "user";
           return (
             <div
               key={msg.id}
-              className={`w-full flex ${msg.sender === "user" ? "justify-end" : "justify-start"} items-end`}
+              className={`w-full flex ${isUser ? "justify-end" : "justify-start"} items-start`}
               style={{ marginTop }}
             >
-              {msg.sender === "soporte" && getAvatar("soporte")}
-              <div
-                className={`max-w-[70%] p-2 md:p-2.5 rounded-2xl text-sm shadow font-medium ${
-                  msg.sender === "user"
-                    ? "bg-[#6EF7FF] text-[#22142A] rounded-br-sm"
-                    : "bg-white/10 text-white rounded-bl-sm border border-[#6EF7FF]"
-                }`}
-                style={{
-                  // Mejora texto sobre fondo cian: ¡nunca blanco puro sobre cian!
-                  color: msg.sender === "user" ? "#22142A" : "white",
-                  fontFamily: msg.sender === "soporte" ? "Helvetica" : "Helvetica"
-                }}
+              {!isUser && getAvatar("soporte")}
+              <div className={`${isUser ? "mr-2" : "ml-2"} max-w-[80%]`}
               >
-                {msg.text}
-                <span 
-                  className={`block mt-1 text-[11px] font-normal pl-1 ${
-                    msg.sender === "user" 
-                      ? "text-[#22142A]/60" 
-                      : "text-white/90"
+                {isGroupStart && (
+                  <div className={`text-[11px] mb-1 ${isUser ? "text-right text-white/70" : "text-left text-white/70"}`}>
+                    {isUser ? "Tú" : "Admin"}
+                  </div>
+                )}
+                <div
+                  className={`w-fit p-2 md:p-2.5 rounded-2xl text-sm shadow font-medium ${
+                    isUser
+                      ? "bg-[#6EF7FF] text-[#22142A] rounded-br-sm"
+                      : "bg-white/10 text-white rounded-bl-sm border border-[#6EF7FF]"
                   }`}
+                  style={{
+                    color: isUser ? "#22142A" : "white",
+                    fontFamily: isUser ? "Helvetica" : "Helvetica",
+                  }}
                 >
-                  {msg.timestamp}
-                </span>
+                  {msg.text}
+                  <span
+                    className={`block mt-1 text-[11px] font-normal pl-1 ${
+                      isUser ? "text-[#22142A]/60" : "text-white/90"
+                    }`}
+                  >
+                    {msg.timestamp}
+                  </span>
+                </div>
               </div>
-              {msg.sender === "user" && getAvatar("user")}
+              {isUser && getAvatar("user")}
             </div>
           );
         })}
