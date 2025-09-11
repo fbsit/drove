@@ -78,8 +78,19 @@ const ActiveTrip: React.FC = () => {
       }
     },
     enabled: !!transferId,
-    refetchInterval: 30000
+    refetchInterval: 30000,
+    refetchOnMount: 'always',
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
+
+  // Asegurar datos frescos tras redirecciones (p. ej. después de recoger)
+  useEffect(() => {
+    if (transferId) {
+      queryClient.invalidateQueries({ queryKey: ['active-trip', transferId] });
+    }
+  }, [transferId, queryClient]);
 
   // Abrir el mapa automáticamente cuando el viaje está en progreso (desktop/mobile)
   useEffect(() => {
@@ -197,7 +208,7 @@ const ActiveTrip: React.FC = () => {
   const getStatusText = (status: string): string => {
     const statusTexts = {
       'PENDINGPAID': 'Pendiente de Pago',
-      'CREATED': 'Creado',
+      'CREATED': 'Asignado',
       'ASSIGNED': 'Drover Asignado',
       'PICKED_UP': 'Vehículo Recogido',
       'IN_PROGRESS': 'En Progreso',
@@ -468,7 +479,7 @@ const ActiveTrip: React.FC = () => {
                 </div>
               </div>
               <div className="w-full">
-                <div className="grid grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="rounded-2xl bg-white/5 border border-white/10 p-6 text-center min-w-[185px]">
                     <div className="text-white/60 text-sm">Distancia</div>
                     <div className="text-[#6EF7FF] text-2xl font-bold">{trip.distanceTravel || '—'}</div>

@@ -275,6 +275,8 @@ const PickupVerification: React.FC = () => {
       await submitVerification(data);
       setCurrentStep(STEPS.SUMMARY);
       toast.success('Verificación enviada');
+      // Invalidar y refetch del viaje para que la vista activa muestre estado actualizado
+      try { (window as any).__queryClient?.invalidateQueries?.({ queryKey: ['active-trip', transferId] }); } catch {}
       navigate(`/traslados/activo/${transferId}`);
     } catch (error) {
       console.error('Error al enviar verificación:', error);

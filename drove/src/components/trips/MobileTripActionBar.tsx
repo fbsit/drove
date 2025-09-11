@@ -71,12 +71,14 @@ const MobileTripActionBar: React.FC<MobileTripActionBarProps> = ({
 
   if (status === 'IN_PROGRESS') {
     pendingItems.push({
-      key: 'qr-delivery',
-      title: 'Escanear QR del receptor',
-      description: 'Debes escanear el código QR del receptor para finalizar el traslado',
-      actionLabel: 'Escanear QR para finalizar',
-      onAction: () => navigate('/qr/scan'),
-      icon: <QrCode className="text-[#6EF7FF]" size={18} />,
+      key: 'finish-trip',
+      title: 'Finalizar viaje',
+      description: droverInDestination
+        ? 'Estás cerca del destino. Finaliza el viaje para pasar a la entrega.'
+        : 'Acércate al destino para poder finalizar el viaje.',
+      actionLabel: isFinishing ? 'Finalizando…' : 'Finalizar viaje',
+      onAction: () => onFinish(),
+      icon: <CheckCircle2 className="text-[#6EF7FF]" size={18} />,
     });
   }
 
