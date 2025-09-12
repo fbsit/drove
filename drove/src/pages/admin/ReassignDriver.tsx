@@ -5,12 +5,11 @@ import { toast } from '@/hooks/use-toast';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import TransferDetailsCard from '@/components/admin/transfers/TransferDetailsCard';
 import DriversFilters from '@/components/admin/drivers/DriversFilters';
-import { AdminService } from '@/services/adminService';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 // Tipos específicos para este componente
 interface Driver {
@@ -54,7 +53,113 @@ interface LocalTransferDetail {
   };
 }
 
-// Eliminamos mocks. Se usará backend real.
+// Datos simulados para drovers (excluyendo el drover actual)
+const simulatedDrivers: Driver[] = [
+  {
+    id: "2",
+    contactInfo: {
+      fullName: "Ana López Rodríguez",
+      email: "ana.lopez@email.com",
+      phone: "+34 623 456 789"
+    },
+    rating: 4.9,
+    completedTrips: 156,
+    status: 'disponible',
+    location: {
+      address: "Avenida América 120, Madrid",
+      city: "Madrid",
+      distance: "4.1 km"
+    }
+  },
+  {
+    id: "3",
+    contactInfo: {
+      fullName: "Miguel Fernández Ruiz",
+      email: "miguel.fernandez@email.com",
+      phone: "+34 634 567 890"
+    },
+    rating: 4.7,
+    completedTrips: 98,
+    status: 'disponible',
+    location: {
+      address: "Plaza de Castilla 8, Madrid",
+      city: "Madrid",
+      distance: "7.2 km"
+    }
+  },
+  {
+    id: "4",
+    contactInfo: {
+      fullName: "Laura Sánchez Moreno",
+      email: "laura.sanchez@email.com",
+      phone: "+34 645 678 901"
+    },
+    rating: 4.6,
+    completedTrips: 203,
+    status: 'disponible',
+    location: {
+      address: "Calle Alcalá 200, Madrid",
+      city: "Madrid",
+      distance: "1.8 km"
+    }
+  },
+  {
+    id: "5",
+    contactInfo: {
+      fullName: "David González Pérez",
+      email: "david.gonzalez@email.com",
+      phone: "+34 656 789 012"
+    },
+    rating: 4.8,
+    completedTrips: 145,
+    status: 'disponible',
+    location: {
+      address: "Paseo de la Castellana 90, Madrid",
+      city: "Madrid",
+      distance: "3.5 km"
+    }
+  }
+];
+
+// Datos simulados para el traslado asignado
+const simulatedTransferWithDriver: LocalTransferDetail = {
+  id: "transfer-124",
+  brand: "Volkswagen",
+  model: "Golf",
+  year: "2021",
+  licensePlate: "ABC-1234",
+  originAddress: "Calle Gran Vía 28, Madrid",
+  destinationAddress: "Avenida Diagonal 150, Barcelona",
+  pickupDate: "2024-01-25T10:00:00Z",
+  pickupTime: "10:00",
+  totalPrice: 320,
+  status: "asignado",
+  senderName: "José María Pérez González",
+  receiverName: "María Carmen López Ruiz",
+  distance: 625,
+  duration: 390,
+  urgency: 'media',
+  specialRequirements: ['Vehículo limpio', 'Entrega antes de las 18:00'],
+  currentDriver: {
+    id: "1",
+    fullName: "Carlos Martínez García",
+    email: "carlos.martinez@email.com",
+    phone: "+34 612 345 678",
+    rating: 4.8,
+    completedTrips: 127
+  }
+};
+
+// Motivos predefinidos para la reasignación
+const reassignmentReasons = [
+  { value: 'enfermedad', label: 'Enfermedad del drover' },
+  { value: 'solicitud_cliente', label: 'Solicitud específica del cliente' },
+  { value: 'optimizacion', label: 'Optimización de rutas' },
+  { value: 'disponibilidad', label: 'Problemas de disponibilidad' },
+  { value: 'calidad', label: 'Mejora en calidad de servicio' },
+  { value: 'emergencia', label: 'Situación de emergencia' },
+  { value: 'otro', label: 'Otro motivo' }
+];
 
 export const ReassignDriver: React.FC = () => {
   const { transferId } = useParams<{ transferId: string }>();
@@ -65,8 +170,8 @@ export const ReassignDriver: React.FC = () => {
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [reasonType, setReasonType] = useState<string>('');
   const [reasonText, setReasonText] = useState<string>('');
-  const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Estados para filtros y búsqueda
   const [searchTerm, setSearchTerm] = useState('');
@@ -78,60 +183,15 @@ export const ReassignDriver: React.FC = () => {
     (async () => {
       try {
         setIsLoading(true);
-        // 1) Obtener detalles reales del traslado por ID
-        const transfer = await (await import('@/services/transferService')).TransferService.getTransferById(String(transferId));
-        if (!transfer) throw new Error('Traslado no encontrado');
 
-        const current = transfer?.drover || transfer?.assignedDrover || transfer?.driver;
-        const local: LocalTransferDetail = {
-          id: String(transfer.id),
-          brand: transfer.brandVehicle || transfer.vehicle?.brand,
-          model: transfer.modelVehicle || transfer.vehicle?.model,
-          year: transfer.yearVehicle || transfer.vehicle?.year,
-          licensePlate: transfer.patentVehicle || transfer.vehicle?.licensePlate,
-          originAddress: transfer.startAddress?.address || transfer.startAddress?.city,
-          destinationAddress: transfer.endAddress?.address || transfer.endAddress?.city,
-          pickupDate: transfer.travelDate,
-          pickupTime: transfer.travelTime,
-          totalPrice: transfer.totalPrice,
-          status: transfer.status,
-          senderName: transfer.personDelivery?.fullName,
-          receiverName: transfer.personReceive?.fullName,
-          distance: transfer.distanceTravel,
-          duration: transfer.timeTravel,
-          urgency: 'media',
-          currentDriver: current ? {
-            id: String(current.id),
-            fullName: current.contactInfo?.fullName || current.full_name || current.name,
-            email: current.email,
-            phone: current.contactInfo?.phone || current.phone,
-            rating: current.rating || 0,
-            completedTrips: current.completedTrips || 0,
-          } : undefined,
-        } as LocalTransferDetail;
-        setTransfer(local);
-
-        // 2) Obtener drovers reales y excluir el actual
-        const drovers = await AdminService.getDrovers();
-        const mapped: Driver[] = (drovers || []).map((d:any) => {
-          const rawStatus = String(d.status || d?.contactInfo?.status || '').toLowerCase();
-          const isAvailable = ['active','approved','disponible','available','activo'].includes(rawStatus);
-          return {
-            id: String(d.id),
-            contactInfo: {
-              fullName: d?.contactInfo?.fullName || d.full_name || d.name || 'Drover',
-              email: d.email,
-              phone: d?.contactInfo?.phone || d.phone || '',
-            },
-            rating: Number(d.rating || 0),
-            completedTrips: Number(d.completedTrips || 0),
-            status: isAvailable ? 'disponible' : 'ocupado',
-            location: { address: d.city || '—', city: d.city || '—', distance: d.distance ? String(d.distance) : '999999' },
-          } as Driver;
-        });
-        const withoutCurrent = mapped.filter(d => d.id !== local.currentDriver?.id);
-        setDrivers(withoutCurrent);
-        setIsLoading(false);
+        // Simulamos la carga del traslado con drover asignado
+        setTimeout(() => {
+          setTransfer(simulatedTransferWithDriver);
+          // Excluimos el drover actual de la lista
+          const availableDrivers = simulatedDrivers.filter(d => d.id !== simulatedTransferWithDriver.currentDriver?.id);
+          setDrivers(availableDrivers);
+          setIsLoading(false);
+        }, 1000);
       } catch (e) {
         console.error(e);
         toast({
@@ -144,7 +204,7 @@ export const ReassignDriver: React.FC = () => {
     })();
   }, [transferId]);
 
-  // Filtrar y ordenar drovers
+  // Función para filtrar y ordenar drovers
   const filteredAndSortedDrivers = useMemo(() => {
     let filtered = drivers;
 
@@ -179,41 +239,48 @@ export const ReassignDriver: React.FC = () => {
     return filtered;
   }, [drivers, searchTerm, statusFilter, sortBy]);
 
-  const performReassign = async () => {
-    if (!transferId || !selectedDriverId || !reasonText.trim()) {
+  // Función para verificar si se puede confirmar la reasignación
+  const canReassign = useMemo(() => {
+    return selectedDriverId && reasonType && (reasonType !== 'otro' || reasonText.trim());
+  }, [selectedDriverId, reasonType, reasonText]);
+
+  // Función para obtener el mensaje de validación
+  const getValidationMessage = () => {
+    if (!reasonType) return "Reasingar";
+    if (reasonType === 'otro' && !reasonText.trim()) return "Describe el motivo de reasignación";
+    return "";
+  };
+
+  const handleReassign = async () => {
+    if (!transferId || !selectedDriverId || !reasonType) {
       toast({
         variant: 'destructive',
-        title: 'Falta información',
-        description: 'Debes ingresar un motivo para continuar.',
+        title: 'Error',
+        description: 'Completa todos los campos requeridos',
       });
       return;
     }
 
     try {
       setIsSubmitting(true);
+
       const selectedDriver = drivers.find(d => d.id === selectedDriverId);
-      await AdminService.assignDriver(String(transferId), selectedDriverId, 'admin');
 
-      // Refrescar traslado para mostrar el nuevo drover en la UI
-      const refreshed = await (await import('@/services/transferService')).TransferService.getTransferById(String(transferId));
-      const current = refreshed?.drover || refreshed?.assignedDrover || refreshed?.driver;
-      setTransfer(prev => prev ? {
-        ...prev,
-        currentDriver: current ? {
-          id: String(current.id),
-          fullName: current.contactInfo?.fullName || current.full_name || current.name,
-          email: current.email,
-          phone: current.contactInfo?.phone || current.phone,
-          rating: current.rating || 0,
-          completedTrips: current.completedTrips || 0,
-        } : undefined,
-      } : prev);
+      // Simulamos la reasignación
+      setTimeout(() => {
+        toast({
+          title: 'Drover reasignado correctamente',
+          description: `${transfer?.currentDriver?.fullName} → ${selectedDriver?.contactInfo.fullName}`
+        });
+        navigate('/admin/traslados');
+      }, 1500);
 
-      toast({ title: 'Drover reasignado correctamente', description: `${transfer?.currentDriver?.fullName} → ${selectedDriver?.contactInfo.fullName}` });
-      setConfirmOpen(false);
-      setIsSubmitting(false);
     } catch {
-      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo reasignar el drover' });
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo reasignar el drover',
+      });
       setIsSubmitting(false);
     }
   };
@@ -244,6 +311,68 @@ export const ReassignDriver: React.FC = () => {
         </Card>
       )}
 
+      {/* Información del drover actual */}
+      {transfer?.currentDriver && (
+        <Card className="mb-8 bg-red-500/10 border-red-500/30 text-white">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <AlertTriangle className="h-8 w-8 text-red-400 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold mb-2">Drover Actual</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="font-medium text-red-100">{transfer.currentDriver.fullName}</p>
+                    <p className="text-sm text-red-200">{transfer.currentDriver.email}</p>
+                    <p className="text-sm text-red-200">{transfer.currentDriver.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-red-200">★ {transfer.currentDriver.rating} • {transfer.currentDriver.completedTrips} viajes</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Motivo de reasignación */}
+      <Card className="mb-8 bg-white/10 text-white border-none">
+        <CardContent className="p-6">
+          <h3 className="text-lg font-semibold mb-4">Motivo de Reasignación</h3>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="reason-type" className="text-white">Tipo de motivo *</Label>
+              <Select value={reasonType} onValueChange={setReasonType}>
+                <SelectTrigger className="w-full bg-white/10 border-white/20 text-white">
+                  <SelectValue placeholder="Selecciona un motivo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {reassignmentReasons.map((reason) => (
+                    <SelectItem key={reason.value} value={reason.value}>
+                      {reason.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {reasonType === 'otro' && (
+              <div>
+                <Label htmlFor="reason-text" className="text-white">Descripción del motivo *</Label>
+                <Textarea
+                  id="reason-text"
+                  value={reasonText}
+                  onChange={(e) => setReasonText(e.target.value)}
+                  placeholder="Describe el motivo de la reasignación..."
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                  rows={3}
+                />
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Filtros de búsqueda */}
       <DriversFilters
         searchTerm={searchTerm}
@@ -272,7 +401,9 @@ export const ReassignDriver: React.FC = () => {
         <Card className="bg-white/10 text-white border-none">
           <CardContent className="py-12 text-center">
             <p className="text-white/70 text-lg mb-2">No se encontraron drovers disponibles</p>
-            <p className="text-white/50 text-sm">Intenta ajustar los filtros de búsqueda para encontrar más opciones</p>
+            <p className="text-white/50 text-sm">
+              Intenta ajustar los filtros de búsqueda para encontrar más opciones
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -282,14 +413,20 @@ export const ReassignDriver: React.FC = () => {
               {filteredAndSortedDrivers.map((d) => (
                 <Card
                   key={d.id}
-                  className={`w-full max-w-sm sm:max-w-none bg-white/10 text-white cursor-pointer transition transform ${d.status === 'ocupado' ? 'opacity-70' : ''} ${selectedDriverId === d.id ? 'ring-2 ring-orange-400 scale-[1.01]' : 'hover:bg-white/15 hover:scale-[1.01]'}`}
-                  onClick={() => { if (d.status === 'disponible') { setSelectedDriverId(d.id); setConfirmOpen(true); } }}
+                  className={`w-full max-w-sm sm:max-w-none bg-white/10
+                     text-white ${d.status === 'ocupado' ? 'opacity-70' : ''}`}
+                  onClick={() => d.status === 'disponible' && setSelectedDriverId(d.id)}
                 >
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4 mb-4">
                       <Avatar className="h-14 w-14">
                         <AvatarFallback className="bg-orange-400 text-[#22142A] font-bold text-lg">
-                          {d.contactInfo.fullName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}
+                          {d.contactInfo.fullName
+                            .split(' ')
+                            .map((w) => w[0])
+                            .join('')
+                            .slice(0, 2)
+                            .toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0 text-left">
@@ -302,6 +439,7 @@ export const ReassignDriver: React.FC = () => {
                         </div>
                         <span className="text-sm font-medium text-green-400">Disponible</span>
                       </div>
+                      {/* {selectedDriverId === d.id && <Check className="text-orange-400 flex-shrink-0" />} */}
                     </div>
 
                     <div className="space-y-3 pt-4 border-t border-white/10">
@@ -313,18 +451,39 @@ export const ReassignDriver: React.FC = () => {
                         <MapPin size={16} className="text-orange-400 flex-shrink-0 mt-0.5" />
                         <div className="min-w-0">
                           <p className="text-sm truncate">{d.location.address}</p>
-                          <p className="text-xs text-gray-400">A {d.location.distance} del punto de recogida</p>
+                          <p className="text-xs text-gray-400">
+                            A {d.location.distance} del punto de recogida
+                          </p>
                         </div>
                       </div>
                     </div>
 
+                    {/* Botón de confirmación integrado en la card seleccionada */}
                     <div className="mt-4 pt-4 border-t border-orange-400/30">
+                      {!canReassign && (
+                        <p className="text-sm text-orange-200 mb-3 text-center">
+                          {getValidationMessage()}
+                        </p>
+                      )}
                       <Button
-                        disabled={isSubmitting || !selectedDriverId}
+                        disabled={isSubmitting || !canReassign}
                         className="w-full bg-orange-400 text-[#22142A] hover:bg-orange-500 disabled:bg-orange-400/50 disabled:text-[#22142A]/60"
-                        onClick={(e) => { e.stopPropagation(); setConfirmOpen(true); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleReassign();
+                        }}
                       >
-                        {isSubmitting ? (<><Loader className="mr-2 h-4 w-4 animate-spin" />Reasignando...</>) : (<><RefreshCcw className="mr-2 h-4 w-4" />Confirmar Reasignación</>)}
+                        {isSubmitting ? (
+                          <>
+                            <Loader className="mr-2 h-4 w-4 animate-spin" />
+                            Reasignando...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCcw className="mr-2 h-4 w-4" />
+                            Confirmar Reasignación
+                          </>
+                        )}
                       </Button>
                     </div>
                   </CardContent>
@@ -336,29 +495,16 @@ export const ReassignDriver: React.FC = () => {
       )}
 
       <div className="flex justify-end gap-4 mt-8">
-        <Button variant="ghost" className="border-white text-white hover:bg-white hover:text-[#22142A]" onClick={() => navigate('/admin/traslados')}>Cancelar</Button>
+        <Button
+          variant="ghost"
+          className="border-white text-white hover:bg-white hover:text-[#22142A]"
+          onClick={() => navigate('/admin/traslados')}
+        >
+          Cancelar
+        </Button>
       </div>
-
-      {/* Modal de confirmación y motivo */}
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="bg-[#22142A] text-white border border-white/10">
-          <DialogHeader>
-            <DialogTitle>Confirmar reasignación</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label className="text-white">Describe el motivo *</Label>
-              <Textarea value={reasonText} onChange={(e) => setReasonText(e.target.value)} placeholder="Describe el motivo de la reasignación..." className="bg-white/10 border-white/20 text-white placeholder:text-white/50" rows={3} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setConfirmOpen(false)} className="text-white">Cancelar</Button>
-            <Button disabled={isSubmitting || !selectedDriverId || !reasonText.trim()} onClick={performReassign} className="bg-orange-400 text-[#22142A] hover:bg-orange-500">{isSubmitting ? 'Reasignando…' : 'Confirmar'}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
-}
+};
 
 export default ReassignDriver;
