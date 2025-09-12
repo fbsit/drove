@@ -1,20 +1,20 @@
 import React, { useMemo } from 'react';
-import { Link }              from 'react-router-dom';
-import { useQuery }          from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   Calendar, Euro, Users, TrendingUp, Car, MessageCircle, ArrowRight,
 } from 'lucide-react';
 
-import DashboardLayout           from '@/components/layout/DashboardLayout';
-import TransferService           from '@/services/transferService';
-import { useAuth }               from '@/contexts/AuthContext';
-import { useIsMobile }           from '@/hooks/use-mobile';
-import { toast }                 from '@/hooks/use-toast';
+import DashboardLayout from '@/components/layout/DashboardLayout';
+import TransferService from '@/services/transferService';
+import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { toast } from '@/hooks/use-toast';
 
-import KpiCardsCliente           from '@/components/client/KpiCardsCliente';
-import ClientRecentTransferCard  from '@/components/client/ClientRecentTransferCard';
-import MobileFooterNav           from '@/components/layout/MobileFooterNav';
-import DroverSupportChatFab      from '@/components/layout/DroverSupportChatFab';
+import KpiCardsCliente from '@/components/client/KpiCardsCliente';
+import ClientRecentTransferCard from '@/components/client/ClientRecentTransferCard';
+import MobileFooterNav from '@/components/layout/MobileFooterNav';
+import DroverSupportChatFab from '@/components/layout/DroverSupportChatFab';
 
 /* ───────────────────────────────────────────────────────────────────────────── */
 
@@ -30,25 +30,25 @@ export default function DashboardClienteGamificado() {
     isLoading,
   } = useQuery({
     queryKey: ['travels-by-client', clientId],
-    queryFn:  () => TransferService.getTravelsByClient(clientId!),
-    enabled:  !!clientId,
+    queryFn: () => TransferService.getTravelsByClient(clientId!),
+    enabled: !!clientId,
     onError: () =>
       toast({
         variant: 'destructive',
-        title:   'Error',
+        title: 'Error',
         description: 'No se pudieron cargar tus traslados.',
       }),
   });
 
   const { totalTransfers, totalSpent, avgPrice, latestTravel } = useMemo(() => {
-    const total   = travels.length;
-    const spent   = travels.reduce((s, t) => s + (t.totalPrice ?? 0), 0);
-    const avg     = total ? spent / total : 0;
+    const total = travels.length;
+    const spent = travels.reduce((s, t) => s + (t.totalPrice ?? 0), 0);
+    const avg = total ? spent / total : 0;
     return {
       totalTransfers: total,
-      totalSpent:     spent,
-      avgPrice:       avg,
-      latestTravel:   travels[0],
+      totalSpent: spent,
+      avgPrice: avg,
+      latestTravel: travels[0],
     };
   }, [travels]);
 
@@ -56,7 +56,7 @@ export default function DashboardClienteGamificado() {
   return (
     <DashboardLayout>
       {/* Header */}
-      <div className={isMobile ? 'mb-1' : 'mb-2'}>
+      <div className="mb-6">
         <h2 className={`text-white font-bold ${isMobile ? 'text-xl' : 'text-2xl'}`}>
           {user?.full_name || 'Cliente'}
         </h2>
@@ -92,13 +92,10 @@ export default function DashboardClienteGamificado() {
         </Link>
       </div>
 
-      {/* Espaciado para el footer móvil */}
-      <div className="h-16" />
-
       <MobileFooterNav />
 
       {/* FAB de soporte solo en escritorio */}
-      {!isMobile && <DroverSupportChatFab />}
+      <DroverSupportChatFab />
     </DashboardLayout>
   );
 }

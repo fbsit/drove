@@ -38,7 +38,7 @@ const YearSelector = ({ form }: YearSelectorProps) => {
               </PopoverTrigger>
               <PopoverContent className="w-full max-w-[calc(100vw-2rem)] sm:w-auto p-0" align="start">
                 <Command>
-                  <CommandInput 
+                  <CommandInput
                     placeholder="Buscar año..."
                     value={field.value}
                     onValueChange={(search) => {

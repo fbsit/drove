@@ -64,15 +64,15 @@ const DroverProfile = () => {
     setIsLoading(true);
     try {
       console.log('[DROVER_PROFILE] 🔄 Actualizando perfil:', formData);
-      
+
       const updatedUser = await UserService.updateProfile(formData);
       updateUser(updatedUser);
-      
+
       toast({
         title: "Perfil actualizado",
         description: "Tu información ha sido actualizada correctamente."
       });
-      
+
       setIsEditing(false);
     } catch (error: any) {
       console.error('[DROVER_PROFILE] ❌ Error al actualizar perfil:', error);
@@ -98,13 +98,13 @@ const DroverProfile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] p-4">
-      <div className="max-w-4xl mx-auto">
+    <div>
+      <div>
         {/* Header card con datos principales */}
-        <Card className="bg-white/10 border-white/20 backdrop-blur-sm mb-6">
+        <Card className="bg-white/10 border-white/20 backdrop-blur-sm mb-6 text-left">
           <CardContent className="p-5">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4 w-full">
                 <div className="w-16 h-16 rounded-full bg-[#6EF7FF]/20 flex items-center justify-center text-white text-2xl font-bold">
                   {user?.full_name?.[0] || 'D'}
                 </div>
@@ -112,8 +112,8 @@ const DroverProfile = () => {
                   <div className="text-white text-2xl font-bold">{user?.full_name || 'Drover'}</div>
                   <div className="text-[#6EF7FF] text-sm">DROVER • Aprobado</div>
                   <div className="text-white/70 text-sm flex items-center gap-3 mt-1">
-                    <span className="flex items-center gap-1"><Mail size={14}/> {user?.email}</span>
-                    <span className="flex items-center gap-1"><Phone size={14}/> {user?.phone || '—'}</span>
+                    <span className="flex items-center gap-1"><Mail size={14} /> {user?.email}</span>
+                    <span className="flex items-center gap-1"><Phone size={14} /> {user?.phone || '—'}</span>
                   </div>
                 </div>
               </div>
@@ -126,61 +126,61 @@ const DroverProfile = () => {
         </Card>
 
         {/* Métricas separadas en cards con iconos/colores */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
-          <Card className="bg-gradient-to-br from-emerald-500/30 to-emerald-600/10 border-emerald-400/40 border backdrop-blur-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-6 ">
+          <Card className="bg-white/10 border-white/20">
             <CardContent className="p-6 text-center">
               <div className="bg-white/90 p-3 rounded-2xl w-fit mx-auto mb-3"><Euro size={24} className="text-emerald-600" /></div>
-              <div className="text-black font-bold text-sm mb-1">Ganancias totales</div>
-              <div className="text-2xl font-bold text-black">€{Number(stats.totalEarnings||0).toLocaleString()}</div>
-              <div className="text-black/70 text-xs mt-1">desde alta</div>
+              <div className="text-white font-bold text-sm mb-1">Ganancias totales</div>
+              <div className="text-2xl font-bold text-white">€{Number(stats.totalEarnings || 0).toLocaleString()}</div>
+              <div className="text-white/70 text-xs mt-1">desde alta</div>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-blue-500/30 to-blue-600/10 border-blue-400/40 border backdrop-blur-sm">
+          <Card className="bg-white/10 border-white/20">
             <CardContent className="p-6 text-center">
               <div className="bg-white/90 p-3 rounded-2xl w-fit mx-auto mb-3"><TrendingUp size={24} className="text-blue-600" /></div>
-              <div className="text-black font-bold text-sm mb-1">Promedio mensual</div>
-              <div className="text-2xl font-bold text-black">€{Number(stats.monthlyAvg||0).toLocaleString(undefined,{minimumFractionDigits:2})}</div>
-              <div className="text-black/70 text-xs mt-1">promedio</div>
+              <div className="text-white font-bold text-sm mb-1">Promedio mensual</div>
+              <div className="text-2xl font-bold text-white">€{Number(stats.monthlyAvg || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+              <div className="text-white/70 text-xs mt-1">promedio</div>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-yellow-500/30 to-yellow-600/10 border-yellow-400/40 border backdrop-blur-sm">
+          <Card className="bg-white/10 border-white/20">
             <CardContent className="p-6 text-center">
               <div className="bg-white/90 p-3 rounded-2xl w-fit mx-auto mb-3"><Star size={24} className="text-yellow-600" /></div>
-              <div className="text-black font-bold text-sm mb-1">Calificación</div>
-              <div className="text-2xl font-bold text-black">{Number(stats.rating||0).toFixed(1)}</div>
-              <div className="text-black/70 text-xs mt-1">de 5 estrellas</div>
+              <div className="text-white font-bold text-sm mb-1">Calificación</div>
+              <div className="text-2xl font-bold text-white">{Number(stats.rating || 0).toFixed(1)}</div>
+              <div className="text-white/70 text-xs mt-1">de 5 estrellas</div>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-purple-500/30 to-purple-600/10 border-purple-400/40 border backdrop-blur-sm">
+          <Card className="bg-white/10 border-white/20">
             <CardContent className="p-6 text-center">
               <div className="bg-white/90 p-3 rounded-2xl w-fit mx-auto mb-3"><Activity size={24} className="text-purple-600" /></div>
-              <div className="text-black font-bold text-sm mb-1">Traslados</div>
-              <div className="text-2xl font-bold text-black">{Number(stats.completed||0)}</div>
-              <div className="text-black/70 text-xs mt-1">completados</div>
+              <div className="text-white font-bold text-sm mb-1">Traslados</div>
+              <div className="text-2xl font-bold text-white">{Number(stats.completed || 0)}</div>
+              <div className="text-white/70 text-xs mt-1">completados</div>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-sky-500/30 to-sky-600/10 border-sky-400/40 border backdrop-blur-sm">
+          <Card className="bg-white/10 border-white/20">
             <CardContent className="p-6 text-center">
               <div className="bg-white/90 p-3 rounded-2xl w-fit mx-auto mb-3"><Clock3 size={24} className="text-sky-600" /></div>
-              <div className="text-black font-bold text-sm mb-1">Tiempo promedio</div>
-              <div className="text-2xl font-bold text-black">{String(stats.avgTimePerTrip||'N/A')}</div>
-              <div className="text-black/70 text-xs mt-1">por traslado</div>
+              <div className="text-white font-bold text-sm mb-1">Tiempo promedio</div>
+              <div className="text-2xl font-bold text-white">{String(stats.avgTimePerTrip || 'N/A')}</div>
+              <div className="text-white/70 text-xs mt-1">por traslado</div>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-orange-500/30 to-orange-600/10 border-orange-400/40 border backdrop-blur-sm">
+          <Card className="bg-white/10 border-white/20">
             <CardContent className="p-6 text-center">
               <div className="bg-white/90 p-3 rounded-2xl w-fit mx-auto mb-3"><Award size={24} className="text-orange-600" /></div>
-              <div className="text-black font-bold text-sm mb-1">Medallas</div>
-              <div className="text-2xl font-bold text-black">{Number(stats.medals||0)}</div>
-              <div className="text-black/70 text-xs mt-1">logros</div>
+              <div className="text-white font-bold text-sm mb-1">Medallas</div>
+              <div className="text-2xl font-bold text-white">{Number(stats.medals || 0)}</div>
+              <div className="text-white/70 text-xs mt-1">logros</div>
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-start">
           {/* Información personal */}
           <div className="lg:col-span-2">
-            <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
+            <Card className="bg-white/10 border-white/20 backdrop-blur-sm h-full">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-white flex items-center gap-2">
                   <User className="h-5 w-5" />
@@ -265,7 +265,7 @@ const DroverProfile = () => {
           </div>
 
           {/* Información adicional */}
-          <div className="space-y-6">
+          <div className="space-y-6 text-start">
             <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
@@ -319,10 +319,10 @@ const DroverProfile = () => {
         </div>
 
         {/* Tarjetas del usuario (logros/actividad) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-          <Card className="bg-white/10 border-white/20"><CardContent className="p-4"><div className="flex items-center gap-2 text-white"><Award size={18}/> Medallas</div><div className="text-[#6EF7FF] text-2xl font-bold mt-2">1</div></CardContent></Card>
-          <Card className="bg-white/10 border-white/20"><CardContent className="p-4"><div className="flex items-center gap-2 text-white"><Clock3 size={18}/> Tiempo activo</div><div className="text-[#6EF7FF] text-2xl font-bold mt-2">120h</div></CardContent></Card>
-          <Card className="bg-white/10 border-white/20"><CardContent className="p-4"><div className="flex items-center gap-2 text-white"><Activity size={18}/> Estado</div><div className="text-green-400 text-2xl font-bold mt-2">En línea</div></CardContent></Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 text-start">
+          <Card className="bg-white/10 border-white/20"><CardContent className="p-4"><div className="flex items-center gap-2 text-white"><Award size={18} /> Medallas</div><div className="text-[#6EF7FF] text-2xl font-bold mt-2">1</div></CardContent></Card>
+          <Card className="bg-white/10 border-white/20"><CardContent className="p-4"><div className="flex items-center gap-2 text-white"><Clock3 size={18} /> Tiempo activo</div><div className="text-[#6EF7FF] text-2xl font-bold mt-2">120h</div></CardContent></Card>
+          <Card className="bg-white/10 border-white/20"><CardContent className="p-4"><div className="flex items-center gap-2 text-white"><Activity size={18} /> Estado</div><div className="text-green-400 text-2xl font-bold mt-2">En línea</div></CardContent></Card>
         </div>
       </div>
     </div>

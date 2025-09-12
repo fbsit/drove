@@ -96,9 +96,9 @@ const ClientProfile: React.FC = () => {
 
   useEffect(() => {
     handleGetPreferenceUser()
-  },[])
+  }, [])
 
-  const handleGetPreferenceUser = async () => { 
+  const handleGetPreferenceUser = async () => {
     const resultPreference = await UserService.getPreferences();
     setPreferenceUser(resultPreference);
     console.log("resultPreference", resultPreference);
@@ -244,8 +244,8 @@ const ClientProfile: React.FC = () => {
 
   /* ------------------ render ------------------ */
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] p-3 md:p-8">
-      <div className="max-w-[880px] mx-auto">
+    <div >
+      <div >
         {/* Header */}
         <ProfileHeader
           avatar={(clientData as any).selfie}
@@ -369,8 +369,8 @@ const ClientKPIs: React.FC<{ stats: ClientStats }> = ({ stats }) => (
 
 const colorClasses: Record<string, { container: string; icon: string }> = {
   // Colores suaves y altura similar a la maqueta
-  blue:   { container: "bg-gradient-to-br from-[#E9F1FF] to-[#D7E8FF]", icon: "text-[#2E3192]" },
-  green:  { container: "bg-gradient-to-br from-[#E8F8EF] to-[#D6F1E3]", icon: "text-[#27AE60]" },
+  blue: { container: "bg-gradient-to-br from-[#E9F1FF] to-[#D7E8FF]", icon: "text-[#2E3192]" },
+  green: { container: "bg-gradient-to-br from-[#E8F8EF] to-[#D6F1E3]", icon: "text-[#27AE60]" },
   yellow: { container: "bg-gradient-to-br from-[#FFF4DB] to-[#FBE7B4]", icon: "text-[#D9A400]" },
   purple: { container: "bg-gradient-to-br from-[#F2E9FF] to-[#E1D1FF]", icon: "text-[#9B51E0]" },
 };
@@ -383,13 +383,13 @@ const KpiCard: React.FC<{
 }> = ({ title, value, icon: Icon, color }) => {
   const cls = colorClasses[color];
   return (
-    <Card className={`${cls.container} rounded-2xl`}>
+    <Card className={`border-white/20 bg-white/10 rounded-2xl`}>
       <CardContent className="p-4 md:p-5 text-center min-h-[112px] flex flex-col justify-center">
-        <div className="bg-white p-2.5 rounded-xl w-fit mx-auto mb-2 shadow-sm">
+        <div className="bg-white/90 p-2.5 rounded-xl w-fit mx-auto mb-2 shadow-sm">
           <Icon size={18} className={cls.icon} />
         </div>
-        <h3 className="text-black text-xs font-bold">{title}</h3>
-        <p className="text-xl font-bold text-black">{value}</p>
+        <h3 className="text-white text-xs font-bold">{title}</h3>
+        <p className="text-xl font-bold text-white">{value}</p>
       </CardContent>
     </Card>
   );
@@ -409,7 +409,7 @@ const InfoAndSettings: React.FC<any> = ({
   setIsEditing,
   createdAt,
 }) => (
-  <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
     {/* Información personal */}
     <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
       <CardHeader className="pb-2">
@@ -502,15 +502,15 @@ const InfoAndSettings: React.FC<any> = ({
     </Card>
 
     {/* Configuración + accesos rápidos */}
-    <div className="space-y-4">
+    <div className="flex flex-col justify-between gap-8">
       {/* Ajustes */}
-      <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
-        <CardHeader className="pb-2">
+      <Card className="bg-white/10 border-white/20 flex flex-col justify-between backdrop-blur-sm flex-1">
+        <CardHeader className="pb-8">
           <CardTitle className="text-white flex items-center gap-2">
             <Key size={16} /> Configuración de Cuenta
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 pt-0">
+        <CardContent className="space-y-4 pt-0">
           <Button variant="outline" className="w-full justify-start h-10 rounded-xl border-white/40 text-white hover:bg-white/10" onClick={openPasswordModal}>
             <Key size={14} className="mr-2" /> Cambiar Contraseña
           </Button>
@@ -524,13 +524,13 @@ const InfoAndSettings: React.FC<any> = ({
       </Card>
 
       {/* Accesos rápidos */}
-      <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
-        <CardHeader className="pb-2">
+      <Card className="bg-white/10 flex-1 border-white/20 flex flex-col justify-between backdrop-blur-sm">
+        <CardHeader className="pb-8">
           <CardTitle className="text-white flex items-center gap-2">
             <BarChart3 size={16} /> Accesos Rápidos
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 pt-0">
+        <CardContent className="space-y-4 pt-0">
           <LinkButton to="/solicitar-traslado" icon={Car}>
             Solicitar traslado
           </LinkButton>
@@ -590,7 +590,7 @@ const LinkButton: React.FC<{ to: string; icon: any; children: React.ReactNode }>
 }) => (
   <Button
     asChild
-    className="w-full justify-start h-10 bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold rounded-xl"
+    className="w-full justify-start h-10 bg-[#6EF7FF] hover:bg-white/40 hover:text-white text-[#22142A]/90 font-bold rounded-xl"
   >
     <Link to={to}>
       <Icon size={12} className="mr-2" /> {children}
