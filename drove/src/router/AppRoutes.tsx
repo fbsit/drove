@@ -49,6 +49,7 @@ import ClientTripDetail from '@/pages/client/ClientTripDetail';
 // Páginas de drover
 import ActiveTrip from '@/pages/trips/ActiveTrip';
 import PickupVerification from '@/pages/vehicle-pickup/PickupVerification';
+import SubmitReview from '@/pages/reviews/SubmitReview';
 import DeliveryVerification from '@/pages/vehicle-delivery/DeliveryVerification';
 import ResenasDrover from '@/pages/drover/Resenas';
 
@@ -133,6 +134,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/traslados/activo/:transferId" element={<ActiveTrip />} />
         <Route path="/verificacion/recogida/:transferId" element={<PickupVerification />} />
         <Route path="/verificacion/entrega/:transferId" element={<DeliveryVerification />} />
+        <Route path="/resena" element={<SubmitReview />} />
         <Route path="/drover/resenas" element={<ResenasDrover />} />
         <Route path="/drover/viajes-disponibles" element={<DroverTraslados />} />
         <Route path="/drover/historial" element={<DroverHistory />} />

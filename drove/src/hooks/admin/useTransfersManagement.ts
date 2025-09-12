@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export interface TransferData {
   id: string;
+  createdAt?: string;
   clientName: string;
   clientEmail: string;
   droverId?: string;
@@ -57,6 +58,7 @@ export const useTransfersManagement = (filters?: { search?: string; status?: str
         (response as any)._metrics = totals;
         return list.map((transfer: any): TransferData => ({
           id: `${transfer?.id}` || `transfer-${Date.now()}`,
+          createdAt: transfer.createdAt || transfer.created_at || transfer.created || transfer.createdDate || undefined,
           clientName: transfer.client?.contactInfo?.fullName || transfer.client_name || 'Cliente',
           clientEmail: transfer.client?.email || transfer.client_email || 'No email',
           droverId: transfer.drover?.id || transfer.drover_id || '',
