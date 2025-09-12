@@ -15,7 +15,7 @@ import { useVehicleTransferRequest } from '@/hooks/useVehicleTransferRequest';
 import MobileFooterNav from '@/components/layout/MobileFooterNav';
 
 import VehicleDetailsStep from '@/components/vehicle-transfer/VehicleDetailsStep';
-import PickupDetailsStep from '@/components/vehicle-transfer/PickupDetailsStep';
+import { PickupDetailsStep } from '@/components/vehicle-transfer/PickupDetailsStep';
 import SenderDetailsStep from '@/components/vehicle-transfer/SenderDetailsStep';
 import ReceiverDetailsStep from '@/components/vehicle-transfer/ReceiverDetailsStep';
 import TransferDetailsStep from '@/components/vehicle-transfer/TransferDetailsStep';

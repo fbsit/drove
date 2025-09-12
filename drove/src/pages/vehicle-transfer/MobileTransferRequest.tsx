@@ -1,5 +1,3 @@
-
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,9 +15,9 @@ import MobileReceiverDetailsStep from '@/components/vehicle-transfer/mobile/Mobi
 import MobileTransferDetailsStep from '@/components/vehicle-transfer/mobile/MobileTransferDetailsStep';
 import MobilePaymentMethodStep from '@/components/vehicle-transfer/mobile/MobilePaymentMethodStep';
 import MobileConfirmationStep from '@/components/vehicle-transfer/mobile/MobileConfirmationStep';
-
-// Import missing step
 import { PickupDetailsStep } from '@/components/vehicle-transfer/PickupDetailsStep';
+
+import { VehicleTransferRequest } from '@/types/vehicle-transfer-request';
 
 const MobileTransferRequest = () => {
   const navigate = useNavigate();
@@ -37,9 +35,10 @@ const MobileTransferRequest = () => {
     prevStep();
   };
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: VehicleTransferRequest) => {
     const created = await TransferService.createTransfer(data);
     toast({ title: 'Éxito', description: 'Traslado solicitado correctamente.' });
+
     if (created?.url) {
       // flujo tarjeta
       window.location.href = created.url;
@@ -93,9 +92,7 @@ const MobileTransferRequest = () => {
     }
   };
 
-  const getStepProgress = () => {
-    return Math.round((step / 7) * 100);
-  };
+  const getStepProgress = () => Math.round((step / 7) * 100);
 
   return (
     <div>
@@ -117,11 +114,16 @@ const MobileTransferRequest = () => {
         <Card className="bg-white/5 backdrop-blur-sm border border-white/10 shadow-2xl rounded-2xl">
           <CardContent className="p-6">
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: "Helvetica" }}>
+              <h1
+                className="text-2xl font-bold text-white mb-2"
+                style={{ fontFamily: 'Helvetica' }}
+              >
                 {getStepTitle()}
               </h1>
               <p className="text-white/70 text-sm">
-                {step === 7 ? 'Revisa y confirma tu solicitud' : 'Completa la información solicitada'}
+                {step === 7
+                  ? 'Revisa y confirma tu solicitud'
+                  : 'Completa la información solicitada'}
               </p>
             </div>
 
@@ -129,9 +131,7 @@ const MobileTransferRequest = () => {
 
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="min-h-[400px]">
-                  {renderStep()}
-                </div>
+                <div className="min-h-[400px]">{renderStep()}</div>
 
                 <Separator className="bg-white/20" />
 
@@ -141,24 +141,24 @@ const MobileTransferRequest = () => {
                       type="button"
                       onClick={handleNext}
                       className="w-full rounded-2xl bg-[#6EF7FF] hover:bg-[#5FE4ED] text-[#22142A] font-bold transition-all duration-200 shadow-lg hover:shadow-xl h-12"
-                      style={{ fontFamily: "Helvetica" }}
+                      style={{ fontFamily: 'Helvetica' }}
                     >
                       Siguiente
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
+                  ) : form.watch('paymentMethod') === 'card' ? (
+                    <Button
+                      type="submit"
+                      className="w-full rounded-2xl bg-green-500 hover:bg-green-400 text-white font-bold transition-all duration-200 shadow-lg hover:shadow-xl h-12"
+                      style={{ fontFamily: 'Helvetica' }}
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Firmar y Solicitar Traslado
+                    </Button>
                   ) : (
-                    form.watch('paymentMethod') === 'card' ? (
-                      <Button
-                        type="submit"
-                        className="w-full rounded-2xl bg-green-500 hover:bg-green-400 text-white font-bold transition-all duration-200 shadow-lg hover:shadow-xl h-12"
-                        style={{ fontFamily: "Helvetica" }}
-                      >
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Firmar y Solicitar Traslado
-                      </Button>
-                    ) : (
-                      <div className="text-white/70 text-center">Procesando solicitud y redirigiendo…</div>
-                    )
+                    <div className="text-white/70 text-center">
+                      Procesando solicitud y redirigiendo…
+                    </div>
                   )}
 
                   {step > 1 && (
@@ -167,7 +167,7 @@ const MobileTransferRequest = () => {
                       variant="outline"
                       onClick={handlePrevious}
                       className="w-full rounded-2xl border-white/30 text-white hover:bg-white/10 hover:border-white/50 transition-all duration-200 h-12"
-                      style={{ fontFamily: "Helvetica" }}
+                      style={{ fontFamily: 'Helvetica' }}
                     >
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Anterior
