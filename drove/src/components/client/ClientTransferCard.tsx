@@ -101,8 +101,8 @@ const ClientTransferCard: React.FC<Props> = ({ transfer }) => {
                 <Star
                   key={star}
                   className={`w-3 h-3 ${star <= transfer.review!.rating
-                      ? 'fill-yellow-400 text-yellow-400'
-                      : 'text-gray-300'
+                    ? 'fill-yellow-400 text-yellow-400'
+                    : 'text-gray-300'
                     }`}
                 />
               ))}
@@ -124,7 +124,7 @@ const ClientTransferCard: React.FC<Props> = ({ transfer }) => {
           {statusLabels[transfer.status] || transfer.status}
         </span>
         {transfer.status === TransferStatus.DELIVERED && (
-          <span className="block text-[10px] text-[#0FBF74] flex items-center gap-1"><BadgeCheck size={14} /> Finalizado</span>
+          <span className="text-[10px] text-[#0FBF74] flex items-center gap-1"><BadgeCheck size={14} /> Finalizado</span>
         )}
       </div>
 
