@@ -508,9 +508,9 @@ const ActiveTrip: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Contactos: Entrega y Recepción */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 text-left">
-          {/* Persona que recibe (primero) */}
+        {/* Contactos */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 text-left">
+          {/* Persona que recibe */}
           <Card className="w-full justify-self-start bg-white/10 border-white/10">
             <CardContent className="p-5">
               <div className="flex items-start gap-3">
@@ -530,29 +530,7 @@ const ActiveTrip: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-
-          {/* Persona que entrega (segundo) */}
-          <Card className="w-full justify-self-start bg-gradient-to-br bg-white/10 border-white/10">
-            <CardContent className="p-5">
-              <div className="flex items-start gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center">
-                  <User className="text-[#6EF7FF]" />
-                </div>
-                <div className="flex-1">
-                  <div className="text-white font-semibold">Entregador</div>
-                  <div className="text-white/60 text-sm">Entrega el vehículo</div>
-                </div>
-              </div>
-              <div className="mt-4 space-y-2 text-white">
-                <div className="font-semibold">{trip.personDelivery?.fullName || '—'}</div>
-                <div className="text-white/70 text-sm">DNI: {trip.personDelivery?.dni || '—'}</div>
-                <div className="flex items-center gap-2 text-white/80 text-sm"><Phone className="h-4 w-4 text-[#6EF7FF]" /> {trip.personDelivery?.phone || '—'}</div>
-                <div className="flex items-center gap-2 text-white/80 text-sm"><Mail className="h-4 w-4 text-[#6EF7FF]" /> {trip.personDelivery?.email || '—'}</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Persona que entrega (segundo) */}
+          {/* Remitente */}
           <Card className="w-full justify-self-start bg-gradient-to-br bg-white/10 border-white/10">
             <CardContent className="p-5">
               <div className="flex items-start gap-3">
