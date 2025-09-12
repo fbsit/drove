@@ -100,11 +100,10 @@ const ClientTransferCard: React.FC<Props> = ({ transfer }) => {
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star
                   key={star}
-                  className={`w-3 h-3 ${
-                    star <= transfer.review!.rating
-                      ? 'fill-yellow-400 text-yellow-400'
-                      : 'text-gray-300'
-                  }`}
+                  className={`w-3 h-3 ${star <= transfer.review!.rating
+                    ? 'fill-yellow-400 text-yellow-400'
+                    : 'text-gray-300'
+                    }`}
                 />
               ))}
               <span className="text-xs text-[#7B8794] ml-1">({transfer.review!.rating}/5)</span>
@@ -112,20 +111,20 @@ const ClientTransferCard: React.FC<Props> = ({ transfer }) => {
           </div>
         )}
       </div>
-      
+
       {/* Precio */}
       <div className="flex flex-col items-center justify-center px-4">
-        <span className="block font-bold text-2xl text-[#0FBF74]">€{transfer.price.toLocaleString("es-ES",{maximumFractionDigits:2})}</span>
+        <span className="block font-bold text-2xl text-[#0FBF74]">€{transfer.price.toLocaleString("es-ES", { maximumFractionDigits: 2 })}</span>
         <span className="block text-xs text-[#0FBF74] font-montserrat">Precio del traslado</span>
       </div>
-      
+
       {/* Estado */}
       <div className="flex flex-col items-center justify-center px-4">
         <span className={`px-4 py-1 rounded-full text-sm font-bold font-helvetica mb-1 ${statusColors[transfer.status] || "bg-gray-200 text-gray-700"}`}>
           {statusLabels[transfer.status] || transfer.status}
         </span>
         {transfer.status === TransferStatus.DELIVERED && (
-          <span className="block text-[10px] text-[#0FBF74] flex items-center gap-1"><BadgeCheck size={14}/> Finalizado</span>
+          <span className="text-[10px] text-[#0FBF74] flex items-center gap-1"><BadgeCheck size={14} /> Finalizado</span>
         )}
       </div>
 
@@ -136,9 +135,9 @@ const ClientTransferCard: React.FC<Props> = ({ transfer }) => {
           className="text-[#22142A] hover:text-[#6EF7FF] hover:underline rounded-2xl font-bold flex items-center gap-1 px-5 py-2 transition"
           style={{ fontFamily: 'Helvetica' }}
         >
-          Ver detalles <ArrowRight size={16}/>
+          Ver detalles <ArrowRight size={16} />
         </Link>
-        
+
         {/* Botón de reseña para traslados completados sin reseña */}
         {canLeaveReview && (
           <button

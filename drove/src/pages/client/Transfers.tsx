@@ -8,14 +8,14 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 
-import DashboardLayout        from '@/components/layout/DashboardLayout';
-import ClientTransferFilters  from '@/components/client/ClientTransferFilters';
-import MobileTransferFilters  from '@/components/client/MobileTransferFilters';
-import TransferCard           from '@/components/client/TransferCard';
-import MobileFooterNav        from '@/components/layout/MobileFooterNav';
+import DashboardLayout from '@/components/layout/DashboardLayout';
+import ClientTransferFilters from '@/components/client/ClientTransferFilters';
+import MobileTransferFilters from '@/components/client/MobileTransferFilters';
+import TransferCard from '@/components/client/TransferCard';
+import MobileFooterNav from '@/components/layout/MobileFooterNav';
 
-import TransferService        from '@/services/transferService';
-import { ClientTransfer }     from '@/types/client-transfer';   // describe el shape real
+import TransferService from '@/services/transferService';
+import { ClientTransfer } from '@/types/client-transfer';   // describe el shape real
 
 /* -------------------------------------------------------------------------- */
 /* COMPONENTE                                                                 */
@@ -23,18 +23,18 @@ import { ClientTransfer }     from '@/types/client-transfer';   // describe el s
 
 const Transfers: React.FC = () => {
   /* ------------ contexto y helpers ------------ */
-  const { user }     = useAuth();
-  const isMobile     = useIsMobile();
-  const clientId     = user?.id;
+  const { user } = useAuth();
+  const isMobile = useIsMobile();
+  const clientId = user?.id;
 
   /* ------------ estado ------------ */
-  const [isLoading,          setIsLoading]          = useState(true);
-  const [transfers,          setTransfers]          = useState<ClientTransfer[]>([]);
-  const [filteredTransfers,  setFilteredTransfers]  = useState<ClientTransfer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [transfers, setTransfers] = useState<ClientTransfer[]>([]);
+  const [filteredTransfers, setFilteredTransfers] = useState<ClientTransfer[]>([]);
 
-  const [searchTerm,   setSearchTerm]   = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [dateRange,    setDateRange]    = useState<DateRange>();
+  const [dateRange, setDateRange] = useState<DateRange>();
 
   /* ---------------------------------------------------------------------- */
   /* FETCH REAL DE TRASLADOS                                                */
@@ -46,25 +46,25 @@ const Transfers: React.FC = () => {
       try {
         setIsLoading(true);
         const data = await TransferService.getTravelsByClient(clientId);
-        console.log("data",data)
+        console.log("data", data)
         /* Adaptamos solo los campos que TransferCard necesita */
         const formatted: ClientTransfer[] = (Array.isArray(data) ? data : []).map(
           (t) => ({
-            id:                 t.id,
-            status:             t.status,
-            created_at:         t.createdAt,
-            originAddress:      t.startAddress?.city        ?? '',
-            destinationAddress: t.endAddress?.city         ?? '',
-            brand:              t.brandVehicle             ?? '',
-            model:              t.modelVehicle             ?? '',
-            year:               t.yearVehicle              ?? '',
-            licensePlate:       t.patentVehicle            ?? '',
-            vin:                t.bastidor                 ?? '',
-            pickupDate:         t.travelDate               ?? '',
-            pickupTime:         t.travelTime               ?? '',
-            distance:          +t.distanceTravel           || 0,
-            duration:          +t.timeTravel               || 0,
-            price:             +t.totalPrice               || 0,
+            id: t.id,
+            status: t.status,
+            created_at: t.createdAt,
+            originAddress: t.startAddress?.city ?? '',
+            destinationAddress: t.endAddress?.city ?? '',
+            brand: t.brandVehicle ?? '',
+            model: t.modelVehicle ?? '',
+            year: t.yearVehicle ?? '',
+            licensePlate: t.patentVehicle ?? '',
+            vin: t.bastidor ?? '',
+            pickupDate: t.travelDate ?? '',
+            pickupTime: t.travelTime ?? '',
+            distance: +t.distanceTravel || 0,
+            duration: +t.timeTravel || 0,
+            price: +t.totalPrice || 0,
           }),
         );
 
@@ -145,9 +145,9 @@ const Transfers: React.FC = () => {
           {/* Filtros */}
           <div className="mb-4">
             <MobileTransferFilters
-              search={searchTerm}     setSearch={setSearchTerm}
-              status={statusFilter}   setStatus={setStatusFilter}
-              dateRange={dateRange}   setDateRange={setDateRange}
+              search={searchTerm} setSearch={setSearchTerm}
+              status={statusFilter} setStatus={setStatusFilter}
+              dateRange={dateRange} setDateRange={setDateRange}
             />
           </div>
 
@@ -171,16 +171,16 @@ const Transfers: React.FC = () => {
   /* ---------------------------------------------------------------------- */
   return (
     <DashboardLayout pageTitle="Mis Traslados">
-      <div className="px-4 space-y-6 max-w-[846px] mx-auto">
+      <div className="space-y-6 ">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white mb-2">Mis Traslados</h1>
           <p className="text-white/70">Gestiona y supervisa tus traslados de vehículos</p>
         </div>
 
         <ClientTransferFilters
-          search={searchTerm}     setSearch={setSearchTerm}
-          status={statusFilter}   setStatus={setStatusFilter}
-          dateRange={dateRange}   setDateRange={setDateRange}
+          search={searchTerm} setSearch={setSearchTerm}
+          status={statusFilter} setStatus={setStatusFilter}
+          dateRange={dateRange} setDateRange={setDateRange}
         />
 
         <div className="space-y-4 pb-20">

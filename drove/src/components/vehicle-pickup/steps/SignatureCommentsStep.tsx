@@ -67,7 +67,7 @@ const SignatureCommentsStep: React.FC<SignatureCommentsStepProps> = ({
       )}
 
       {signature && (
-        <div className="bg-green-500/20 border border-green-500/30 text-green-400 p-3 rounded-md text-sm">
+        <div className="bg-green-500/20 border border-green-500/30 text-green-400 p-3 rounded-md text-sm mt-4">
           ✓ Firma registrada correctamente
         </div>
       )}

@@ -32,9 +32,9 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
           disabled={props.disabled}
         >
           {showPassword ? (
-            <EyeOff className="h-4 w-4 text-white/70" />
+            <EyeOff className="h-4 w-4 text-black/70" />
           ) : (
-            <Eye className="h-4 w-4 text-white/70" />
+            <Eye className="h-4 w-4 text-black/70" />
           )}
         </Button>
       </div>

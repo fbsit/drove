@@ -69,7 +69,7 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
       comment: review.comment,
       createdAt: new Date().toISOString()
     };
-    
+
     toast({
       title: "Reseña enviada",
       description: "Tu reseña ha sido enviada correctamente.",
@@ -81,7 +81,7 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
   const canLeaveReview = isCompleted && !trip.review;
 
   return (
-    <div 
+    <div
       className="min-h-screen bg-[#22142A]"
       style={{
         width: '100vw',
@@ -90,13 +90,13 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
       }}
     >
       {/* Barra de progreso móvil */}
-      <div className="pt-4 px-4">
+      <div className="">
         <TransferStepsBar trip={trip} />
       </div>
 
       {/* Contenido principal móvil */}
-      <div className="px-4 pt-5 space-y-6 pb-20">
-        
+      <div className="space-y-6 pb-20">
+
         {/* Banner de reprogramación móvil - rounded-xl aplicado */}
         {trip.isRescheduled && (
           <div className="bg-gradient-to-r from-amber-500/25 to-orange-500/15 border border-amber-400/40 rounded-xl p-6 shadow-lg">
@@ -219,7 +219,7 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
               </div>
             )}
           </div>
-          
+
           <div className="space-y-3 text-xs">
             <div className="bg-white/5 rounded-xl p-4">
               <span className="font-montserrat font-bold text-[#6EF7FF] block mb-1">Origen:</span>
@@ -229,7 +229,7 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
               <span className="font-montserrat font-bold text-[#d95fef] block mb-1">Destino:</span>
               <span className="text-white/90 leading-relaxed">{trip.pickup_details.destinationAddress}</span>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-white/15 rounded-xl p-4 text-center shadow-md">
                 <span className="text-xs text-white/60 block mb-1 font-medium">Distancia</span>
@@ -262,7 +262,7 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
               )}
             </div>
           </div>
-          
+
           <div className="mt-4 space-y-3">
             <DroveButton
               variant="outline"
@@ -287,7 +287,7 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
               </DroveButton>
             )}
           </div>
-          
+
           {showMap && (
             <div className="mt-4 rounded-xl overflow-hidden shadow-lg">
               <GoogleMapComponent
@@ -311,7 +311,7 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
 
         {/* Bloques de personas - rounded-xl aplicado */}
         <div className="space-y-4">
-          
+
           {/* Bloque de Remitente - rounded-xl aplicado */}
           <div className="bg-[#cdc6d6]/90 rounded-xl p-5 shadow-lg border border-white/10">
             <div className="flex items-center justify-center gap-2 mb-3">
@@ -378,10 +378,10 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
         {/* Botones de acción móviles */}
         <div className="space-y-3">
           <Link to="/cliente/traslados" className="block">
-            <DroveButton 
-              variant="outline" 
-              size="lg" 
-              icon={<ArrowLeft className="w-4 h-4" />} 
+            <DroveButton
+              variant="outline"
+              size="lg"
+              icon={<ArrowLeft className="w-4 h-4" />}
               className="w-full font-bold"
             >
               Volver a traslados
@@ -396,11 +396,11 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
           >
             Copiar ID #{trip.id}
           </DroveButton>
-          <DroveButton 
-            variant="default" 
-            size="lg" 
-            icon={<Download className="w-4 h-4" />} 
-            onClick={handleFacturaDownload} 
+          <DroveButton
+            variant="default"
+            size="lg"
+            icon={<Download className="w-4 h-4" />}
+            onClick={handleFacturaDownload}
             className="w-full font-bold"
           >
             Descargar PDF
