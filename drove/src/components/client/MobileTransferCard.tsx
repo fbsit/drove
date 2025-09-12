@@ -114,7 +114,7 @@ const MobileTransferCard: React.FC<MobileTransferCardProps> = ({ transfer }) => 
   return (
     <>
       {/* Aumentamos el ancho máximo y mejoramos el layout */}
-      <Card className="w-full max-w-sm bg-white shadow-sm border border-gray-100 rounded-xl overflow-hidden mx-auto">
+      <Card className="w-full max-w-sm bg-white/10 shadow-sm border border-gray-100 rounded-xl overflow-hidden mx-auto">
         <CardContent className="p-4">
           {/* Header con estado y fecha */}
           <div className="flex items-center justify-between mb-3">
@@ -134,10 +134,10 @@ const MobileTransferCard: React.FC<MobileTransferCardProps> = ({ transfer }) => 
           <div className="mb-3">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 bg-[#6EF7FF]/20 rounded-lg flex items-center justify-center">
-                <Car className="h-4 w-4 text-[#22142A]" />
+                <Car className="h-4 w-4 text-white/90" />
               </div>
               <div className="flex-1">
-                <div className="text-[#22142A] font-bold text-sm leading-tight">
+                <div className="text-white/90 font-bold text-sm leading-tight">
                   {transfer.brand} {transfer.model}
                 </div>
                 <div className="text-gray-600 text-xs font-mono">
@@ -148,7 +148,7 @@ const MobileTransferCard: React.FC<MobileTransferCardProps> = ({ transfer }) => 
           </div>
 
           {/* Ruta */}
-          <div className="mb-3 bg-gray-50 rounded-xl p-3">
+          <div className="mb-3 bg-gray-50/60 rounded-xl p-3">
             <div className="flex items-start gap-2">
               <div className="flex flex-col items-center mt-1">
                 <div className="w-2 h-2 rounded-full bg-green-500"></div>
@@ -157,18 +157,18 @@ const MobileTransferCard: React.FC<MobileTransferCardProps> = ({ transfer }) => 
               </div>
               <div className="flex-1 space-y-2">
                 <div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-0.5">
+                  <div className="text-xs text-gray-700 uppercase tracking-wide mb-0.5">
                     Origen
                   </div>
-                  <div className="text-[#22142A] text-xs font-medium leading-tight">
+                  <div className="text-white text-xs font-medium leading-tight">
                     {transfer.originAddress}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-0.5">
+                  <div className="text-xs text-gray-700 uppercase tracking-wide mb-0.5">
                     Destino
                   </div>
-                  <div className="text-[#22142A] text-xs font-medium leading-tight">
+                  <div className="text-white text-xs font-medium leading-tight">
                     {transfer.destinationAddress}
                   </div>
                 </div>
@@ -181,7 +181,7 @@ const MobileTransferCard: React.FC<MobileTransferCardProps> = ({ transfer }) => 
             <div className="flex items-center gap-2">
               <Calendar className="h-3 w-3 text-gray-500" />
               <div className="text-xs">
-                <div className="text-[#22142A] font-medium">
+                <div className="text-white/90 font-medium">
                   {transfer.pickupDate ? formatDate(transfer.pickupDate) : formatDate(transfer.created_at)}
                 </div>
                 {transfer.pickupTime && (
@@ -196,8 +196,8 @@ const MobileTransferCard: React.FC<MobileTransferCardProps> = ({ transfer }) => 
             </div>
             <div className="text-right">
               <div className="flex items-center gap-1">
-                <Euro className="h-3 w-3 text-[#22142A]" />
-                <span className="text-[#22142A] font-bold text-base">{transfer.price}€</span>
+                <Euro className="h-3 w-3 text-white/90" />
+                <span className="text-white/90 font-bold text-base">{transfer.price}€</span>
               </div>
             </div>
           </div>
@@ -211,11 +211,10 @@ const MobileTransferCard: React.FC<MobileTransferCardProps> = ({ transfer }) => 
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Star
                       key={star}
-                      className={`w-3 h-3 ${
-                        star <= transfer.review!.rating
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'text-gray-300'
-                      }`}
+                      className={`w-3 h-3 ${star <= transfer.review!.rating
+                        ? 'fill-yellow-400 text-yellow-400'
+                        : 'text-gray-300'
+                        }`}
                     />
                   ))}
                   <span className="text-green-800 ml-1 font-medium">({transfer.review.rating}/5)</span>
@@ -250,8 +249,8 @@ const MobileTransferCard: React.FC<MobileTransferCardProps> = ({ transfer }) => 
           {(transfer.status === TransferStatus.IN_PROGRESS || transfer.status === TransferStatus.ASSIGNED) && (
             <div className="mb-3 p-2 bg-blue-50 rounded-xl border border-blue-200">
               <div className="text-xs text-blue-800 text-center font-medium">
-                {transfer.status === TransferStatus.IN_PROGRESS ? 
-                  'Tu vehículo está en camino' : 
+                {transfer.status === TransferStatus.IN_PROGRESS ?
+                  'Tu vehículo está en camino' :
                   'Drover asignado a tu traslado'
                 }
               </div>
@@ -261,8 +260,8 @@ const MobileTransferCard: React.FC<MobileTransferCardProps> = ({ transfer }) => 
           {/* Botones de acción - Layout mejorado */}
           <div className="space-y-2">
             {transfer.isRescheduled && (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={() => setShowRescheduleModal(true)}
                 className="w-full rounded-xl border-amber-300 text-amber-700 hover:bg-amber-50 text-xs py-2.5 font-medium"
@@ -276,18 +275,18 @@ const MobileTransferCard: React.FC<MobileTransferCardProps> = ({ transfer }) => 
             {canLeaveReview && (
               <Button
                 onClick={() => setIsReviewModalOpen(true)}
-                className="w-full bg-gradient-to-r from-[#6EF7FF] to-[#FFD700] hover:from-[#32dfff] hover:to-[#FFC700] text-[#22142A] font-medium flex items-center gap-2 rounded-xl text-xs py-2.5"
+                className="w-full bg-gradient-to-r from-[#6EF7FF] to-[#FFD700] hover:from-[#32dfff] hover:to-[#FFC700] text-white/90 font-medium flex items-center gap-2 rounded-xl text-xs py-2.5"
               >
                 <Star className="h-3 w-3" />
                 Dejar reseña
               </Button>
             )}
-            
+
             <Link to={`/cliente/traslados/${transfer.id}`} className="block w-full">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
-                className="w-full rounded-xl border-[#22142A] text-[#22142A] hover:bg-gray-50 text-xs py-2.5 font-medium"
+                className="w-full rounded-xl border-[#22142A] text-white/90 hover:bg-gray-50 text-xs py-2.5 font-medium"
               >
                 <Eye className="h-3 w-3 mr-2" />
                 Ver detalles del traslado

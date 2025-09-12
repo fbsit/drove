@@ -60,7 +60,7 @@ const ActiveTrip: React.FC = () => {
   const isMobile = useIsMobile();
   const { toggleChat } = useSupportChat();
   const mapSectionRef = useRef<HTMLDivElement | null>(null);
-  
+
   // (efecto para abrir mapa cuando esté en progreso se declara más abajo, tras obtener trip)
 
   const { data: trip, isLoading, refetch } = useQuery({
@@ -68,7 +68,7 @@ const ActiveTrip: React.FC = () => {
     queryFn: async () => {
       if (!transferId) throw new Error('Trip ID is required');
       console.log('[ACTIVE_TRIP] 🔄 Obteniendo detalles del viaje:', transferId);
-      
+
       try {
         const response = await TransferService.getTransferById(transferId);
         console.log('[ACTIVE_TRIP] ✅ Detalles del viaje obtenidos:', response);
@@ -100,7 +100,7 @@ const ActiveTrip: React.FC = () => {
       setTimeout(() => {
         try {
           mapSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } catch {}
+        } catch { }
       }, 150);
     }
   }, [trip?.status]);
@@ -243,7 +243,7 @@ const ActiveTrip: React.FC = () => {
   const isAssignedDrover = user?.id === trip?.droverId;
 
   const handleIniciarViaje = async () => {
-    if(trip.status === 'PICKED_UP') {
+    if (trip.status === 'PICKED_UP') {
       await TransferService.saveInitTravelVerification(transferId);
       await refetch();
     } else {
@@ -274,7 +274,7 @@ const ActiveTrip: React.FC = () => {
       if (!trip.startedAt) {
         try {
           await TransferService.saveInitTravelVerification(transferId);
-        } catch {}
+        } catch { }
       }
       // Obtener ubicación actual para validar en backend (regla <=100km)
       let coords: { latitude: number; longitude: number } | null = null;
@@ -287,7 +287,7 @@ const ActiveTrip: React.FC = () => {
               { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 }
             );
           });
-        } catch {}
+        } catch { }
       }
 
       await TransferService.saveFinishTravelVerification(transferId, {
@@ -326,7 +326,7 @@ const ActiveTrip: React.FC = () => {
           <div className="text-center py-12">
             <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
             <p className="text-white/70 text-lg">Viaje no encontrado</p>
-            <Button 
+            <Button
               onClick={() => navigate('/cliente/transfers')}
               className="mt-4"
             >
@@ -369,7 +369,7 @@ const ActiveTrip: React.FC = () => {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-white" style={{ fontFamily: 'Helvetica' }}>
-              Traslado #{String(trip.id).slice(0,8)}
+              Traslado #{String(trip.id).slice(0, 8)}
             </h1>
             <p className="text-white/60 mt-2">Creado el {new Date(trip.createdAt || trip.travelDate || Date.now()).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
           </div>
@@ -577,7 +577,7 @@ const ActiveTrip: React.FC = () => {
           <Button variant="outline" className="rounded-2xl bg-white/5 border-white/20 text-white" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4 mr-2" /> Volver a traslados
           </Button>
-          <Button variant="outline" className="rounded-2xl bg-white/5 border-white/20 text-white" onClick={async () => { try { await navigator.clipboard.writeText(String(trip.id)); toast({ title: 'ID copiado', description: String(trip.id) }); } catch {} }}>
+          <Button variant="outline" className="rounded-2xl bg-white/5 border-white/20 text-white" onClick={async () => { try { await navigator.clipboard.writeText(String(trip.id)); toast({ title: 'ID copiado', description: String(trip.id) }); } catch { } }}>
             <CopyIcon className="h-4 w-4 mr-2" /> Copiar ID
           </Button>
           <Button variant="outline" disabled={!trip?.invoiceUrl && !trip?.pdfUrl} className="rounded-2xl bg-white/5 border-white/20 text-white" onClick={() => { const url = (trip as any)?.invoiceUrl || (trip as any)?.pdfUrl; if (url) window.open(url, '_blank'); }}>
