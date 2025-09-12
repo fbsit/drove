@@ -16,24 +16,26 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TransfersTable from "@/components/admin/transfers/TransfersTable";
-import mockAdminTransfers from "@/services/mocks/admin_transfers";
+import { useTransfersManagement } from '@/hooks/admin/useTransfersManagement';
 
 const DashboardAdminPanel: React.FC = () => {
-  // Usar datos mock
-  const { transfers } = mockAdminTransfers();
+  // Obtener traslados reales
+  const { transfers, isLoading } = useTransfersManagement();
 
   // Métricas
   const totalTransfers = transfers.length;
-  const completedTransfers = transfers.filter(t => t.status === 'completado').length;
-  const inProgressTransfers = transfers.filter(t => t.status === 'en_progreso').length;
-  const pendingTransfers = transfers.filter(t => t.status === 'pendiente').length;
-  const assignedTransfers = transfers.filter(t => t.status === 'asignado').length;
+  const completedTransfers = transfers.filter(t => ['DELIVERED','COMPLETED'].includes(String(t.status).toUpperCase())).length;
+  const inProgressTransfers = transfers.filter(t => String(t.status).toUpperCase()==='IN_PROGRESS').length;
+  const pendingTransfers = transfers.filter(t => ['CREATED','PENDINGPAID','PENDING'].includes(String(t.status).toUpperCase())).length;
+  const assignedTransfers = transfers.filter(t => String(t.status).toUpperCase()==='ASSIGNED').length;
 
   const totalRevenue = transfers
-    .filter(t => t.status === 'completado')
-    .reduce((sum, t) => sum + parseFloat(t.price.toString()), 0);
+    .filter(t => ['DELIVERED','COMPLETED'].includes(String(t.status).toUpperCase()))
+    .reduce((sum, t) => sum + Number(t.price || 0), 0);
 
-  const recentTransfers = transfers.slice(0, 5);
+  const recentTransfers = [...transfers]
+    .sort((a:any,b:any)=> new Date(b.createdAt || b.scheduledDate).getTime() - new Date(a.createdAt || a.scheduledDate).getTime())
+    .slice(0,5);
 
   return (
     <div className="flex flex-col w-full space-y-6 md:space-y-8">

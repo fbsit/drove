@@ -16,7 +16,7 @@
             <tr>
               <td style="padding: 24px 32px;">
                 <h2 style="color: #ffffff; font-size: 22px;">¿Cómo fue tu experiencia?</h2>
-                <p style="font-size: 16px; color: #f1f1f1;">Hola <strong>{{Nombre}}</strong>,</p>
+                <p style="font-size: 16px; color: #f1f1f1;">Hola <strong>{{name}}</strong>,</p>
                 <p style="font-size: 16px; color: #ddd;">El traslado que solicitaste ha sido completado, y nos
                   encantaría saber cómo fue tu experiencia con el drover asignado.</p>
 
@@ -24,13 +24,13 @@
                   toda la comunidad DROVE.</p>
                 <p style="font-size: 16px; color: #ccc;">Detalles del traslado:</p>
                 <ul style="font-size: 16px; color: #ccc; line-height: 1.7;">
-                  <li><strong>Fecha:</strong> {{FECHA_TRASLADO}}</li>
-                  <li><strong>Vehículo:</strong> {{MARCA_MODELO}}</li>
-                  <li><strong>Ruta:</strong> {{ORIGEN}} → {{DESTINO}}</li>
+                  <li><strong>Fecha:</strong> {{transfer_date}}</li>
+                  <li><strong>Vehículo:</strong> {{vehicle}}</li>
+                  <li><strong>Ruta:</strong> {{origin}} → {{destination}}</li>
                 </ul>
                 <div style="text-align: center; margin: 32px 0;">
                   <a style="background-color: #00eaff; color: #1a0d25; padding: 14px 28px; font-size: 16px; text-decoration: none; border-radius: 6px; display: inline-block;"
-                    href="[LINK_TRASLADO_CLIENTE_RESEÑA]">Dejar reseña</a>
+                    href="{{review_link}}">Dejar reseña</a>
                 </div>
 
                 <p style="font-size: 16px; color: #ccc;">Gracias por confiar en DROVE. Si necesitas apoyo adicional,
