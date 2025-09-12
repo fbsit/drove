@@ -41,11 +41,10 @@ const estadoLabels = {
 
 const tipoBadge = (tipo) => (
   <span
-    className={`flex rounded-full px-2.5 py-1 text-xs font-semibold ml-1 ${
-      tipo === "drover_core"
-        ? "bg-[#2c76b8] text-white flex items-center gap-1"
-        : "bg-[#6ef7ff] text-[#22142A]"
-    }`}
+    className={`flex rounded-full px-2.5 py-1 text-xs font-semibold ml-1 ${tipo === "drover_core"
+      ? "bg-[#2c76b8] text-white flex items-center gap-1"
+      : "bg-[#6ef7ff] text-[#22142A]"
+      }`}
     style={{ fontFamily: "Helvetica" }}
   >
     {tipo === "drover_core" ? (
@@ -181,16 +180,15 @@ const DroverProfile: React.FC = () => {
         <div className="flex-1 min-w-0 w-full">
           <div className="flex flex-wrap gap-2 items-center mb-1 text-start">
             <h1
-              className="text-lg xs:text-xl md:text-2xl text-white font-bold break-words w-full text-center"
+              className="text-lg xs:text-xl md:text-2xl text-white font-bold break-words w-full"
               style={{ fontFamily: "Helvetica" }}
             >
               {drover?.contactInfo?.fullName}
             </h1>
             {tipoBadge(drover.role)}
             <span
-              className={`px-3 py-1 rounded-full font-semibold text-xs md:text-sm ${
-                estadoColors[drover.status] || "bg-zinc-700 text-white"
-              }`}
+              className={`px-3 py-1 rounded-full font-semibold text-xs md:text-sm ${estadoColors[drover.status] || "bg-zinc-700 text-white"
+                }`}
             >
               {estadoLabels[drover.status] || drover.status}
             </span>
@@ -334,8 +332,8 @@ const DroverProfile: React.FC = () => {
                   <div className="font-semibold">
                     {drover?.contactInfo?.birthDate
                       ? new Date(
-                          drover.contactInfo.birthDate
-                        ).toLocaleDateString("es-ES")
+                        drover.contactInfo.birthDate
+                      ).toLocaleDateString("es-ES")
                       : "—"}
                   </div>
                 </div>

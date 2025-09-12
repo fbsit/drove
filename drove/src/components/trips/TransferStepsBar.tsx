@@ -67,7 +67,7 @@ const TransferStepsBar: React.FC<TransferStepsBarProps> = ({ trip }) => {
   const currentStep = getCurrentStep(trip?.status);
   return (
     <div className="w-full flex flex-col items-center py-1 md:py-4 animate-fade-in">
-      <div className="w-full max-w-2xl relative">
+      <div className="w-full pb-10 relative">
         {/* Vista móvil - Solo estado actual con icono */}
         <div className="block md:hidden">
           <div className="flex flex-col items-center">
@@ -88,7 +88,7 @@ const TransferStepsBar: React.FC<TransferStepsBarProps> = ({ trip }) => {
                   <span
                     className="mt-2 text-sm font-bold text-[#6EF7FF]"
                     style={{
-                      fontFamily: "Helvetica Bold",
+                      fontFamily: "Helvetica",
                     }}
                   >
                     {step.label}
@@ -115,8 +115,8 @@ const TransferStepsBar: React.FC<TransferStepsBarProps> = ({ trip }) => {
                       (isCompleted
                         ? "bg-[#6EF7FF] border-[#6EF7FF] text-[#22142A]"
                         : isActive
-                        ? "bg-white text-[#22142A] border-[#6EF7FF] shadow-xl"
-                        : "bg-white/10 border-white/20 text-white/60")
+                          ? "bg-white text-[#22142A] border-[#6EF7FF] shadow-xl"
+                          : "bg-white/10 border-white/20 text-white/60")
                     }
                     style={{
                       width: 40,
@@ -131,11 +131,11 @@ const TransferStepsBar: React.FC<TransferStepsBarProps> = ({ trip }) => {
                       (isActive
                         ? "text-[#6EF7FF]"
                         : isCompleted
-                        ? "text-white"
-                        : "text-white/50")
+                          ? "text-white"
+                          : "text-white/50")
                     }
                     style={{
-                      fontFamily: isActive ? "Helvetica Bold" : "Helvetica",
+                      fontFamily: isActive ? "Helvetica" : "Helvetica",
                     }}
                   >
                     {step.label}
@@ -144,7 +144,7 @@ const TransferStepsBar: React.FC<TransferStepsBarProps> = ({ trip }) => {
               );
             })}
           </div>
-          
+
           {/* Líneas de conexión - solo en desktop */}
           <div className="absolute top-5 left-0 w-full flex justify-between px-5" style={{ zIndex: -1 }}>
             {STEPS.slice(0, -1).map((_, idx) => (

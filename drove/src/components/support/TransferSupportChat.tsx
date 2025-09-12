@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
-import { User as UserIcon, Check, MessageCircle } from "lucide-react";
+import { User as UserIcon, Check, MessageCircle, ArrowRight, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
@@ -128,19 +128,19 @@ const TransferSupportChat: React.FC = () => {
   // Avatar para diferenciar burbujas
   const getAvatar = (sender: "user" | "soporte") =>
     sender === "user" ? (
-      <div className="bg-[#6EF7FF] text-[#22142A] font-bold rounded-full w-8 h-8 flex items-center justify-center text-lg shadow mr-2">
+      <div className="bg-[#6EF7FF] text-[#22142A] font-bold rounded-full w-8 h-8 flex items-center justify-center text-xs shadow mr-2">
         <span>YO</span>
       </div>
     ) : (
-      <div className="bg-[#22142A] border-2 border-[#6EF7FF] rounded-full w-8 h-8 flex items-center justify-center text-[#6EF7FF] font-bold text-lg shadow mr-2">
+      <div className="bg-[#22142A] border-2 border-[#6EF7FF] rounded-full w-8 h-8 flex items-center justify-center text-[#6EF7FF] font-bold text-xs shadow mr-2">
         <span>D</span>
       </div>
     );
 
   return (
-    <div className="w-full max-w-md mx-auto flex flex-col bg-[#22142A] rounded-2xl shadow-2xl pt-2 pb-0" style={{ minHeight: 460, fontFamily: "Helvetica" }}>
+    <div className="w-[90vw] lg:w-[40vw] flex flex-col bg-[#22142A] rounded-2xl shadow-2xl pt-2 pb-0" style={{ minHeight: 460, fontFamily: "Helvetica" }}>
       {/* Header: estado del ticket */}
-      <div className="flex flex-col items-center px-5 pt-6 pb-2">
+      <div className="flex flex-col items-center px-5 pt-6 pb-2 border-b border-white/10">
         <span className={`px-4 py-1 text-xs rounded-2xl font-bold mb-2 flex items-center shadow gap-1 ${statusColors[status]}`} style={{ fontFamily: "Montserrat, Helvetica", fontWeight: 700 }}>
           {statusIcons[status]}
           {statusLabels[status]}
@@ -163,7 +163,7 @@ const TransferSupportChat: React.FC = () => {
       {/* Chat */}
       <div
         ref={listRef}
-        className="flex-1 overflow-y-auto px-3 pb-2"
+        className="flex-1 overflow-y-auto px-3 pb-2 scrollbar"
         style={{
           maxHeight: 320,
           minHeight: 220,
@@ -190,11 +190,10 @@ const TransferSupportChat: React.FC = () => {
                   </div>
                 )}
                 <div
-                  className={`w-fit p-2 md:p-2.5 rounded-2xl text-sm shadow font-medium ${
-                    isUser
-                      ? "bg-[#6EF7FF] text-[#22142A] rounded-br-sm"
-                      : "bg-white/10 text-white rounded-bl-sm border border-[#6EF7FF]"
-                  }`}
+                  className={`w-fit p-2 md:p-2.5 rounded-2xl text-sm shadow font-medium ${isUser
+                    ? "bg-[#6EF7FF] text-[#22142A] rounded-br-sm"
+                    : "bg-white/10 text-white rounded-bl-sm border border-[#6EF7FF]"
+                    }`}
                   style={{
                     color: isUser ? "#22142A" : "white",
                     fontFamily: isUser ? "Helvetica" : "Helvetica",
@@ -202,9 +201,8 @@ const TransferSupportChat: React.FC = () => {
                 >
                   {msg.text}
                   <span
-                    className={`block mt-1 text-[11px] font-normal pl-1 ${
-                      isUser ? "text-[#22142A]/60" : "text-white/90"
-                    }`}
+                    className={`block mt-1 text-[11px] font-normal pl-1 ${isUser ? "text-[#22142A]/60" : "text-white/90"
+                      }`}
                   >
                     {msg.timestamp}
                   </span>
@@ -215,7 +213,7 @@ const TransferSupportChat: React.FC = () => {
           );
         })}
       </div>
-      
+
       {/* Input */}
       <div className="w-full flex flex-row items-center gap-2 p-3 pt-2 border-t border-white/10 bg-[#22142A] rounded-b-2xl" style={{ minHeight: 58 }}>
         <Input
@@ -234,8 +232,10 @@ const TransferSupportChat: React.FC = () => {
           onClick={handleSend}
           style={{ fontFamily: "Montserrat, Helvetica", fontWeight: 700 }}
         >
-          Enviar
+          <Send size={20} />
+          <span className="hidden md:block">Enviar</span>
         </Button>
+
       </div>
     </div>
   );

@@ -15,7 +15,7 @@ interface SignatureSectionProps {
 const SignatureSection: React.FC<SignatureSectionProps> = ({ form, onSignatureChange }) => {
   const signature = form.watch("transferDetails.signature");
   const [hasSigned, setHasSigned] = useState(false);
-  
+
   // Efecto para verificar si hay una firma real (no vacía)
   useEffect(() => {
     if (signature && signature.length > 0 && signature !== 'data:,') {
@@ -61,7 +61,7 @@ const SignatureSection: React.FC<SignatureSectionProps> = ({ form, onSignatureCh
       )}
 
       {hasSigned && (
-        <div className="bg-green-500/20 border border-green-500/30 text-green-400 p-3 rounded-md text-sm">
+        <div className="bg-green-500/20 border border-green-500/30 text-green-400 p-3 rounded-md text-sm mt-4">
           ✓ Firma registrada correctamente
         </div>
       )}

@@ -181,7 +181,7 @@ const TransferDetailsCard: React.FC<TransferDetailsCardProps> = ({ transfer: ini
                   </div>
                 )}
               </div>
-              <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${urgencyConfig.bg} ${urgencyConfig.color} text-xs font-bold`}>
+              <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${urgencyConfig.bg} ${urgencyConfig.color} text-xs font-bold text-black`}>
                 {urgencyConfig.icon}
                 {urgencyConfig.text}
               </div>
@@ -321,7 +321,7 @@ const TransferDetailsCard: React.FC<TransferDetailsCardProps> = ({ transfer: ini
                           console.log('Map button clicked, current showMap:', showMap);
                           setShowMap(!showMap);
                         }}
-                        className="w-full h-12 border-2 border-gray-300 text-gray-700  font-medium rounded-xl transition-all duration-200 text-sm"
+                        className="w-full h-12 border-2 border-gray-300 hover:text-gray-700  font-medium rounded-xl transition-all duration-200 text-sm"
                       >
                         <MapPin className="w-4 h-4 mr-2" />
                         {showMap ? "Ocultar" : "Ver"} Mapa

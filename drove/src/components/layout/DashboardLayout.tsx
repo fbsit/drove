@@ -19,10 +19,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   pageTitle,
 }) => {
   const isMobile = useIsMobile();
-  
+
   return (
     <div
-      className="flex min-h-screen bg-drove"
+      className="flex bg-drove !p-0"
       style={{
         fontFamily: "Helvetica, Arial, sans-serif",
         paddingTop: isMobile ? MOBILE_HEADER_HEIGHT : HEADER_HEIGHT,
@@ -34,8 +34,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           className="sticky z-30"
           style={{
             top: HEADER_HEIGHT,
-            height: `calc(100vh - ${HEADER_HEIGHT}px)`,
-            minHeight: `calc(100vh - ${HEADER_HEIGHT}px)`,
+            maxHeight: `calc(100vh - ${HEADER_HEIGHT}px)`,
           }}
         >
           <div className="h-full">
@@ -44,11 +43,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </div>
         </div>
       </div>
-      
+
       {/* MAIN: contenido principal - sin padding en móvil, centrado automático */}
-      <main className={`flex-1 min-h-screen w-full max-w-[890px] mx-auto ${
-        isMobile ? 'px-3' : 'md:px-4 px-0'
-      }`}>
+      <main className='w-full'>
         {children}
       </main>
     </div>
