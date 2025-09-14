@@ -32,6 +32,13 @@ export class ReviewsController {
     return this.reviewsService.create(clientId, dto);
   }
 
+  @ApiOperation({ summary: 'Obtener reseña por viaje' })
+  @ApiParam({ name: 'travelId', description: 'ID del viaje' })
+  @Get('travel/:travelId')
+  async getByTravel(@Param('travelId') travelId: string) {
+    return this.reviewsService.findByTravel(travelId);
+  }
+
   @ApiOperation({ summary: 'Obtener reseñas de un drover' })
   @ApiParam({ name: 'id', description: 'ID del drover' })
   @Get('drover/:id')

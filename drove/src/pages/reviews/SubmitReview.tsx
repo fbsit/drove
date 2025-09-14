@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
+import ApiService from '@/services/api';
 
 // Minimal API service for posting a review
 async function postReview(payload: { travelId: string; rating: number; comment?: string }) {
@@ -22,18 +23,36 @@ const SubmitReview: React.FC = () => {
   const [rating, setRating] = useState<number>(5);
   const [comment, setComment] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [existing, setExisting] = useState<any | null>(null);
+  const [droverName, setDroverName] = useState<string>('');
 
   useEffect(() => {
-    if (!travelId) {
-      toast({ variant: 'destructive', title: 'Enlace inválido', description: 'Falta el identificador del viaje.' });
-    }
+    (async () => {
+      if (!travelId) {
+        setIsLoading(false);
+        toast({ variant: 'destructive', title: 'Enlace inválido', description: 'Falta el identificador del viaje.' });
+        return;
+      }
+      try {
+        // 1) Traer info del viaje para mostrar drover
+        const travel = await ApiService.get<any>(`/travels/${encodeURIComponent(travelId)}`);
+        setDroverName(travel?.drover?.contactInfo?.fullName || 'tu drover');
+        // 2) Comprobar si ya existe reseña
+        const review = await ApiService.get<any>(`/reviews/travel/${encodeURIComponent(travelId)}`);
+        if (review && review.id) setExisting(review);
+      } catch {}
+      finally {
+        setIsLoading(false);
+      }
+    })();
   }, [travelId]);
 
   const handleSubmit = async () => {
     if (!travelId) return;
     setIsSubmitting(true);
     try {
-      await postReview({ travelId, rating, comment: comment.trim() || undefined });
+      await ApiService.post('/reviews', { travelId, rating, comment: comment.trim() || undefined });
       toast({ title: '¡Gracias por tu reseña!' });
       navigate('/');
     } catch (e: any) {
@@ -50,22 +69,32 @@ const SubmitReview: React.FC = () => {
           <CardTitle className="text-white">Califica tu traslado</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="text-white/80 text-sm">Tu opinión nos ayuda a mejorar.</div>
-          <div className="flex gap-2">
-            {[1,2,3,4,5].map(n => (
-              <button key={n} onClick={() => setRating(n)} className={`h-10 w-10 rounded-full border ${rating >= n ? 'bg-yellow-400 text-black' : 'bg-transparent text-white border-white/30'}`}>{n}</button>
-            ))}
-          </div>
-          <textarea
-            className="w-full bg-white/10 border border-white/20 rounded-md p-3 text-white"
-            rows={4}
-            placeholder="Comentario (opcional)"
-            value={comment}
-            onChange={e => setComment(e.target.value)}
-          />
-          <Button onClick={handleSubmit} disabled={!travelId || isSubmitting} className="bg-[#6EF7FF] text-[#22142A] hover:bg-[#6EF7FF]/80 w-full">
-            {isSubmitting ? 'Enviando…' : 'Enviar reseña'}
-          </Button>
+          {isLoading ? (
+            <div className="text-white/70">Cargando…</div>
+          ) : existing ? (
+            <div className="text-white/80">
+              Ya registraste una reseña para este viaje. ¡Gracias!
+            </div>
+          ) : (
+            <>
+              <div className="text-white/80 text-sm">Tu opinión sobre {droverName} nos ayuda a mejorar.</div>
+              <div className="flex gap-2">
+                {[1,2,3,4,5].map(n => (
+                  <button key={n} onClick={() => setRating(n)} className={`h-10 w-10 rounded-full border ${rating >= n ? 'bg-yellow-400 text-black' : 'bg-transparent text-white border-white/30'}`}>{n}</button>
+                ))}
+              </div>
+              <textarea
+                className="w-full bg-white/10 border border-white/20 rounded-md p-3 text-white"
+                rows={4}
+                placeholder="Comentario (opcional)"
+                value={comment}
+                onChange={e => setComment(e.target.value)}
+              />
+              <Button onClick={handleSubmit} disabled={!travelId || isSubmitting} className="bg-[#6EF7FF] text-[#22142A] hover:bg-[#6EF7FF]/80 w-full">
+                {isSubmitting ? 'Enviando…' : 'Enviar reseña'}
+              </Button>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

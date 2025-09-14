@@ -764,6 +764,7 @@ export class TravelsService {
     }
 
     setTimeout(() => {
+      const reviewPath = `/resena?travelId=${encodeURIComponent(travel.id)}`;
       this.resend.sendReviewRequestEmail(
         travel?.client?.email,
         travel?.client.contactInfo.fullName,
@@ -771,7 +772,7 @@ export class TravelsService {
         travel?.typeVehicle ?? 'Vehículo no especificado',
         travel?.startAddress.city,
         travel?.endAddress.city,
-        'link',
+        reviewPath,
       );
     }, 1000);
 

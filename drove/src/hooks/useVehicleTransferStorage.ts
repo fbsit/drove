@@ -43,7 +43,15 @@ export const useVehicleTransferStorage = () => {
             address: data.pickupDetails?.destinationAddress?.address || data.destinationAddress || '',
           },
           pickupTime: data.pickupDetails?.pickupTime || data.transferTime || '',
-          pickupDate: (data.pickupDetails?.pickupDate || data.transferDate || new Date()).toISOString(),
+          // Enviar fecha como cadena yyyy-MM-dd (fecha pura) para que el backend la
+          // guarde en columna DATE sin cambios por huso horario
+          pickupDate: (() => {
+            const d = (data.pickupDetails?.pickupDate || data.transferDate || new Date());
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+          })(),
         },
         senderDetails: {
           fullName: data.senderDetails?.fullName || data.name || '',

@@ -26,6 +26,11 @@ export class ReviewsService {
     private readonly resend: ResendService,
   ) {}
 
+  async findByTravel(travelId: string): Promise<Review | null> {
+    const existing = await this.reviewRepo.findOne({ where: { travelId } });
+    return existing ?? null;
+  }
+
   async create(clientId: string, dto: CreateReviewDto): Promise<Review> {
     const travel = await this.travelsRepo.findOne({
       where: { id: dto.travelId },
@@ -35,6 +40,10 @@ export class ReviewsService {
       throw new ForbiddenException('No eres cliente de este viaje');
     if (!travel.droverId)
       throw new BadRequestException('Viaje sin drover asignado');
+
+    // Evitar reseñas duplicadas por viaje
+    const already = await this.reviewRepo.findOne({ where: { travelId: dto.travelId } });
+    if (already) throw new BadRequestException('Ya existe una reseña para este viaje');
 
     const review = this.reviewRepo.create({
       clientId,

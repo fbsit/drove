@@ -94,14 +94,36 @@ const PickupVerification: React.FC = () => {
   const [accessWarning, setAccessWarning] = useState<string | null>(null);
   const [accessBlocked, setAccessBlocked] = useState<boolean>(false);
 
+  // Construye una Date en hora local a partir de "YYYY-MM-DD" + "HH:mm",
+  // evitando interpretaciones en UTC que pueden restar un día según la zona.
+  const buildLocalDateTime = (dateStr?: string, timeStr?: string): Date | null => {
+    if (!dateStr) return null;
+    const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/;
+    const time = String(timeStr || '00:00');
+    const [hh = '00', mm = '00'] = time.split(':');
+    const hour = Number(hh);
+    const minute = Number(mm);
+    const m = dateOnly.exec(String(dateStr));
+    if (m) {
+      const year = Number(m[1]);
+      const monthIndex = Number(m[2]) - 1;
+      const day = Number(m[3]);
+      return new Date(year, monthIndex, day, hour, minute, 0, 0);
+    }
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      d.setHours(hour, minute, 0, 0);
+      return d;
+    }
+    return null;
+  };
+
   const scheduledPickupText = React.useMemo(() => {
     try {
       const dateStr = (transfer as any)?.travelDate || (transfer as any)?.pickupDetails?.pickupDate;
       const timeStr = (transfer as any)?.travelTime || (transfer as any)?.pickupDetails?.pickupTime;
-      if (!dateStr || !timeStr) return '';
-      const dt = new Date(dateStr);
-      const [hh = '00', mm = '00'] = String(timeStr).split(':');
-      dt.setHours(Number(hh), Number(mm), 0, 0);
+      const dt = buildLocalDateTime(dateStr, timeStr);
+      if (!dt) return '';
       return new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' }).format(dt);
     } catch {
       return '';
@@ -143,9 +165,8 @@ const PickupVerification: React.FC = () => {
         const dateStr = data?.travelDate || data?.pickupDetails?.pickupDate;
         const timeStr = data?.travelTime || data?.pickupDetails?.pickupTime;
         if (dateStr && timeStr) {
-          const dt = new Date(dateStr);
-          const [hh = '00', mm = '00'] = String(timeStr).split(':');
-          dt.setHours(Number(hh), Number(mm), 0, 0);
+          const dt = buildLocalDateTime(dateStr, timeStr);
+          if (!dt) { setIsLoading(false); return; }
 
           const now = new Date();
           const minus30 = new Date(now.getTime() - 30 * 60 * 1000);

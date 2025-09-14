@@ -17,7 +17,15 @@ const SimpleDatePicker: React.FC<SimpleDatePickerProps> = ({
   const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const dateValue = event.target.value;
     if (dateValue) {
-      onChange(new Date(dateValue));
+      // Avoid timezone shifts when parsing "yyyy-MM-dd" by constructing
+      // a local Date at noon instead of relying on UTC parsing of the string.
+      // Example: "2025-09-14" -> new Date(2025, 8, 14, 12, 0, 0)
+      const [yearStr, monthStr, dayStr] = dateValue.split('-');
+      const year = Number(yearStr);
+      const monthIndex = Number(monthStr) - 1; // 0-based
+      const day = Number(dayStr);
+      const safeLocalDate = new Date(year, monthIndex, day, 12, 0, 0, 0);
+      onChange(safeLocalDate);
     } else {
       onChange(undefined);
     }
