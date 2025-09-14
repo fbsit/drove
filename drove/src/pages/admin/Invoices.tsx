@@ -139,7 +139,7 @@ const Invoices: React.FC = () => {
   }
 
   const changeStatusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: 'emitida' | 'anticipo' | 'pagada' }) =>
+    mutationFn: ({ id, status }: { id: string; status: 'emitida' | 'anticipo' | 'pagada' | 'rejected' | 'voided' }) =>
       AdminService.updateInvoiceStatus(id, status),
     onSuccess: () => refetchInvoices(),
   });
@@ -182,6 +182,12 @@ const Invoices: React.FC = () => {
                 }
                 onRevertStatus={(id) =>
                   changeStatusMutation.mutate({ id, status: 'emitida' })
+                }
+                onReject={(id) =>
+                  changeStatusMutation.mutate({ id, status: 'rejected' })
+                }
+                onCancel={(id) =>
+                  changeStatusMutation.mutate({ id, status: 'voided' })
                 }
               />
             ))}

@@ -185,7 +185,7 @@ export class AdminService {
     return await ApiService.post(`/admin/invoices/${invoiceId}/issue`, {});
   }
 
-  static async updateInvoiceStatus(invoiceId: string, status: 'emitida' | 'anticipo' | 'pagada'): Promise<void> {
+  static async updateInvoiceStatus(invoiceId: string, status: 'emitida' | 'anticipo' | 'pagada' | 'rejected' | 'voided'): Promise<void> {
     await ApiService.put(`/admin/invoices/${invoiceId}/status`, { status });
   }
 

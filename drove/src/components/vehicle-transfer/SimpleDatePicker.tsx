@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
@@ -16,8 +17,7 @@ const SimpleDatePicker: React.FC<SimpleDatePickerProps> = ({
   const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const dateValue = event.target.value;
     if (dateValue) {
-      const [year, month, day] = dateValue.split("-").map(Number);
-      onChange(new Date(year, month - 1, day)); // crea la fecha en local
+      onChange(new Date(dateValue));
     } else {
       onChange(undefined);
     }

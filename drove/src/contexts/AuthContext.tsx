@@ -68,7 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             // Primer hidrato sin dato de backend: usar hora actual como aproximación
             localStorage.setItem('last_login_at', new Date().toISOString());
           }
-        } catch { }
+        } catch {}
       } else {
         authState.setUser(null);
       }
@@ -89,16 +89,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log("Respuesta del login:", res);
 
       authState.setSession({ access_token: res.access_token, expiresIn: res.expiresIn });
-
+      
       localStorage.setItem('auth_user_email', data.email);
       console.log("Usuario obtenido del login:", res.user);
-
+  
       // IMPORTANTE: Esperar a obtener los datos completos del usuario
       try {
         console.log("Obteniendo datos completos del usuario...");
         const userData = await AuthService.getCurrentUser();
         console.log("Datos completos del usuario:", userData);
-
+        
         if (userData) {
           authState.setUser(userData as any);
           localStorage.setItem('auth_user_role', (userData as any).role || '');
@@ -106,7 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           localStorage.setItem('auth_user_email', (userData as any).email);
           localStorage.setItem('auth_user_name', (userData as any).full_name || '');
           localStorage.setItem('auth_user_type', (userData as any).user_type || '');
-
+          
           console.log("✅ Usuario completo establecido:", userData);
           getRedirectPathForUser();
         } else {
@@ -116,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         console.error('❌ Error al obtener datos completos del usuario:', e);
         throw e; // Re-lanzar el error para que sea manejado por el componente Login
       }
-
+      
       toast({
         title: 'Inicio de sesión exitoso',
         description: 'Has iniciado sesión correctamente',
@@ -125,7 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error('Error en login:', err);
 
       let errorMessage = 'Credenciales incorrectas';
-
+      
       if (err?.status === 401) {
         if (err.message === 'Email no verificado') {
           throw err;
@@ -164,7 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         localStorage.removeItem('auth_user_id');
         localStorage.removeItem('auth_user_name');
         localStorage.removeItem('auth_user_type');
-      } catch { }
+      } catch {}
       authState.setUser(null);
       authState.setSession(null);
       toast({ title: 'Sesión cerrada', description: 'Has cerrado sesión.' });
@@ -201,7 +201,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         localStorage.removeItem('auth_user_id');
         localStorage.removeItem('auth_user_name');
         localStorage.removeItem('auth_user_type');
-      } catch { }
+      } catch {}
       authState.setUser(null);
       authState.setSession(null);
       navigate('/');
@@ -266,7 +266,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const getRedirectPathForUser = (): string => {
     console.log("🎯 getRedirectPathForUser - Usuario actual:", authState.user);
     console.log("🎯 getRedirectPathForUser - Role:", authState.user?.role);
-
+    
     const rawRole = authState.user?.role || '';
     const role = rawRole.toLowerCase();
     switch (role) {

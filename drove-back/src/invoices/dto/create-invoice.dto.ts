@@ -17,6 +17,7 @@ export enum InvoiceStatus {
   SENT = 'SENT',
   PAID = 'PAID',
   VOID = 'VOID',
+  REJECTED = 'REJECTED',
 }
 
 export enum PaymentMethod {

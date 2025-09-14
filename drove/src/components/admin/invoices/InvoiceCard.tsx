@@ -184,7 +184,15 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
           </Button>
         )}
         <div className="flex flex-row flex-wrap gap-4 items-center text-sm justify-center">
-          <Button variant="link" className="text-white hover:text-white/80 p-0 h-auto">Asignar</Button>
+          {!(invoice as any)?.droverName && (
+            <Button
+              variant="link"
+              className="text-white hover:text-white/80 p-0 h-auto"
+              onClick={() => window.open(`/admin/asignar/${invoice.transferId || invoice.id}`, '_self')}
+            >
+              Asignar
+            </Button>
+          )}
           <Button
             variant="link"
             className="text-white/80 hover:text-white p-0 h-auto flex items-center gap-1"
@@ -240,7 +248,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
         <div className="flex flex-row gap-6 items-center mt-1 text-sm justify-center">
           <button
             className="flex items-center gap-2 text-red-400 hover:text-red-300"
-            onClick={() => onReject?.(invoice.id)}
+            onClick={() => setConfirmDialog({ open: true, type: "reject" })}
             title="Rechazar"
           >
             <Ban size={16} />
@@ -248,7 +256,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
           </button>
           <button
             className="flex items-center gap-2 text-orange-400 hover:text-orange-300"
-            onClick={() => onCancel?.(invoice.id)}
+            onClick={() => setConfirmDialog({ open: true, type: "void" })}
             title="Anular"
           >
             <AlertTriangle size={16} />
@@ -289,13 +297,33 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
             <p className="text-white/70 mb-3">
               Adjunta el PDF emitido oficialmente en Hacienda para este traslado.
             </p>
+            {/* Resumen mínimo de la factura para identificarla */}
+            {(() => {
+              const anyInv: any = invoice as any;
+              const amount = anyInv.amount ?? anyInv.total ?? anyInv.total_with_tax ?? anyInv.price ?? anyInv.totalPrice;
+              return (
+                <div className="mb-3 text-sm text-white/80 flex flex-col items-center gap-1">
+                  <div><b>Factura:</b> INV-{String(invoice.id).padStart(6,'0')}</div>
+                  {invoice.invoiceDate && <div><b>Fecha:</b> {invoice.invoiceDate}</div>}
+                  {(invoice.client || invoice.client_name) && (
+                    <div className="truncate max-w-[280px]"><b>Cliente:</b> {invoice.client || invoice.client_name}</div>
+                  )}
+                  {typeof amount !== 'undefined' && (
+                    <div><b>Monto:</b> €{Number(amount).toLocaleString()}</div>
+                  )}
+                </div>
+              );
+            })()}
             <InvoicePDFUpload
               disabled={false}
               onUpload={async file => {
-                await onUploadPDF(file, invoice.invoiceId);
+                const res = await onUploadPDF(file, String(invoice.id));
+                if (res === 'success') {
+                  handleUploadSuccess();
+                }
+                return res;
               }}
             />
-            <div className="text-xs text-white/40 mt-2">Simulación: los cambios se guardan temporalmente.</div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setUploadDialog(false)} className="rounded-2xl">
@@ -314,7 +342,11 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
                 ? "Confirmar pago"
                 : confirmDialog.type === "anticipo"
                   ? "Confirmar anticipo bancario"
-                  : "Revertir estado"}
+                  : confirmDialog.type === "reject"
+                    ? "Confirmar rechazo de factura"
+                    : confirmDialog.type === "void"
+                      ? "Confirmar anulación de factura"
+                      : "Revertir estado"}
             </DialogTitle>
           </DialogHeader>
           <div className="py-2">
@@ -323,6 +355,12 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
             )}
             {confirmDialog.type === "anticipo" && (
               <span>¿Seguro que deseas marcar esta factura como <b>anticipada por banco</b>?</span>
+            )}
+            {confirmDialog.type === "reject" && (
+              <span>¿Seguro que deseas <b>rechazar</b> esta factura? El estado será "rejected".</span>
+            )}
+            {confirmDialog.type === "void" && (
+              <span>¿Seguro que deseas <b>anular</b> esta factura? El estado será "voided".</span>
             )}
             {confirmDialog.type === "revertir" && (
               <span>¿Estás seguro de que deseas revertir esta factura a su estado inicial (emitida)?</span>
@@ -341,6 +379,20 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
                   toast({
                     title: "Estado actualizado",
                     description: `Factura marcada como ${confirmDialog.type === "pagada" ? "pagada" : "anticipada"}.`,
+                    duration: 1400,
+                  });
+                } else if (confirmDialog.type === "reject") {
+                  onReject?.(invoice.id);
+                  toast({
+                    title: "Invoice rejected",
+                    description: "Estado cambiado a rejected.",
+                    duration: 1400,
+                  });
+                } else if (confirmDialog.type === "void") {
+                  onCancel?.(invoice.id);
+                  toast({
+                    title: "Invoice voided",
+                    description: "Estado cambiado a voided.",
                     duration: 1400,
                   });
                 } else if (confirmDialog.type === "revertir") {

@@ -1077,13 +1077,22 @@ export class ResendService {
   ) => {
     const template = this.loadTemplate('questionReview');
 
+    // Asegurar URL absoluta y clickeable
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const normalizedLink = (() => {
+      if (!reviewLink) return `${baseUrl.replace(/\/$/, '')}/resena`;
+      if (/^https?:\/\//i.test(reviewLink)) return reviewLink;
+      const sep = reviewLink.startsWith('/') ? '' : '/';
+      return `${baseUrl.replace(/\/$/, '')}${sep}${reviewLink}`;
+    })();
+
     const html = template({
       name,
       transfer_date: transferDate,
       vehicle,
       origin,
       destination,
-      review_link: reviewLink,
+      review_link: normalizedLink,
     });
 
     if (!this.client) return false;

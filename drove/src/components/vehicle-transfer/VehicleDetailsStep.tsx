@@ -31,7 +31,7 @@ const VehicleDetailsStep: React.FC<VehicleDetailsStepProps> = ({ form }) => {
         render={({ field }) => (
           <FormItem>
             <FormLabel className="text-white font-medium">Tipo de vehículo</FormLabel>
-            <Select
+            <Select 
               onValueChange={(value) => {
                 const currentDetails = field.value || {};
                 field.onChange({
@@ -41,11 +41,11 @@ const VehicleDetailsStep: React.FC<VehicleDetailsStepProps> = ({ form }) => {
                   brand: "",
                   model: ""
                 });
-              }}
+              }} 
               defaultValue={(field.value as any)?.type || "coche"}
             >
               <FormControl>
-                <SelectTrigger
+                <SelectTrigger 
                   className={cn(
                     "w-full max-w-full pl-3 text-left font-normal",
                     "bg-transparant text-white"
@@ -65,7 +65,7 @@ const VehicleDetailsStep: React.FC<VehicleDetailsStepProps> = ({ form }) => {
       />
 
       <YearSelector form={form} />
-
+      
       {vehicleDetails.year && (
         <BrandSelector form={form} />
       )}

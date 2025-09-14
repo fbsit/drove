@@ -1,19 +1,16 @@
+
 import React from 'react';
 import { MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSupportChat } from '@/contexts/SupportChatContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const DroverSupportChatFab = () => {
   const { openChat } = useSupportChat();
+  const { user, isAuthenticated } = useAuth();
 
-  // Leer directamente desde localStorage
-  const role = localStorage.getItem('auth_user_role')?.toLowerCase();
-  const token = localStorage.getItem('auth_token');
-
-  // Consideramos autenticado si hay token y role válido
-  const isAuthenticated = Boolean(token);
-
-  if (!isAuthenticated || (role !== 'client' && role !== 'drover')) {
+  // Mostrar para usuarios autenticados que sean clientes o drovers
+  if (!isAuthenticated || !user || (user.user_type !== 'client' && user.user_type !== 'drover')) {
     return null;
   }
 
@@ -22,10 +19,10 @@ const DroverSupportChatFab = () => {
       <Button
         onClick={openChat}
         size="lg"
-        className="rounded-full w-14 h-14 bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] shadow-lg p-0"
+        className="rounded-full w-14 h-14 bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] shadow-lg"
         aria-label="Abrir chat de soporte"
       >
-        <MessageCircle className='!h-6 !w-6' />
+        <MessageCircle size={24} />
       </Button>
     </div>
   );

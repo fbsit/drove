@@ -205,6 +205,31 @@ export class AdminService {
     return true;
   }
 
+  /** Cambiar estado de factura */
+  async updateInvoiceStatus(id: number, status: 'DRAFT'|'SENT'|'PAID'|'VOID'|'REJECTED'|string): Promise<boolean> {
+    const invoice = await this.invoiceRepo.findOne({ where: { id } });
+    if (!invoice) throw new NotFoundException();
+    const normalized = String(status || '').toUpperCase();
+    // normalizar variantes comunes desde el front
+    const map: Record<string, InvoiceStatus> = {
+      'EMITIDA': InvoiceStatus.SENT,
+      'ANTICIPO': InvoiceStatus.SENT,
+      'PAGADA': InvoiceStatus.PAID,
+      'PAID': InvoiceStatus.PAID,
+      'SENT': InvoiceStatus.SENT,
+      'DRAFT': InvoiceStatus.DRAFT,
+      'VOID': InvoiceStatus.VOID,
+      'VOIDED': InvoiceStatus.VOID,
+      'REJECTED': InvoiceStatus.REJECTED,
+      'RECHAZADA': InvoiceStatus.REJECTED,
+      'ANULADA': InvoiceStatus.VOID,
+    };
+    const finalStatus = map[normalized] ?? (InvoiceStatus as any)[normalized] ?? InvoiceStatus.DRAFT;
+    invoice.status = finalStatus;
+    await this.invoiceRepo.save(invoice);
+    return true;
+  }
+
   /* ─────────── Traslados ─────────── */
 
   async getAdminTransfers(filters?: {

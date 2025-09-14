@@ -195,12 +195,12 @@ export default function ClientTripDetail() {
       {/* CONTENEDOR PRINCIPAL CON CENTRADO CORRECTO */}
       <div className="w-full min-h-screen bg-[#22142A]">
         {/* Barra gamificada de progreso */}
-        <div className="">
+        <div className="pt-4 md:pt-8 px-4 md:px-10">
           <TransferStepsBar trip={trip} />
         </div>
 
         {/* CONTENIDO PRINCIPAL CENTRADO */}
-        <div className="w-full space-y-6 md:space-y-10">
+        <div className="w-full max-w-6xl mx-auto px-4 md:px-6 pt-6 space-y-6 md:space-y-10 pb-20">
           {/* Banner de reprogramación */}
           {trip.isRescheduled && (
             <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/10 border border-amber-500/30 rounded-2xl p-4 md:p-6">
@@ -241,7 +241,7 @@ export default function ClientTripDetail() {
           {/* Título principal + estado */}
           <section className="flex flex-col items-center text-center space-y-3 md:space-y-2 md:flex-row md:items-center md:justify-between md:text-left">
             <div className="w-full md:w-auto flex flex-col items-center md:items-start">
-              <h1 className="text-xl md:text-4xl font-montserrat font-bold text-white tracking-wide text-center md:text-left leading-tight">
+              <h1 className="text-2xl md:text-4xl font-montserrat font-bold text-white tracking-wide text-center md:text-left leading-tight">
                 Traslado <span className="text-[#6EF7FF] font-montserrat font-bold">#{trip.id}</span>
               </h1>
               <div className="mt-3 md:mt-2 flex flex-col md:flex-row items-center gap-2">
@@ -258,15 +258,15 @@ export default function ClientTripDetail() {
 
           {/* Resumen cards: Vehículo, Precio, Estado */}
           <section className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-            <div className="bg-white/90 rounded-2xl gap-4 flex flex-col shadow-xl p-6 ">
-              <div className="flex items-center justify-center gap-3">
-                <Car className="text-[#22142A]" size={25} />
-                <span className="text-lg font-montserrat font-bold text-[#22142A]">Vehículo</span>
+            <div className={"rounded-2xl shadow-xl p-6 " + glassCardClass("blue")}>
+              <div className="flex items-center gap-3 mb-2">
+                <Car className="text-[#22142A]" size={20} />
+                <span className="font-montserrat font-bold text-[#22142A]">Vehículo</span>
               </div>
-              <div className="text-[#22142A] font-montserrat font-bold text-xl ">
+              <div className="text-[#22142A] font-montserrat font-bold text-lg mb-1">
                 {trip?.brandVehicle} {trip?.modelVehicle}
               </div>
-              <div className="text-[#22142A] flex-1 flex flex-col gap-4 mt-auto text-sm justify-end text-left">
+              <dl className="text-[#22142A] text-sm mb-1">
                 <div className="flex items-center justify-between">
                   <dt>Marca y Modelo:</dt>
                   <dd className="font-semibold">{trip?.brandVehicle} {trip?.modelVehicle}</dd>
@@ -275,22 +275,25 @@ export default function ClientTripDetail() {
                   <dt>Año:</dt>
                   <dd className="font-semibold">{trip?.yearVehicle}</dd>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mt-1">
                   <dt>Matrícula:</dt>
                   <dd>
-                    <span className="font-bold">{trip?.patentVehicle}</span>
+                    <span className="font-bold text-[#6EF7FF] underline">{trip?.patentVehicle}</span>
                   </dd>
                 </div>
-                <div className="flex items-center justify-between flex-wrap">
+                <div className="flex items-center justify-between mt-1">
                   <dt>VIN:</dt>
                   <dd><span className="font-mono tsext-xs">{trip?.bastidor}</span></dd>
                 </div>
-              </div>
+              </dl>
             </div>
 
             <div
-              className="rounded-2xl shadow-xl p-6 flex flex-col items-center justify-center text-center bg-white/90"
-
+              className="rounded-2xl shadow-xl p-6 flex flex-col items-center justify-center text-center"
+              style={{
+                background:
+                  "linear-gradient(135deg, #e8fbff 70%, #b9f7d7 60%)",
+              }}
             >
               <div className="flex items-center gap-2">
                 <CreditCard style={{ color: "#1264a3" }} size={22} />
@@ -299,17 +302,17 @@ export default function ClientTripDetail() {
                 </span>
               </div>
               <div
-                className="font-montserrat font-bold text-xl md:text-3xl mt-2"
+                className="font-montserrat font-bold text-3xl mt-2"
                 style={{ color: "#0A2B4B" }}
               >
                 €{trip?.totalPrice.toLocaleString("es-ES", { minimumFractionDigits: 2 })}
               </div>
-              <div className="text-xs text-center font-montserrat" style={{ color: "#1264a3" }}>
+              <div className="text-xs mt-1 text-center font-montserrat" style={{ color: "#1264a3" }}>
                 Este es el precio total a abonar por el servicio.
               </div>
 
               <div className="flex flex-col gap-1 mt-4 items-center">
-                <span className={`text-xs font-montserrat p-3 rounded-[100px] ${pagoTarjeta ? "text-green-200" : "text-red-400"}`}>
+                <span className={`text-xs font-montserrat mt-1 px-2 py-1 rounded-xl ${pagoTarjeta ? "bg-green-600/40 text-green-200" : "bg-yellow-700/30 text-yellow-200"}`}>
                   Estado de pago: {trip.status === 'PAID' ? "Pagado" : "Pendiente de pago"}
                 </span>
                 <button
@@ -322,7 +325,8 @@ export default function ClientTripDetail() {
             </div>
 
             <div
-              className="rounded-2xl shadow-xl p-6 flex flex-col items-center justify-between text-center bg-white/90"
+              className="rounded-2xl shadow-xl p-6 flex flex-col items-center justify-center text-center"
+              style={{ background: 'linear-gradient(135deg, #ece9fb 80%, #e6e6fa 40%)' }}
             >
               <div className="flex items-center gap-2">
                 <Shield style={{ color }} size={22} />
@@ -336,7 +340,7 @@ export default function ClientTripDetail() {
               </div>
 
               {hint && (
-                <div className="text-xs font-montserrat" style={{ color }}>
+                <div className="text-xs mt-1 font-montserrat" style={{ color }}>
                   {hint}
                 </div>
               )}
@@ -366,35 +370,36 @@ export default function ClientTripDetail() {
                     <span className="font-montserrat font-bold text-[#d95fef] block md:inline">Destino:</span>
                     <span className="text-white block md:inline md:ml-2">{trip?.endAddress?.address}</span>
                   </div>
-                  <div className="flex flex-wrap gap-4 mt-4 justify-center md:justify-start">
+                  <div className="flex gap-4 mt-4 justify-center md:justify-start">
                     <div className="bg-white/10 rounded-xl px-4 py-3 flex flex-col items-center">
-                      <span className="text-lg text-white/60 font-montserrat">Distancia</span>
+                      <span className="text-xs text-white/60 font-montserrat">Distancia</span>
                       <span className="font-bold text-[#6EF7FF] text-lg font-montserrat">{trip?.distanceTravel} km</span>
                     </div>
                     <div className="bg-white/10 rounded-xl px-4 py-3 flex flex-col items-center">
-                      <span className="text-lg text-white/60 font-montserrat">Duración</span>
+                      <span className="text-xs text-white/60 font-montserrat">Duración</span>
                       <span className="font-bold text-[#6EF7FF] text-lg font-montserrat">
                         {trip?.travelTime} horas
                       </span>
                     </div>
-                    {/* Información de recogida con indicador de reprogramación */}
-                    <div className={`px-4 py-3 rounded-xl ${trip?.isRescheduled ? 'bg-amber-500/10 border border-amber-500/20' : 'bg-white/10'}`}>
-                      <div className="flex items-center gap-2 justify-center md:justify-start">
-                        <Clock className="w-5 h-5 text-[#6EF7FF]" />
-                        <span className="text-white/60 text-lg font-montserrat ">RECOGIDA PROGRAMADA</span>
-                        {trip?.isRescheduled && (
-                          <span className="text-amber-400 text-xs font-medium">(ACTUALIZADA)</span>
-                        )}
-                      </div>
-                      <div className="font-bold text-[#6EF7FF] text-lg font-montserrat">
-                        {formatFecha(trip?.travelDate)} a las {trip?.travelTime ?? '--:--'}
-                      </div>
+                  </div>
+
+                  {/* Información de recogida con indicador de reprogramación */}
+                  <div className={`mt-4 p-4 rounded-xl ${trip?.isRescheduled ? 'bg-amber-500/10 border border-amber-500/20' : 'bg-white/10'}`}>
+                    <div className="flex items-center gap-2 mb-2 justify-center md:justify-start">
+                      <Clock className="w-5 h-5 text-[#6EF7FF]" />
+                      <span className="text-white/60 text-sm font-montserrat">RECOGIDA PROGRAMADA</span>
                       {trip?.isRescheduled && (
-                        <div className="mt-2 text-xs text-amber-400 text-center md:text-left">
-                          Fecha original: {formatFecha(trip?.originalPickupDate!)} a las {trip?.originalPickupTime}
-                        </div>
+                        <span className="text-amber-400 text-xs font-medium">(ACTUALIZADA)</span>
                       )}
                     </div>
+                    <div className="text-white font-bold text-lg text-center md:text-left">
+                      {formatFecha(trip?.travelDate)} a las {trip?.travelTime ?? '--:--'}
+                    </div>
+                    {trip?.isRescheduled && (
+                      <div className="mt-2 text-xs text-amber-400 text-center md:text-left">
+                        Fecha original: {formatFecha(trip?.originalPickupDate!)} a las {trip?.originalPickupTime}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -434,11 +439,11 @@ export default function ClientTripDetail() {
           </section>
 
           {/* Remitente / DROVER / Receptor cards */}
-          <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="rounded-2xl bg-white/90 shadow p-6 flex flex-col items-center justify-between border-none min-h-[220px] text-center">
-              <span className="text-[#22142A] text-lg font-montserrat font-bold mb-3">Remitente</span>
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="rounded-2xl bg-[#cdc6d6]/85 shadow p-6 flex flex-col items-center justify-center border-none min-h-[220px] text-center">
+              <span className="text-[#22142A] text-lg font-montserrat font-bold mb-2">Remitente</span>
               <hr className="w-full border-[#22142A]/20 mb-3" />
-              <div className="text-[#22142A] font-montserrat font-bold md:text-xl mb-2">{trip?.personDelivery?.fullName}</div>
+              <div className="text-[#22142A] font-montserrat font-bold text-xl mb-2">{trip?.personDelivery?.fullName}</div>
               <div className="text-[#22142A]/80 text-base font-montserrat mb-2">{trip?.personDelivery?.dni}</div>
               <div className="flex flex-col text-sm text-[#22142A]/70 font-montserrat gap-1">
                 <span>{trip?.personDelivery?.email}</span>
@@ -446,23 +451,22 @@ export default function ClientTripDetail() {
               </div>
             </div>
 
-            <div className="rounded-2xl bg-white/90 shadow p-6 flex flex-col items-center justify-center border-none min-h-[220px]">
+            <div className="rounded-2xl bg-[#cdc6d6]/85 shadow p-6 flex flex-col items-center justify-center border-none min-h-[220px]">
               <span className="text-[#22142A] text-lg font-montserrat font-bold mb-3">Drover asignado</span>
-              <hr className="w-full border-[#22142A]/20 mb-3" />
               <div className="flex flex-col items-center w-full gap-2">
                 <div className="bg-[#b5eaff] text-[#22142A] rounded-full w-14 h-14 flex items-center justify-center font-montserrat font-bold text-2xl mb-2">
-                  {trip?.drover?.contactInfo?.fullName ?? "Drover"}
+                  {trip?.drover?.contactInfo?.fullName ?? "D"}
                 </div>
-                <div className="text-[#22142A] font-montserrat font-bold md:text-xl text-center">{trip?.drover?.contactInfo?.fullName}</div>
+                <div className="text-[#22142A] font-montserrat font-bold text-xl text-center">{trip?.drover?.contactInfo?.fullName}</div>
                 <div className="text-[#22142A]/80 text-base font-montserrat text-center">{trip?.drover?.contactInfo.phone || trip?.drover?.contactInfo.phones[0]}</div>
                 <div className="text-[#22142A]/70 text-sm font-montserrat text-center">{trip?.drover?.email}</div>
               </div>
             </div>
 
-            <div className="rounded-2xl bg-white/90 shadow p-6 flex flex-col items-center justify-between border-none min-h-[220px] text-center">
+            <div className="rounded-2xl bg-[#cdc6d6]/85 shadow p-6 flex flex-col items-center justify-center border-none min-h-[220px] text-center">
               <span className="text-[#22142A] text-lg font-montserrat font-bold mb-2">Receptor</span>
               <hr className="w-full border-[#22142A]/20 mb-3" />
-              <div className="text-[#22142A] font-montserrat font-bold md:text-xl mb-2">{trip?.personReceive?.fullName}</div>
+              <div className="text-[#22142A] font-montserrat font-bold text-xl mb-2">{trip?.personReceive?.fullName}</div>
               <div className="text-[#22142A]/80 text-base font-montserrat mb-2">{trip?.personReceive?.dni}</div>
               <div className="flex flex-col text-sm text-[#22142A]/70 font-montserrat gap-1">
                 <span>{trip?.personReceive?.email}</span>
@@ -558,7 +562,7 @@ export default function ClientTripDetail() {
             </DroveButton>
             {trip?.invoice?.urlPDF && (
               <DroveButton variant="default" size="lg" icon={<Download />} onClick={handleFacturaDownload} className="w-full">
-                Ver PDF Factura
+                Ver PDF Factura 
               </DroveButton>
             )}
 

@@ -1,16 +1,18 @@
 
 import React, { useRef, useState } from "react";
-import { Upload, FileText } from "lucide-react";
+import { Upload, FileText, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface InvoicePDFUploadProps {
-  onUpload: (file: File) => Promise<"success" | "exists" | "error">;
+  onUpload: (file: File) => Promise<{ status: "success" | "exists" | "error"; invoiceId?: string; url?: string }>;
   disabled?: boolean;
 }
 
 const InvoicePDFUpload: React.FC<InvoicePDFUploadProps> = ({ onUpload, disabled }) => {
   const [fileName, setFileName] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [invoiceId, setInvoiceId] = useState<string | null>(null);
+  const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null);
   const [msg, setMsg] = useState<{type: "success" | "error" | "exists"; text: string} | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -24,11 +26,18 @@ const InvoicePDFUpload: React.FC<InvoicePDFUploadProps> = ({ onUpload, disabled 
     }
     setFileName(file.name);
     setUploading(true);
-    // TODO conectar backend
     const res = await onUpload(file);
-    if (res === "success") setMsg({type: "success", text: "Factura subida correctamente."});
-    if (res === "exists") setMsg({type: "exists", text: "Este traslado ya tiene una factura."});
-    if (res === "error") setMsg({type: "error", text: "Ha ocurrido un error al subir la factura."});
+    if (res.status === "success") {
+      setInvoiceId(res.invoiceId || null);
+      setInvoiceUrl(res.url || null);
+      setMsg({type: "success", text: "Factura subida correctamente."});
+    } else if (res.status === "exists") {
+      setInvoiceId(res.invoiceId || null);
+      setInvoiceUrl(res.url || null);
+      setMsg({type: "exists", text: "Este traslado ya tiene una factura registrada."});
+    } else {
+      setMsg({type: "error", text: "Ha ocurrido un error al subir la factura."});
+    }
     setUploading(false);
   };
 
@@ -49,20 +58,30 @@ const InvoicePDFUpload: React.FC<InvoicePDFUploadProps> = ({ onUpload, disabled 
         className="rounded-2xl bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold py-2 px-6 flex gap-2 items-center"
         title="Subir Factura"
       >
-        <Upload size={18} />
+        {uploading ? <Loader2 size={18} className="animate-spin"/> : <Upload size={18} />}
         {uploading ? "Subiendo..." : "Subir Factura"}
       </Button>
-      <div className="text-xs text-white/50 mt-1">
-        Solo se aceptan archivos en formato PDF
-      </div>
+      <div className="text-xs text-white/50 mt-1">Solo se aceptan archivos en formato PDF</div>
       {fileName && (
         <div className="text-sm text-white/90 flex items-center gap-1 mt-1">
           <FileText size={14}/> {fileName}
         </div>
       )}
-      {msg && (
-        <div className={`text-sm mt-1 rounded-xl px-3 py-1 ${msg.type === "success" ? "bg-green-700/80 text-white" : (msg.type === "error" ? "bg-red-800/80 text-white" : "bg-yellow-700/80 text-white")}`}>
-          {msg.text}
+      {/* Mostrar un solo indicador de carga: el spinner en el botón */}
+      {!uploading && msg && (
+        <div className={`mt-3 text-sm w-full rounded-xl px-3 py-2 flex items-center gap-2 ${msg.type === "success" ? "bg-green-600/30 text-green-200 border border-green-500/40" : (msg.type === "error" ? "bg-red-600/30 text-red-200 border border-red-500/40" : "bg-yellow-600/30 text-yellow-100 border border-yellow-500/40")}`}>
+          {msg.type === 'success' && <CheckCircle2 className="h-4 w-4" />}
+          <span>{msg.text}</span>
+        </div>
+      )}
+      {!uploading && (invoiceId || invoiceUrl) && (
+        <div className="mt-2 text-xs text-white/70">
+          {invoiceId && <div><strong>ID Factura:</strong> {invoiceId}</div>}
+          {invoiceUrl && (
+            <div>
+              <a className="text-[#6EF7FF] underline" href={invoiceUrl} target="_blank" rel="noreferrer">Ver factura</a>
+            </div>
+          )}
         </div>
       )}
     </div>

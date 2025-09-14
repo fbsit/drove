@@ -1,3 +1,4 @@
+
 export interface VehicleTransferFormData {
   pickupAddress: string;
   pickupAddressLat: number | null;
@@ -13,10 +14,10 @@ export interface VehicleTransferFormData {
   phone: string;
   comments?: string;
   price?: number;
-  paymentMethod?: "card" | "transfer";
+  paymentMethod?: 'card' | 'transfer';
   cardToken?: string;
   saveCard?: boolean;
-
+  
   vehicleDetails?: {
     type?: string;
     brand?: string;
@@ -25,28 +26,28 @@ export interface VehicleTransferFormData {
     licensePlate?: string;
     vin?: string;
   };
-
+  
   transferDetails?: {
     totalPrice?: number;
     distance?: number;
     duration?: number;
     signature?: string;
   };
-
+  
   senderDetails?: {
     fullName?: string;
     dni?: string;
     email?: string;
     phone?: string;
   };
-
+  
   receiverDetails?: {
     fullName?: string;
     dni?: string;
     email?: string;
     phone?: string;
   };
-
+  
   pickupDetails?: {
     originAddress?: {
       address: string;

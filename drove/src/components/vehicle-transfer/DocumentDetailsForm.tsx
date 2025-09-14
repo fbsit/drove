@@ -56,7 +56,7 @@ const DocumentDetailsForm: React.FC<DocumentDetailsFormProps> = ({
                     <TooltipContent className="space-y-2 max-w-xs">
                       <p>Formatos válidos:</p>
                       <ul className="list-disc ml-4 space-y-1">
-                        <li>DNI: 8 números</li>
+                        <li>DNI: 8 números + letra (12345678A)</li>
                         <li>NIE: X/Y/Z + 7 números + letra (X1234567L)</li>
                         <li>CIF: Letra + 7 números + número/letra (B12345678)</li>
                       </ul>
@@ -65,7 +65,7 @@ const DocumentDetailsForm: React.FC<DocumentDetailsFormProps> = ({
                 </TooltipProvider>
               </div>
               <FormControl>
-                <Input
+                <Input 
                   placeholder={getDocumentPlaceholder('dni')}
                   className={!validation.isValid && field.value ? 'border-red-500' : ''}
                   {...field}

@@ -4,6 +4,7 @@ import {
   Get,
   Post,
   Patch,
+  Put,
   Param,
   Query,
   Body,
@@ -140,6 +141,36 @@ export class AdminController {
     return this.adminService
       .issueInvoice(invoiceId, adminId, invoiceNumber)
       .then((ok) => res.status(HttpStatus.CREATED).json(ok));
+  }
+
+  /** PUT /admin/invoices/:id/status */
+  @Put('invoices/:invoiceId/status')
+  @ApiOperation({ summary: 'Actualizar estado de factura' })
+  @ApiParam({ name: 'invoiceId' })
+  @ApiBody({ schema: { properties: { status: { enum: ['DRAFT','SENT','PAID','VOID','REJECTED'] } } } })
+  updateInvoiceStatus(
+    @Param('invoiceId', ParseIntPipe) invoiceId: number,
+    @Body('status') status: 'DRAFT'|'SENT'|'PAID'|'VOID'|'REJECTED',
+    @Res() res: Response,
+  ) {
+    return this.adminService
+      .updateInvoiceStatus(invoiceId, status)
+      .then((ok) => res.status(HttpStatus.OK).json(ok));
+  }
+
+  /** PATCH /admin/invoices/:id/status (alias) */
+  @Patch('invoices/:invoiceId/status')
+  @ApiOperation({ summary: 'Actualizar estado de factura (alias PATCH)' })
+  @ApiParam({ name: 'invoiceId' })
+  @ApiBody({ schema: { properties: { status: { type: 'string' } } } })
+  updateInvoiceStatusPatch(
+    @Param('invoiceId', ParseIntPipe) invoiceId: number,
+    @Body('status') status: string,
+    @Res() res: Response,
+  ) {
+    return this.adminService
+      .updateInvoiceStatus(invoiceId, status)
+      .then((ok) => res.status(HttpStatus.OK).json(ok));
   }
 
   /* ─────────── Traslados ─────────── */

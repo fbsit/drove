@@ -2,7 +2,7 @@
 import React from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileTransferRequest from './MobileTransferRequest';
-import TransferService from '@/services/transferService';
+import TransferService from '@/services/transferService'; 
 // Desktop version
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,7 +15,7 @@ import { useVehicleTransferRequest } from '@/hooks/useVehicleTransferRequest';
 import MobileFooterNav from '@/components/layout/MobileFooterNav';
 
 import VehicleDetailsStep from '@/components/vehicle-transfer/VehicleDetailsStep';
-import { PickupDetailsStep } from '@/components/vehicle-transfer/PickupDetailsStep';
+import PickupDetailsStep from '@/components/vehicle-transfer/PickupDetailsStep';
 import SenderDetailsStep from '@/components/vehicle-transfer/SenderDetailsStep';
 import ReceiverDetailsStep from '@/components/vehicle-transfer/ReceiverDetailsStep';
 import TransferDetailsStep from '@/components/vehicle-transfer/TransferDetailsStep';
@@ -37,7 +37,7 @@ function normalizeTransferPayload(raw: any) {
 }
 
 const DesktopTransferRequest: React.FC = () => {
-
+  
   const navigate = useNavigate();
   const { toast } = useToast();
   const { step, form, nextStep, prevStep, validateStep } = useVehicleTransferRequest();
@@ -59,12 +59,12 @@ const DesktopTransferRequest: React.FC = () => {
     setLoading(true);
     const payload = normalizeTransferPayload(data);
     const transferenciaCreada = await TransferService.createTransfer(payload);
-    console.log("transferenciaCreada", transferenciaCreada);
+    console.log("transferenciaCreada",transferenciaCreada);
     toast({
       title: 'Éxito',
       description: 'Traslado solicitado correctamente.',
     });
-    if (transferenciaCreada?.url) {
+    if(transferenciaCreada?.url){
       window.location = transferenciaCreada?.url;
     }
   };
@@ -121,8 +121,8 @@ const DesktopTransferRequest: React.FC = () => {
   };
 
   return (
-    <div >
-      <div >
+    <div className="min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] py-4 sm:py-8 px-2 sm:px-4 md:px-8 lg:px-16">
+      <div className="max-w-4xl mx-auto">
         {/* Progress Bar */}
         <div className="mb-4 sm:mb-6">
           <div className="flex justify-between items-center mb-2">
@@ -130,7 +130,7 @@ const DesktopTransferRequest: React.FC = () => {
             <span className="text-white/60 text-sm">{getStepProgress()}%</span>
           </div>
           <div className="w-full bg-white/10 rounded-full h-2">
-            <div
+            <div 
               className="bg-[#6EF7FF] h-2 rounded-full transition-all duration-300 ease-out"
               style={{ width: `${getStepProgress()}%` }}
             />
@@ -198,7 +198,7 @@ const DesktopTransferRequest: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-
+      
       {/* Mobile Footer Navigation */}
       <MobileFooterNav />
     </div>

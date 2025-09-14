@@ -15,7 +15,7 @@ import { PrivacySettingsModal } from '@/components/admin/profile/PrivacySettings
 import authService from "@/services/authService";
 import UserService from "@/services/userService";
 import { StorageService } from "@/services/storageService";
-import { Link } from 'react-router-dom';
+
 
 const emptyAdmin = {
   avatar: "",
@@ -138,7 +138,7 @@ const AdminProfile = () => {
                             await UserService.updateUser(userId, { contactInfo: fullContact });
                             setContactInfo(fullContact);
                           }
-                        } catch { }
+                        } catch {}
                       }
                     } catch (err) {
                       console.error('Error subiendo avatar', err);
@@ -396,20 +396,27 @@ const AdminProfile = () => {
                   Accesos Rápidos
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 pt-0">
+              <CardContent className="space-y-4">
+                <Button
+                  className="w-full justify-start bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold rounded-2xl"
+                >
+                  <Users className="mr-2" size={16} />
+                  Gestionar Usuarios
+                </Button>
 
-                <LinkButton to="/admin/clientes" icon={Users}>
-                  Gestionar Clientes
-
-                </LinkButton>
-
-                <LinkButton to="/admin/clientes" icon={Car}>
+                <Button
+                  className="w-full justify-start bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold rounded-2xl"
+                >
+                  <Car className="mr-2" size={16} />
                   Ver Drovers
-                </LinkButton>
+                </Button>
 
-                <LinkButton to="/admin/reportes" icon={TrendingUp}>
+                <Button
+                  className="w-full justify-start bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold rounded-2xl"
+                >
+                  <TrendingUp className="mr-2" size={16} />
                   Reportes
-                </LinkButton>
+                </Button>
               </CardContent>
             </Card>
           </div>
@@ -440,20 +447,5 @@ const AdminProfile = () => {
     </div>
   );
 };
-
-const LinkButton: React.FC<{ to: string; icon: any; children: React.ReactNode }> = ({
-  to,
-  icon: Icon,
-  children,
-}) => (
-  <Button
-    asChild
-    className="w-full justify-start h-10 bg-[#6EF7FF] hover:bg-white/40 hover:text-white text-[#22142A]/90 font-bold rounded-xl"
-  >
-    <Link to={to}>
-      <Icon size={12} className="mr-2" /> {children}
-    </Link>
-  </Button>
-);
 
 export default AdminProfile;

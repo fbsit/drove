@@ -156,6 +156,10 @@ const TransferDetailsCard: React.FC<TransferDetailsCardProps> = ({ transfer: ini
   const getVehiclePlate = () => transfer.patentVehicle || transfer.licensePlate || '';
   const getOriginAddress = () => transfer.startAddress?.address || transfer.originAddress || '';
   const getDestinationAddress = () => transfer.endAddress?.address || transfer.destinationAddress || '';
+  const getOriginLat = () => (transfer as any)?.startAddress?.lat ?? null;
+  const getOriginLng = () => (transfer as any)?.startAddress?.lng ?? null;
+  const getDestLat = () => (transfer as any)?.endAddress?.lat ?? null;
+  const getDestLng = () => (transfer as any)?.endAddress?.lng ?? null;
   const getTravelDate = () => transfer.travelDate || transfer.pickupDate || '';
   const getTravelTime = () => transfer.travelTime || transfer.pickupTime || '';
   const getDistance = () => transfer.distanceTravel || transfer.distance || 0;
@@ -181,7 +185,7 @@ const TransferDetailsCard: React.FC<TransferDetailsCardProps> = ({ transfer: ini
                   </div>
                 )}
               </div>
-              <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${urgencyConfig.bg} ${urgencyConfig.color} text-xs font-bold text-black`}>
+              <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${urgencyConfig.bg} ${urgencyConfig.color} text-xs font-bold`}>
                 {urgencyConfig.icon}
                 {urgencyConfig.text}
               </div>
@@ -321,7 +325,7 @@ const TransferDetailsCard: React.FC<TransferDetailsCardProps> = ({ transfer: ini
                           console.log('Map button clicked, current showMap:', showMap);
                           setShowMap(!showMap);
                         }}
-                        className="w-full h-12 border-2 border-gray-300 hover:text-gray-700  font-medium rounded-xl transition-all duration-200 text-sm"
+                        className="w-full h-12 border-2 border-gray-300 text-gray-700  font-medium rounded-xl transition-all duration-200 text-sm"
                       >
                         <MapPin className="w-4 h-4 mr-2" />
                         {showMap ? "Ocultar" : "Ver"} Mapa
@@ -335,18 +339,18 @@ const TransferDetailsCard: React.FC<TransferDetailsCardProps> = ({ transfer: ini
                   <div className="h-64 md:h-80 rounded-2xl overflow-hidden bg-white/5">
                     <GoogleMapComponent
                       originAddress={{
-                        city: (transfer as any)?.startAddress?.city || '',
-                        lat: (transfer as any)?.startAddress?.lat ?? null,
-                        lng: (transfer as any)?.startAddress?.lng ?? null,
-                        address: (transfer as any)?.startAddress?.address || ''
+                        city: (transfer as any)?.startAddress?.city || getOriginAddress(),
+                        lat: getOriginLat(),
+                        lng: getOriginLng(),
+                        address: getOriginAddress()
                       }}
                       destinationAddress={{
-                        city: (transfer as any)?.endAddress?.city || '',
-                        lat: (transfer as any)?.endAddress?.lat ?? null,
-                        lng: (transfer as any)?.endAddress?.lng ?? null,
-                        address: (transfer as any)?.endAddress?.address || ''
+                        city: (transfer as any)?.endAddress?.city || getDestinationAddress(),
+                        lat: getDestLat(),
+                        lng: getDestLng(),
+                        address: getDestinationAddress()
                       }}
-                      isAddressesSelected={true}
+                      isAddressesSelected={Boolean(getOriginAddress()) && Boolean(getDestinationAddress())}
                     />
                   </div>
                 )}

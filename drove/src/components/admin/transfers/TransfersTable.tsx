@@ -196,7 +196,7 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                             <div className="w-9 h-9 rounded-full bg-[#6EF7FF]/10 flex items-center justify-center flex-shrink-0">
                               <User size={14} className="text-[#6EF7FF]" />
                             </div>
-                            <div className="min-w-0 text-left">
+                            <div className="min-w-0">
                               <p className="font-medium text-white truncate">
                                 {transfer.clientName || transfer.users?.company_name || transfer.users?.full_name}
                               </p>

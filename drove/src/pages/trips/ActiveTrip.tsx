@@ -59,7 +59,7 @@ const ActiveTrip: React.FC = () => {
   const [distanceToDestinationKm, setDistanceToDestinationKm] = useState<number | null>(null);
   const isMobile = useIsMobile();
   const { toggleChat } = useSupportChat();
-
+  
   // (efecto para abrir mapa cuando esté en progreso se declara más abajo, tras obtener trip)
 
   const { data: trip, isLoading, refetch } = useQuery({
@@ -67,7 +67,7 @@ const ActiveTrip: React.FC = () => {
     queryFn: async () => {
       if (!transferId) throw new Error('Trip ID is required');
       console.log('[ACTIVE_TRIP] 🔄 Obteniendo detalles del viaje:', transferId);
-
+      
       try {
         const response = await TransferService.getTransferById(transferId);
         console.log('[ACTIVE_TRIP] ✅ Detalles del viaje obtenidos:', response);
@@ -237,7 +237,7 @@ const ActiveTrip: React.FC = () => {
   const isAssignedDrover = user?.id === trip?.droverId;
 
   const handleIniciarViaje = async () => {
-    if (trip.status === 'PICKED_UP') {
+    if(trip.status === 'PICKED_UP') {
       await TransferService.saveInitTravelVerification(transferId);
       await refetch();
     } else {
@@ -268,7 +268,7 @@ const ActiveTrip: React.FC = () => {
       if (!trip.startedAt) {
         try {
           await TransferService.saveInitTravelVerification(transferId);
-        } catch { }
+        } catch {}
       }
       // Obtener ubicación actual para validar en backend (regla <=100km)
       let coords: { latitude: number; longitude: number } | null = null;
@@ -281,7 +281,7 @@ const ActiveTrip: React.FC = () => {
               { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 }
             );
           });
-        } catch { }
+        } catch {}
       }
 
       await TransferService.saveFinishTravelVerification(transferId, {
@@ -315,12 +315,12 @@ const ActiveTrip: React.FC = () => {
 
   if (!trip) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] p-4 text-start">
+      <div className="min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] p-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center py-12">
             <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
             <p className="text-white/70 text-lg">Viaje no encontrado</p>
-            <Button
+            <Button 
               onClick={() => navigate('/cliente/transfers')}
               className="mt-4"
             >
@@ -335,11 +335,11 @@ const ActiveTrip: React.FC = () => {
   const nextStatus = getNextStatus(trip.status);
 
   return (
-    <div>
+    <div className="min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Top bar */}
-        <div className="flex items-center justify-between text-white/80 ">
-          <button onClick={() => navigate(-1)} className="flex items-center gap-2 hover:text-white ">
+        <div className="flex items-center justify-between text-white/80">
+          <button onClick={() => navigate(-1)} className="flex items-center gap-2 hover:text-white">
             <ArrowLeft className="h-5 w-5" /> Volver
           </button>
           {/* Desktop only QR button (solo ASSIGNED o REQUEST_FINISH y para el drover asignado) */}
@@ -362,24 +362,24 @@ const ActiveTrip: React.FC = () => {
         {/* Title + meta */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-white text-left" style={{ fontFamily: 'Helvetica' }}>
-              Traslado #{String(trip.id).slice(0, 8)}
+            <h1 className="text-3xl md:text-4xl font-bold text-white" style={{ fontFamily: 'Helvetica' }}>
+              Traslado #{String(trip.id).slice(0,8)}
             </h1>
-            <p className="text-white/60 mt-2 text-left">Creado el {new Date(trip.createdAt || trip.travelDate || Date.now()).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+            <p className="text-white/60 mt-2">Creado el {new Date(trip.createdAt || trip.travelDate || Date.now()).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
           </div>
           <Badge className={`${getStatusColor(trip.status)} text-white px-4 py-2`}>{getStatusText(trip.status)}</Badge>
         </div>
 
 
         {/* Main cards */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Vehículo */}
           <Card className="bg-gradient-to-br from-cyan-900/30 to-cyan-500/10 border-white/10">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <Car className="h-5 w-5 text-[#6EF7FF]" /> Vehículo
               </CardTitle>
-              <p className="text-white/60 text-sm -mt-2 text-left">Detalles del automóvil</p>
+              <p className="text-white/60 text-sm -mt-2">Detalles del automóvil</p>
             </CardHeader>
             <CardContent className="text-white space-y-3">
               <div className="flex justify-between text-sm">
@@ -402,7 +402,7 @@ const ActiveTrip: React.FC = () => {
           </Card>
 
           {/* Ganancia estimada */}
-          <Card className="bg-gradient-to-br from-green-900/20 to-green-500/10 border-white/10 text-start">
+          <Card className="bg-gradient-to-br from-green-900/20 to-green-500/10 border-white/10">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <DollarSign className="h-5 w-5 text-green-300" /> Ganancia Estimada
@@ -415,7 +415,7 @@ const ActiveTrip: React.FC = () => {
           </Card>
 
           {/* Información */}
-          <Card className="bg-gradient-to-br from-purple-900/20 to-pink-500/10 border-white/10 text-start">
+          <Card className="bg-gradient-to-br from-purple-900/20 to-pink-500/10 border-white/10">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <ShieldCheck className="h-5 w-5 text-purple-300" /> Información
@@ -431,8 +431,8 @@ const ActiveTrip: React.FC = () => {
         {/* Acciones principales bajo el mapa (desktop) – removidas: solo usar botón flotante */}
 
         {/* Ruta del traslado */}
-        <Card className="bg-white/5 border-white/10 text-start">
-          <CardHeader className="flex flex-col md:flex-row gap-4 md:items-center justify-between">
+        <Card className="bg-white/5 border-white/10">
+          <CardHeader className="flex flex-row items-center justify-between">
             <div className="flex items-center gap-3">
               <RouteIcon className="h-6 w-6 text-[#6EF7FF]" />
               <div>
@@ -440,8 +440,8 @@ const ActiveTrip: React.FC = () => {
                 <div className="text-white/60 text-sm">Origen y destino del vehículo</div>
               </div>
             </div>
-            <Button onClick={() => setShowMap((v) => !v)} variant="outline" className="rounded-2xl border-[#6EF7FF]/40 text-white bg-white/5 hover:bg-gray-500">
-              <MapIcon className="h-4 w-4 mr-2 text-[#6EF7FF] " /> {showMap ? 'Ocultar Mapa' : 'Ver Mapa'}
+            <Button onClick={() => setShowMap((v) => !v)} variant="outline" className="rounded-2xl border-[#6EF7FF]/40 text-white bg-white/5 hover:bg-white/10">
+              <MapIcon className="h-4 w-4 mr-2 text-[#6EF7FF]" /> {showMap ? 'Ocultar Mapa' : 'Ver Mapa'}
             </Button>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -455,7 +455,7 @@ const ActiveTrip: React.FC = () => {
               </div>
             )}
             {/* Origen/Destino a la izquierda y métricas a la derecha */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-[2fr_1.3fr] gap-6 items-start">
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-400/10 border border-green-400/30 flex items-center justify-center">
@@ -499,7 +499,7 @@ const ActiveTrip: React.FC = () => {
                   <CalendarIcon className="h-5 w-5 text-[#6EF7FF]" />
                   <span className="uppercase tracking-wide">RECOGIDA PROGRAMADA</span>
                 </div>
-                <div className="mt-3  text-white text-lg font-semibold">
+                <div className="mt-3 text-center text-white text-lg font-semibold">
                   {new Date(trip.travelDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}
                   {trip.travelTime ? ` a las ${trip.travelTime}` : ''}
                 </div>
@@ -508,10 +508,10 @@ const ActiveTrip: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Contactos */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 text-left">
-          {/* Persona que recibe */}
-          <Card className="w-full justify-self-start bg-white/10 border-white/10">
+        {/* Contactos: Entrega y Recepción */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Persona que recibe (primero) */}
+          <Card className="w-full md:max-w-sm justify-self-start bg-gradient-to-br from-[#f2b8d4]/25 via-[#f5c6e5]/20 to-white/5 border-rose-300/30">
             <CardContent className="p-5">
               <div className="flex items-start gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center">
@@ -530,15 +530,16 @@ const ActiveTrip: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-          {/* Remitente */}
-          <Card className="w-full justify-self-start bg-gradient-to-br bg-white/10 border-white/10">
+
+          {/* Persona que entrega (segundo) */}
+          <Card className="w-full md:max-w-sm justify-self-start bg-gradient-to-br from-white/5 to-[#6EF7FF]/5 border-white/10">
             <CardContent className="p-5">
               <div className="flex items-start gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center">
                   <User className="text-[#6EF7FF]" />
                 </div>
                 <div className="flex-1">
-                  <div className="text-white font-semibold">Remitente</div>
+                  <div className="text-white font-semibold">Entregador</div>
                   <div className="text-white/60 text-sm">Entrega el vehículo</div>
                 </div>
               </div>
@@ -554,7 +555,7 @@ const ActiveTrip: React.FC = () => {
 
         {/* Callout final */}
         {trip.status === 'DELIVERED' && (
-          <Card className="bg-white/5 border-white/10 ">
+          <Card className="bg-white/5 border-white/10">
             <CardContent className="p-6 text-center">
               <div className="w-10 h-10 rounded-full bg-green-500/20 border border-green-400/40 mx-auto flex items-center justify-center mb-3">
                 <CheckCircle className="h-6 w-6 text-green-300" />
@@ -566,11 +567,11 @@ const ActiveTrip: React.FC = () => {
         )}
 
         {/* Footer actions */}
-        <div className={`flex flex-wrap gap-3 pt-2 `}>
+        <div className={`flex flex-wrap gap-3 pt-2 ${isMobile ? 'pb-24' : ''}`}>
           <Button variant="outline" className="rounded-2xl bg-white/5 border-white/20 text-white" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4 mr-2" /> Volver a traslados
           </Button>
-          <Button variant="outline" className="rounded-2xl bg-white/5 border-white/20 text-white" onClick={async () => { try { await navigator.clipboard.writeText(String(trip.id)); toast({ title: 'ID copiado', description: String(trip.id) }); } catch { } }}>
+          <Button variant="outline" className="rounded-2xl bg-white/5 border-white/20 text-white" onClick={async () => { try { await navigator.clipboard.writeText(String(trip.id)); toast({ title: 'ID copiado', description: String(trip.id) }); } catch {} }}>
             <CopyIcon className="h-4 w-4 mr-2" /> Copiar ID
           </Button>
           <Button variant="outline" disabled={!trip?.invoiceUrl && !trip?.pdfUrl} className="rounded-2xl bg-white/5 border-white/20 text-white" onClick={() => { const url = (trip as any)?.invoiceUrl || (trip as any)?.pdfUrl; if (url) window.open(url, '_blank'); }}>
