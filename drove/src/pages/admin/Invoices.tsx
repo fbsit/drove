@@ -178,16 +178,16 @@ const Invoices: React.FC = () => {
                 invoice={invoice}
                 onUploadPDF={(file) => handleUploadPDF(file, invoice.id)}
                 onChangeStatus={(id, status) =>
-                  changeStatusMutation.mutate({ id, status })
+                  changeStatusMutation.mutateAsync({ id, status })
                 }
                 onRevertStatus={(id) =>
-                  changeStatusMutation.mutate({ id, status: 'emitida' })
+                  changeStatusMutation.mutateAsync({ id, status: 'emitida' })
                 }
                 onReject={(id) =>
-                  changeStatusMutation.mutate({ id, status: 'rejected' })
+                  changeStatusMutation.mutateAsync({ id, status: 'rejected' })
                 }
                 onCancel={(id) =>
-                  changeStatusMutation.mutate({ id, status: 'voided' })
+                  changeStatusMutation.mutateAsync({ id, status: 'voided' })
                 }
               />
             ))}

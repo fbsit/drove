@@ -1,6 +1,6 @@
 
 import React from "react";
-import { FileText, Upload, Info, Check, X, Plus, CreditCard, Banknote, Eye, UserPlus, Ban, AlertTriangle } from "lucide-react";
+import { FileText, Upload, Info, Check, X, Plus, CreditCard, Banknote, Eye, UserPlus, Ban, AlertTriangle, Loader2 } from "lucide-react";
 import InvoiceStatusBadge from "./InvoiceStatusBadge";
 import { Button } from "@/components/ui/button";
 import InvoicePDFUpload from "./InvoicePDFUpload";
@@ -27,10 +27,10 @@ interface InvoiceCardProps {
     notes?: string;
   };
   onUploadPDF: (file: File, invoiceId: string) => Promise<"success" | "exists" | "error">;
-  onChangeStatus: (invoiceId: string, status: "emitida" | "anticipo" | "pagada") => void;
-  onRevertStatus: (invoiceId: string) => void;
-  onReject?: (invoiceId: string) => void;
-  onCancel?: (invoiceId: string) => void;
+  onChangeStatus: (invoiceId: string, status: "emitida" | "anticipo" | "pagada") => void | Promise<any>;
+  onRevertStatus: (invoiceId: string) => void | Promise<any>;
+  onReject?: (invoiceId: string) => void | Promise<any>;
+  onCancel?: (invoiceId: string) => void | Promise<any>;
 }
 
 const TRANSFER_STATUS_LABELS: Record<string, string> = {
@@ -63,6 +63,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
 }) => {
   const [uploadDialog, setUploadDialog] = React.useState(false);
   const [confirmDialog, setConfirmDialog] = React.useState<{ open: boolean; type: any }>({ open: false, type: undefined });
+  const [isUpdating, setIsUpdating] = React.useState(false);
 
   // Determinar método de pago y su icono (unificado: tarjeta o débito → "Tarjeta")
   let metodoPago: string = "Transferencia";
@@ -116,6 +117,9 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
       break;
   }
 
+  const canReject = statusUpper !== 'REJECTED';
+  const canVoid = statusUpper !== 'VOID';
+
   // Acciones SOLO para transferencia
   const esTransferencia = invoice.paymentMethod === "transferencia";
   // Anticipo solo es posible cuando es transferencia, tiene PDF, y está en estado "emitida"
@@ -141,6 +145,11 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
       className="rounded-2xl bg-white/10 px-4 py-3 shadow-lg flex flex-col hover:shadow-[0_2px_24px_0_#6EF7FF22] transition-all duration-200 relative group justify-between"
       style={{ fontFamily: "Helvetica", minWidth: 0 }}
     >
+      {isUpdating && (
+        <div className="absolute inset-0 rounded-2xl bg-black/30 z-10 flex items-center justify-center" aria-busy>
+          <Loader2 className="h-6 w-6 animate-spin text-[#6EF7FF]" />
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center gap-2 justify-between min-w-0" tabIndex={0}>
         <div className="flex flex-col gap-1 min-w-0">
@@ -272,22 +281,26 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
 
         {/* Rechazar / Anular */}
         <div className="flex flex-row gap-6 items-center mt-1 text-sm justify-center">
-          <button
-            className="flex items-center gap-2 text-red-400 hover:text-red-300"
-            onClick={() => setConfirmDialog({ open: true, type: "reject" })}
-            title="Rechazar"
-          >
-            <Ban size={16} />
-            <span>Rechazar</span>
-          </button>
-          <button
-            className="flex items-center gap-2 text-orange-400 hover:text-orange-300"
-            onClick={() => setConfirmDialog({ open: true, type: "void" })}
-            title="Anular"
-          >
-            <AlertTriangle size={16} />
-            <span>Anular</span>
-          </button>
+          {canReject && (
+            <button
+              className="flex items-center gap-2 text-red-400 hover:text-red-300"
+              onClick={() => setConfirmDialog({ open: true, type: "reject" })}
+              title="Rechazar"
+            >
+              <Ban size={16} />
+              <span>Rechazar</span>
+            </button>
+          )}
+          {canVoid && (
+            <button
+              className="flex items-center gap-2 text-orange-400 hover:text-orange-300"
+              onClick={() => setConfirmDialog({ open: true, type: "void" })}
+              title="Anular"
+            >
+              <AlertTriangle size={16} />
+              <span>Anular</span>
+            </button>
+          )}
         </div>
 
         {/* Información (siempre visible) */}
@@ -399,40 +412,37 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
             <Button
               variant="default"
               className="rounded-2xl bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold"
-              onClick={() => {
-                if (confirmDialog.type === "pagada" || confirmDialog.type === "anticipo") {
-                  onChangeStatus(invoice.id, confirmDialog.type);
-                  toast({
-                    title: "Estado actualizado",
-                    description: `Factura marcada como ${confirmDialog.type === "pagada" ? "pagada" : "anticipada"}.`,
-                    duration: 1400,
-                  });
-                } else if (confirmDialog.type === "reject") {
-                  onReject?.(invoice.id);
-                  toast({
-                    title: "Invoice rejected",
-                    description: "Estado cambiado a rejected.",
-                    duration: 1400,
-                  });
-                } else if (confirmDialog.type === "void") {
-                  onCancel?.(invoice.id);
-                  toast({
-                    title: "Invoice voided",
-                    description: "Estado cambiado a voided.",
-                    duration: 1400,
-                  });
-                } else if (confirmDialog.type === "revertir") {
-                  onRevertStatus(invoice.id);
-                  toast({
-                    title: "Revertido",
-                    description: "Factura devuelta a estado emitida.",
-                    duration: 1400,
-                  });
+              disabled={isUpdating}
+              onClick={async () => {
+                setIsUpdating(true);
+                try {
+                  if (confirmDialog.type === "pagada" || confirmDialog.type === "anticipo") {
+                    await Promise.resolve(onChangeStatus(invoice.id, confirmDialog.type));
+                    toast({ title: "Estado actualizado", description: confirmDialog.type === "pagada" ? "Factura marcada como Pagada." : "Factura marcada como Emitida.", duration: 1400 });
+                  } else if (confirmDialog.type === "reject") {
+                    await Promise.resolve(onReject?.(invoice.id));
+                    toast({ title: "Estado actualizado", description: "Factura marcada como Rechazada.", duration: 1400 });
+                  } else if (confirmDialog.type === "void") {
+                    await Promise.resolve(onCancel?.(invoice.id));
+                    toast({ title: "Estado actualizado", description: "Factura marcada como Anulada.", duration: 1400 });
+                  } else if (confirmDialog.type === "revertir") {
+                    await Promise.resolve(onRevertStatus(invoice.id));
+                    toast({ title: "Estado actualizado", description: "Factura devuelta a estado Emitida.", duration: 1400 });
+                  }
+                } finally {
+                  setIsUpdating(false);
+                  setConfirmDialog({ open: false, type: undefined });
                 }
-                setConfirmDialog({ open: false, type: undefined });
               }}
             >
-              Confirmar
+              {isUpdating ? (
+                <span className="inline-flex items-center">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Cambiando…
+                </span>
+              ) : (
+                'Confirmar'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
