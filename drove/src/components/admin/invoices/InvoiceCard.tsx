@@ -327,7 +327,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
       </div>
 
       {/* Modal subir PDF */}
-      <Dialog open={uploadDialog} onOpenChange={setUploadDialog}>
+      <Dialog open={uploadDialog} onOpenChange={(open) => { if (!isUpdating) setUploadDialog(open); }}>
         <DialogContent className="bg-[#22142A] text-white rounded-2xl max-w-md border-none text-center">
           <DialogHeader>
             <DialogTitle>Subir Factura PDF</DialogTitle>
@@ -354,18 +354,20 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
               );
             })()}
             <InvoicePDFUpload
-              disabled={false}
+              disabled={isUpdating}
               onUpload={async file => {
+                setIsUpdating(true);
                 const res = await onUploadPDF(file, String(invoice.id));
                 if (res === 'success') {
                   handleUploadSuccess();
                 }
+                setIsUpdating(false);
                 return res;
               }}
             />
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setUploadDialog(false)} className="rounded-2xl">
+            <Button variant="ghost" disabled={isUpdating} onClick={() => setUploadDialog(false)} className="rounded-2xl">
               Cancelar
             </Button>
           </DialogFooter>

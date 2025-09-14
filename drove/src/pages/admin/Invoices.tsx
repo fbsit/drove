@@ -122,10 +122,10 @@ const Invoices: React.FC = () => {
       // Si llegamos aquí, la petición fue exitosa (no se lanzó error)
       toast({
         title: 'PDF subido',
-        description: 'El PDF de la factura se ha subido correctamente.',
+        description: 'El PDF de la factura se ha subido correctamente. Marcando como Pagada…',
       });
-
-      refetchInvoices();
+      // Forzar refetch para traer el estado actualizado desde backend (PAID)
+      await refetchInvoices();
       return 'success';
     } catch (error) {
       console.log('Error al subir PDF:', error);
