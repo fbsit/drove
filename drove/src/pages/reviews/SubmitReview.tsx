@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import ApiService from '@/services/api';
+import { Star } from 'lucide-react';
 
 // Minimal API service for posting a review
 async function postReview(payload: { travelId: string; rating: number; comment?: string }) {
@@ -22,6 +23,7 @@ const SubmitReview: React.FC = () => {
   const travelId = params.get('travelId') || '';
   const [rating, setRating] = useState<number>(5);
   const [comment, setComment] = useState<string>('');
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [existing, setExisting] = useState<any | null>(null);
@@ -78,10 +80,33 @@ const SubmitReview: React.FC = () => {
           ) : (
             <>
               <div className="text-white/80 text-sm">Tu opinión sobre {droverName} nos ayuda a mejorar.</div>
-              <div className="flex gap-2">
-                {[1,2,3,4,5].map(n => (
-                  <button key={n} onClick={() => setRating(n)} className={`h-10 w-10 rounded-full border ${rating >= n ? 'bg-yellow-400 text-black' : 'bg-transparent text-white border-white/30'}`}>{n}</button>
-                ))}
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1" role="radiogroup" aria-label="Calificación">
+                  {[1,2,3,4,5].map((n) => {
+                    const active = (hoverRating ?? rating) >= n;
+                    return (
+                      <button
+                        key={n}
+                        type="button"
+                        role="radio"
+                        aria-checked={rating === n}
+                        onMouseEnter={() => setHoverRating(n)}
+                        onMouseLeave={() => setHoverRating(null)}
+                        onClick={() => setRating(n)}
+                        className="p-1"
+                        title={`${n} estrella${n>1?'s':''}`}
+                      >
+                        <Star
+                          className={active ? 'text-yellow-400' : 'text-white/40'}
+                          size={28}
+                          fill={active ? 'currentColor' : 'none'}
+                          strokeWidth={1.5}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+                <span className="text-white/80 text-sm ml-1">{(hoverRating ?? rating)}/5</span>
               </div>
               <textarea
                 className="w-full bg-white/10 border border-white/20 rounded-md p-3 text-white"
