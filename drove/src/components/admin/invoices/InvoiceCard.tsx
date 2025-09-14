@@ -88,7 +88,33 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
 
   // Subir/ver factura PDF
   const tienePDF = Boolean(invoice.urlPDF);
-  const estadoFactura = tienePDF ? "Emitida" : "No emitida";
+  // Estado visual de la factura segun backend
+  const statusUpper = String(invoice.status || '').toUpperCase();
+  let estadoFactura = 'No emitida';
+  let estadoFacturaColor = 'text-white/70';
+  switch (statusUpper) {
+    case 'SENT':
+      estadoFactura = 'Emitida';
+      estadoFacturaColor = 'text-blue-400';
+      break;
+    case 'PAID':
+      estadoFactura = 'Pagada';
+      estadoFacturaColor = 'text-green-400';
+      break;
+    case 'VOID':
+      estadoFactura = 'Anulada';
+      estadoFacturaColor = 'text-orange-400';
+      break;
+    case 'REJECTED':
+      estadoFactura = 'Rechazada';
+      estadoFacturaColor = 'text-red-400';
+      break;
+    case 'DRAFT':
+    default:
+      estadoFactura = 'No emitida';
+      estadoFacturaColor = 'text-yellow-400';
+      break;
+  }
 
   // Acciones SOLO para transferencia
   const esTransferencia = invoice.paymentMethod === "transferencia";
@@ -140,11 +166,11 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
         </span>
       </div>
 
-      {/* Estado factura */}
+      {/* Estado factura (desde backend) */}
       <div className="flex items-center gap-2 mt-2">
         <span className="text-xs font-semibold">
           Estado Factura:&nbsp;
-          <span className={tienePDF ? "text-green-400" : "text-yellow-400"}>
+          <span className={estadoFacturaColor}>
             {estadoFactura}
           </span>
         </span>
