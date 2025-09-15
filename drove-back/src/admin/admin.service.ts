@@ -269,31 +269,58 @@ export class AdminService {
       relations: this.defaultRelations,
     });
     if (!transfer) throw new NotFoundException();
-    if (transfer.droverId !== null && transfer.droverId !== droverId) {
-      //Enviar correo 1 (cliente) y 2 (drover + JT)
-      const drover = await this.userRepo.findOne({ where: { id: droverId } });
-      await this.resend.sendDriverAssignedEmail(
-        '',
-        transfer.typeVehicle ?? 'Vehículo no especificado',
-        new Date().toISOString(),
-        transfer.startAddress.city,
-        transfer.endAddress.city,
-        drover?.contactInfo?.fullName ?? 'Conductor',
-        `https://base/traslados/${transfer.id}`,
-        new Date().getFullYear().toString(),
-      );
-      await this.resend.sendTransferAssignedEmailDJT(transfer);
-    } else {
-      //Enviar correo 1 (cliente) y 2 (drover + JT)
-      await this.resend.sendTransferAssignedEmailClient(transfer);
-      await this.resend.sendTransferAssignedEmailDJT(transfer);
-    }
+    const wasAssignedToAnother = transfer.droverId !== null && transfer.droverId !== droverId;
+
+    // 1) Persistir asignación primero para garantizar relaciones del drover
     transfer.droverId = droverId;
     transfer.assignedBy = adminId;
     transfer.assignedAt = new Date();
-    transfer.status = TransferStatus.ASSIGNED; // Asignar
-    await this.transferRepo.update({ id: transfer.id }, { droverId, assignedBy: adminId, assignedAt: transfer.assignedAt, status: TransferStatus.ASSIGNED });
-    const savedAfter = await this.transferRepo.findOne({ where: { id: transfer.id }, relations: this.defaultRelations });
+    transfer.status = TransferStatus.ASSIGNED;
+    await this.transferRepo.update(
+      { id: transfer.id },
+      {
+        droverId,
+        assignedBy: adminId,
+        assignedAt: transfer.assignedAt,
+        status: TransferStatus.ASSIGNED,
+      },
+    );
+
+    // 2) Recargar con relaciones para que los correos tengan datos reales del drover/cliente
+    const savedAfter = await this.transferRepo.findOne({
+      where: { id: transfer.id },
+      relations: this.defaultRelations,
+    });
+
+    // 3) Enviar correos con información completa
+    try {
+      const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+      const clientEmail = savedAfter?.client?.email || '';
+      const driverName = savedAfter?.drover?.contactInfo?.fullName || 'Conductor';
+      const vehicle = `${savedAfter?.brandVehicle ?? ''} ${savedAfter?.modelVehicle ?? ''} - ${savedAfter?.patentVehicle ?? ''}`.trim();
+      const transferDate = savedAfter?.travelDate || new Date().toISOString();
+      const origin = savedAfter?.startAddress?.city;
+      const destination = savedAfter?.endAddress?.city;
+      const transferUrl = `${frontendBase.replace(/\/$/, '')}/cliente/traslados/${savedAfter?.id}`;
+
+      if (wasAssignedToAnother) {
+        // Reasignación: notificar al cliente que hay un nuevo drover
+        await this.resend.sendDriverAssignedEmail(
+          clientEmail,
+          vehicle || (savedAfter?.typeVehicle ?? 'Vehículo no especificado'),
+          transferDate,
+          origin,
+          destination,
+          driverName,
+          transferUrl,
+        );
+        await this.resend.sendTransferAssignedEmailDJT(savedAfter);
+      } else {
+        // Primera asignación: correos estándar cliente + drover/JT
+        await this.resend.sendTransferAssignedEmailClient(savedAfter);
+        await this.resend.sendTransferAssignedEmailDJT(savedAfter);
+      }
+    } catch {}
 
     // Notificaciones transversales: cliente y drover deben enterarse
     try {

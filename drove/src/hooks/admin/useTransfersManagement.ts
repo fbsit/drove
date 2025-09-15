@@ -72,7 +72,7 @@ export const useTransfersManagement = (filters?: { search?: string; status?: str
           brand: transfer.brandVehicle || transfer.vehicle_brand || 'Desconocido',
           model: transfer.modelVehicle || transfer.vehicle_model || 'Desconocido',
           year: transfer.yearVehicle || transfer.vehicle_year || 'Desconocido',
-          licensePlate: transfer.licensePlate || transfer.vehicle_license_plate || 'Desconocido',
+          licensePlate: transfer.patentVehicle || transfer.licensePlate || transfer.vehicle_license_plate || 'Desconocido',
           distance: transfer.distanceTravel || '0 km',
         }));
       } catch (error) {

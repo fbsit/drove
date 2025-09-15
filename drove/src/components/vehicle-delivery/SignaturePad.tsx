@@ -29,17 +29,8 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    // Set canvas to black background with white stroke for signature
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Add placeholder text
-    ctx.font = '16px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.fillText(label, canvas.width / 2, canvas.height / 2);
+    // Fondo transparente sin placeholder
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   }, [label]);
 
   // Mouse event handlers
@@ -65,16 +56,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
     setLastX(clientX - rect.left);
     setLastY(clientY - rect.top);
 
-    // Clear placeholder text on first draw
-    if (!hasSignature) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      }
-      setHasSignature(true);
-    }
+    if (!hasSignature) setHasSignature(true);
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
@@ -109,7 +91,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(x, y);
-    ctx.strokeStyle = '#FFFFFF';
+    ctx.strokeStyle = '#111827';
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.stroke();
@@ -137,22 +119,13 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
     if (!ctx) return;
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Add placeholder text back
-    ctx.font = '16px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.fillText(label, canvas.width / 2, canvas.height / 2);
     
     setHasSignature(false);
     onSignatureChange('');
   };
 
   return (
-    <div className="relative border border-white/20 rounded-md bg-black/30">
+    <div className="relative border border-white/20 rounded-md">
       <canvas
         ref={canvasRef}
         width={width}
@@ -164,7 +137,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
         onTouchStart={startDrawing}
         onTouchMove={draw}
         onTouchEnd={endDrawing}
-        className="touch-none w-full h-auto cursor-crosshair rounded-md"
+        className="touch-none w-full h-auto cursor-crosshair rounded-md bg-transparent"
       />
       
       <Button
@@ -177,14 +150,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
         <X size={16} />
       </Button>
       
-      {!hasSignature && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="flex items-center text-white/50">
-            <Edit size={18} className="mr-2" />
-            <span>Firma aquí</span>
-          </div>
-        </div>
-      )}
+      {/* Sin placeholder para mantener el fondo transparente */}
     </div>
   );
 };

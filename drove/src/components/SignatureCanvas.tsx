@@ -107,13 +107,8 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
           onTouchStart={startDrawing}
           onTouchMove={draw}
           onTouchEnd={endDrawing}
-          className="border border-white/20 rounded-md cursor-crosshair w-full touch-none bg-white"
+          className="border border-white/20 rounded-md cursor-crosshair w-full touch-none bg-transparent"
         />
-        {!hasDrawn && (
-          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-            <span className="text-xs text-black/40 bg-white/70 px-2 py-1 rounded">Firme aquí</span>
-          </div>
-        )}
       </div>
       <div className="flex gap-2">
         <Button
