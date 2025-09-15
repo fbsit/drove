@@ -2159,27 +2159,30 @@ export class PdfService {
           phoneKey: personReceive.phone,
         };
       case 'chofer':
-      default:
+      default: {
+        const computedName =
+          droverDetail?.contactInfo?.fullName ||
+          droverDetail?.full_name ||
+          droverDetail?.name ||
+          droverDetail?.contactInfo?.info?.extendedFields?.items?.['custom.fullname'] ||
+          droverDetail?.contactInfo?.info?.extendedFields?.items?.['contacts.displayByFirstName'] ||
+          droverDetail?.detailRegister?.name ||
+          'Nombre Chofer';
+        const phonesArray = droverDetail?.contactInfo?.phones;
+        const computedPhone =
+          droverDetail?.contactInfo?.phone ||
+          (Array.isArray(phonesArray) ? phonesArray[0] : undefined) ||
+          droverDetail?.phone ||
+          (Array.isArray(droverDetail?.detailRegister?.phones)
+            ? droverDetail?.detailRegister?.phones?.[0]
+            : droverDetail?.detailRegister?.phones) ||
+          'Sin teléfono';
         return {
           title: 'Nombre del chofer:',
-          nameKey:
-            droverDetail?.contactInfo?.fullName ||
-            droverDetail?.full_name ||
-            droverDetail?.name ||
-            droverDetail?.contactInfo?.info?.extendedFields?.items[
-              'custom.fullname'
-            ] ||
-            droverDetail?.contactInfo?.info?.extendedFields?.items[
-              'contacts.displayByFirstName'
-            ] ||
-            droverDetail?.detailRegister?.name ||
-            'Nombre Chofer',
-          phoneKey:
-            droverDetail?.contactInfo?.phone ||
-            droverDetail?.phone ||
-            droverDetail?.detailRegister?.phones ||
-            'Sin teléfono',
+          nameKey: String(computedName),
+          phoneKey: String(computedPhone),
         };
+      }
     }
   }
 

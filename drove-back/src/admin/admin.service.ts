@@ -299,8 +299,8 @@ export class AdminService {
       const driverName = savedAfter?.drover?.contactInfo?.fullName || 'Conductor';
       const vehicle = `${savedAfter?.brandVehicle ?? ''} ${savedAfter?.modelVehicle ?? ''} - ${savedAfter?.patentVehicle ?? ''}`.trim();
       const transferDate = savedAfter?.travelDate || new Date().toISOString();
-      const origin = savedAfter?.startAddress?.city;
-      const destination = savedAfter?.endAddress?.city;
+      const origin = savedAfter?.startAddress?.city || '';
+      const destination = savedAfter?.endAddress?.city || '';
       const transferUrl = `${frontendBase.replace(/\/$/, '')}/cliente/traslados/${savedAfter?.id}`;
 
       if (wasAssignedToAnother) {
