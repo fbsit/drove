@@ -40,6 +40,9 @@ interface Payload {
   year: string;
   plate: string;
   vin: string;
+  // datos del remitente (persona que entrega)
+  holder_name?: string;
+  holder_phone?: string;
   pickup_address: {
     street: string;
     postal_code: string;
@@ -208,6 +211,7 @@ export class ResendService {
     const pickup = travel.startAddress;
     const delivery = travel.endAddress;
 
+    const holder = travel.personDelivery || {};
     const payload: Payload = {
       to: client.email,
       subject: 'Traslado asignado a un Drover',
@@ -226,6 +230,8 @@ export class ResendService {
       year: travel.yearVehicle,
       plate: travel.patentVehicle,
       vin: travel.bastidor,
+      holder_name: holder?.fullName || '',
+      holder_phone: holder?.phone || '',
       pickup_address: {
         street: pickup.street,
         postal_code: pickup.postal_code,

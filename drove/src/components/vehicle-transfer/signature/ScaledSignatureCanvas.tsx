@@ -55,14 +55,8 @@ const ScaledSignatureCanvas: React.FC<ScaledSignatureCanvasProps> = ({
       // Escalar el contexto para compensar el DPR
       ctx.scale(dpr, dpr);
 
-      // Configuración inicial del canvas
-      ctx.fillStyle = 'rgba(34, 20, 42, 0.5)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.font = `${16 / dpr}px Helvetica`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-      ctx.fillText('Firme aquí', canvas.width / (2 * dpr), canvas.height / (2 * dpr));
+      // Fondo transparente sin texto guía
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
     };
 
     setupCanvas();
@@ -144,7 +138,7 @@ const ScaledSignatureCanvas: React.FC<ScaledSignatureCanvasProps> = ({
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(x, y);
-    ctx.strokeStyle = '#FFFFFF';
+    ctx.strokeStyle = '#111827';
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.stroke();
@@ -172,9 +166,8 @@ const ScaledSignatureCanvas: React.FC<ScaledSignatureCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
-    const dpr = window.devicePixelRatio || 1;
-    ctx.fillStyle = 'rgba(34, 20, 42, 0.5)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Mantener fondo transparente
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
   const clearCanvas = () => {
@@ -184,17 +177,8 @@ const ScaledSignatureCanvas: React.FC<ScaledSignatureCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
-    // Limpiar canvas
-    ctx.fillStyle = 'rgba(34, 20, 42, 0.5)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Restaurar el texto guía
-    const dpr = window.devicePixelRatio || 1;
-    ctx.font = `${16 / dpr}px Helvetica`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.fillText('Firme aquí', canvas.width / (2 * dpr), canvas.height / (2 * dpr));
+    // Limpiar canvas a transparente
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     setHasDrawn(false);
     onSignatureChange('');
