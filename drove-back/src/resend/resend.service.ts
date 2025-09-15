@@ -109,6 +109,18 @@ export class ResendService {
     return `${baseUrl.replace(/\/$/, '')}${sep}${pathOrUrl}`;
   }
 
+  private buildVerificationPath(usePage: 'withdrawals' | 'delivery', id: string): string {
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const base = baseUrl.replace(/\/$/, '');
+    const path = usePage === 'withdrawals' ? '/verificacion/recogida/' : '/verificacion/entrega/';
+    return `${base}${path}${encodeURIComponent(id)}`;
+  }
+
+  private buildQrUrl(usePage: 'withdrawals' | 'delivery', id: string): string {
+    const target = this.buildVerificationPath(usePage, id);
+    return `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(target)}`;
+  }
+
   //Correo para asignacion de chofer (email cliente y person delivery) X
   async sendTransferAssignedEmailClient(travel: Travels | any) {
     const template = this.loadTemplate('transfer‑assigned-client-1');
@@ -122,7 +134,7 @@ export class ResendService {
       subject: 'Traslado asignado a un Drover',
       preheader: 'Tu vehículo pronto será recogido.',
       logo_url: 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
-      qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?data=${travel.id}`,
+      qr_code_url: this.buildQrUrl('withdrawals', travel.id),
       driver_name: driver ? `${driver.contactInfo.fullName}` : 'Por asignar',
       driver_phone: driver ? driver.contactInfo.phone : '',
       pickup_date: travel.travelDate,
@@ -201,7 +213,7 @@ export class ResendService {
       subject: 'Traslado asignado a un Drover',
       preheader: 'Tu vehículo pronto será recogido.',
       logo_url: 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
-      qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?data=${travel.id}`,
+      qr_code_url: this.buildQrUrl('withdrawals', travel.id),
       driver_name: driver ? `${driver.contactInfo.fullName}` : 'Por asignar',
       driver_phone: driver ? driver.contactInfo.phone : '',
       pickup_date: travel.travelDate,
@@ -279,7 +291,7 @@ export class ResendService {
       subject: 'Traslado asignado a un Drover',
       preheader: 'Tu vehículo pronto será recogido.',
       logo_url: 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
-      qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?data=${travel.id}`,
+      qr_code_url: this.buildQrUrl('withdrawals', travel.id),
       driver_name: driver ? `${driver.contactInfo.fullName}` : 'Por asignar',
       driver_phone: driver ? driver.contactInfo.phone : '',
       pickup_date: travel.travelDate,
@@ -358,7 +370,7 @@ export class ResendService {
       subject: 'Traslado asignado a un Drover',
       preheader: 'Tu vehículo pronto será recogido.',
       logo_url: 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
-      qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?data=${travel.id}`,
+      qr_code_url: this.buildQrUrl('withdrawals', travel.id),
       driver_name: driver ? `${driver.contactInfo.fullName}` : 'Por asignar',
       driver_phone: driver ? driver.contactInfo.phone : '',
       pickup_date: travel.travelDate,
@@ -437,7 +449,7 @@ export class ResendService {
       subject: 'Traslado asignado a un Drover',
       preheader: 'Tu vehículo pronto será recogido.',
       logo_url: 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
-      qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?data=${travel.id}`,
+      qr_code_url: this.buildQrUrl('delivery', travel.id),
       driver_name: driver ? `${driver.contactInfo.fullName}` : 'Por asignar',
       driver_phone: driver ? driver.contactInfo.phone : '',
       pickup_date: travel.travelDate,
@@ -516,7 +528,7 @@ export class ResendService {
       subject: 'Vehículo entregado',
       preheader: 'Tu vehículo pronto será recogido.',
       logo_url: 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
-      qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?data=${travel.id}`,
+    qr_code_url: this.buildQrUrl('delivery', travel.id),
       driver_name: driver ? `${driver.contactInfo.fullName}` : 'Por asignar',
       driver_phone: driver ? driver.contactInfo.phone : '',
       pickup_date: travel.travelDate,
@@ -595,7 +607,7 @@ export class ResendService {
       subject: 'Felicidades entregaste el vehículo',
       preheader: 'Tu vehículo pronto será recogido.',
       logo_url: 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
-      qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?data=${travel.id}`,
+      qr_code_url: this.buildQrUrl('delivery', travel.id),
       driver_name: driver ? `${driver.contactInfo.fullName}` : 'Por asignar',
       driver_phone: driver ? driver.contactInfo.phone : '',
       pickup_date: travel.travelDate,
