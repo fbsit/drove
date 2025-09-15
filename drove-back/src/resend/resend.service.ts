@@ -101,6 +101,14 @@ export class ResendService {
     return compiled;
   }
 
+  private buildFrontUrl(pathOrUrl: string): string {
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    if (!pathOrUrl) return baseUrl.replace(/\/$/, '');
+    if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+    const sep = pathOrUrl.startsWith('/') ? '' : '/';
+    return `${baseUrl.replace(/\/$/, '')}${sep}${pathOrUrl}`;
+  }
+
   //Correo para asignacion de chofer (email cliente y person delivery) X
   async sendTransferAssignedEmailClient(travel: Travels | any) {
     const template = this.loadTemplate('transfer‑assigned-client-1');
@@ -714,7 +722,7 @@ export class ResendService {
   ) => {
     const template = this.loadTemplate('activeNewTrafficBoss');
 
-    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://test-drove.vercel.app';
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
     const loginUrl = `${baseUrl.replace(/\/$/, '')}/login`;
     const html = template({
       name,
@@ -787,7 +795,7 @@ export class ResendService {
   ) => {
     const template = this.loadTemplate('approvedAccount');
 
-    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://test-drove.vercel.app';
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
     const computedLogin = `${baseUrl.replace(/\/$/, '')}/login`;
     const html = template({
       name,
@@ -907,7 +915,7 @@ export class ResendService {
       origin,
       destination,
       driver_name: driverName,
-      transfer_url: transferUrl,
+      transfer_url: this.buildFrontUrl(transferUrl),
       year,
     });
 
@@ -998,7 +1006,7 @@ export class ResendService {
       requested_date: requestedDate,
       origin,
       destination,
-      transfer_url: transferUrl,
+      transfer_url: this.buildFrontUrl(transferUrl),
     });
 
     if (!this.client) return false;
@@ -1040,7 +1048,7 @@ export class ResendService {
       amount,
       payment_method: paymentMethod,
       transfer_id: transferId,
-      transfer_url: transferUrl,
+      transfer_url: this.buildFrontUrl(transferUrl),
     });
 
     if (!this.client) return false;
@@ -1134,7 +1142,7 @@ export class ResendService {
       transfer_time: transferTime,
       origin,
       destination,
-      transfer_url: transferUrl,
+      transfer_url: this.buildFrontUrl(transferUrl),
     });
 
     if (!this.client) return false;
@@ -1210,7 +1218,7 @@ export class ResendService {
       origin,
       destination,
       reason,
-      transfer_url: transferUrl,
+      transfer_url: this.buildFrontUrl(transferUrl),
     });
 
     if (!this.client) return false;

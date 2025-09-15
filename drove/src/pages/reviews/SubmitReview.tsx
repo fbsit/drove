@@ -56,7 +56,7 @@ const SubmitReview: React.FC = () => {
     try {
       await ApiService.post('/reviews', { travelId, rating, comment: comment.trim() || undefined });
       toast({ title: '¡Gracias por tu reseña!' });
-      navigate('/');
+      navigate('/cliente/dashboard');
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Error', description: e?.message || 'No se pudo enviar la reseña' });
     } finally {

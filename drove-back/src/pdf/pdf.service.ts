@@ -103,7 +103,7 @@ export class PdfService {
       console.log('generando qr', page);
       const rawBaseUrl =
         this.configService.get<string>('FRONTEND_BASE_URL') ||
-        'https://test-drove.vercel.app';
+        'https://drove.up.railway.app';
       const baseUrl = rawBaseUrl.replace(/\/+$/, '');
       // withdrawals => flujo de recogida, delivery => flujo de entrega
       const url =

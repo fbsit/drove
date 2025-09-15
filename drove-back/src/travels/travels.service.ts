@@ -197,11 +197,13 @@ export class TravelsService {
         paymentIntentId: '',
         travel: savedTravel,
       });
+      const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+      const base = frontendBase.replace(/\/$/, '');
       checkoutUrl = await this.stripeService.createCheckoutSession({
         transferId: savedTravel.id,
         amountEUR: savedTravel.totalPrice!,
-        successUrl: `https://drove.up.railway.app/paymentSuccess?travel=${savedTravel.id}`,
-        cancelUrl: `https://drove.up.railway.app/paymentCancel?travel=${savedTravel.id}`,
+        successUrl: `${base}/paymentSuccess?travel=${savedTravel.id}`,
+        cancelUrl: `${base}/paymentCancel?travel=${savedTravel.id}`,
       });
       payment.paymentIntentId = checkoutUrl ?? 'mock_intent';
       await this.paymentRepo.save(payment);
@@ -242,12 +244,13 @@ export class TravelsService {
     const userDetails = await this.userRepo.findOne({
       where: { id: user.sub },
     });
-    const url = `https://drove.up.railway.app/transfers/${travelInfo.id}`;
+    const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const url = `${frontendBase.replace(/\/$/, '')}/cliente/traslados/${travelInfo.id}`;
     await this.resend.sendTransferRequestCreatedEmail(
       userDetails?.email || '',
       userDetails?.contactInfo?.fullName || '',
-      travel.typeVehicle || '',
-      new Date().toISOString(),
+      `${travel.brandVehicle} ${travel.modelVehicle} - ${travel.patentVehicle}`,
+      travel.travelDate || new Date().toLocaleDateString('es-ES'),
       travel.startAddress.city,
       travel.endAddress.city,
       url || '',
@@ -340,7 +343,8 @@ export class TravelsService {
     const userDetails = await this.userRepo.findOne({
       where: { id: travel.idClient },
     });
-    const url = 'https://test-drove.vercel.app/transfers/' + travel.id;
+    const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const url = `${frontendBase.replace(/\/$/, '')}/cliente/traslados/${travel.id}`;
     await this.resend.sendTransferRescheduledEmail(
       userDetails?.email || '',
       userDetails?.contactInfo?.fullName || '',

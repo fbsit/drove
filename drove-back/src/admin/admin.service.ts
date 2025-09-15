@@ -165,8 +165,9 @@ export class AdminService {
     const userDetails = await this.userRepo.findOne({
       where: { id: payment.travel.idClient },
     });
+    const opsEmail = process.env.OPERATIONS_EMAIL || process.env.ADMIN_NOTIFICATIONS_EMAIL;
     await this.resend.sendTransferPendingBillingEmail(
-      userDetails?.email || '',
+      opsEmail || 'contacto@drove.es',
       userDetails?.contactInfo?.fullName || '',
       `${payment.travel.brandVehicle} ${payment.travel.modelVehicle} - ${payment.travel.patentVehicle}`,
       payment.travel.startAddress.city,

@@ -49,8 +49,10 @@ export class PaymentsController {
       throw new BadRequestException('transferId y amount son requeridos');
     }
 
-    const success_url = `https://test-drove.vercel.app/payments/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancel_url = `https://test-drove.vercel.app/payments/cancel`;
+    const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const base = frontendBase.replace(/\/$/, '');
+    const success_url = `${base}/payments/success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancel_url = `${base}/payments/cancel`;
 
     const url = await this.stripe.createCheckoutSession({
       transferId: dto.transferId,
@@ -89,12 +91,14 @@ export class PaymentsController {
             const paymentDate = new Date().toLocaleDateString('es-ES'); // formato DD/MM/AAAA
             const amount = travel?.totalPrice?.toFixed(2); // asumiendo que travel.amount es un número
             const paymentMethod = travel.paymentMethod; // método de pago usado
-            const transferUrl = `https://test-drove.vercel.app/transfers/${transferId}`;
+            const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+            const transferUrl = `${frontendBase.replace(/\/$/, '')}/cliente/traslados/${transferId}`;
+            const opsEmail = process.env.OPERATIONS_EMAIL || process.env.ADMIN_NOTIFICATIONS_EMAIL;
             const userDetails = await this.userRepo.findOneById(
               travel.idClient,
             );
             await this.resend.sendTransferPendingInvoiceEmail(
-              userDetails?.email || '',
+              opsEmail || 'contacto@drove.es',
               userDetails?.contactInfo?.fullName || '',
               `${travel.brandVehicle} ${travel.modelVehicle} - ${travel.patentVehicle}`,
               travel.startAddress.city,
@@ -104,12 +108,13 @@ export class PaymentsController {
               'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
             );
             await this.resend.sendPaymentReceivedEmail(
-              'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
+              userDetails?.email || '',
               paymentDate,
               amount ?? '0',
               paymentMethod ?? 'Método no especificado',
               transferId,
               transferUrl,
+              'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
             );
 
             const logo_url = 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null';
@@ -120,15 +125,16 @@ export class PaymentsController {
             const origin = travel.startAddress.city;
             const destination = travel.endAddress.city;
             const transfer_date = new Date().toLocaleDateString('es-ES');
-            const admin_transfer_url = `https://test-drove.vercel.app/admin/transfers/${transferId}`;
+            const admin_transfer_url = `https://admin.drove.app/transfers/${transferId}`;
             await this.resend.sendTransferReadyToAssignEmail(
-              logo_url,
+              opsEmail || 'contacto@drove.es',
               client_name,
               vehicle,
               origin,
               destination,
               transfer_date,
               admin_transfer_url,
+              logo_url,
             );
           }
         }
