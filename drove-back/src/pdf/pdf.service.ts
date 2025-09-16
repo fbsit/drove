@@ -1343,10 +1343,16 @@ export class PdfService {
       const distanceFormatted = distanceKmRaw
         ? `${Number(distanceKmRaw).toFixed(2)} Kilómetros`
         : '—';
-      const totalCliente = (detailRoute as any)?.priceResult?.Total_Cliente;
+      const rawTotalCliente = (detailRoute as any)?.priceResult?.Total_Cliente;
+      const totalWithVat =
+        rawTotalCliente != null && rawTotalCliente !== ''
+          ? (typeof rawTotalCliente === 'number'
+              ? `${rawTotalCliente} €`
+              : (String(rawTotalCliente).includes('€') ? String(rawTotalCliente) : `${rawTotalCliente} €`))
+          : (typeof (travel?.totalPrice) === 'number' ? `${(travel.totalPrice as number).toFixed(2)} €` : '—');
       const detailTravelTabla = [
         ['Distancia', distanceFormatted],
-        ['Total con I.V.A', totalCliente ? `${totalCliente} €` : '—'],
+        ['Total con I.V.A', totalWithVat],
       ];
       detailTravelTabla.forEach((fila, filaIndex) => {
         const x = tableDetailLeft;
