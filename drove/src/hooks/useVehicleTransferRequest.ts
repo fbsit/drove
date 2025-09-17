@@ -213,42 +213,41 @@ export const useVehicleTransferRequest = () => {
         return false;
       }
 
-      // Regla: permitir fechas futuras; si es HOY exigir al menos +4 horas; nunca permitir fechas pasadas
+      // Regla: permitir fechas futuras; nunca permitir fechas/horas pasadas
       try {
         const dateVal = new Date(pickupDetails.pickupDate as any);
         const [h = '00', m = '00'] = String(pickupDetails.pickupTime || '00:00').split(':');
         dateVal.setHours(Number(h), Number(m), 0, 0);
 
         const now = new Date();
-        const fourHoursLater = new Date(now.getTime() + 4 * 60 * 60 * 1000);
-
-        const isSameDay =
-          dateVal.getFullYear() === now.getFullYear() &&
-          dateVal.getMonth() === now.getMonth() &&
-          dateVal.getDate() === now.getDate();
-
-        // Fecha pasada (día anterior o mismo día pero hora en el pasado)
-        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-        if (dateVal < startOfToday) {
+        
+        // Fecha pasada (día anterior) o misma fecha con hora pasada
+        if (dateVal < now) {
           toast({
             variant: 'destructive',
             title: 'Fecha inválida',
-            description: 'Selecciona hoy o una fecha futura.',
+            description: 'Selecciona una fecha y hora futura.',
           });
           form.setError('pickupDetails.pickupDate' as any, { type: 'validate', message: 'No se permiten fechas pasadas' });
           return false;
         }
-
-        // Si es hoy, exigir +4 horas de anticipación
-        if (isSameDay && dateVal < fourHoursLater) {
-          toast({
-            variant: 'destructive',
-            title: 'Anticipación insuficiente',
-            description: 'Debes solicitar con al menos 4 horas de anticipación.',
-          });
-          form.setError('pickupDetails.pickupTime' as any, { type: 'validate', message: 'Mínimo 4 horas desde ahora' });
-          return false;
-        }
+        
+        // Anteriormente se exigían 4 horas de anticipación.
+        // Dejamos comentada la validación para poder restaurarla cuando se requiera nuevamente.
+        // const fourHoursLater = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+        // const isSameDay =
+        //   dateVal.getFullYear() === now.getFullYear() &&
+        //   dateVal.getMonth() === now.getMonth() &&
+        //   dateVal.getDate() === now.getDate();
+        // if (isSameDay && dateVal < fourHoursLater) {
+        //   toast({
+        //     variant: 'destructive',
+        //     title: 'Anticipación insuficiente',
+        //     description: 'Debes solicitar con al menos 4 horas de anticipación.',
+        //   });
+        //   form.setError('pickupDetails.pickupTime' as any, { type: 'validate', message: 'Mínimo 4 horas desde ahora' });
+        //   return false;
+        // }
       } catch {}
     }
     return true;

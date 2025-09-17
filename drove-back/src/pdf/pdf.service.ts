@@ -419,12 +419,18 @@ export class PdfService {
             ? travel.updatedAt
             : travel.travelDate;
       dateUse =
-        typeof dateUse === 'object' && dateUse.$date ? dateUse.$date : dateUse;
-      const travelDate = new Date(dateUse).toLocaleDateString('es-ES', {
+        typeof dateUse === 'object' && (dateUse as any).$date ? (dateUse as any).$date : dateUse;
+      // Fallback si la fecha es inválida o no viene informada
+      let dateObj = new Date(dateUse || Date.now());
+      if (isNaN(dateObj.getTime())) {
+        dateObj = new Date();
+      }
+      const travelDate = dateObj.toLocaleDateString('es-ES', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
       });
+      const timeToDraw = normalizedTravelTime || dateObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
       const textLabel =
         step === 3 || step === 4 ? 'Fecha de entrega:' : 'Fecha de recogida:';
       page.drawText(textLabel, {
@@ -457,9 +463,24 @@ export class PdfService {
       const timeReceptionX =
         step === 4 ? 161 : step === 3 ? 128 : step === 1 ? 155 : 160;
       console.log('timeReceptionX', timeReceptionX);
-      page.drawText(normalizedTravelTime, {
+      page.drawText(timeToDraw, {
         x: timeReceptionX,
         y: pageHeight - 127 + fixVertical,
+        size: fontSize,
+        font: font,
+        color: rgb(0, 0, 0),
+      });
+      // ID del transporte
+      page.drawText('ID transporte:', {
+        x: 50,
+        y: pageHeight - 180 + fixVertical,
+        size: fontSize,
+        font: helveticaBoldFont,
+        color: rgb(0, 0, 0),
+      });
+      page.drawText(String(travel?.id ?? ''), {
+        x: 150,
+        y: pageHeight - 180 + fixVertical,
         size: fontSize,
         font: font,
         color: rgb(0, 0, 0),

@@ -27,12 +27,20 @@ interface Props {
     client_signature: string
   }) => void
   onDataChanged: (disabled: boolean) => void
+  initialData?: {
+    delivery_document?: string
+    fuel_receipt?: string
+    comments?: string
+    drover_signature?: string
+    client_signature?: string
+  }
 }
 
 const FinalHandoverStep: React.FC<Props> = ({
   transferId,
   onDataReady,
   onDataChanged,
+  initialData,
 }) => {
   const [imageUrls, setImageUrls] = useState<Record<ImgKey, string>>({} as any)
   // Loading por campo para subidas en paralelo
@@ -104,6 +112,23 @@ const FinalHandoverStep: React.FC<Props> = ({
       readyRef.current = false
     }
   }, [imageUrls, droverSig, clientSig, comments, uploading])
+
+  // Hidratar desde props iniciales al montar
+  useEffect(() => {
+    if (initialData) {
+      if (initialData.delivery_document || initialData.fuel_receipt) {
+        setImageUrls(prev => ({
+          ...prev,
+          ...(initialData.delivery_document ? { delivery_document: initialData.delivery_document } : {}),
+          ...(initialData.fuel_receipt ? { fuel_receipt: initialData.fuel_receipt } : {}),
+        } as any))
+      }
+      if (initialData.comments) setComments(initialData.comments)
+      if (initialData.drover_signature) setDroverSig(initialData.drover_signature)
+      if (initialData.client_signature) setClientSig(initialData.client_signature)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="space-y-6">

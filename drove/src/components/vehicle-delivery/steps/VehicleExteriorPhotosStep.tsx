@@ -22,12 +22,14 @@ interface Props {
   transferId: string;
   onImagesReady: (images: Record<string, string>) => void;
   onImagesChanged: (isDisabled: boolean) => void;
+  initialImages?: Partial<Record<ExteriorKey, string>>;
 }
 
 const VehicleExteriorPhotosStep: React.FC<Props> = ({
   transferId,
   onImagesReady,
   onImagesChanged,
+  initialImages,
 }) => {
   const [imageUrls, setImageUrls] = useState<Record<ExteriorKey, string>>({} as any);
   // Loading por campo para subidas en paralelo
@@ -43,6 +45,14 @@ const VehicleExteriorPhotosStep: React.FC<Props> = ({
       onImagesReady(imageUrls as unknown as Record<string, string>);
     }
   }, [imageUrls, uploading]);
+
+  // Hidratar desde props iniciales (p. ej. localStorage) al montar
+  useEffect(() => {
+    if (initialImages && Object.keys(initialImages).length > 0) {
+      setImageUrls(prev => ({ ...prev, ...(initialImages as Record<ExteriorKey, string>) }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleImageUpload = async (key: ExteriorKey, file: File) => {
     setUploading(prev => ({ ...prev, [key]: true }));

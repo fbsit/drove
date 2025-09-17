@@ -76,6 +76,12 @@ const DeliveryVerification = () => {
     handleNextStep,
     handlePrevStep,
     handleSkipToStep,
+    // valores actuales e inits
+    exteriorPhotos,
+    interiorPhotos,
+    recipientIdentity,
+    handoverDocuments,
+    // setters persistentes
     setExteriorPhotos,
     setInteriorPhotos,
     setRecipientIdentity,
@@ -129,6 +135,7 @@ const DeliveryVerification = () => {
             transferId={transferId!}
             onImagesReady={setExteriorPhotos}
             onImagesChanged={setIsNextDisabled}
+            initialImages={exteriorPhotos as any}
           />
         );
 
@@ -138,6 +145,7 @@ const DeliveryVerification = () => {
             transferId={transferId!}
             onImagesReady={setInteriorPhotos}
             onImagesChanged={setIsNextDisabled}
+            initialImages={interiorPhotos as any}
           />
         );
 
@@ -147,6 +155,7 @@ const DeliveryVerification = () => {
             transferId={transferId!}
             onDataReady={setRecipientIdentity}
             onDataChanged={setIsNextDisabled}
+            initialData={recipientIdentity as any}
           />
         );
 
@@ -156,6 +165,7 @@ const DeliveryVerification = () => {
             transferId={transferId!}
             onDataReady={setHandoverDocuments}
             onDataChanged={setIsNextDisabled}
+            initialData={handoverDocuments as any}
           />
         );
 

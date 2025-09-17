@@ -152,6 +152,39 @@ export const useDeliveryVerification = (transferId: string) => {
         } else {
           setStepProgress((p) => ({ ...p, 'deliverySummary': true }));
         }
+
+        // Rehidratar progreso y datos desde localStorage
+        try {
+          const ext = localStorage.getItem(`delivery:${transferId}:exterior`);
+          const inte = localStorage.getItem(`delivery:${transferId}:interior`);
+          const recip = localStorage.getItem(`delivery:${transferId}:recipient`);
+          const hand = localStorage.getItem(`delivery:${transferId}:handover`);
+
+          if (ext) {
+            const parsed = JSON.parse(ext);
+            if (parsed && typeof parsed === 'object') setExteriorPhotos(parsed);
+          }
+          if (inte) {
+            const parsed = JSON.parse(inte);
+            if (parsed && typeof parsed === 'object') setInteriorPhotos(parsed);
+          }
+          if (recip) {
+            const parsed = JSON.parse(recip);
+            if (parsed && typeof parsed === 'object') setRecipientIdentity(parsed);
+          }
+          if (hand) {
+            const parsed = JSON.parse(hand);
+            if (parsed && typeof parsed === 'object') setHandoverDocuments(parsed);
+          }
+
+          setStepProgress((p) => ({
+            ...p,
+            exteriorPhotos: Boolean(ext),
+            interiorPhotos: Boolean(inte),
+            recipientIdentity: Boolean(recip),
+            finalHandover: Boolean(hand),
+          }));
+        } catch {}
       } catch (e: any) {
         setError(e.message ?? 'Error al cargar datos del traslado');
       } finally {
@@ -318,6 +351,44 @@ export const useDeliveryVerification = (transferId: string) => {
     [stepProgress],
   );
 
+  /* ---------- setters con persistencia ---------- */
+  const saveExteriorPhotos = useCallback((photos: Record<string, string>) => {
+    setExteriorPhotos(photos);
+    try { localStorage.setItem(`delivery:${transferId}:exterior`, JSON.stringify(photos)); } catch {}
+    setStepProgress((p) => ({ ...p, exteriorPhotos: true }));
+  }, [transferId]);
+
+  const saveInteriorPhotos = useCallback((photos: Record<string, string>) => {
+    setInteriorPhotos(photos);
+    try { localStorage.setItem(`delivery:${transferId}:interior`, JSON.stringify(photos)); } catch {}
+    setStepProgress((p) => ({ ...p, interiorPhotos: true }));
+  }, [transferId]);
+
+  const saveRecipientIdentity = useCallback((data: {
+    idNumber: string;
+    idFrontPhoto: string;
+    idBackPhoto: string;
+    selfieWithId: string;
+    hasDamage: boolean;
+    damageDescription?: string;
+  }) => {
+    setRecipientIdentity(data);
+    try { localStorage.setItem(`delivery:${transferId}:recipient`, JSON.stringify(data)); } catch {}
+    setStepProgress((p) => ({ ...p, recipientIdentity: true }));
+  }, [transferId]);
+
+  const saveHandoverDocuments = useCallback((data: {
+    delivery_document: string;
+    fuel_receipt: string;
+    comments?: string;
+    drover_signature: string;
+    client_signature: string;
+  }) => {
+    setHandoverDocuments(data);
+    try { localStorage.setItem(`delivery:${transferId}:handover`, JSON.stringify(data)); } catch {}
+    setStepProgress((p) => ({ ...p, finalHandover: true }));
+  }, [transferId]);
+
   /* ---------- API ---------- */
   return {
     transfer,
@@ -331,9 +402,15 @@ export const useDeliveryVerification = (transferId: string) => {
     handleNextStep,
     handlePrevStep,
     handleSkipToStep,
-    setExteriorPhotos,
-    setInteriorPhotos,
-    setRecipientIdentity,
-    setHandoverDocuments,
+    // valores actuales para hidratar pasos
+    exteriorPhotos,
+    interiorPhotos,
+    recipientIdentity,
+    handoverDocuments,
+    // setters con persistencia
+    setExteriorPhotos: saveExteriorPhotos,
+    setInteriorPhotos: saveInteriorPhotos,
+    setRecipientIdentity: saveRecipientIdentity,
+    setHandoverDocuments: saveHandoverDocuments,
   };
 };

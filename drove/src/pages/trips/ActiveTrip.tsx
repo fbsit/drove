@@ -59,6 +59,7 @@ const ActiveTrip: React.FC = () => {
   const [distanceToDestinationKm, setDistanceToDestinationKm] = useState<number | null>(null);
   const isMobile = useIsMobile();
   const { toggleChat } = useSupportChat();
+  const mapSectionRef = useRef<HTMLDivElement | null>(null);
   
   // (efecto para abrir mapa cuando esté en progreso se declara más abajo, tras obtener trip)
 
@@ -96,6 +97,11 @@ const ActiveTrip: React.FC = () => {
   useEffect(() => {
     if (trip?.status === 'IN_PROGRESS') {
       setShowMap(true);
+      setTimeout(() => {
+        try {
+          mapSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } catch {}
+      }, 150);
     }
   }, [trip?.status]);
 
@@ -431,7 +437,7 @@ const ActiveTrip: React.FC = () => {
         {/* Acciones principales bajo el mapa (desktop) – removidas: solo usar botón flotante */}
 
         {/* Ruta del traslado */}
-        <Card className="bg-white/5 border-white/10">
+        <Card className="bg-white/5 border-white/10" ref={mapSectionRef}>
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="flex items-center gap-3">
               <RouteIcon className="h-6 w-6 text-[#6EF7FF]" />

@@ -30,12 +30,21 @@ interface Props {
     damageDescription?: string
   }) => void
   onDataChanged: (nextDisabled: boolean) => void
+  initialData?: {
+    idNumber?: string
+    idFrontPhoto?: string
+    idBackPhoto?: string
+    selfieWithId?: string
+    hasDamage?: boolean
+    damageDescription?: string
+  }
 }
 
 const RecipientIdentityStep: React.FC<Props> = ({
   transferId,
   onDataReady,
   onDataChanged,
+  initialData,
 }) => {
   const [imageUrls, setImageUrls] = useState<Record<ImgKey, string>>({} as any)
   // Loading por campo para subidas en paralelo
@@ -114,6 +123,24 @@ const RecipientIdentityStep: React.FC<Props> = ({
     imageUrls,
     uploading,
   ])
+
+  // Hidratar desde props iniciales al montar
+  useEffect(() => {
+    if (initialData) {
+      if (initialData.idFrontPhoto || initialData.idBackPhoto || initialData.selfieWithId) {
+        setImageUrls(prev => ({
+          ...prev,
+          ...(initialData.idFrontPhoto ? { idFrontPhoto: initialData.idFrontPhoto } : {}),
+          ...(initialData.idBackPhoto ? { idBackPhoto: initialData.idBackPhoto } : {}),
+          ...(initialData.selfieWithId ? { selfieWithId: initialData.selfieWithId } : {}),
+        } as any))
+      }
+      if (initialData.idNumber) setIdNumber(initialData.idNumber)
+      if (typeof initialData.hasDamage === 'boolean') setHasDamage(initialData.hasDamage)
+      if (initialData.damageDescription) setDamageDescription(initialData.damageDescription)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="space-y-6">

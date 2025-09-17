@@ -137,11 +137,23 @@ const PickupVerification: React.FC = () => {
     setComments,
     submitVerification,
     isLoading: isSubmitting,
+    clearDraft,
   } = usePickupVerification(transferId!);
 
   // URLs de las imágenes subidas estructuradas según DTOs
   const [exteriorImageUrls, setExteriorImageUrls] = useState<Record<string, string>>({});
   const [interiorImageUrls, setInteriorImageUrls] = useState<Record<string, string>>({});
+
+  // Hidratar imágenes desde localStorage por traslado
+  useEffect(() => {
+    if (!transferId) return;
+    try {
+      const ext = localStorage.getItem(`pickup:${transferId}:exterior`);
+      const inte = localStorage.getItem(`pickup:${transferId}:interior`);
+      if (ext) setExteriorImageUrls(JSON.parse(ext));
+      if (inte) setInteriorImageUrls(JSON.parse(inte));
+    } catch {}
+  }, [transferId]);
 
   /* ───────────────────────────────── fetch traslado ────────────────────────── */
   useEffect(() => {
@@ -214,9 +226,17 @@ const PickupVerification: React.FC = () => {
         
         // Guardar URL real devuelta por el servicio
         if (type === 'exterior') {
-          setExteriorImageUrls(prev => ({ ...prev, [key]: imageUrl }));
+          setExteriorImageUrls(prev => {
+            const next = { ...prev, [key]: imageUrl };
+            try { localStorage.setItem(`pickup:${transferId}:exterior`, JSON.stringify(next)); } catch {}
+            return next;
+          });
         } else {
-          setInteriorImageUrls(prev => ({ ...prev, [key]: imageUrl }));
+          setInteriorImageUrls(prev => {
+            const next = { ...prev, [key]: imageUrl };
+            try { localStorage.setItem(`pickup:${transferId}:interior`, JSON.stringify(next)); } catch {}
+            return next;
+          });
         }
         toast.success('Imagen subida correctamente');
       } else {
@@ -246,12 +266,14 @@ const PickupVerification: React.FC = () => {
       setExteriorImageUrls(prev => {
         const updated = { ...prev };
         delete updated[key];
+        try { localStorage.setItem(`pickup:${transferId}:exterior`, JSON.stringify(updated)); } catch {}
         return updated;
       });
     } else {
       setInteriorImageUrls(prev => {
         const updated = { ...prev };
         delete updated[key];
+        try { localStorage.setItem(`pickup:${transferId}:interior`, JSON.stringify(updated)); } catch {}
         return updated;
       });
     }
@@ -296,6 +318,12 @@ const PickupVerification: React.FC = () => {
       await submitVerification(data);
       setCurrentStep(STEPS.SUMMARY);
       toast.success('Verificación enviada');
+      // Limpiar borrador local
+      try {
+        localStorage.removeItem(`pickup:${transferId}:exterior`);
+        localStorage.removeItem(`pickup:${transferId}:interior`);
+      } catch {}
+      clearDraft();
       // Invalidar y refetch del viaje para que la vista activa muestre estado actualizado
       try { (window as any).__queryClient?.invalidateQueries?.({ queryKey: ['active-trip', transferId] }); } catch {}
       navigate(`/traslados/activo/${transferId}`);
