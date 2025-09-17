@@ -7,7 +7,7 @@ import { getVehicleTransfer } from '@/services/vehicleTransferService';
 import { Loader } from 'lucide-react';
 
 const QRRedirect = () => {
-  const { transferId } = useParams<{ transferId: string }>();
+  const { code } = useParams<{ code: string }>();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -27,15 +27,15 @@ const QRRedirect = () => {
       });
       
       // Guardar el ID del traslado para redirigir después de login
-      if (transferId) {
-        sessionStorage.setItem('redirect_after_login', `/qr/${transferId}`);
+      if (code) {
+        sessionStorage.setItem('redirect_after_login', `/qr/${code}`);
       }
       
       navigate('/login');
       return;
     }
 
-    if (!transferId) {
+    if (!code) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -47,7 +47,7 @@ const QRRedirect = () => {
 
     const loadTransfer = async () => {
       try {
-        const transfer = await getVehicleTransfer(transferId);
+        const transfer = await getVehicleTransfer(code);
 
         if (!transfer) {
           toast({
@@ -60,15 +60,27 @@ const QRRedirect = () => {
         }
 
         // Verificar si el usuario actual es el conductor asignado a este traslado
-        const isDriverAssigned = transfer && user?.id && user?.user_type === 'drover' && 
-          (transfer.driverId === user.id);
+        const isDriverAssigned = transfer && user?.id && user?.user_type === 'drover' &&
+          ((transfer.droverId && String(transfer.droverId) === String(user.id)) || (transfer.driverId && String(transfer.driverId) === String(user.id)));
 
         if (isDriverAssigned) {
-          // Redirigir al conductor a la página de detalles del traslado
-          navigate(`/traslados/${transferId}`);
+          // Decidir destino según estado del traslado
+          const status: string = transfer.status || '';
+          const id = String(transfer.id || code);
+          const isPickupFlow = status === 'ASSIGNED' || status === 'CREATED' || status === 'PENDINGPAID';
+          const isDeliveryFlow = status === 'PICKED_UP' || status === 'IN_PROGRESS' || status === 'REQUEST_FINISH';
+
+          if (isPickupFlow) {
+            navigate(`/verificacion/recogida/${id}`);
+          } else if (isDeliveryFlow) {
+            navigate(`/verificacion/entrega/${id}`);
+          } else {
+            // Fallback a detalle del traslado activo
+            navigate(`/traslados/activo/${id}`);
+          }
         } else if (user?.user_type === 'admin') {
           // Redirigir al administrador a la página de detalles del traslado en el panel de administración
-          navigate(`/admin/traslados/${transferId}`);
+          navigate(`/admin/traslados/${code}`);
         } else {
           // Mostrar un mensaje de error si el usuario no tiene permisos
           toast({
