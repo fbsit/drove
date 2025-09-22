@@ -1481,13 +1481,14 @@ export class PdfService {
         const imgEndMapReady = await pdfDoc.embedPng(
           Buffer.from(imgMapEnd, 'base64'),
         );
+        const mapY = currentY - 280;
         page.drawImage(imgEndMapReady, {
           x: 50,
-          y: currentY - 280,
+          y: mapY,
           width: 500,
           height: 300,
         });
-        currentY -= 320;
+        currentY = mapY - 20;
       }
       if (travel.status === 'FINISH') {
         const mapWithRoute = await this.getMapImageWithRoute(
@@ -1505,13 +1506,14 @@ export class PdfService {
         const imgRouteMapReady = await pdfDoc.embedPng(
           Buffer.from(imgMapRoute, 'base64'),
         );
+        const mapY = currentY - 280;
         page.drawImage(imgRouteMapReady, {
           x: 50,
-          y: currentY - 280,
+          y: mapY,
           width: 500,
           height: 300,
         });
-        currentY -= 320;
+        currentY = mapY - 20;
       }
       if (travel.status !== 'REQUEST_FINISH' && travel.status !== 'FINISH') {
         const mapToStart = await this.getMapImage(
@@ -1522,13 +1524,14 @@ export class PdfService {
         const imgMapReady = await pdfDoc.embedPng(
           Buffer.from(imgMap, 'base64'),
         );
+        const mapY = currentY - 280;
         page.drawImage(imgMapReady, {
           x: 50,
-          y: currentY - 280,
+          y: mapY,
           width: 500,
           height: 300,
         });
-        currentY -= 320;
+        currentY = mapY - 20;
       }
 
       if (step === 4) {
@@ -1796,17 +1799,7 @@ export class PdfService {
           }
         }
 
-        if (addDniClient && handoverDocuments?.fuel_receipt) {
-          const embeddedImage = await this.embedImageFromSource(pdfDoc, handoverDocuments.fuel_receipt);
-          if (embeddedImage) {
-            const ticketHeight = 300;
-            const yTicket = Math.max(50, currentY - ticketHeight - 20);
-            page.drawImage(embeddedImage, { x: 50, y: yTicket, width: 500, height: ticketHeight });
-            currentY = yTicket - 20;
-          } else {
-            console.warn('No se pudo incrustar ticket de combustible');
-          }
-        }
+        // Nota: se elimina la boleta/ticket al final por solicitud del usuario
       } else {
         if (addDniClient) {
           const datosImagenesDNICliente: [string, string][] = [
