@@ -50,6 +50,7 @@ interface Payload {
   receiver_name?: string;
   receiver_phone?: string;
   receiver_dni?: string;
+  receiver_nif?: string;
   // otros
   transport_id?: string;
   holder_signature_url?: string;
@@ -58,6 +59,8 @@ interface Payload {
   // entrega
   delivery_date?: string;
   delivery_time?: string;
+  reception_time?: string;
+  client_signature_url?: string;
   pickup_address: {
     street: string;
     postal_code: string;
@@ -645,6 +648,8 @@ export class ResendService {
     const client = travel.client;
     const pickup = travel.startAddress;
     const delivery = travel.endAddress;
+    const receiver = travel.personReceive || {};
+    const handover = travel?.deliveryVerification?.handoverDocuments || {};
 
     const payload: Payload = {
       to: client.email,
@@ -654,9 +659,20 @@ export class ResendService {
     qr_code_url: this.buildQrUrl('delivery', travel.id),
       driver_name: driver ? `${driver.contactInfo.fullName}` : 'Por asignar',
       driver_phone: driver ? driver.contactInfo.phone : '',
-      pickup_date: travel.travelDate,
-      pickup_time: travel.travelTime,
+      delivery_date: new Date(travel?.updatedAt || Date.now()).toLocaleDateString('es-ES'),
+      reception_time: (() => {
+        const t = (handover as any)?.time || travel?.timeTravel || travel?.travelTime || '';
+        return typeof t === 'string' && t ? t : new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      })(),
+      transport_id: travel.id,
+      pickup_date: travel.travelDate || '',
+      pickup_time: travel.travelTime || '',
       client_name: client.contactInfo.fullName,
+      receiver_name: receiver?.fullName || '',
+      receiver_nif: receiver?.dni || '',
+      client_signature_url: typeof handover?.client_signature === 'string' ? handover.client_signature : '',
+      driver_signature_url: typeof handover?.drover_signature === 'string' ? handover.drover_signature : '',
+      doc_issue_date: new Date().toLocaleDateString('es-ES'),
       request_id: travel.id,
       vehicle_type: travel.typeVehicle,
       brand: travel.brandVehicle,
@@ -730,6 +746,8 @@ export class ResendService {
     const client = travel.client;
     const pickup = travel.startAddress;
     const delivery = travel.endAddress;
+    const receiver = travel.personReceive || {};
+    const handover = travel?.deliveryVerification?.handoverDocuments || {};
 
     const payload: Payload = {
       to: client.email,
@@ -739,9 +757,20 @@ export class ResendService {
       qr_code_url: this.buildQrUrl('delivery', travel.id),
       driver_name: driver ? `${driver.contactInfo.fullName}` : 'Por asignar',
       driver_phone: driver ? driver.contactInfo.phone : '',
-      pickup_date: travel.travelDate,
-      pickup_time: travel.travelTime,
+      delivery_date: new Date(travel?.updatedAt || Date.now()).toLocaleDateString('es-ES'),
+      reception_time: (() => {
+        const t = (handover as any)?.time || travel?.timeTravel || travel?.travelTime || '';
+        return typeof t === 'string' && t ? t : new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      })(),
+      transport_id: travel.id,
+      pickup_date: travel.travelDate || '',
+      pickup_time: travel.travelTime || '',
       client_name: client.contactInfo.fullName,
+      receiver_name: receiver?.fullName || '',
+      receiver_nif: receiver?.dni || '',
+      client_signature_url: typeof handover?.client_signature === 'string' ? handover.client_signature : '',
+      driver_signature_url: typeof handover?.drover_signature === 'string' ? handover.drover_signature : '',
+      doc_issue_date: new Date().toLocaleDateString('es-ES'),
       request_id: travel.id,
       vehicle_type: travel.typeVehicle,
       brand: travel.brandVehicle,

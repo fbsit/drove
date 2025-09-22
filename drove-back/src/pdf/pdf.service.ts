@@ -1487,6 +1487,7 @@ export class PdfService {
           width: 500,
           height: 300,
         });
+        currentY -= 320;
       }
       if (travel.status === 'FINISH') {
         const mapWithRoute = await this.getMapImageWithRoute(
@@ -1510,6 +1511,7 @@ export class PdfService {
           width: 500,
           height: 300,
         });
+        currentY -= 320;
       }
       if (travel.status !== 'REQUEST_FINISH' && travel.status !== 'FINISH') {
         const mapToStart = await this.getMapImage(
@@ -1526,6 +1528,7 @@ export class PdfService {
           width: 500,
           height: 300,
         });
+        currentY -= 320;
       }
 
       if (step === 4) {
@@ -1554,9 +1557,8 @@ export class PdfService {
           const titlePaddingDNI = 5;
           const titlePadding = 5;
           let xPositionDNI = paddingXDNI;
-          // Ajustamos currentY para que los documentos queden en la parte superior del bloque final.
-          // (Ajusta este valor según tus necesidades)
-          currentY -= 500;
+          // Posicionar los DNI inmediatamente después del mapa
+          currentY -= 30;
           for (let i = 0; i < datosImagenesDNICliente.length; i++) {
             const [description, wixImageUrl] = datosImagenesDNICliente[i];
             page.drawRectangle({
@@ -1646,14 +1648,14 @@ export class PdfService {
               currentY -= cellHeightDNI;
             }
           }
-          currentY -= 240; // Espacio después de los documentos
+          currentY -= 40; // Espacio después de los documentos
           const selfieData = [
             'Foto receptor del vehiculo',
             recipientIdentity.selfieWithId || '',
           ];
           // En esta fila se usará una sola celda que abarque el ancho completo (500px)
           const cellWidthSelfie = 500;
-          const cellHeightSelfie = 200; // Puedes ajustar este valor según lo deseado
+          const cellHeightSelfie = 220;
           const xPosSelfie = 50; // Centrado si la página es de 600px con márgenes de 50 a cada lado
 
           page.drawRectangle({
@@ -1712,142 +1714,62 @@ export class PdfService {
           } else {
             console.warn(`No hay imagen disponible para ${selfieData[0]}`);
           }
-          currentY -= cellHeightSelfie + 20;
+          currentY -= cellHeightSelfie + 30;
         } // Fin de bloque DNI
+        // 2. Dibujar Bloque de Firmas (relativo)
+        const signBlockHeight = 140;
+        const signImageWidth = 240;
+        const signImageHeight = 100;
+        const ySign = currentY - signImageHeight - 20;
 
-        // 2. Dibujar Bloque de Firmas
-        currentY -= 20;
-        page.drawLine({
-          start: { x: 50, y: 1100 },
-          end: { x: 550, y: 1100 },
-          thickness: 2,
-          color: rgb(0, 0, 0),
-        });
-        currentY -= 20;
-        // Firma del cliente
+        // Firma cliente
         const clientSignatureSource = addDniClient
           ? handoverDocuments?.client_signature
           : travel?.signatureStartClient;
-        const pngImageBytes =
-          typeof clientSignatureSource === 'string' &&
-          clientSignatureSource.includes(',')
+        const clientPng =
+          typeof clientSignatureSource === 'string' && clientSignatureSource.includes(',')
             ? clientSignatureSource.split(',')[1]
             : null;
-        if (pngImageBytes) {
-          const signatureClientImage = await pdfDoc.embedPng(
-            Buffer.from(pngImageBytes, 'base64'),
-          );
-          const xSignature = addBothSignature ? 10 : 140;
-          page.drawImage(signatureClientImage, {
-            x: xSignature,
-            y: currentY + 100, // Posición para la firma del cliente
-            width: 300,
-            height: 100,
-          });
+        if (clientPng) {
+          const img = await pdfDoc.embedPng(Buffer.from(clientPng, 'base64'));
+          page.drawImage(img, { x: 60, y: ySign, width: signImageWidth, height: signImageHeight });
         }
 
-        currentY = 1100; // Ajusta este valor si es necesario para que las firmas queden más arriba
-        page.drawLine({
-          start: { x: 50, y: 890 },
-          end: { x: 550, y: 890 },
-          thickness: 2,
-          color: rgb(0, 0, 0),
-        });
-        currentY -= 400;
-        console.log('VAlorr actual ------------------------- ', currentY);
-        page.drawText('Firma del cliente', {
-          x: addBothSignature ? 120 : 240,
-          y: currentY + 170,
-          size: 13,
-          font: font,
-          color: rgb(0, 0, 0),
-        });
-        console.log('el current de la linea de abajo', currentY + 190);
-        page.drawLine({
-          start: { x: 50, y: currentY + 150 },
-          end: { x: 550, y: currentY + 150 },
-          thickness: 2,
-          color: rgb(0, 0, 0),
-        });
+        // Firma chofer
         if (addBothSignature) {
-          // Firma del chofer
-          page.drawLine({
-            start: { x: 300, y: 1100 },
-            end: { x: 300, y: 850 },
-            thickness: 3,
-            color: rgb(0, 0, 0),
-          });
           const droverSignatureSource = handoverDocuments?.drover_signature;
-          const pngImageBytesChofer =
-            typeof droverSignatureSource === 'string' &&
-            droverSignatureSource.includes(',')
+          const droverPng =
+            typeof droverSignatureSource === 'string' && droverSignatureSource.includes(',')
               ? droverSignatureSource.split(',')[1]
               : null;
-          if (pngImageBytesChofer) {
-            const signatureClientImageChofer = await pdfDoc.embedPng(
-              Buffer.from(pngImageBytesChofer, 'base64'),
-            );
-            page.drawImage(signatureClientImageChofer, {
-              x: 300,
-              y: currentY + 240, // Alineado con la firma del cliente
-              width: 280,
-              height: 100,
-            });
+          if (droverPng) {
+            const img = await pdfDoc.embedPng(Buffer.from(droverPng, 'base64'));
+            page.drawImage(img, { x: 350, y: ySign, width: signImageWidth, height: signImageHeight });
           }
-          page.drawText('Firma del chofer', {
-            x: 375,
-            y: currentY + 170, // Ajuste para situar el texto correctamente
-            size: 13,
-            font: font,
-            color: rgb(0, 0, 0),
-          });
-          currentY = 820;
-          console.log('actualmenete el 50', currentY);
-          page.drawText(
-            'Ambas partes confirman el inicio del traslado del vehículo desde el punto de recogida hasta el',
-            { x: 60, y: currentY, size: 12, font: font, color: rgb(0, 0, 0) },
-          );
-          currentY -= 15;
-          page.drawText(
-            'punto de entrega, solicitado por el cliente y aceptado por el chofer, según lo indicado en este',
-            { x: 60, y: currentY, size: 12, font: font, color: rgb(0, 0, 0) },
-          );
-          currentY -= 15;
-          page.drawText(
-            'documento de confirmación emitido a través de DROVE®',
-            {
-              x: 60,
-              y: currentY,
-              size: 12,
-              font: font,
-              color: rgb(0, 0, 0),
-            },
-          );
-        } else {
-          currentY -= 60;
-          page.drawText(
-            'Confirmo que el dia de hoy solicité un traslado del vehículo nombrado en este documento,',
-            { x: 60, y: currentY, size: 12, font: font, color: rgb(0, 0, 0) },
-          );
-          currentY -= 15;
-          page.drawText('por medio de DROVE@', {
-            x: 60,
-            y: currentY,
-            size: 12,
-            font: font,
-            color: rgb(0, 0, 0),
-          });
-          currentY -= 55;
-          page.drawLine({
-            start: { x: 50, y: currentY },
-            end: { x: 550, y: currentY },
-            thickness: 8,
-            color: rgb(0, 0, 0),
-          });
         }
 
+        // Etiquetas
+        page.drawText('Firma del cliente', { x: 100, y: ySign - 18, size: 13, font: font, color: rgb(0,0,0) });
+        if (addBothSignature) {
+          page.drawText('Firma del chofer', { x: 390, y: ySign - 18, size: 13, font: font, color: rgb(0,0,0) });
+        }
+
+        currentY = ySign - 40;
+
+        // Texto final
+        page.drawText(
+          'Ambas partes confirman la recepción segura del vehículo en destino, según lo indicado en este',
+          { x: 60, y: currentY, size: 12, font: font, color: rgb(0, 0, 0) },
+        );
+        currentY -= 15;
+        page.drawText(
+          'documento de confirmación emitido a través de DROVE®',
+          { x: 60, y: currentY, size: 12, font: font, color: rgb(0, 0, 0) },
+        );
+        currentY -= 20;
+
         // 3. Información final: Fecha de emisión del documento
-        currentY -= 30;
+        currentY -= 10;
         const formattedDate = new Date().toLocaleDateString('es-ES', {
           day: '2-digit',
           month: '2-digit',
@@ -1865,13 +1787,10 @@ export class PdfService {
         if (addDniClient && handoverDocuments?.delivery_document) {
           const embeddedImage = await this.embedImageFromSource(pdfDoc, handoverDocuments.delivery_document);
           if (embeddedImage) {
-            page.drawImage(embeddedImage, {
-              x: 50,
-              y: 50,
-              width: 500,
-              height: 680,
-            });
-            currentY -= 320;
+            const certHeight = 680;
+            const yCert = Math.max(50, currentY - certHeight - 20);
+            page.drawImage(embeddedImage, { x: 50, y: yCert, width: 500, height: certHeight });
+            currentY = yCert - 20;
           } else {
             console.error('Error incrustando delivery_document: formato/URL no soportado');
           }
@@ -1880,13 +1799,10 @@ export class PdfService {
         if (addDniClient && handoverDocuments?.fuel_receipt) {
           const embeddedImage = await this.embedImageFromSource(pdfDoc, handoverDocuments.fuel_receipt);
           if (embeddedImage) {
-            page.drawImage(embeddedImage, {
-              x: 50,
-              y: 50,
-              width: 500,
-              height: 300,
-            });
-            currentY -= 320;
+            const ticketHeight = 300;
+            const yTicket = Math.max(50, currentY - ticketHeight - 20);
+            page.drawImage(embeddedImage, { x: 50, y: yTicket, width: 500, height: ticketHeight });
+            currentY = yTicket - 20;
           } else {
             console.warn('No se pudo incrustar ticket de combustible');
           }
