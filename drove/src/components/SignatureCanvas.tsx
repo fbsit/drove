@@ -107,7 +107,7 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
           onTouchStart={startDrawing}
           onTouchMove={draw}
           onTouchEnd={endDrawing}
-          className="border border-white/20 rounded-md cursor-crosshair w-full touch-none bg-transparent"
+          className="border border-white/20 rounded-md cursor-crosshair w-full touch-none bg-white"
         />
       </div>
       <div className="flex gap-2">

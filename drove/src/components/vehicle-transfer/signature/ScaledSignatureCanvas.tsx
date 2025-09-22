@@ -60,11 +60,11 @@ const ScaledSignatureCanvas: React.FC<ScaledSignatureCanvasProps> = ({
     };
 
     setupCanvas();
-    
+
     // Re-configurar el canvas cuando cambie el tamaño de la ventana
     const handleResize = () => setupCanvas();
     window.addEventListener('resize', handleResize);
-    
+
     return () => {
       window.removeEventListener('resize', handleResize);
     };
@@ -74,10 +74,10 @@ const ScaledSignatureCanvas: React.FC<ScaledSignatureCanvasProps> = ({
   const getCanvasCoordinates = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
-    
+
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
-    
+
     return {
       x: (clientX - rect.left) * (width / rect.width),
       y: (clientY - rect.top) * (height / rect.height)
@@ -103,7 +103,7 @@ const ScaledSignatureCanvas: React.FC<ScaledSignatureCanvasProps> = ({
     setIsDrawing(true);
     setLastX(x);
     setLastY(y);
-    
+
     // Limpiar texto guía si es la primera vez que dibuja
     if (!hasDrawn) {
       clearGuidanceText();
@@ -114,7 +114,7 @@ const ScaledSignatureCanvas: React.FC<ScaledSignatureCanvasProps> = ({
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
     if (!isDrawing) return;
     e.preventDefault(); // Prevenir scroll u otros comportamientos al dibujar
-    
+
     let clientX: number;
     let clientY: number;
 
@@ -131,7 +131,7 @@ const ScaledSignatureCanvas: React.FC<ScaledSignatureCanvasProps> = ({
     const { x, y } = getCanvasCoordinates(clientX, clientY);
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
@@ -150,7 +150,7 @@ const ScaledSignatureCanvas: React.FC<ScaledSignatureCanvasProps> = ({
   const endDrawing = () => {
     if (isDrawing && canvasRef.current) {
       setIsDrawing(false);
-      
+
       // Solo guardar la firma si realmente se ha dibujado
       if (hasDrawn) {
         const signatureData = canvasRef.current.toDataURL();
@@ -162,10 +162,10 @@ const ScaledSignatureCanvas: React.FC<ScaledSignatureCanvasProps> = ({
   const clearGuidanceText = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     // Mantener fondo transparente
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
@@ -173,13 +173,13 @@ const ScaledSignatureCanvas: React.FC<ScaledSignatureCanvasProps> = ({
   const clearCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     // Limpiar canvas a transparente
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+
     setHasDrawn(false);
     onSignatureChange('');
   };
@@ -197,7 +197,7 @@ const ScaledSignatureCanvas: React.FC<ScaledSignatureCanvasProps> = ({
             onTouchStart={startDrawing}
             onTouchMove={draw}
             onTouchEnd={endDrawing}
-            className="border border-white/20 rounded-md cursor-crosshair touch-none"
+            className="border border-white/20 rounded-md cursor-crosshair touch-none bg-white"
           />
         </div>
         <Button

@@ -27,7 +27,7 @@ const TransferDetailsStep: React.FC<Props> = ({
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [loadingKm, setLoadingKm] = useState(false);
   const [amountTravel, setAmountTravel] = useState()
-  
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,19 +39,19 @@ const TransferDetailsStep: React.FC<Props> = ({
     'bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500';
 
   return (
-    <Card className="w-full max-w-3xl mx-auto shadow-xl">
+    <Card className="w-full max-w-3xl mx-auto border-none">
       {/* cabecera con color de marca */}
-      <CardHeader className="bg-sky-600 rounded-t-lg">
+      <CardHeader className="rounded-t-lg">
         <CardTitle className="text-white text-center text-xl sm:text-2xl">
           Detalles del Traslado
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="bg-gray-50 rounded-b-lg">
+      <CardContent className="text-white rounded-b-lg">
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Remitente */}
           <fieldset>
-            <legend className="text-sky-700 font-semibold mb-4">
+            <legend className="font-semibold mb-4">
               Datos del Remitente
             </legend>
 
@@ -60,12 +60,12 @@ const TransferDetailsStep: React.FC<Props> = ({
                 control={form.control}
                 name="senderDetails.fullName"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700">
+                  <FormItem className='bg-white/10 rounded-md p-4'>
+                    <FormLabel className="text-white font-bold text-base">
                       Nombre completo
                     </FormLabel>
                     <FormControl>
-                      <Input {...field} className={input} disabled />
+                      <Input {...field} className={`${input} bg-transparent text-white border-none text-center`} disabled />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -75,10 +75,10 @@ const TransferDetailsStep: React.FC<Props> = ({
                 control={form.control}
                 name="senderDetails.dni"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700">DNI</FormLabel>
+                  <FormItem className='bg-white/10 rounded-md p-4'>
+                    <FormLabel className="text-white font-bold text-base">DNI</FormLabel>
                     <FormControl>
-                      <Input {...field} className={input} disabled />
+                      <Input {...field} className={`${input} bg-transparent text-white border-none text-center`} disabled />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -88,10 +88,10 @@ const TransferDetailsStep: React.FC<Props> = ({
                 control={form.control}
                 name="senderDetails.email"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700">Email</FormLabel>
+                  <FormItem className='bg-white/10 rounded-md p-4'>
+                    <FormLabel className="text-white font-bold text-base">Email</FormLabel>
                     <FormControl>
-                      <Input type="email" {...field} className={input} disabled />
+                      <Input type="email" {...field} className={`${input} bg-transparent text-white border-none text-center`} disabled />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -101,10 +101,10 @@ const TransferDetailsStep: React.FC<Props> = ({
                 control={form.control}
                 name="senderDetails.phone"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700">Teléfono</FormLabel>
+                  <FormItem className='bg-white/10 rounded-md p-4'>
+                    <FormLabel className="text-white font-bold text-base">Teléfono</FormLabel>
                     <FormControl>
-                      <Input {...field} className={input} disabled />
+                      <Input {...field} className={`${input} bg-transparent text-white border-none text-center`} disabled />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -115,7 +115,7 @@ const TransferDetailsStep: React.FC<Props> = ({
 
           {/* Destinatario */}
           <fieldset>
-            <legend className="text-sky-700 font-semibold mb-4">
+            <legend className="text-white font-semibold mb-4">
               Datos del Destinatario
             </legend>
 
@@ -124,12 +124,12 @@ const TransferDetailsStep: React.FC<Props> = ({
                 control={form.control}
                 name="receiverDetails.fullName"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700">
+                  <FormItem className='bg-white/10 rounded-md p-4'>
+                    <FormLabel className="text-white font-bold text-base">
                       Nombre completo
                     </FormLabel>
                     <FormControl>
-                      <Input {...field} className={input} disabled />
+                      <Input {...field} className={`${input} bg-transparent text-white border-none text-center`} disabled />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -139,10 +139,10 @@ const TransferDetailsStep: React.FC<Props> = ({
                 control={form.control}
                 name="receiverDetails.dni"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700">DNI</FormLabel>
+                  <FormItem className='bg-white/10 rounded-md p-4'>
+                    <FormLabel className="text-white font-bold text-base">DNI</FormLabel>
                     <FormControl>
-                      <Input {...field} className={input} disabled />
+                      <Input {...field} className={`${input} bg-transparent text-white border-none text-center`} disabled />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -152,10 +152,10 @@ const TransferDetailsStep: React.FC<Props> = ({
                 control={form.control}
                 name="receiverDetails.email"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700">Email</FormLabel>
+                  <FormItem className='bg-white/10 rounded-md p-4'>
+                    <FormLabel className="text-white font-bold text-base">Email</FormLabel>
                     <FormControl>
-                      <Input type="email" {...field} className={input} disabled />
+                      <Input type="email" {...field} className={`${input} bg-transparent text-white border-none text-center`} disabled />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -165,10 +165,10 @@ const TransferDetailsStep: React.FC<Props> = ({
                 control={form.control}
                 name="receiverDetails.phone"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700">Teléfono</FormLabel>
+                  <FormItem className='bg-white/10 rounded-md p-4'>
+                    <FormLabel className="text-white font-bold text-base">Teléfono</FormLabel>
                     <FormControl>
-                      <Input {...field} className={input} disabled />
+                      <Input {...field} className={`${input} bg-transparent text-white border-none text-center`} disabled />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -184,7 +184,7 @@ const TransferDetailsStep: React.FC<Props> = ({
                 type="button"
                 variant="outline"
                 onClick={onPrev}
-                className="border-gray-300 text-gray-700 hover:bg-gray-100"
+                className="border-gray-300 text-white hover:bg-gray-100"
               >
                 Anterior
               </Button>
@@ -197,7 +197,7 @@ const TransferDetailsStep: React.FC<Props> = ({
           </div>
         </form>
         {distanceKm !== null && (
-          <div className="text-right text-gray-700">
+          <div className="text-right text-white">
             Distancia estimada:{' '}
             <span className="font-semibold">
               {loadingKm ? 'calculando…' : `${distanceKm.toFixed(1)} km`}
