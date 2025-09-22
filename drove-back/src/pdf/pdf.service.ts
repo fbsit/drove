@@ -175,9 +175,15 @@ export class PdfService {
   ): Promise<any> {
     try {
       // Normalizar estructuras opcionales para evitar errores por null/undefined
+      const pickupVerification = travel?.pickupVerification || {};
       const deliveryVerification = travel?.deliveryVerification || {};
-      const exteriorPhotos = deliveryVerification?.exteriorPhotos || {};
-      const interiorPhotos = deliveryVerification?.interiorPhotos || {};
+      // Elegir fuente de fotos según sea inicio (recogida) o final (entrega)
+      const usePickupPhotos = !!addStartImagesVehicule && !addEndImagesVehicule;
+      const photosSource: any = usePickupPhotos
+        ? pickupVerification
+        : deliveryVerification;
+      const exteriorPhotos = photosSource?.exteriorPhotos || {};
+      const interiorPhotos = photosSource?.interiorPhotos || {};
       const handoverDocuments = deliveryVerification?.handoverDocuments || {};
       const recipientIdentity = deliveryVerification?.recipientIdentity || {};
       // Cálculos iniciales para la altura de la página

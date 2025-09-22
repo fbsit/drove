@@ -71,6 +71,9 @@ export class ResendService {
     string,
     HandlebarsTemplateDelegate
   > = {};
+  // Rate limit: max 2 req/s → serialize sends and space them
+  private sendQueue: Promise<any> = Promise.resolve();
+  private sendTimestamps: number[] = [];
 
   constructor(private readonly config: ConfigService, private readonly pdfService: PdfService) {
     const apiKey = 're_dikLWbNB_2tg41mPRK8UCuUcybKSwEiw1';
@@ -127,6 +130,35 @@ export class ResendService {
 
   private getAdminEmail(): string {
     return process.env.ADMIN_NOTIFICATIONS_EMAIL || 'info@drove.es';
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Ensures at most 2 sends occur within any rolling 1s window.
+   * Adds a small buffer to avoid server-side rounding differences.
+   */
+  private async acquireRateLimitSlot(): Promise<void> {
+    const now = Date.now();
+    this.sendTimestamps = this.sendTimestamps.filter((t) => now - t < 1000);
+    if (this.sendTimestamps.length >= 2) {
+      const earliest = this.sendTimestamps[0];
+      const waitMs = Math.max(0, 1000 - (now - earliest) + 50);
+      await this.sleep(waitMs);
+      return this.acquireRateLimitSlot();
+    }
+    this.sendTimestamps.push(Date.now());
+  }
+
+  /**
+   * Enqueue a task to run after previous sends finish (serialize sends globally).
+   */
+  private enqueue<T>(fn: () => Promise<T>): Promise<T> {
+    const run = this.sendQueue.then(fn, fn);
+    this.sendQueue = run.then(() => undefined, () => undefined);
+    return run;
   }
 
   /**
@@ -765,22 +797,52 @@ export class ResendService {
    */
   async sendEmail(payload: ResendSendEmailPayload): Promise<boolean> {
     if (!this.client) {
-      this.logger.debug('Modo mock – correo NO enviado:', payload);
+      this.logger.debug('Modo mock – correo NO enviado:', payload);
       return false;
     }
 
-    try {
-      const { error } = await this.client.emails.send(payload as any);
+    // Serialize all sends and respect rate limit
+    return this.enqueue(async () => {
+      await this.acquireRateLimitSlot();
 
-      if (error) {
-        this.logger.error(`Resend error: ${error.message}`, error);
-        return false;
+      const maxRetries = 5;
+      let delayMs = 600; // start slightly above 500ms
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          const { error } = await this.client!.emails.send(payload as any);
+          if (!error) return true;
+
+          const msg = (error as any)?.message || '';
+          const name = (error as any)?.name || '';
+          const status = (error as any)?.statusCode;
+          const isRate = status === 429 || /too many requests/i.test(msg) || /rate/i.test(name);
+          if (!isRate) {
+            this.logger.error(`Resend error: ${msg}`, error as any);
+            return false;
+          }
+          if (attempt === maxRetries) {
+            this.logger.error(`Resend rate limit after ${maxRetries + 1} attempts`);
+            return false;
+          }
+          // Backoff with jitter
+          const jitter = Math.floor(Math.random() * 200);
+          await this.sleep(delayMs + jitter);
+          delayMs = Math.min(delayMs * 2, 5000);
+        } catch (err: any) {
+          const msg = err?.message || '';
+          const isRate = /Too many requests/i.test(msg) || err?.statusCode === 429 || err?.name === 'rate_limit_exceeded';
+          if (isRate && attempt < maxRetries) {
+            const jitter = Math.floor(Math.random() * 200);
+            await this.sleep(delayMs + jitter);
+            delayMs = Math.min(delayMs * 2, 5000);
+            continue;
+          }
+          this.logger.error('Fallo inesperado enviando correo', err as Error);
+          return false;
+        }
       }
-      return true;
-    } catch (err) {
-      this.logger.error('Fallo inesperado enviando correo', err as Error);
       return false;
-    }
+    });
   }
   /**
    * Envía el correo de activación de un nuevo “Jefe de Tráfico”.
