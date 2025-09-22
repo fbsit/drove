@@ -218,12 +218,14 @@ export class ResendService {
     } catch (e) {
       // fallback: send without attachment
     }
+    console.log(travel);
     const recipients = Array.from(
       new Set([
         (client?.email as string) || '',
         (travel?.personDelivery?.email as string) || '',
       ].filter(Boolean)),
     );
+    console.log(recipients);
     return this.sendToMultipleSequential(recipients, {
       from: 'contacto@drove.es',
       subject: payload.subject,
