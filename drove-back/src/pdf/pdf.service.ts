@@ -1488,7 +1488,7 @@ export class PdfService {
           width: 500,
           height: 300,
         });
-        currentY = mapY - 20;
+        currentY = mapY - 320; // dejar 20px + alto del mapa
       }
       if (travel.status === 'FINISH') {
         const mapWithRoute = await this.getMapImageWithRoute(
@@ -1513,7 +1513,7 @@ export class PdfService {
           width: 500,
           height: 300,
         });
-        currentY = mapY - 20;
+        currentY = mapY - 320; // dejar 20px + alto del mapa
       }
       if (travel.status !== 'REQUEST_FINISH' && travel.status !== 'FINISH') {
         const mapToStart = await this.getMapImage(
@@ -1531,7 +1531,7 @@ export class PdfService {
           width: 500,
           height: 300,
         });
-        currentY = mapY - 20;
+        currentY = mapY - 320; // dejar 20px + alto del mapa
       }
 
       if (step === 4) {
@@ -1606,28 +1606,8 @@ export class PdfService {
               color: rgb(0, 0, 0),
             });
             if (wixImageUrl) {
-              const wixImagePattern = /^wix:image:\/\/v1\/(.+?)\//;
-              const match = wixImageUrl.match(wixImagePattern);
-              if (match && match[1]) {
-                const imageId = match[1];
-                const directImageUrl = `https://static.wixstatic.com/media/${imageId}`;
-                const imageFormat: any = wixImageUrl.includes('.png')
-                  ? 'png'
-                  : 'jpg';
-                const response = await fetch(directImageUrl);
-                const arrayBuffer = await response.arrayBuffer();
-                const imageBuffer = Buffer.from(arrayBuffer);
-                let embeddedImage;
-                if (imageFormat === 'jpg' || imageFormat === 'jpeg') {
-                  embeddedImage = await pdfDoc.embedJpg(imageBuffer);
-                } else if (imageFormat === 'png') {
-                  embeddedImage = await pdfDoc.embedPng(imageBuffer);
-                } else {
-                  console.warn(
-                    `Formato de imagen no soportado para ${description}`,
-                  );
-                  continue;
-                }
+              const embeddedImage = await this.embedImageFromSource(pdfDoc, wixImageUrl);
+              if (embeddedImage) {
                 page.drawImage(embeddedImage, {
                   x: xPositionDNI + 10,
                   y: currentY + 10,
@@ -1635,9 +1615,7 @@ export class PdfService {
                   height: imageHeightDNI,
                 });
               } else {
-                console.warn(
-                  `No se pudo extraer el ID de la imagen para ${description}`,
-                );
+                console.warn(`No se pudo incrustar imagen para ${description}`);
               }
             } else {
               console.warn(`No hay imagen disponible para ${description}`);
