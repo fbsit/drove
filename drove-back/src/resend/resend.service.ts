@@ -232,8 +232,6 @@ export class ResendService {
     });
   }
 
-}
-
   //Correo para asignacion de chofer (email chofer y admin (info@drove.es))
   async sendTransferAssignedEmailDJT(travel: Travels | any) {
     const template = this.loadTemplate('transfer‑assigned-drover-2');
