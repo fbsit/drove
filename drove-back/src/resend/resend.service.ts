@@ -124,7 +124,11 @@ export class ResendService {
     return `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(target)}`;
   }
 
-  //Correo para asignacion de chofer (email cliente y person delivery) X
+  private getAdminEmail(): string {
+    return process.env.ADMIN_NOTIFICATIONS_EMAIL || 'info@drove.es';
+  }
+
+  //Correo para asignacion de chofer (email enviar al cliente y personDelivery)
   async sendTransferAssignedEmailClient(travel: Travels | any) {
     const template = this.loadTemplate('transfer‑assigned-client-1');
     const driver = travel.drover;
@@ -195,15 +199,26 @@ export class ResendService {
     } catch (e) {
       // fallback: send without attachment
     }
-    return this.client.emails.send({
-      from: 'contacto@drove.es',
-      to: payload.to,
-      subject: payload.subject,
-      html,
-      ...(attachments ? { attachments } : {}),
-    });
+    const recipients = Array.from(
+      new Set([
+        (client?.email as string) || '',
+        (travel?.personDelivery?.email as string) || '',
+      ].filter(Boolean)),
+    );
+
+    return Promise.all(
+      recipients.map((to) =>
+        this.client!.emails.send({
+          from: 'contacto@drove.es',
+          to,
+          subject: payload.subject,
+          html,
+          ...(attachments ? { attachments } : {}),
+        }),
+      ),
+    ).then(() => true);
   }
-  //Correo para asignacion de chofer (email chofer jt) X
+  //Correo para asignacion de chofer (email chofer y admin (info@drove.es))
   async sendTransferAssignedEmailDJT(travel: Travels | any) {
     const template = this.loadTemplate('transfer‑assigned-drover-2');
     const driver = travel.drover;
@@ -259,12 +274,12 @@ export class ResendService {
       const pdfUrl = await this.pdfService.generatePDF(
         travel.id,
         'withdrawals',
-        true,
         false,
         false,
         false,
         false,
-        'chofer',
+        false,
+        'delivery',
         1,
       );
       if (pdfUrl) {
@@ -275,15 +290,26 @@ export class ResendService {
         ];
       }
     } catch (e) {}
-    return this.client.emails.send({
-      from: 'contacto@drove.es',
-      to: payload.to,
-      subject: payload.subject,
-      html,
-      ...(attachments ? { attachments } : {}),
-    });
+    const recipients = Array.from(
+      new Set([
+        (driver?.email as string) || '',
+        this.getAdminEmail(),
+      ].filter(Boolean)),
+    );
+
+    return Promise.all(
+      recipients.map((to) =>
+        this.client!.emails.send({
+          from: 'contacto@drove.es',
+          to,
+          subject: payload.subject,
+          html,
+          ...(attachments ? { attachments } : {}),
+        }),
+      ),
+    ).then(() => true);
   }
-  //Correo para confirmar recogida de auto (email cliente) X
+  //Correo para confirmar recogida de auto (email cliente y personDelivery)
   async sendConfirmationPickupEmailClient(travel: Travels | any) {
     const template = this.loadTemplate('travel-in-route-client-3');
 
@@ -337,9 +363,9 @@ export class ResendService {
     try {
       const pdfUrl = await this.pdfService.generatePDF(
         travel.id,
-        'withdrawals',
+        'delivery',
         true,
-        false,
+        true,
         false,
         false,
         false,
@@ -354,15 +380,26 @@ export class ResendService {
         ];
       }
     } catch (e) {}
-    return this.client.emails.send({
-      from: 'contacto@drove.es',
-      to: client.email,
-      subject: 'DROVER se dirigue a su destino',
-      html,
-      ...(attachments ? { attachments } : {}),
-    });
+    const recipients = Array.from(
+      new Set([
+        (client?.email as string) || '',
+        (travel?.personDelivery?.email as string) || '',
+      ].filter(Boolean)),
+    );
+
+    return Promise.all(
+      recipients.map((to) =>
+        this.client!.emails.send({
+          from: 'contacto@drove.es',
+          to,
+          subject: 'DROVER se dirigue a su destino',
+          html,
+          ...(attachments ? { attachments } : {}),
+        }),
+      ),
+    ).then(() => true);
   }
-  //Correo para confirmar recogida de auto (email drover jt) X
+  //Correo para confirmar recogida de auto (email drover y admin (info@drove.es))
   async sendConfirmationPickupEmailDJT(travel: Travels | any) {
     const template = this.loadTemplate('travel-in-route-drover-jt-4');
 
@@ -416,13 +453,13 @@ export class ResendService {
     try {
       const pdfUrl = await this.pdfService.generatePDF(
         travel.id,
-        'withdrawals',
+        'delivery',
+        false,
         true,
         false,
         false,
         false,
-        false,
-        'chofer',
+        'reception',
         2,
       );
       if (pdfUrl) {
@@ -433,15 +470,26 @@ export class ResendService {
         ];
       }
     } catch (e) {}
-    return this.client.emails.send({
-      from: 'contacto@drove.es',
-      to: client.email,
-      subject: 'DROVER se dirigue a su destino',
-      html,
-      ...(attachments ? { attachments } : {}),
-    });
+    const recipients = Array.from(
+      new Set([
+        (driver?.email as string) || '',
+        this.getAdminEmail(),
+      ].filter(Boolean)),
+    );
+
+    return Promise.all(
+      recipients.map((to) =>
+        this.client!.emails.send({
+          from: 'contacto@drove.es',
+          to,
+          subject: 'DROVER se dirigue a su destino',
+          html,
+          ...(attachments ? { attachments } : {}),
+        }),
+      ),
+    ).then(() => true);
   }
-  //Correo para llega al destino (email client jt) (no se envia al drover) X
+  //Correo para llega al destino (email client, admin (info@drove.es), personDelivery, personReceive) (no se envia al drover)
   async sendArrivedEmailDJT(travel: Travels | any) {
     const template = this.loadTemplate('travel-arrived-client-jt-5');
 
@@ -512,15 +560,28 @@ export class ResendService {
         ];
       }
     } catch (e) {}
-    return this.client.emails.send({
-      from: 'contacto@drove.es',
-      to: client.email,
-      subject: 'DROVER llego a su destino',
-      html,
-      ...(attachments ? { attachments } : {}),
-    });
+    const recipients = Array.from(
+      new Set([
+        (client?.email as string) || '',
+        this.getAdminEmail(),
+        (travel?.personDelivery?.email as string) || '',
+        (travel?.personReceive?.email as string) || '',
+      ].filter(Boolean)),
+    );
+
+    return Promise.all(
+      recipients.map((to) =>
+        this.client!.emails.send({
+          from: 'contacto@drove.es',
+          to,
+          subject: 'DROVER llego a su destino',
+          html,
+          ...(attachments ? { attachments } : {}),
+        }),
+      ),
+    ).then(() => true);
   }
-  //Correo de entrega de vehiculo (cliente jt receptor) X
+  //Correo de entrega de vehiculo (cliente admin (info@drove.es), personReceive) X
   async sendConfirmationDeliveryEmailCJT(travel: Travels | any) {
     const template = this.loadTemplate('reception-travel-client-receptor-jt-6');
 
@@ -591,15 +652,27 @@ export class ResendService {
         ];
       }
     } catch (e) {}
-    return this.client.emails.send({
-      from: 'contacto@drove.es',
-      to: client.email,
-      subject: payload.subject,
-      html,
-      ...(attachments ? { attachments } : {}),
-    });
+    const recipients = Array.from(
+      new Set([
+        (client?.email as string) || '',
+        this.getAdminEmail(),
+        (travel?.personReceive?.email as string) || '',
+      ].filter(Boolean)),
+    );
+
+    return Promise.all(
+      recipients.map((to) =>
+        this.client!.emails.send({
+          from: 'contacto@drove.es',
+          to,
+          subject: payload.subject,
+          html,
+          ...(attachments ? { attachments } : {}),
+        }),
+      ),
+    ).then(() => true);
   }
-  //Correo de entrega de vehiculo (cliente jt receptor) X
+  //Correo de entrega de vehiculo (drover) X
   async sendConfirmationDeliveryDrover(travel: Travels | any) {
     const template = this.loadTemplate('confirmation-delivery-drover-7');
 
@@ -659,7 +732,7 @@ export class ResendService {
         true,
         true,
         true,
-        'chofer',
+        'reception',
         4,
       );
       if (pdfUrl) {
@@ -670,13 +743,23 @@ export class ResendService {
         ];
       }
     } catch (e) {}
-    return this.client.emails.send({
-      from: 'contacto@drove.es',
-      to: client.email,
-      subject: payload.subject,
-      html,
-      ...(attachments ? { attachments } : {}),
-    });
+    const recipients = Array.from(
+      new Set([
+        (driver?.email as string) || '',
+      ].filter(Boolean)),
+    );
+
+    return Promise.all(
+      recipients.map((to) =>
+        this.client!.emails.send({
+          from: 'contacto@drove.es',
+          to,
+          subject: payload.subject,
+          html,
+          ...(attachments ? { attachments } : {}),
+        }),
+      ),
+    ).then(() => true);
   }
   //Correo para verificar correos.
   async sendEmailToverifyEmail(email: string, Code: string) {

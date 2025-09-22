@@ -119,6 +119,47 @@ export class PdfService {
   }
 
   /**
+   * Embeds an image into the PDF from multiple possible sources:
+   * - data URLs (base64)
+   * - Wix media URLs (wix:image://v1/...)
+   * - Generic HTTP(S) URLs (Railway bucket, etc.)
+   */
+  private async embedImageFromSource(pdfDoc: PDFDocument, src: string) {
+    try {
+      if (!src || typeof src !== 'string') return null;
+
+      // data URI
+      if (src.startsWith('data:image/')) {
+        const [, b64] = src.split(',');
+        const buf = Buffer.from(b64, 'base64');
+        if (src.includes('png')) return await pdfDoc.embedPng(buf);
+        return await pdfDoc.embedJpg(buf);
+      }
+
+      // wix -> directo
+      const wixMatch = src.match(/^wix:image:\/\/v1\/(.+?)\//);
+      const directUrl = wixMatch && wixMatch[1]
+        ? `https://static.wixstatic.com/media/${wixMatch[1]}`
+        : src;
+
+      const res = await fetch(directUrl);
+      if (!res.ok) return null;
+      const contentType = (res.headers.get('content-type') || '').toLowerCase();
+      const arr = await res.arrayBuffer();
+      const buf = Buffer.from(arr);
+
+      // Prefer content-type, fallback to extension, fallback to magic bytes
+      const isPng = contentType.includes('png')
+        || directUrl.toLowerCase().endsWith('.png')
+        || (buf.length > 4 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47);
+      if (isPng) return await pdfDoc.embedPng(buf);
+      return await pdfDoc.embedJpg(buf);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Función que genera el PDF dinámico cumpliendo todas las condiciones del código original.
    */
   async makePDF(
@@ -153,10 +194,20 @@ export class PdfService {
         addDniClient &&
         typeof handoverDocuments.delivery_document === 'string' &&
         handoverDocuments.delivery_document.trim() !== '';
+      const mustAddFuelReceipt =
+        step === 4 &&
+        addDniClient &&
+        typeof handoverDocuments.fuel_receipt === 'string' &&
+        handoverDocuments.fuel_receipt.trim() !== '';
+      const mustAddSelfie =
+        step === 4 &&
+        addDniClient &&
+        typeof recipientIdentity.selfieWithId === 'string' &&
+        recipientIdentity.selfieWithId.trim() !== '';
 
-      if (mustAddCertificate) {
-        extraHeight = 900; // Aumentaremos 300px
-      }
+      if (mustAddCertificate) extraHeight += 900;
+      if (mustAddFuelReceipt) extraHeight += 600;
+      if (mustAddSelfie) extraHeight += 260;
 
       let pageHeight = addQr ? baseWithImage : baseWithImage - qrSectionHeight;
       pageHeight += extraHeight;
@@ -1145,30 +1196,7 @@ export class PdfService {
                 color: rgb(0, 0, 0),
               });
               if (wixImageUrl && typeof wixImageUrl === 'string') {
-                const tryEmbed = async (src: string) => {
-                  try {
-                    // data URI
-                    if (src.startsWith('data:image/')) {
-                      const [, b64] = src.split(',');
-                      const buf = Buffer.from(b64, 'base64');
-                      if (src.includes('png')) return await pdfDoc.embedPng(buf);
-                      return await pdfDoc.embedJpg(buf);
-                    }
-                    // wix -> directo
-                    const wixMatch = src.match(/^wix:image:\/\/v1\/(.+?)\//);
-                    const url = wixMatch && wixMatch[1]
-                      ? `https://static.wixstatic.com/media/${wixMatch[1]}`
-                      : src;
-                    const res = await fetch(url);
-                    const arr = await res.arrayBuffer();
-                    const buf = Buffer.from(arr);
-                    if (url.toLowerCase().endsWith('.png')) return await pdfDoc.embedPng(buf);
-                    return await pdfDoc.embedJpg(buf);
-                  } catch {
-                    return null;
-                  }
-                };
-                const img = await tryEmbed(wixImageUrl);
+                const img = await this.embedImageFromSource(pdfDoc, wixImageUrl);
                 if (img) {
                   page.drawImage(img, {
                     x: xPosition + 10,
@@ -1615,7 +1643,7 @@ export class PdfService {
           currentY -= 240; // Espacio después de los documentos
           const selfieData = [
             'Foto receptor del vehiculo',
-            travel.imgSelfieDniReceiver,
+            recipientIdentity.selfieWithId || '',
           ];
           // En esta fila se usará una sola celda que abarque el ancho completo (500px)
           const cellWidthSelfie = 500;
@@ -1664,39 +1692,16 @@ export class PdfService {
           const wixImageUrlSelfie = selfieData[1];
           console.log('url selfie', wixImageUrlSelfie);
           if (wixImageUrlSelfie) {
-            const wixImagePattern = /^wix:image:\/\/v1\/(.+?)\//;
-            const match = wixImageUrlSelfie.match(wixImagePattern);
-            if (match && match[1]) {
-              const imageId = match[1];
-              const directImageUrl = `https://static.wixstatic.com/media/${imageId}`;
-              const imageFormat: any = wixImageUrlSelfie.includes('.png')
-                ? 'png'
-                : 'jpg';
-              const response = await fetch(directImageUrl);
-              const arrayBuffer = await response.arrayBuffer();
-              const imageBuffer = Buffer.from(arrayBuffer);
-              let embeddedImage;
-              if (imageFormat === 'jpg' || imageFormat === 'jpeg') {
-                embeddedImage = await pdfDoc.embedJpg(imageBuffer);
-              } else if (imageFormat === 'png') {
-                embeddedImage = await pdfDoc.embedPng(imageBuffer);
-              } else {
-                console.warn(
-                  `Formato de imagen no soportado para ${selfieData[0]}`,
-                );
-              }
-              if (embeddedImage) {
-                page.drawImage(embeddedImage, {
-                  x: xPosSelfie + 10,
-                  y: currentY + 10,
-                  width: cellWidthSelfie - 20,
-                  height: cellHeightSelfie - 20,
-                });
-              }
+            const embeddedImage = await this.embedImageFromSource(pdfDoc, wixImageUrlSelfie);
+            if (embeddedImage) {
+              page.drawImage(embeddedImage, {
+                x: xPosSelfie + 10,
+                y: currentY + 10,
+                width: cellWidthSelfie - 20,
+                height: cellHeightSelfie - 20,
+              });
             } else {
-              console.warn(
-                `No se pudo extraer el ID de la imagen para ${selfieData[0]}`,
-              );
+              console.warn(`No se pudo incrustar imagen para ${selfieData[0]}`);
             }
           } else {
             console.warn(`No hay imagen disponible para ${selfieData[0]}`);
@@ -1851,53 +1856,33 @@ export class PdfService {
         });
 
         // 4. Dibujar el Certificado (si existe)
-        if (
-          addDniClient &&
-          handoverDocuments?.delivery_document
-        ) {
-          const certificateUrl = handoverDocuments.delivery_document;
-          // Patrón para Wix media URLs
-          const wixImagePattern = /^wix:image:\/\/v1\/(.+?)\//;
-          const match = certificateUrl.match(wixImagePattern);
-
-          // Calcula URL directa
-          const imageId = match?.[1];
-          const directImageUrl = imageId
-            ? `https://static.wixstatic.com/media/${imageId}`
-            : certificateUrl;
-
-          // Determina formato por la extensión
-          const imageFormat = directImageUrl.toLowerCase().endsWith('.png')
-            ? 'png'
-            : 'jpg';
-
-          try {
-            const response = await fetch(directImageUrl);
-            if (!response.ok) {
-              throw new Error(`HTTP ${response.status} al cargar imagen`);
-            }
-            const arrayBuffer = await response.arrayBuffer();
-            const imageBuffer = Buffer.from(arrayBuffer);
-
-            let embeddedImage: any;
-            if (imageFormat === 'png') {
-              embeddedImage = await pdfDoc.embedPng(imageBuffer);
-            } else {
-              // jpg o jpeg
-              embeddedImage = await pdfDoc.embedJpg(imageBuffer);
-            }
-
-            // Dibuja la imagen en el PDF
+        if (addDniClient && handoverDocuments?.delivery_document) {
+          const embeddedImage = await this.embedImageFromSource(pdfDoc, handoverDocuments.delivery_document);
+          if (embeddedImage) {
             page.drawImage(embeddedImage, {
               x: 50,
               y: 50,
               width: 500,
               height: 680,
             });
+            currentY -= 320;
+          } else {
+            console.error('Error incrustando delivery_document: formato/URL no soportado');
+          }
+        }
 
-            currentY -= 320; // Ajuste tras renderizar
-          } catch (err) {
-            console.error('Error incrustando delivery_document:', err);
+        if (addDniClient && handoverDocuments?.fuel_receipt) {
+          const embeddedImage = await this.embedImageFromSource(pdfDoc, handoverDocuments.fuel_receipt);
+          if (embeddedImage) {
+            page.drawImage(embeddedImage, {
+              x: 50,
+              y: 50,
+              width: 500,
+              height: 300,
+            });
+            currentY -= 320;
+          } else {
+            console.warn('No se pudo incrustar ticket de combustible');
           }
         }
       } else {
@@ -1966,28 +1951,8 @@ export class PdfService {
               color: rgb(0, 0, 0),
             });
             if (wixImageUrl) {
-              const wixImagePattern = /^wix:image:\/\/v1\/(.+?)\//;
-              const match = wixImageUrl.match(wixImagePattern);
-              if (match && match[1]) {
-                const imageId = match[1];
-                const directImageUrl = `https://static.wixstatic.com/media/${imageId}`;
-                const imageFormat: any = wixImageUrl.includes('.png')
-                  ? 'png'
-                  : 'jpg';
-                const response = await fetch(directImageUrl);
-                const arrayBuffer = await response.arrayBuffer();
-                const imageBuffer = Buffer.from(arrayBuffer);
-                let embeddedImage;
-                if (imageFormat === 'jpg' || imageFormat === 'jpeg') {
-                  embeddedImage = await pdfDoc.embedJpg(imageBuffer);
-                } else if (imageFormat === 'png') {
-                  embeddedImage = await pdfDoc.embedPng(imageBuffer);
-                } else {
-                  console.warn(
-                    `Formato de imagen no soportado para ${description}`,
-                  );
-                  continue;
-                }
+              const embeddedImage = await this.embedImageFromSource(pdfDoc, wixImageUrl);
+              if (embeddedImage) {
                 page.drawImage(embeddedImage, {
                   x: xPositionDNI + 10,
                   y: currentY + 10,
@@ -1995,9 +1960,7 @@ export class PdfService {
                   height: imageHeightDNI,
                 });
               } else {
-                console.warn(
-                  `No se pudo extraer el ID de la imagen para ${description}`,
-                );
+                console.warn(`No se pudo incrustar imagen para ${description}`);
               }
             } else {
               console.warn(`No hay imagen disponible para ${description}`);
