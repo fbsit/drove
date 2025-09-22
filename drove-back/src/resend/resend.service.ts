@@ -19,6 +19,7 @@ export interface ResendSendEmailPayload {
   bcc?: string | string[];
   reply_to?: string | string[];
   headers?: Record<string, string>;
+  attachments?: any[];
 }
 
 interface Payload {
@@ -128,6 +129,24 @@ export class ResendService {
     return process.env.ADMIN_NOTIFICATIONS_EMAIL || 'info@drove.es';
   }
 
+  /**
+   * Envía el mismo email a múltiples destinatarios de forma SECUENCIAL.
+   * No detiene el envío si uno falla; registra errores y continúa.
+   * Devuelve true si al menos un envío fue aceptado.
+   */
+  private async sendToMultipleSequential(
+    recipients: string[],
+    base: Omit<ResendSendEmailPayload, 'to'>,
+  ): Promise<boolean> {
+    let anySuccess = false;
+    for (const to of recipients) {
+      if (!to) continue;
+      const ok = await this.sendEmail({ ...base, to });
+      if (ok) anySuccess = true;
+    }
+    return anySuccess;
+  }
+
   //Correo para asignacion de chofer (email enviar al cliente y personDelivery)
   async sendTransferAssignedEmailClient(travel: Travels | any) {
     const template = this.loadTemplate('transfer‑assigned-client-1');
@@ -205,19 +224,16 @@ export class ResendService {
         (travel?.personDelivery?.email as string) || '',
       ].filter(Boolean)),
     );
-
-    return Promise.all(
-      recipients.map((to) =>
-        this.client!.emails.send({
-          from: 'contacto@drove.es',
-          to,
-          subject: payload.subject,
-          html,
-          ...(attachments ? { attachments } : {}),
-        }),
-      ),
-    ).then(() => true);
+    return this.sendToMultipleSequential(recipients, {
+      from: 'contacto@drove.es',
+      subject: payload.subject,
+      html,
+      ...(attachments ? { attachments } : {}),
+    });
   }
+
+}
+
   //Correo para asignacion de chofer (email chofer y admin (info@drove.es))
   async sendTransferAssignedEmailDJT(travel: Travels | any) {
     const template = this.loadTemplate('transfer‑assigned-drover-2');
@@ -296,18 +312,12 @@ export class ResendService {
         this.getAdminEmail(),
       ].filter(Boolean)),
     );
-
-    return Promise.all(
-      recipients.map((to) =>
-        this.client!.emails.send({
-          from: 'contacto@drove.es',
-          to,
-          subject: payload.subject,
-          html,
-          ...(attachments ? { attachments } : {}),
-        }),
-      ),
-    ).then(() => true);
+    return this.sendToMultipleSequential(recipients, {
+      from: 'contacto@drove.es',
+      subject: payload.subject,
+      html,
+      ...(attachments ? { attachments } : {}),
+    });
   }
   //Correo para confirmar recogida de auto (email cliente y personDelivery)
   async sendConfirmationPickupEmailClient(travel: Travels | any) {
@@ -386,18 +396,12 @@ export class ResendService {
         (travel?.personDelivery?.email as string) || '',
       ].filter(Boolean)),
     );
-
-    return Promise.all(
-      recipients.map((to) =>
-        this.client!.emails.send({
-          from: 'contacto@drove.es',
-          to,
-          subject: 'DROVER se dirigue a su destino',
-          html,
-          ...(attachments ? { attachments } : {}),
-        }),
-      ),
-    ).then(() => true);
+    return this.sendToMultipleSequential(recipients, {
+      from: 'contacto@drove.es',
+      subject: 'DROVER se dirigue a su destino',
+      html,
+      ...(attachments ? { attachments } : {}),
+    });
   }
   //Correo para confirmar recogida de auto (email drover y admin (info@drove.es))
   async sendConfirmationPickupEmailDJT(travel: Travels | any) {
@@ -476,18 +480,12 @@ export class ResendService {
         this.getAdminEmail(),
       ].filter(Boolean)),
     );
-
-    return Promise.all(
-      recipients.map((to) =>
-        this.client!.emails.send({
-          from: 'contacto@drove.es',
-          to,
-          subject: 'DROVER se dirigue a su destino',
-          html,
-          ...(attachments ? { attachments } : {}),
-        }),
-      ),
-    ).then(() => true);
+    return this.sendToMultipleSequential(recipients, {
+      from: 'contacto@drove.es',
+      subject: 'DROVER se dirigue a su destino',
+      html,
+      ...(attachments ? { attachments } : {}),
+    });
   }
   //Correo para llega al destino (email client, admin (info@drove.es), personDelivery, personReceive) (no se envia al drover)
   async sendArrivedEmailDJT(travel: Travels | any) {
@@ -568,18 +566,12 @@ export class ResendService {
         (travel?.personReceive?.email as string) || '',
       ].filter(Boolean)),
     );
-
-    return Promise.all(
-      recipients.map((to) =>
-        this.client!.emails.send({
-          from: 'contacto@drove.es',
-          to,
-          subject: 'DROVER llego a su destino',
-          html,
-          ...(attachments ? { attachments } : {}),
-        }),
-      ),
-    ).then(() => true);
+    return this.sendToMultipleSequential(recipients, {
+      from: 'contacto@drove.es',
+      subject: 'DROVER llego a su destino',
+      html,
+      ...(attachments ? { attachments } : {}),
+    });
   }
   //Correo de entrega de vehiculo (cliente admin (info@drove.es), personReceive) X
   async sendConfirmationDeliveryEmailCJT(travel: Travels | any) {
@@ -659,18 +651,12 @@ export class ResendService {
         (travel?.personReceive?.email as string) || '',
       ].filter(Boolean)),
     );
-
-    return Promise.all(
-      recipients.map((to) =>
-        this.client!.emails.send({
-          from: 'contacto@drove.es',
-          to,
-          subject: payload.subject,
-          html,
-          ...(attachments ? { attachments } : {}),
-        }),
-      ),
-    ).then(() => true);
+    return this.sendToMultipleSequential(recipients, {
+      from: 'contacto@drove.es',
+      subject: payload.subject,
+      html,
+      ...(attachments ? { attachments } : {}),
+    });
   }
   //Correo de entrega de vehiculo (drover) X
   async sendConfirmationDeliveryDrover(travel: Travels | any) {
@@ -748,18 +734,12 @@ export class ResendService {
         (driver?.email as string) || '',
       ].filter(Boolean)),
     );
-
-    return Promise.all(
-      recipients.map((to) =>
-        this.client!.emails.send({
-          from: 'contacto@drove.es',
-          to,
-          subject: payload.subject,
-          html,
-          ...(attachments ? { attachments } : {}),
-        }),
-      ),
-    ).then(() => true);
+    return this.sendToMultipleSequential(recipients, {
+      from: 'contacto@drove.es',
+      subject: payload.subject,
+      html,
+      ...(attachments ? { attachments } : {}),
+    });
   }
   //Correo para verificar correos.
   async sendEmailToverifyEmail(email: string, Code: string) {
