@@ -163,8 +163,8 @@ const TransferDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#22142A] p-4 text-left ">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="text-left ">
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row gap-4 md:items-center items-start justify-between">
           <div className="flex items-center gap-4">
