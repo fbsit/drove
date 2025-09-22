@@ -1488,7 +1488,7 @@ export class PdfService {
           width: 500,
           height: 300,
         });
-        currentY = mapY - 20;
+        currentY = mapY - 40; // margen razonable bajo el mapa
       }
       if (travel.status === 'FINISH') {
         const mapWithRoute = await this.getMapImageWithRoute(
@@ -1513,7 +1513,7 @@ export class PdfService {
           width: 500,
           height: 300,
         });
-        currentY = mapY - 20;
+        currentY = mapY - 40; // margen razonable bajo el mapa
       }
       if (travel.status !== 'REQUEST_FINISH' && travel.status !== 'FINISH') {
         const mapToStart = await this.getMapImage(
@@ -1531,7 +1531,7 @@ export class PdfService {
           width: 500,
           height: 300,
         });
-        currentY = mapY - 20;
+        currentY = mapY - 40; // margen razonable bajo el mapa
       }
 
       if (step === 4) {
@@ -1549,6 +1549,9 @@ export class PdfService {
               recipientIdentity.idBackPhoto || '',
             ],
           ];
+
+          console.log('datosImagenesDNICliente', datosImagenesDNICliente);
+
           const imagesPerRowDNI = 2;
           const cellWidthDNI = 250;
           const cellHeightDNI = 200;
@@ -1564,6 +1567,7 @@ export class PdfService {
           currentY -= 30;
           for (let i = 0; i < datosImagenesDNICliente.length; i++) {
             const [description, wixImageUrl] = datosImagenesDNICliente[i];
+            console.log('description', description);
             page.drawRectangle({
               x: xPositionDNI,
               y: currentY,
@@ -1605,39 +1609,24 @@ export class PdfService {
               thickness: 1,
               color: rgb(0, 0, 0),
             });
+            console.log('wixImageUrl', wixImageUrl);
             if (wixImageUrl) {
-              const wixImagePattern = /^wix:image:\/\/v1\/(.+?)\//;
-              const match = wixImageUrl.match(wixImagePattern);
-              if (match && match[1]) {
-                const imageId = match[1];
-                const directImageUrl = `https://static.wixstatic.com/media/${imageId}`;
-                const imageFormat: any = wixImageUrl.includes('.png')
-                  ? 'png'
-                  : 'jpg';
-                const response = await fetch(directImageUrl);
-                const arrayBuffer = await response.arrayBuffer();
-                const imageBuffer = Buffer.from(arrayBuffer);
-                let embeddedImage;
-                if (imageFormat === 'jpg' || imageFormat === 'jpeg') {
-                  embeddedImage = await pdfDoc.embedJpg(imageBuffer);
-                } else if (imageFormat === 'png') {
-                  embeddedImage = await pdfDoc.embedPng(imageBuffer);
-                } else {
-                  console.warn(
-                    `Formato de imagen no soportado para ${description}`,
-                  );
-                  continue;
-                }
+              const embeddedImage: any = await this.embedImageFromSource(pdfDoc, wixImageUrl);
+              if (embeddedImage) {
+                const scale = Math.min(
+                  imageWidthDNI / (embeddedImage.width || imageWidthDNI),
+                  imageHeightDNI / (embeddedImage.height || imageHeightDNI),
+                );
+                const dims = embeddedImage.scale ? embeddedImage.scale(scale) : { width: imageWidthDNI, height: imageHeightDNI };
+                console.log('embeddedImage', embeddedImage);
                 page.drawImage(embeddedImage, {
-                  x: xPositionDNI + 10,
-                  y: currentY + 10,
-                  width: imageWidthDNI,
-                  height: imageHeightDNI,
+                  x: xPositionDNI + (imageWidthDNI - (dims.width || imageWidthDNI)) / 2 + 10,
+                  y: currentY + (imageHeightDNI - (dims.height || imageHeightDNI)) / 2 + 10,
+                  width: (dims.width || imageWidthDNI),
+                  height: (dims.height || imageHeightDNI),
                 });
               } else {
-                console.warn(
-                  `No se pudo extraer el ID de la imagen para ${description}`,
-                );
+                console.warn(`No se pudo incrustar imagen para ${description}`);
               }
             } else {
               console.warn(`No hay imagen disponible para ${description}`);
