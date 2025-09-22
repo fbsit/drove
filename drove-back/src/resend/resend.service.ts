@@ -55,6 +55,9 @@ interface Payload {
   holder_signature_url?: string;
   driver_signature_url?: string;
   doc_issue_date?: string;
+  // entrega
+  delivery_date?: string;
+  delivery_time?: string;
   pickup_address: {
     street: string;
     postal_code: string;
@@ -549,6 +552,7 @@ export class ResendService {
     const client = travel.client;
     const pickup = travel.startAddress;
     const delivery = travel.endAddress;
+    const deliveryVerification = travel?.deliveryVerification || {};
 
     const payload: Payload = {
       to: client.email,
@@ -558,8 +562,14 @@ export class ResendService {
       qr_code_url: this.buildQrUrl('delivery', travel.id),
       driver_name: driver ? `${driver.contactInfo.fullName}` : 'Por asignar',
       driver_phone: driver ? driver.contactInfo.phone : '',
-      pickup_date: travel.travelDate,
-      pickup_time: travel.travelTime,
+      pickup_date: travel.travelDate || '',
+      pickup_time: travel.travelTime || '',
+      delivery_date: new Date(travel?.updatedAt || Date.now()).toLocaleDateString('es-ES'),
+      delivery_time: (() => {
+        const time = (deliveryVerification as any)?.time || travel?.timeTravel || travel?.travelTime || '';
+        return typeof time === 'string' && time ? time : new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      })(),
+      transport_id: travel.id,
       client_name: client.contactInfo.fullName,
       request_id: travel.id,
       vehicle_type: travel.typeVehicle,
