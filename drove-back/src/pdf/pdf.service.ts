@@ -1488,7 +1488,7 @@ export class PdfService {
           width: 500,
           height: 300,
         });
-        currentY = mapY - 320; // dejar 20px + alto del mapa
+        currentY = mapY - 40; // margen razonable bajo el mapa
       }
       if (travel.status === 'FINISH') {
         const mapWithRoute = await this.getMapImageWithRoute(
@@ -1513,7 +1513,7 @@ export class PdfService {
           width: 500,
           height: 300,
         });
-        currentY = mapY - 320; // dejar 20px + alto del mapa
+        currentY = mapY - 40; // margen razonable bajo el mapa
       }
       if (travel.status !== 'REQUEST_FINISH' && travel.status !== 'FINISH') {
         const mapToStart = await this.getMapImage(
@@ -1531,7 +1531,7 @@ export class PdfService {
           width: 500,
           height: 300,
         });
-        currentY = mapY - 320; // dejar 20px + alto del mapa
+        currentY = mapY - 40; // margen razonable bajo el mapa
       }
 
       if (step === 4) {
@@ -1549,6 +1549,9 @@ export class PdfService {
               recipientIdentity.idBackPhoto || '',
             ],
           ];
+
+          console.log('datosImagenesDNICliente', datosImagenesDNICliente);
+
           const imagesPerRowDNI = 2;
           const cellWidthDNI = 250;
           const cellHeightDNI = 200;
@@ -1564,6 +1567,7 @@ export class PdfService {
           currentY -= 30;
           for (let i = 0; i < datosImagenesDNICliente.length; i++) {
             const [description, wixImageUrl] = datosImagenesDNICliente[i];
+            console.log('description', description);
             page.drawRectangle({
               x: xPositionDNI,
               y: currentY,
@@ -1605,14 +1609,21 @@ export class PdfService {
               thickness: 1,
               color: rgb(0, 0, 0),
             });
+            console.log('wixImageUrl', wixImageUrl);
             if (wixImageUrl) {
-              const embeddedImage = await this.embedImageFromSource(pdfDoc, wixImageUrl);
+              const embeddedImage: any = await this.embedImageFromSource(pdfDoc, wixImageUrl);
               if (embeddedImage) {
+                const scale = Math.min(
+                  imageWidthDNI / (embeddedImage.width || imageWidthDNI),
+                  imageHeightDNI / (embeddedImage.height || imageHeightDNI),
+                );
+                const dims = embeddedImage.scale ? embeddedImage.scale(scale) : { width: imageWidthDNI, height: imageHeightDNI };
+                console.log('embeddedImage', embeddedImage);
                 page.drawImage(embeddedImage, {
-                  x: xPositionDNI + 10,
-                  y: currentY + 10,
-                  width: imageWidthDNI,
-                  height: imageHeightDNI,
+                  x: xPositionDNI + (imageWidthDNI - (dims.width || imageWidthDNI)) / 2 + 10,
+                  y: currentY + (imageHeightDNI - (dims.height || imageHeightDNI)) / 2 + 10,
+                  width: (dims.width || imageWidthDNI),
+                  height: (dims.height || imageHeightDNI),
                 });
               } else {
                 console.warn(`No se pudo incrustar imagen para ${description}`);
