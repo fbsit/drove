@@ -44,6 +44,17 @@ interface Payload {
   // datos del remitente (persona que entrega)
   holder_name?: string;
   holder_phone?: string;
+  // datos cliente
+  client_phone?: string;
+  // datos del receptor (persona que recibe)
+  receiver_name?: string;
+  receiver_phone?: string;
+  receiver_dni?: string;
+  // otros
+  transport_id?: string;
+  holder_signature_url?: string;
+  driver_signature_url?: string;
+  doc_issue_date?: string;
   pickup_address: {
     street: string;
     postal_code: string;
@@ -357,6 +368,7 @@ export class ResendService {
     const client = travel.client;
     const pickup = travel.startAddress;
     const delivery = travel.endAddress;
+    const pickupVerification = travel?.pickupVerification || {};
 
     const payload: Payload = {
       to: client.email,
@@ -369,6 +381,13 @@ export class ResendService {
       pickup_date: travel.travelDate,
       pickup_time: travel.travelTime,
       client_name: client.contactInfo.fullName,
+      client_phone: client?.contactInfo?.phone || '',
+      holder_signature_url:
+        typeof pickupVerification?.signature === 'string'
+          ? pickupVerification.signature
+          : (travel?.signatureStartClient || ''),
+      driver_signature_url: '',
+      doc_issue_date: new Date().toLocaleDateString('es-ES'),
       request_id: travel.id,
       vehicle_type: travel.typeVehicle,
       brand: travel.brandVehicle,
@@ -441,6 +460,7 @@ export class ResendService {
     const client = travel.client;
     const pickup = travel.startAddress;
     const delivery = travel.endAddress;
+    const receiver = travel.personReceive || {};
 
     const payload: Payload = {
       to: client.email,
@@ -450,6 +470,10 @@ export class ResendService {
       qr_code_url: this.buildQrUrl('withdrawals', travel.id),
       driver_name: driver ? `${driver.contactInfo.fullName}` : 'Por asignar',
       driver_phone: driver ? driver.contactInfo.phone : '',
+      receiver_name: receiver?.fullName || '',
+      receiver_phone: receiver?.phone || '',
+      receiver_dni: receiver?.dni || '',
+      transport_id: travel.id,
       pickup_date: travel.travelDate,
       pickup_time: travel.travelTime,
       client_name: client.contactInfo.fullName,
