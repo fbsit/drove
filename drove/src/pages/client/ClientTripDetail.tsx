@@ -294,7 +294,7 @@ export default function ClientTripDetail() {
                 className="font-montserrat font-bold text-xl md:text-3xl mt-2"
                 style={{ color: "#0A2B4B" }}
               >
-                €{trip?.totalPrice.toLocaleString("es-ES", { minimumFractionDigits: 2 })}
+                €{Number(trip?.totalPrice ?? 0).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <div className="text-xs text-center font-montserrat" style={{ color: "#1264a3" }}>
                 Este es el precio total a abonar por el servicio.
@@ -410,12 +410,14 @@ export default function ClientTripDetail() {
               <div className="mt-6">
                 <GoogleMapComponent
                   originAddress={{
-                    city: trip.startAddress.city,
+                    address: trip?.startAddress?.address || trip?.startAddress?.city,
+                    city: trip?.startAddress?.city,
                     lat: trip?.startAddress?.lat,
                     lng: trip?.startAddress?.lng,
                   }}
                   destinationAddress={{
-                    city: trip.endAddress.city,
+                    address: trip?.endAddress?.address || trip?.endAddress?.city,
+                    city: trip?.endAddress?.city,
                     lat: trip?.endAddress?.lat,
                     lng: trip?.endAddress?.lng,
                   }}
