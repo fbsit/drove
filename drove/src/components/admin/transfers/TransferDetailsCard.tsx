@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from '@/hooks/use-toast';
 import RescheduleModal from './RescheduleModal';
+import { formatDateTimeEs } from '@/utils/datetime';
 import GoogleMapComponent from "@/components/maps/GoogleMap";
 
 interface LocalTransferDetail {
@@ -89,20 +90,22 @@ const TransferDetailsCard: React.FC<TransferDetailsCardProps> = ({ transfer: ini
   console.log('TransferDetailsCard render - transfer status:', transfer.status);
   console.log('Show reschedule button?', ["pendiente", "asignado"].includes(transfer.status || ""));
 
-  const formatDate = (iso?: string) => {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    return `${d.toLocaleDateString('es-ES')} ${d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
+  const formatDate = (dateStr?: string, timeStr?: string) => {
+    return formatDateTimeEs(dateStr, timeStr) || '—';
   };
 
   const handleReschedule = (newDate: Date, newTime: string, reason: string) => {
-    const newISODate = newDate.toISOString();
+    // Persist date-only string to avoid timezone shifts; keep time separately
+    const yyyy = newDate.getFullYear();
+    const mm = String(newDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(newDate.getDate()).padStart(2, '0');
+    const dateOnly = `${yyyy}-${mm}-${dd}`;
 
     setTransfer(prev => ({
       ...prev,
-      pickupDate: newISODate,
+      pickupDate: dateOnly,
       pickupTime: newTime,
-      travelDate: newISODate,
+      travelDate: dateOnly,
       travelTime: newTime,
       isRescheduled: true,
       rescheduleReason: reason
@@ -283,10 +286,10 @@ const TransferDetailsCard: React.FC<TransferDetailsCardProps> = ({ transfer: ini
                     <p className="text-xs  font-medium">RECOGIDA PROGRAMADA</p>
                   </div>
 
-                  <div className="text-center mb-4">
-                    <p className="font-semibold  text-base leading-tight">
-                      {formatDate(getTravelDate())} a las {getTravelTime()}
-                    </p>
+              <div className="text-center mb-4">
+                <p className="font-semibold  text-base leading-tight">
+                  {formatDate(getTravelDate(), getTravelTime())}
+                </p>
                     {transfer.isRescheduled && transfer.rescheduleReason && (
                       <p className="text-xs text-blue-600 mt-2 bg-blue-50 px-2 py-1 rounded">
                         Reprogramado por: {transfer.rescheduleReason}

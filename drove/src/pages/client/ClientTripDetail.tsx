@@ -25,6 +25,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import MobileClientTripDetail from "@/components/client/MobileClientTripDetail";
 import ReviewModal from "@/components/client/ReviewModal";
 import { TransferService } from '@/services/transferService';
+import { formatDateOnlyEs } from '@/utils/datetime';
 
 function glassCardClass(tone: "default" | "blue" | "green" | "purple" = "default") {
   switch (tone) {
@@ -39,17 +40,8 @@ function glassCardClass(tone: "default" | "blue" | "green" | "purple" = "default
   }
 }
 
-// Fecha formateada tipo español
-const formatFecha = (str: string) => {
-  if (!str) return "";
-  const date = new Date(str);
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(date);
-};
+// Fecha formateada tipo español, respetando YYYY-MM-DD como fecha local
+const formatFecha = (str: string) => formatDateOnlyEs(str);
 
 const formatFechaHora = (str: string) => {
   if (!str) return "";
