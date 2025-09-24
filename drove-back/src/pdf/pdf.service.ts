@@ -1564,7 +1564,7 @@ export class PdfService {
           const titlePadding = 5;
           let xPositionDNI = paddingXDNI;
           // Posicionar los DNI inmediatamente después del mapa
-          currentY -= 30;
+          currentY -= 80;
           for (let i = 0; i < datosImagenesDNICliente.length; i++) {
             const [description, wixImageUrl] = datosImagenesDNICliente[i];
             console.log('description', description);
@@ -1814,6 +1814,7 @@ export class PdfService {
           currentY -= 500;
           for (let i = 0; i < datosImagenesDNICliente.length; i++) {
             const [description, wixImageUrl] = datosImagenesDNICliente[i];
+            console.log("agregando wixImageUrl", wixImageUrl);
             page.drawRectangle({
               x: xPositionDNI,
               y: currentY,
