@@ -1589,7 +1589,7 @@ export class PdfService {
           const titleHeight = 20;
           const titlePadding = 5;
           const cellWidthSelfie = 500;
-          const cellHeightSelfie = 220;
+          const cellHeightSelfie = 420;
           const xPosSelfie = 50; // Centrado si la página es de 600px con márgenes de 50 a cada lado
 
           page.drawRectangle({
@@ -1636,11 +1636,22 @@ export class PdfService {
           if (wixImageUrlSelfie) {
             const embeddedImage = await this.embedImageFromSource(pdfDoc, wixImageUrlSelfie);
             if (embeddedImage) {
+              // Calcular área disponible bajo el título para evitar solapamiento
+              const maxW = cellWidthSelfie - 20;
+              const maxH = cellHeightSelfie - titleBoxHeightSelfie - 20;
+              const naturalW = (embeddedImage as any).width || maxW;
+              const naturalH = (embeddedImage as any).height || maxH;
+              const scale = Math.min(maxW / naturalW, maxH / naturalH);
+              const targetW = Math.max(1, Math.floor(naturalW * scale));
+              const targetH = Math.max(1, Math.floor(naturalH * scale));
+              const imgX = xPosSelfie + (cellWidthSelfie - targetW) / 2;
+              const imgY = currentY + 10 + (maxH - targetH) / 2;
+
               page.drawImage(embeddedImage, {
-                x: xPosSelfie + 10,
-                y: currentY + 10,
-                width: cellWidthSelfie - 20,
-                height: cellHeightSelfie - 20,
+                x: imgX,
+                y: imgY,
+                width: targetW,
+                height: targetH,
               });
             } else {
               console.warn(`No se pudo incrustar imagen para ${selfieData[0]}`);
@@ -1648,7 +1659,7 @@ export class PdfService {
           } else {
             console.warn(`No hay imagen disponible para ${selfieData[0]}`);
           }
-          currentY -= cellHeightSelfie + 30;
+          currentY -= cellHeightSelfie + 50;
         } // Fin de bloque DNI
         // 2. Dibujar Bloque de Firmas (con líneas envolventes como en el diseño)
         const signBlockHeight = 140;
