@@ -1564,7 +1564,7 @@ export class PdfService {
           const titlePadding = 5;
           let xPositionDNI = paddingXDNI;
           // Posicionar los DNI inmediatamente después del mapa
-          currentY -= 80;
+          currentY -= 130;
           for (let i = 0; i < datosImagenesDNICliente.length; i++) {
             const [description, wixImageUrl] = datosImagenesDNICliente[i];
             console.log('description', description);
@@ -1708,11 +1708,12 @@ export class PdfService {
           }
           currentY -= cellHeightSelfie + 30;
         } // Fin de bloque DNI
-        // 2. Dibujar Bloque de Firmas (relativo)
+        // 2. Dibujar Bloque de Firmas (con líneas envolventes como en el diseño)
         const signBlockHeight = 140;
         const signImageWidth = 240;
         const signImageHeight = 100;
-        const ySign = currentY - signImageHeight - 20;
+        const ySign = currentY - signImageHeight - 20; // base para imágenes
+        const topLineY = ySign + signImageHeight + 40; // línea superior del bloque
 
         // Firma cliente
         const clientSignatureSource = addDniClient
@@ -1740,13 +1741,27 @@ export class PdfService {
           }
         }
 
+        // Marco del bloque de firmas (top/bottom + divisor central)
+        page.drawLine({ start: { x: 50, y: topLineY }, end: { x: 550, y: topLineY }, thickness: 2, color: rgb(0, 0, 0) });
+
+        const labelY = ySign - 18; // posición del texto de etiqueta
+        const bottomLineY = labelY - 25; // línea inferior debajo de la etiqueta
+
         // Etiquetas
-        page.drawText('Firma del cliente', { x: 100, y: ySign - 18, size: 13, font: font, color: rgb(0,0,0) });
+        page.drawText('Firma del cliente', { x: 100, y: labelY, size: 13, font: font, color: rgb(0,0,0) });
         if (addBothSignature) {
-          page.drawText('Firma del chofer', { x: 390, y: ySign - 18, size: 13, font: font, color: rgb(0,0,0) });
+          page.drawText('Firma del chofer', { x: 390, y: labelY, size: 13, font: font, color: rgb(0,0,0) });
         }
 
-        currentY = ySign - 40;
+        // Línea inferior
+        page.drawLine({ start: { x: 50, y: bottomLineY }, end: { x: 550, y: bottomLineY }, thickness: 2, color: rgb(0, 0, 0) });
+
+        // Divisor central
+        if (addBothSignature) {
+          page.drawLine({ start: { x: 300, y: topLineY }, end: { x: 300, y: bottomLineY }, thickness: 3, color: rgb(0, 0, 0) });
+        }
+
+        currentY = bottomLineY - 20;
 
         // Texto final
         page.drawText(
