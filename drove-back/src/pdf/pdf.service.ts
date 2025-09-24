@@ -1801,6 +1801,7 @@ export class PdfService {
               recipientIdentity.idBackPhoto || '',
             ],
           ];
+          console.log('datosImagenesDNICliente', datosImagenesDNICliente);
           const imagesPerRowDNI = 2;
           const cellWidthDNI = 250;
           const cellHeightDNI = 200;
