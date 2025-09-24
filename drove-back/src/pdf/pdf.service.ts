@@ -1753,6 +1753,10 @@ export class PdfService {
           page.drawText('Firma del chofer', { x: 390, y: labelY, size: 13, font: font, color: rgb(0,0,0) });
         }
 
+        // Línea superior inmediatamente sobre el texto de las firmas
+        const captionTopLineY = labelY + 14;
+        page.drawLine({ start: { x: 50, y: captionTopLineY }, end: { x: 550, y: captionTopLineY }, thickness: 2, color: rgb(0, 0, 0) });
+
         // Línea inferior
         page.drawLine({ start: { x: 50, y: bottomLineY }, end: { x: 550, y: bottomLineY }, thickness: 2, color: rgb(0, 0, 0) });
 
