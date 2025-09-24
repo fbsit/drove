@@ -1578,8 +1578,7 @@ export class PdfService {
               color: rgb(1, 1, 1),
             });
             const titleBoxHeightDNI = titleHeightDNI + titlePaddingDNI * 2;
-            const titleYPositionDNI =
-              currentY + cellHeightDNI - titleBoxHeightDNI;
+            const titleYPositionDNI = currentY + cellHeightDNI - titleBoxHeightDNI;
             page.drawLine({
               start: {
                 x: xPositionDNI,
@@ -1613,17 +1612,24 @@ export class PdfService {
             if (wixImageUrl) {
               const embeddedImage: any = await this.embedImageFromSource(pdfDoc, wixImageUrl);
               if (embeddedImage) {
-                const scale = Math.min(
-                  imageWidthDNI / (embeddedImage.width || imageWidthDNI),
-                  imageHeightDNI / (embeddedImage.height || imageHeightDNI),
-                );
-                const dims = embeddedImage.scale ? embeddedImage.scale(scale) : { width: imageWidthDNI, height: imageHeightDNI };
-                console.log('embeddedImage', embeddedImage);
+                // Área disponible para imagen (debajo del título)
+                const maxW = cellWidthDNI - 20;
+                const maxH = cellHeightDNI - titleBoxHeightDNI - 20;
+                const naturalW = embeddedImage.width || maxW;
+                const naturalH = embeddedImage.height || maxH;
+                const scale = Math.min(maxW / naturalW, maxH / naturalH);
+                const targetW = Math.max(1, Math.floor(naturalW * scale));
+                const targetH = Math.max(1, Math.floor(naturalH * scale));
+
+                // Centrar dentro de la celda completa
+                const imgX = xPositionDNI + (cellWidthDNI - targetW) / 2;
+                const imgY = currentY + 10 + (maxH - targetH) / 2;
+
                 page.drawImage(embeddedImage, {
-                  x: xPositionDNI + (imageWidthDNI - (dims.width || imageWidthDNI)) / 2 + 10,
-                  y: currentY + (imageHeightDNI - (dims.height || imageHeightDNI)) / 2 + 10,
-                  width: (dims.width || imageWidthDNI),
-                  height: (dims.height || imageHeightDNI),
+                  x: imgX,
+                  y: imgY,
+                  width: targetW,
+                  height: targetH,
                 });
               } else {
                 console.warn(`No se pudo incrustar imagen para ${description}`);
@@ -1632,12 +1638,9 @@ export class PdfService {
               console.warn(`No hay imagen disponible para ${description}`);
             }
             xPositionDNI += cellWidthDNI;
-            if (
-              (i + 1) % imagesPerRowDNI === 0 &&
-              i !== datosImagenesDNICliente.length - 1
-            ) {
+            if ((i + 1) % imagesPerRowDNI === 0 && i !== datosImagenesDNICliente.length - 1) {
               xPositionDNI = paddingXDNI;
-              currentY -= cellHeightDNI;
+              currentY -= cellHeightDNI + 20; // espacio vertical extra entre filas
             }
           }
           currentY -= 40; // Espacio después de los documentos
