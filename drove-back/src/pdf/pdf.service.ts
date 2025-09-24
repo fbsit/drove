@@ -1539,116 +1539,55 @@ export class PdfService {
 
         // 1. Dibujar Documentos del Usuario (DNI)
         if (addDniClient) {
-          const datosImagenesDNICliente: [string, string][] = [
-            [
-              'Anverso DNI cliente',
-              recipientIdentity.idFrontPhoto || '',
-            ],
-            [
-              'Reverso DNI cliente',
-              recipientIdentity.idBackPhoto || '',
-            ],
-          ];
-
-          console.log('datosImagenesDNICliente', datosImagenesDNICliente);
-
-          const imagesPerRowDNI = 2;
+          // Render directo sin bucles para evitar problemas de buffers
           const cellWidthDNI = 250;
           const cellHeightDNI = 200;
-          const imageWidthDNI = cellWidthDNI - 20;
-          const imageHeightDNI = 150;
           const paddingXDNI = 50;
           const titleHeightDNI = 20;
-          const titleHeight = 20;
           const titlePaddingDNI = 5;
-          const titlePadding = 5;
-          let xPositionDNI = paddingXDNI;
-          // Posicionar los DNI inmediatamente después del mapa
+          const titleBoxHeightDNI = titleHeightDNI + titlePaddingDNI * 2;
+
+          // Posicionar inmediatamente después del mapa
           currentY -= 180;
-          for (let i = 0; i < datosImagenesDNICliente.length; i++) {
-            const [description, wixImageUrl] = datosImagenesDNICliente[i];
-            console.log('description', description);
-            page.drawRectangle({
-              x: xPositionDNI,
-              y: currentY,
-              width: cellWidthDNI,
-              height: cellHeightDNI,
-              borderWidth: 1,
-              borderColor: rgb(0, 0, 0),
-              color: rgb(1, 1, 1),
-            });
-            const titleBoxHeightDNI = titleHeightDNI + titlePaddingDNI * 2;
-            const titleYPositionDNI = currentY + cellHeightDNI - titleBoxHeightDNI;
-            page.drawLine({
-              start: {
-                x: xPositionDNI,
-                y: titleYPositionDNI + titleBoxHeightDNI,
-              },
-              end: {
-                x: xPositionDNI + cellWidthDNI,
-                y: titleYPositionDNI + titleBoxHeightDNI,
-              },
-              thickness: 1,
-              color: rgb(0, 0, 0),
-            });
-            const textWidthDNI = helveticaBoldFont.widthOfTextAtSize(
-              description,
-              fontSize,
-            );
-            page.drawText(description, {
-              x: xPositionDNI + cellWidthDNI / 2 - textWidthDNI / 2,
-              y: titleYPositionDNI + titlePaddingDNI + 5,
-              size: fontSize,
-              font: helveticaBoldFont,
-              color: rgb(0, 0, 0),
-            });
-            page.drawLine({
-              start: { x: xPositionDNI, y: titleYPositionDNI },
-              end: { x: xPositionDNI + cellWidthDNI, y: titleYPositionDNI },
-              thickness: 1,
-              color: rgb(0, 0, 0),
-            });
-            console.log('wixImageUrl', wixImageUrl);
-            if (wixImageUrl) {
-              const embeddedImage: any = await this.embedImageFromSource(pdfDoc, wixImageUrl);
-              if (embeddedImage) {
-                // Área disponible para imagen (debajo del título)
-                const maxW = cellWidthDNI - 20;
-                const maxH = cellHeightDNI - titleBoxHeightDNI - 20;
-                const naturalW = embeddedImage.width || maxW;
-                const naturalH = embeddedImage.height || maxH;
-                const scale = Math.min(maxW / naturalW, maxH / naturalH);
-                const targetW = Math.max(1, Math.floor(naturalW * scale));
-                const targetH = Math.max(1, Math.floor(naturalH * scale));
 
-                // Centrar dentro de la celda completa
-                const imgX = xPositionDNI + (cellWidthDNI - targetW) / 2;
-                const imgY = currentY + 10 + (maxH - targetH) / 2;
+          const drawDniCell = async (x: number, y: number, title: string, url: string) => {
+            // Marco de la celda
+            page.drawRectangle({ x, y, width: cellWidthDNI, height: cellHeightDNI, borderWidth: 1, borderColor: rgb(0,0,0), color: rgb(1,1,1) });
+            // Título
+            const titleY = y + cellHeightDNI - titleBoxHeightDNI;
+            page.drawLine({ start: { x, y: titleY + titleBoxHeightDNI }, end: { x: x + cellWidthDNI, y: titleY + titleBoxHeightDNI }, thickness: 1, color: rgb(0,0,0) });
+            const textW = helveticaBoldFont.widthOfTextAtSize(title, fontSize);
+            page.drawText(title, { x: x + cellWidthDNI/2 - textW/2, y: titleY + titlePaddingDNI + 5, size: fontSize, font: helveticaBoldFont, color: rgb(0,0,0) });
+            page.drawLine({ start: { x, y: titleY }, end: { x: x + cellWidthDNI, y: titleY }, thickness: 1, color: rgb(0,0,0) });
 
-                page.drawImage(embeddedImage, {
-                  x: imgX,
-                  y: imgY,
-                  width: targetW,
-                  height: targetH,
-                });
-              } else {
-                console.warn(`No se pudo incrustar imagen para ${description}`);
-              }
-            } else {
-              console.warn(`No hay imagen disponible para ${description}`);
-            }
-            xPositionDNI += cellWidthDNI;
-            if ((i + 1) % imagesPerRowDNI === 0 && i !== datosImagenesDNICliente.length - 1) {
-              xPositionDNI = paddingXDNI;
-              currentY -= cellHeightDNI + 20; // espacio vertical extra entre filas
-            }
-          }
-          currentY -= 40; // Espacio después de los documentos
+            if (!url) return;
+            const embeddedImage: any = await this.embedImageFromSource(pdfDoc, url);
+            if (!embeddedImage) return;
+
+            // Área disponible para imagen (debajo del título)
+            const maxW = cellWidthDNI - 20;
+            const maxH = cellHeightDNI - titleBoxHeightDNI - 20;
+            const naturalW = embeddedImage.width || maxW;
+            const naturalH = embeddedImage.height || maxH;
+            const scale = Math.min(maxW / naturalW, maxH / naturalH);
+            const targetW = Math.max(1, Math.floor(naturalW * scale));
+            const targetH = Math.max(1, Math.floor(naturalH * scale));
+            const imgX = x + (cellWidthDNI - targetW) / 2;
+            const imgY = y + 10 + (maxH - targetH) / 2;
+            page.drawImage(embeddedImage, { x: imgX, y: imgY, width: targetW, height: targetH });
+          };
+
+          await drawDniCell(paddingXDNI, currentY, 'Anverso DNI cliente', recipientIdentity.idFrontPhoto || '');
+          await drawDniCell(paddingXDNI + cellWidthDNI, currentY, 'Reverso DNI cliente', recipientIdentity.idBackPhoto || '');
+
+          currentY -= cellHeightDNI + 40; // Espacio después de los documentos
           const selfieData = [
             'Foto receptor del vehiculo',
             recipientIdentity.selfieWithId || '',
           ];
           // En esta fila se usará una sola celda que abarque el ancho completo (500px)
+          const titleHeight = 20;
+          const titlePadding = 5;
           const cellWidthSelfie = 500;
           const cellHeightSelfie = 220;
           const xPosSelfie = 50; // Centrado si la página es de 600px con márgenes de 50 a cada lado
@@ -1802,7 +1741,7 @@ export class PdfService {
           const embeddedImage = await this.embedImageFromSource(pdfDoc, handoverDocuments.delivery_document);
           if (embeddedImage) {
             const certHeight = 680;
-            const yCert = Math.max(50, currentY - certHeight - 20);
+            const yCert = Math.max(50, currentY - certHeight - 300);
             page.drawImage(embeddedImage, { x: 50, y: yCert, width: 500, height: certHeight });
             currentY = yCert - 20;
           } else {
