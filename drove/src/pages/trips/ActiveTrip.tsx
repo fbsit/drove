@@ -510,7 +510,7 @@ const ActiveTrip: React.FC = () => {
         </Card>
 
         {/* Contactos: Remitente, (Drover), Receptor */}
-        <div className={`grid grid-cols-1 ${showDroverCard ? 'xl:grid-cols-3' : 'xl:grid-cols-2'} gap-6 text-left`}>
+        <div className={`grid grid-cols-1 xl:grid-cols-3 gap-6 text-left`}>
           {/* Remitente (primero) */}
           <Card className="w-full justify-self-start bg-white/10 border-white/10">
             <CardContent className="p-5">
