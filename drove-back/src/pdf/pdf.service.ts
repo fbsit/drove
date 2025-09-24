@@ -1564,7 +1564,7 @@ export class PdfService {
           const titlePadding = 5;
           let xPositionDNI = paddingXDNI;
           // Posicionar los DNI inmediatamente después del mapa
-          currentY -= 130;
+          currentY -= 180;
           for (let i = 0; i < datosImagenesDNICliente.length; i++) {
             const [description, wixImageUrl] = datosImagenesDNICliente[i];
             console.log('description', description);
