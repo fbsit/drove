@@ -236,6 +236,7 @@ const ActiveTrip: React.FC = () => {
 
   // Check if current user is the assigned drover
   const isAssignedDrover = user?.id === trip?.droverId;
+  const showDroverCard = Boolean(trip?.drover && !isAssignedDrover);
 
   const handleIniciarViaje = async () => {
     if (trip.status === 'PICKED_UP') {
@@ -508,10 +509,10 @@ const ActiveTrip: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Contactos: Entrega y Recepción */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 text-left">
-          {/* Persona que entrega (segundo) */}
-          <Card className="w-full justify-self-start bg-gradient-to-br bg-white/10 border-white/10">
+        {/* Contactos: Remitente, (Drover), Receptor */}
+        <div className={`grid grid-cols-1 ${showDroverCard ? 'xl:grid-cols-3' : 'xl:grid-cols-2'} gap-6 text-left`}>
+          {/* Remitente (primero) */}
+          <Card className="w-full justify-self-start bg-white/10 border-white/10">
             <CardContent className="p-5">
               <div className="flex items-start gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center">
@@ -530,7 +531,36 @@ const ActiveTrip: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-          {/* Persona que recibe (primero) */}
+
+          {/* Drover (oculto para el propio drover) */}
+          {showDroverCard && (
+            <Card className="w-full justify-self-start bg-white/10 border-white/10">
+              <CardContent className="p-5">
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center overflow-hidden">
+                    {trip.drover?.contactInfo?.selfie || (trip as any)?.drover?.avatar || (trip as any)?.drover?.selfie ? (
+                      <img
+                        src={(trip.drover as any)?.contactInfo?.selfie || (trip as any)?.drover?.avatar || (trip as any)?.drover?.selfie}
+                        alt="Selfie del drover"
+                        className="w-12 h-12 object-cover"
+                      />
+                    ) : (
+                      <User className="text-[#6EF7FF]" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-white font-semibold">Drover asignado</div>
+                    <div className="text-white/60 text-sm">Conductor</div>
+                  </div>
+                </div>
+                <div className="mt-4 space-y-2 text-white">
+                  <div className="font-semibold">{trip.drover?.contactInfo?.fullName || (trip as any)?.drover?.full_name || '—'}</div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Receptor (segundo) */}
           <Card className="w-full justify-self-start bg-white/10 border-white/10">
             <CardContent className="p-5">
               <div className="flex items-start gap-3">
@@ -550,7 +580,6 @@ const ActiveTrip: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-
         </div>
 
         {/* Callout final */}
