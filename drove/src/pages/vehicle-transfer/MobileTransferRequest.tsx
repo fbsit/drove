@@ -45,7 +45,7 @@ const MobileTransferRequest = () => {
       window.location.href = created.url;
     } else if (created?.id) {
       // flujo transferencia
-      navigate(`/traslados/${created.id}`);
+      navigate(`/cliente/traslados/${created.id}`);
     } else {
       navigate('/cliente/dashboard');
     }

@@ -142,7 +142,7 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
               {getStatusLabel(trip.status)}
             </span>
             <span className="text-white/60 text-xs font-medium">
-              Creado el {formatFecha(trip.created_at)}
+              Creado el {formatFecha(trip.createdAt || trip.created_at)}
             </span>
           </div>
         </div>

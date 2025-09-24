@@ -242,7 +242,7 @@ export default function ClientTripDetail() {
                   {getStatusLabel(trip.status)}
                 </span>
                 <span className="text-white/60 text-sm font-montserrat">
-                  Creado el {formatFecha(trip.created_at)}
+                  Creado el {formatFecha(trip.createdAt || trip.created_at)}
                 </span>
               </div>
             </div>
