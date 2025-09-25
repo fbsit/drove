@@ -1,4 +1,4 @@
-
+import { MapPin } from 'lucide-react';
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -114,7 +114,7 @@ const MobileTransferCard: React.FC<MobileTransferCardProps> = ({ transfer }) => 
   return (
     <>
       {/* Aumentamos el ancho máximo y mejoramos el layout */}
-      <Card className="w-full max-w-sm bg-white/10 shadow-sm border border-gray-100 rounded-xl overflow-hidden mx-auto">
+      <Card className="w-full max-w-sm bg-white/10 shadow-sm border border-gray-100/70 rounded-xl overflow-hidden mx-auto">
         <CardContent className="p-4">
           {/* Header con estado y fecha */}
           <div className="flex items-center justify-between mb-3">
@@ -122,6 +122,9 @@ const MobileTransferCard: React.FC<MobileTransferCardProps> = ({ transfer }) => 
               {statusConfig.icon}
               {statusConfig.label}
             </Badge>
+            <div className="w-7 h-7 bg-[#6EF7FF]/20 rounded-lg flex items-center justify-center">
+              <Car className="h-4 w-4 text-[#6EF7FF]" />
+            </div>
             {transfer.isRescheduled && (
               <Badge className="bg-amber-100 text-amber-800 border-amber-200 flex items-center gap-1 text-xs font-medium animate-pulse rounded-lg">
                 <CalendarClock className="h-3 w-3" />
@@ -133,71 +136,57 @@ const MobileTransferCard: React.FC<MobileTransferCardProps> = ({ transfer }) => 
           {/* Información del vehículo */}
           <div className="mb-3">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 bg-[#6EF7FF]/20 rounded-lg flex items-center justify-center">
-                <Car className="h-4 w-4 text-white/90" />
-              </div>
               <div className="flex-1">
                 <div className="text-white/90 font-bold text-sm leading-tight">
                   {transfer.brand} {transfer.model}
                 </div>
-                <div className="text-gray-600 text-xs font-mono">
+                <div className="text-gray-100 text-xs font-mono">
                   #{transfer.licensePlate} • {transfer.year}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Ruta */}
-          <div className="mb-3 bg-gray-50/60 rounded-xl p-3">
-            <div className="flex items-start gap-2">
-              <div className="flex flex-col items-center mt-1">
-                <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                <div className="w-0.5 h-6 bg-gray-300 my-1"></div>
-                <div className="w-2 h-2 rounded-full bg-red-500"></div>
-              </div>
-              <div className="flex-1 space-y-2">
-                <div>
-                  <div className="text-xs text-gray-700 uppercase tracking-wide mb-0.5">
-                    Origen
-                  </div>
-                  <div className="text-white text-xs font-medium leading-tight">
-                    {transfer.originAddress}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-700 uppercase tracking-wide mb-0.5">
-                    Destino
-                  </div>
-                  <div className="text-white text-xs font-medium leading-tight">
-                    {transfer.destinationAddress}
+          {/* Ruta Y fecha */}
+          <div className="mb-3 bg-gray-50/10 rounded-xl p-3">
+            <div className="flex flex-col items-start gap-2">
+              <div className="flex items-center gap-2 text-sm">
+                <MapPin className="h-3 w-3 text-white transition-colors duration-300 mt-0.5 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex sm:items-center gap-2">
+                    <span className="text-white/90 gray-50/90 transition-colors duration-300 truncate">{transfer?.originAddress}</span>
+                    <span className="text-white inline">→</span>
+                    <span className="text-white gray-50/90 transition-colors duration-300 truncate">{transfer?.destinationAddress}</span>
                   </div>
                 </div>
               </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Calendar className="h-3 w-3 text-white" />
+                <div className="text-xs">
+                  <p className="text-white font-medium">
+                    {transfer.pickupDate ? formatDate(transfer.pickupDate) : formatDate(transfer.created_at)}
+                    <span> - {transfer.pickupTime && (
+                      <div className="text-white inline text-xs">
+                        {transfer.pickupTime}
+                        {transfer.isRescheduled && (
+                          <span className="ml-1 text-amber-600 font-medium">(Nueva fecha)</span>
+                        )}
+                      </div>
+                    )}</span>
+                  </p>
+
+                </div>
+              </div>
+
             </div>
           </div>
 
-          {/* Fecha y precio */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-3 w-3 text-gray-500" />
-              <div className="text-xs">
-                <div className="text-white/90 font-medium">
-                  {transfer.pickupDate ? formatDate(transfer.pickupDate) : formatDate(transfer.created_at)}
-                </div>
-                {transfer.pickupTime && (
-                  <div className="text-gray-500 text-xs">
-                    {transfer.pickupTime}
-                    {transfer.isRescheduled && (
-                      <span className="ml-1 text-amber-600 font-medium">(Nueva fecha)</span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="text-right">
+          {/* precio */}
+          <div className="flex items-center justify-center mb-3">
+            <div className="text-center">
               <div className="flex items-center gap-1">
-                <Euro className="h-3 w-3 text-white/90" />
-                <span className="text-white/90 font-bold text-base">{transfer.price}€</span>
+                <Euro className="text-[#6EF7FF] h-3 w-3 text-bg-[#6EF7FF]" />
+                <span className="text-[#6EF7FF] font-bold text-base">{transfer.price}€</span>
               </div>
             </div>
           </div>
@@ -286,7 +275,7 @@ const MobileTransferCard: React.FC<MobileTransferCardProps> = ({ transfer }) => 
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full rounded-xl border-[#22142A] text-white/90 hover:bg-gray-50 text-xs py-2.5 font-medium"
+                className="w-full rounded-xl border-[#6EF7FF]/40 text-[#6EF7FF] hover:bg-gray-100/80 text-xs py-2.5 font-medium"
               >
                 <Eye className="h-3 w-3 mr-2" />
                 Ver detalles del traslado

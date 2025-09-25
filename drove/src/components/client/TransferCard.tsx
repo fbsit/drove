@@ -103,7 +103,7 @@ const TransferCard: React.FC<any> = ({ transfer }) => {
 
   return (
     <>
-      <Card className={`w-full max-w-full rounded-2xl shadow-lg hover:shadow-xl transition-all border border-white/10 duration-300 group bg-white/5`}>
+      <Card className={`w-full max-w-full rounded-2xl shadow-lg hover:shadow-xl transition-all border border-red/10 duration-300 group bg-white/5`}>
         <CardContent className="p-4 md:p-6">
           <div className="flex flex-col lg:flex-row lg:items-center gap-4">
             {/* Información principal */}
@@ -198,9 +198,9 @@ const TransferCard: React.FC<any> = ({ transfer }) => {
 
           {/* Información adicional para estados específicos */}
           {(transfer.status === TransferStatus.IN_PROGRESS || transfer.status === TransferStatus.ASSIGNED) && (
-            <div className="mt-4 p-3 bg-black/10 rounded-xl border border-black/10">
+            <div className="mt-4 p-3 bg-white/10 rounded-xl border border-black/10">
               <div className="flex items-center justify-center text-center text-xs">
-                <span className="text-white/80 transition-colors text-center duration-300">
+                <span className="text-white transition-colors text-center duration-300">
                   {transfer.status === TransferStatus.IN_PROGRESS ? 'Tu vehículo está en camino' : 'Un drover está asignado a tu traslado'}
                 </span>
                 {transfer.status === TransferStatus.IN_PROGRESS && (

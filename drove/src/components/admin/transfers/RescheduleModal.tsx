@@ -87,44 +87,60 @@ const RescheduleModal: React.FC<RescheduleModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-[#22142A] border-white/20 text-white">
+      <DialogContent className="bg-[#22142A] rounded-2xl border-white/20 text-white max-w-[90vw] lg:max-w-[600px] py-8 px-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-[#6EF7FF]" />
             Reprogramar Traslado
           </DialogTitle>
-          <DialogDescription className="text-white/70">
-            Selecciona la nueva fecha y hora para el traslado {transferId && `#${transferId}`}
+          <br />
+          <DialogDescription className="text-white/90 text-start">
+            Selecciona la nueva fecha y hora para el traslado <br /> "{transferId && `#${transferId}`}"
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="space-y-4 mt-4">
-          <div className="space-y-2">
-            <Label htmlFor="new-date" className="text-white/90">
-              Nueva fecha
-            </Label>
-            <Input
-              id="new-date"
-              type="date"
-              value={newDate}
-              onChange={(e) => setNewDate(e.target.value)}
-              min={minDate}
-              className="bg-white/10 border-white/20 text-white"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="new-time" className="text-white/90 flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Nueva hora
-            </Label>
-            <Input
-              id="new-time"
-              type="time"
-              value={newTime}
-              onChange={(e) => setNewTime(e.target.value)}
-              className="bg-white/10 border-white/20 text-white"
-            />
+
+        <div className="space-y-4 mt-1">
+          <div className='flex flex-col lg:flex-row items-center gap-4'>
+            <div className="w-full space-y-2">
+              <Label htmlFor="new-date" className="text-white/90 flex items-center">
+                Nueva fecha
+              </Label>
+              <Input
+                id="new-date"
+                type="date"
+                value={newDate}
+                onChange={(e) => setNewDate(e.target.value)}
+                min={minDate}
+                className="bg-white/10 relative border-white/20 text-white w-full cursor-pointer"
+                onClick={(e) => {
+                  const target = e.currentTarget as HTMLInputElement;
+                  if (typeof target.showPicker === "function") {
+                    target.showPicker();
+                  }
+                }}
+              />
+
+            </div>
+
+            <div className="space-y-2 w-full">
+              <Label htmlFor="new-time" className="text-white/90 flex items-center">
+                {/* <Clock className="h-4 w-4" /> */}
+                Nueva hora
+              </Label>
+              <Input
+                id="new-time"
+                type="time"
+                value={newTime}
+                onChange={(e) => setNewTime(e.target.value)}
+                className="bg-white/10 relative border-white/20 text-white w-full cursor-pointer"
+                onClick={(e) => {
+                  const target = e.currentTarget as HTMLInputElement;
+                  if (typeof target.showPicker === "function") {
+                    target.showPicker();
+                  }
+                }}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -141,10 +157,10 @@ const RescheduleModal: React.FC<RescheduleModalProps> = ({
             />
           </div>
         </div>
-        
-        <div className="flex gap-3 mt-6">
+
+        <div className="flex gap-3 mt-6 flex-wrap">
           <Button
-            variant="outline"
+            variant="destructive"
             onClick={onClose}
             className="flex-1"
           >

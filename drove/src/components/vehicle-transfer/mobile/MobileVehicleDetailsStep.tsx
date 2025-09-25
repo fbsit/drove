@@ -33,11 +33,10 @@ const MobileVehicleDetailsStep: React.FC<MobileVehicleDetailsStepProps> = ({ for
                 <button
                   type="button"
                   onClick={() => field.onChange('coche')}
-                  className={`p-4 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center gap-2 ${
-                    field.value === 'coche'
-                      ? ''
+                  className={`p-4 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center gap-2 ${field.value === 'coche'
+                      ? 'border-[#6EF7FF] bg-[#6EF7FF]/10 text-[#6EF7FF]'
                       : 'border-white/20 bg-white/5 text-white/70'
-                  }`}
+                    }`}
                 >
                   <Car className="h-6 w-6" />
                   <div className="font-medium text-sm">Coche</div>
@@ -45,11 +44,10 @@ const MobileVehicleDetailsStep: React.FC<MobileVehicleDetailsStepProps> = ({ for
                 <button
                   type="button"
                   onClick={() => field.onChange('camioneta')}
-                  className={`p-4 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center gap-2 ${
-                    field.value === 'camioneta'
+                  className={`p-4 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center gap-2 ${field.value === 'camioneta'
                       ? 'border-[#6EF7FF] bg-[#6EF7FF]/10 text-[#6EF7FF]'
                       : 'border-white/20 bg-white/5 text-white/70'
-                  }`}
+                    }`}
                 >
                   <Truck className="h-6 w-6" />
                   <div className="font-medium text-sm">Camioneta</div>

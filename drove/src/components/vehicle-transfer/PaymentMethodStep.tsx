@@ -28,7 +28,7 @@ const PaymentMethodStep: React.FC<PaymentMethodStepProps> = ({ form }) => {
             >
               <FormItem>
                 <Card className={`border cursor-pointer hover:border-[#6EF7FF]/50 transition-all ${field.value === 'card' ? 'border-[#6EF7FF] bg-[#6EF7FF]/10' : 'border-white/10 bg-white/5'}`}>
-                  <CardContent className="p-6 flex items-center gap-4">
+                  <CardContent className="p-6 flex gap-4 text-start">
                     <RadioGroupItem value="card" id="card" className="sr-only" />
                     <label htmlFor="card" className="flex-1 cursor-pointer flex items-center gap-3">
                       <CreditCard className="h-5 w-5 text-[#6EF7FF]" />
@@ -43,7 +43,7 @@ const PaymentMethodStep: React.FC<PaymentMethodStepProps> = ({ form }) => {
 
               <FormItem>
                 <Card className={`border cursor-pointer hover:border-[#6EF7FF]/50 transition-all ${field.value === 'transfer' ? 'border-[#6EF7FF] bg-[#6EF7FF]/10' : 'border-white/10 bg-white/5'}`}>
-                  <CardContent className="p-6 flex items-center gap-4">
+                  <CardContent className="p-6 flex text-start gap-4">
                     <RadioGroupItem value="transfer" id="transfer" className="sr-only" />
                     <label htmlFor="transfer" className="flex-1 cursor-pointer flex items-center gap-3">
                       <Banknote className="h-5 w-5 text-[#6EF7FF]" />

@@ -237,7 +237,7 @@ export const AssignDriver: React.FC = () => {
           : 'Desconocido';
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div >
       {/* encabezado */}
       <div className="flex items-center gap-3 mb-8">
         <UserPlus className="h-8 w-8 text-[#6EF7FF]" />

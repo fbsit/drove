@@ -54,12 +54,12 @@ const FinalHandoverStep: React.FC<Props> = ({
 
   const handleImageUpload = async (key: ImgKey, file: File) => {
     setUploading(prev => ({ ...prev, [key]: true }))
-    
+
     try {
       const optimized = await optimizeImageForUpload(file, 1600, 0.75)
       const folderPath = `travel/${transferId}/delivery/documents`
       const imageUrl = await StorageService.uploadImage(optimized, folderPath)
-      
+
       if (imageUrl) {
         setImageUrls(prev => ({ ...prev, [key]: imageUrl }))
         toast.success('Imagen subida correctamente')
