@@ -1589,7 +1589,7 @@ export class PdfService {
           const titleHeight = 20;
           const titlePadding = 5;
           const cellWidthSelfie = 500;
-          const cellHeightSelfie = 420;
+          const cellHeightSelfie = 320;
           const xPosSelfie = 50; // Centrado si la página es de 600px con márgenes de 50 a cada lado
 
           const ySelfie = currentY - cellHeightSelfie; // dibujar debajo de los DNI
