@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,7 @@ const AdminProfile = () => {
 
   const [formData, setFormData] = useState<any>(emptyAdmin);
   const [contactInfo, setContactInfo] = useState<any | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchAdmin = async () => {
@@ -399,6 +401,7 @@ const AdminProfile = () => {
               <CardContent className="space-y-4">
                 <Button
                   className="w-full justify-start bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold rounded-2xl"
+                  onClick={() => navigate('/admin/clientes')}
                 >
                   <Users className="mr-2" size={16} />
                   Gestionar Usuarios
@@ -406,6 +409,7 @@ const AdminProfile = () => {
 
                 <Button
                   className="w-full justify-start bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold rounded-2xl"
+                  onClick={() => navigate('/admin/drovers')}
                 >
                   <Car className="mr-2" size={16} />
                   Ver Drovers
@@ -413,6 +417,7 @@ const AdminProfile = () => {
 
                 <Button
                   className="w-full justify-start bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold rounded-2xl"
+                  onClick={() => navigate('/admin/reportes')}
                 >
                   <TrendingUp className="mr-2" size={16} />
                   Reportes
