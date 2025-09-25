@@ -46,6 +46,54 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const { toast } = useToast();
 
+  const droverNameSafe = (
+    trip?.drover?.full_name ||
+    trip?.drover?.contactInfo?.fullName ||
+    trip?.drover?.name ||
+    'Drover'
+  );
+  const droverPhoneSafe = (
+    trip?.drover?.telefono ||
+    trip?.drover?.contactInfo?.phone ||
+    (trip?.drover?.contactInfo?.phones?.[0]) ||
+    '—'
+  );
+  const droverEmailSafe = (
+    trip?.drover?.email ||
+    trip?.drover?.contactInfo?.email ||
+    '—'
+  );
+
+  // Helpers para distancia, duración y precio con tolerancia a tipos/ausencias
+  const distanceKmSafe = (() => {
+    const d = trip?.transfer_details?.distance ?? trip?.distanceTravel;
+    const num = typeof d === 'string' ? parseFloat(d.toString().replace(/[^0-9,.]/g, '').replace(',', '.')) : Number(d);
+    return isNaN(num) ? 0 : Math.round(num);
+  })();
+
+  const durationMinutesSafe = (() => {
+    const d = trip?.transfer_details?.duration;
+    if (typeof d === 'number' && isFinite(d)) return Math.max(0, Math.round(d));
+    if (typeof d === 'string') {
+      const parsed = parseInt(d, 10);
+      if (!isNaN(parsed)) return parsed;
+    }
+    const t = trip?.timeTravel;
+    if (typeof t === 'string' && t.includes(':')) {
+      const [minsStr = '0'] = t.split(':');
+      const mins = parseInt(minsStr, 10);
+      return isNaN(mins) ? 0 : mins;
+    }
+    if (typeof t === 'number') return Math.max(0, Math.round(t));
+    return 0;
+  })();
+
+  const priceTotalSafe = (() => {
+    const p = trip?.transfer_details?.totalPrice ?? trip?.totalPrice ?? trip?.priceRoute;
+    const num = typeof p === 'string' ? parseFloat(p.replace(/[^0-9,.]/g, '').replace(',', '.')) : Number(p);
+    return isNaN(num) ? 0 : num;
+  })();
+
   const handleCopyId = () => {
     navigator.clipboard.writeText(trip.id);
     toast({
@@ -156,16 +204,16 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
             <span className="font-montserrat font-bold text-white text-sm">Vehículo</span>
           </div>
           <div className="text-white font-montserrat font-bold text-lg mb-3 text-center">
-            {trip.vehicle_details.brand} {trip.vehicle_details.model}
+            {(trip?.vehicle_details?.brand || trip?.brandVehicle || trip?.vehicle?.brand || '—')} {(trip?.vehicle_details?.model || trip?.modelVehicle || trip?.vehicle?.model || '')}
           </div>
           <div className="grid grid-cols-3 gap-3 text-xs">
             <div className="bg-white/10 rounded-xl p-3 text-center">
               <span className="text-white/60 block mb-1 font-medium">Año</span>
-              <span className="font-bold text-[#6EF7FF]">{trip.vehicle_details.year}</span>
+              <span className="font-bold text-[#6EF7FF]">{trip?.vehicle_details?.year || trip?.yearVehicle || '—'}</span>
             </div>
             <div className="bg-white/10 rounded-xl p-3 text-center">
               <span className="text-white/60 block mb-1 font-medium">Matrícula</span>
-              <span className="font-bold text-[#6EF7FF]">{trip.vehicle_details.licensePlate}</span>
+              <span className="font-bold text-[#6EF7FF]">{trip?.vehicle_details?.licensePlate || trip?.patentVehicle || trip?.licensePlate || '—'}</span>
             </div>
             <div className="bg-white/10 rounded-xl p-3 text-center">
               <span className="text-white/60 block mb-1 font-medium">Estado</span>
@@ -184,7 +232,7 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
               <div>
                 <span className="text-xs text-white/60 block">Precio total</span>
                   <span className="font-montserrat font-bold text-lg text-white">
-                  €{Number(trip?.transfer_details?.totalPrice ?? 0).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  €{priceTotalSafe.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
@@ -223,22 +271,22 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
           <div className="space-y-3 text-xs">
             <div className="bg-white/5 rounded-xl p-4">
               <span className="font-montserrat font-bold text-[#6EF7FF] block mb-1">Origen:</span>
-              <span className="text-white/90 leading-relaxed">{trip.pickup_details.originAddress}</span>
+              <span className="text-white/90 leading-relaxed">{trip?.pickup_details?.originAddress || trip?.startAddress?.address || trip?.startAddress?.city || '—'}</span>
             </div>
             <div className="bg-white/5 rounded-xl p-4">
               <span className="font-montserrat font-bold text-[#d95fef] block mb-1">Destino:</span>
-              <span className="text-white/90 leading-relaxed">{trip.pickup_details.destinationAddress}</span>
+              <span className="text-white/90 leading-relaxed">{trip?.pickup_details?.destinationAddress || trip?.endAddress?.address || trip?.endAddress?.city || '—'}</span>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-white/15 rounded-xl p-4 text-center shadow-md">
                 <span className="text-xs text-white/60 block mb-1 font-medium">Distancia</span>
-                <span className="font-bold text-[#6EF7FF] text-base">{trip.transfer_details.distance} km</span>
+                <span className="font-bold text-[#6EF7FF] text-base">{distanceKmSafe} km</span>
               </div>
               <div className="bg-white/15 rounded-xl p-4 text-center shadow-md">
                 <span className="text-xs text-white/60 block mb-1 font-medium">Duración</span>
                 <span className="font-bold text-[#6EF7FF] text-base">
-                  {Math.floor(trip.transfer_details.duration / 60)}h
+                  {Math.floor(durationMinutesSafe / 60)}h {durationMinutesSafe % 60}min
                 </span>
               </div>
             </div>
@@ -253,7 +301,7 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
                 )}
               </div>
               <div className="text-white font-bold text-sm text-center">
-                {formatFecha(trip.pickup_details.pickupDate)} - {trip.pickup_details.pickupTime}
+                {formatFecha(trip?.pickup_details?.pickupDate || trip?.travelDate)} - {(trip?.pickup_details?.pickupTime || trip?.travelTime || '--:--')}
               </div>
               {trip.isRescheduled && (
                 <div className="mt-1 text-xs text-amber-300/80 font-medium text-center">
@@ -292,18 +340,18 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
             <div className="mt-4 rounded-xl overflow-hidden shadow-lg">
               <GoogleMapComponent
                 originAddress={{
-                  address: trip.pickup_details.originAddress,
-                  city: trip.pickup_details.originAddress,
-                  lat: 40.4168,
-                  lng: -3.7038,
+                  address: (trip?.pickup_details?.originAddress || trip?.startAddress?.address || trip?.startAddress?.city || ''),
+                  city: (trip?.startAddress?.city || trip?.pickup_details?.originAddress || ''),
+                  lat: trip?.startAddress?.lat ?? 40.4168,
+                  lng: trip?.startAddress?.lng ?? -3.7038,
                 }}
                 destinationAddress={{
-                  address: trip.pickup_details.destinationAddress,
-                  city: trip.pickup_details.destinationAddress,
-                  lat: 41.3879,
-                  lng: 2.16992,
+                  address: (trip?.pickup_details?.destinationAddress || trip?.endAddress?.address || trip?.endAddress?.city || ''),
+                  city: (trip?.endAddress?.city || trip?.pickup_details?.destinationAddress || ''),
+                  lat: trip?.endAddress?.lat ?? 41.3879,
+                  lng: trip?.endAddress?.lng ?? 2.16992,
                 }}
-                isAddressesSelected={true}
+                isAddressesSelected={Boolean((trip?.startAddress || trip?.pickup_details) && (trip?.endAddress || trip?.pickup_details))}
               />
             </div>
           )}
@@ -319,16 +367,16 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
               <span className="text-[#22142A] font-montserrat font-bold text-sm">Remitente</span>
             </div>
             <div className="bg-white/30 rounded-xl p-4">
-              <div className="text-[#22142A] font-montserrat font-bold text-base mb-1 text-center">{trip.sender.name}</div>
-              <div className="text-[#22142A]/80 text-sm font-semibold mb-2 text-center">{trip.sender.dni}</div>
+              <div className="text-[#22142A] font-montserrat font-bold text-base mb-1 text-center">{trip?.sender?.name || trip?.personDelivery?.fullName || '—'}</div>
+              <div className="text-[#22142A]/80 text-sm font-semibold mb-2 text-center">{trip?.sender?.dni || trip?.personDelivery?.dni || '—'}</div>
               <div className="text-[#22142A]/70 text-xs space-y-1">
                 <div className="flex items-center justify-center gap-1">
                   <Mail className="w-3 h-3" />
-                  <span>{trip.sender.email}</span>
+                  <span>{trip?.sender?.email || trip?.personDelivery?.email || '—'}</span>
                 </div>
                 <div className="flex items-center justify-center gap-1">
                   <Phone className="w-3 h-3" />
-                  <span>{trip.sender.phone}</span>
+                  <span>{trip?.sender?.phone || trip?.personDelivery?.phone || '—'}</span>
                 </div>
               </div>
             </div>
@@ -342,12 +390,12 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
             </div>
             <div className="flex items-center gap-3 bg-white/30 rounded-xl p-4">
               <div className="bg-[#b5eaff] text-[#22142A] rounded-xl w-12 h-12 flex items-center justify-center font-montserrat font-bold text-lg shadow-lg border-2 border-white mx-auto">
-                {trip.drover.full_name[0] ?? "D"}
+                {(droverNameSafe || 'D').toString().slice(0,1)}
               </div>
               <div className="flex-1 text-center">
-                <div className="text-[#22142A] font-montserrat font-bold text-base mb-0.5">{trip.drover.full_name}</div>
-                <div className="text-[#22142A]/80 text-sm font-semibold mb-0.5">{trip.drover.telefono}</div>
-                <div className="text-[#22142A]/70 text-xs">{trip.drover.email}</div>
+                <div className="text-[#22142A] font-montserrat font-bold text-base mb-0.5">{droverNameSafe}</div>
+                <div className="text-[#22142A]/80 text-sm font-semibold mb-0.5">{droverPhoneSafe}</div>
+                <div className="text-[#22142A]/70 text-xs">{droverEmailSafe}</div>
               </div>
             </div>
           </div>
@@ -359,16 +407,16 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
               <span className="text-[#22142A] font-montserrat font-bold text-sm">Receptor</span>
             </div>
             <div className="bg-white/30 rounded-xl p-4">
-              <div className="text-[#22142A] font-montserrat font-bold text-base mb-1 text-center">{trip.receiver.name}</div>
-              <div className="text-[#22142A]/80 text-sm font-semibold mb-2 text-center">{trip.receiver.dni}</div>
+              <div className="text-[#22142A] font-montserrat font-bold text-base mb-1 text-center">{trip?.receiver?.name || trip?.personReceive?.fullName || '—'}</div>
+              <div className="text-[#22142A]/80 text-sm font-semibold mb-2 text-center">{trip?.receiver?.dni || trip?.personReceive?.dni || '—'}</div>
               <div className="text-[#22142A]/70 text-xs space-y-1">
                 <div className="flex items-center justify-center gap-1">
                   <Mail className="w-3 h-3" />
-                  <span>{trip.receiver.email}</span>
+                  <span>{trip?.receiver?.email || trip?.personReceive?.email || '—'}</span>
                 </div>
                 <div className="flex items-center justify-center gap-1">
                   <Phone className="w-3 h-3" />
-                  <span>{trip.receiver.phone}</span>
+                  <span>{trip?.receiver?.phone || trip?.personReceive?.phone || '—'}</span>
                 </div>
               </div>
             </div>
@@ -415,7 +463,7 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
         isOpen={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}
         transferId={trip.id}
-        droverName={trip.drover.full_name}
+        droverName={(trip?.drover?.full_name || trip?.drover?.contactInfo?.fullName || trip?.drover?.name || 'Drover')}
         onReviewSubmitted={handleReviewSubmitted}
       />
     </div>

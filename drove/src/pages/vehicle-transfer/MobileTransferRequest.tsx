@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,7 @@ const MobileTransferRequest = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { step, form, nextStep, prevStep, validateStep } = useVehicleTransferRequest();
+  const [didAutoCreate, setDidAutoCreate] = useState(false);
 
   const handleNext = async () => {
     const isValid = await validateStep(step);
@@ -51,24 +52,41 @@ const MobileTransferRequest = () => {
     }
   };
 
+  // Auto-enviar en el último paso cuando el método sea transferencia bancaria (móvil)
+  useEffect(() => {
+    if (step === 7 && !didAutoCreate) {
+      const pm = form.getValues().paymentMethod;
+      if (pm && pm !== 'card') {
+        (async () => {
+          try {
+            setDidAutoCreate(true);
+            await onSubmit(form.getValues() as any);
+          } catch {
+            setDidAutoCreate(false);
+          }
+        })();
+      }
+    }
+  }, [step]);
+
   const renderStep = () => {
     switch (step) {
       case 1:
-        return <MobileVehicleDetailsStep form={form} />;
+        return <MobileVehicleDetailsStep form={form as any} />;
       case 2:
-        return <PickupDetailsStep form={form} />;
+        return <PickupDetailsStep form={form as any} />;
       case 3:
-        return <MobileSenderDetailsStep form={form} />;
+        return <MobileSenderDetailsStep form={form as any} />;
       case 4:
-        return <MobileReceiverDetailsStep form={form} />;
+        return <MobileReceiverDetailsStep form={form as any} />;
       case 5:
-        return <MobileTransferDetailsStep form={form} onNext={handleNext} onPrev={handlePrevious} />;
+        return <MobileTransferDetailsStep form={form as any} onNext={handleNext} onPrev={handlePrevious} />;
       case 6:
-        return <MobilePaymentMethodStep form={form} />;
+        return <MobilePaymentMethodStep form={form as any} />;
       case 7:
-        return <MobileConfirmationStep form={form} />;
+        return <MobileConfirmationStep form={form as any} />;
       default:
-        return <MobileVehicleDetailsStep form={form} />;
+        return <MobileVehicleDetailsStep form={form as any} />;
     }
   };
 
