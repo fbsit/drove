@@ -1592,9 +1592,10 @@ export class PdfService {
           const cellHeightSelfie = 420;
           const xPosSelfie = 50; // Centrado si la página es de 600px con márgenes de 50 a cada lado
 
+          const ySelfie = currentY - cellHeightSelfie; // dibujar debajo de los DNI
           page.drawRectangle({
             x: xPosSelfie,
-            y: currentY,
+            y: ySelfie,
             width: cellWidthSelfie,
             height: cellHeightSelfie,
             borderWidth: 1,
@@ -1602,8 +1603,7 @@ export class PdfService {
             color: rgb(1, 1, 1),
           });
           const titleBoxHeightSelfie = titleHeight + titlePadding * 2;
-          const titleYPosSelfie =
-            currentY + cellHeightSelfie - titleBoxHeightSelfie;
+          const titleYPosSelfie = ySelfie + cellHeightSelfie - titleBoxHeightSelfie;
           page.drawLine({
             start: { x: xPosSelfie, y: titleYPosSelfie + titleBoxHeightSelfie },
             end: {
@@ -1645,7 +1645,7 @@ export class PdfService {
               const targetW = Math.max(1, Math.floor(naturalW * scale));
               const targetH = Math.max(1, Math.floor(naturalH * scale));
               const imgX = xPosSelfie + (cellWidthSelfie - targetW) / 2;
-              const imgY = currentY + 10 + (maxH - targetH) / 2;
+              const imgY = ySelfie + 10 + (maxH - targetH) / 2;
 
               page.drawImage(embeddedImage, {
                 x: imgX,
@@ -1659,7 +1659,7 @@ export class PdfService {
           } else {
             console.warn(`No hay imagen disponible para ${selfieData[0]}`);
           }
-          currentY -= cellHeightSelfie + 50;
+          currentY = ySelfie - 50;
         } // Fin de bloque DNI
         // 2. Dibujar Bloque de Firmas (con líneas envolventes como en el diseño)
         const signBlockHeight = 140;
