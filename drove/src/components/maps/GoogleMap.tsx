@@ -1,7 +1,6 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { GoogleMap as ReactGoogleMap } from '@react-google-maps/api';
-import RouteInfo from './RouteInfo';
 import { useGoogleMapsInit } from '@/hooks/useGoogleMapsInit';
 import { useGoogleMapsRouting } from '@/hooks/useGoogleMapsRouting';
 import { MapProps } from './types/map-types';
@@ -157,7 +156,6 @@ const GoogleMapComponent = ({
           destinationAddress={destinationAddress}
           message={isApiBlocked ? "Servicio de mapas no disponible" : "Cargando mapa..."}
         />
-        {routeInfo && <RouteInfo distance={routeInfo.distance} duration={routeInfo.duration} />}
       </div>
     );
   }
@@ -170,7 +168,6 @@ const GoogleMapComponent = ({
           destinationAddress={destinationAddress}
           message="Error al cargar el mapa"
         />
-        {routeInfo && <RouteInfo distance={routeInfo.distance} duration={routeInfo.duration} />}
       </div>
     );
   }
@@ -218,7 +215,6 @@ const GoogleMapComponent = ({
         </ReactGoogleMap>
         <MapLoadingOverlay isVisible={isLoading} />
       </div>
-      {routeInfo && <RouteInfo distance={routeInfo.distance} duration={routeInfo.duration} />}
     </div>
   );
 };

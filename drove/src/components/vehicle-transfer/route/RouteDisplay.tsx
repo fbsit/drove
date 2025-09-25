@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { Card, CardContent } from '@/components/ui/card';
+import GoogleMapComponent from '@/components/maps/GoogleMap';
 import { MapPin, Clock, Navigation, Euro } from 'lucide-react';
 import { VehicleTransferFormData } from '@/types/vehicle-transfer-request';
 import { LatLngCity } from '@/types/lat-lng-city';
@@ -174,6 +175,15 @@ export const RouteDisplay: React.FC<RouteDisplayProps> = ({
             </div>
           </div>
         )}
+
+        {/* Mapa de ruta bajo la información, sin tocar la lógica existente */}
+        <div className="pt-4">
+          <GoogleMapComponent
+            originAddress={originAddress as any}
+            destinationAddress={destinationAddress as any}
+            isAddressesSelected={Boolean(originAddress && destinationAddress)}
+          />
+        </div>
       </CardContent>
     </Card>
   );
