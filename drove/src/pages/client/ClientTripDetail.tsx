@@ -25,6 +25,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import MobileClientTripDetail from "@/components/client/MobileClientTripDetail";
 import ReviewModal from "@/components/client/ReviewModal";
 import { TransferService } from '@/services/transferService';
+import { formatDateOnlyEs } from '@/utils/datetime';
 
 function glassCardClass(tone: "default" | "blue" | "green" | "purple" = "default") {
   switch (tone) {
@@ -39,17 +40,8 @@ function glassCardClass(tone: "default" | "blue" | "green" | "purple" = "default
   }
 }
 
-// Fecha formateada tipo español
-const formatFecha = (str: string) => {
-  if (!str) return "";
-  const date = new Date(str);
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(date);
-};
+// Fecha formateada tipo español, respetando YYYY-MM-DD como fecha local
+const formatFecha = (str: string) => formatDateOnlyEs(str);
 
 const formatFechaHora = (str: string) => {
   if (!str) return "";
@@ -250,7 +242,7 @@ export default function ClientTripDetail() {
                   {getStatusLabel(trip.status)}
                 </span>
                 <span className="text-white/60 text-sm font-montserrat">
-                  Creado el {formatFecha(trip.created_at)}
+                  Creado el {formatFecha(trip.createdAt || trip.created_at)}
                 </span>
               </div>
             </div>
@@ -302,7 +294,7 @@ export default function ClientTripDetail() {
                 className="font-montserrat font-bold text-xl md:text-3xl mt-2"
                 style={{ color: "#0A2B4B" }}
               >
-                €{trip?.totalPrice.toLocaleString("es-ES", { minimumFractionDigits: 2 })}
+                €{Number(trip?.totalPrice ?? 0).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <div className="text-xs text-center font-montserrat" style={{ color: "#1264a3" }}>
                 Este es el precio total a abonar por el servicio.
@@ -418,12 +410,14 @@ export default function ClientTripDetail() {
               <div className="mt-6">
                 <GoogleMapComponent
                   originAddress={{
-                    city: trip.startAddress.city,
+                    address: trip?.startAddress?.address || trip?.startAddress?.city,
+                    city: trip?.startAddress?.city,
                     lat: trip?.startAddress?.lat,
                     lng: trip?.startAddress?.lng,
                   }}
                   destinationAddress={{
-                    city: trip.endAddress.city,
+                    address: trip?.endAddress?.address || trip?.endAddress?.city,
+                    city: trip?.endAddress?.city,
                     lat: trip?.endAddress?.lat,
                     lng: trip?.endAddress?.lng,
                   }}

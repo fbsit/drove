@@ -82,7 +82,7 @@ const DesktopTransferRequest: React.FC = () => {
             toast({ title: 'Éxito', description: 'Traslado solicitado correctamente.' });
             if (created?.id) {
               setDidAutoCreate(true);
-              navigate(`/traslados/${created.id}`);
+              navigate(`/cliente/traslados/${created.id}`);
             }
           } catch (err: any) {
             console.error('[TRANSFER_REQUEST] Auto create error', err);

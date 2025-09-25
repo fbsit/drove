@@ -142,7 +142,7 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
               {getStatusLabel(trip.status)}
             </span>
             <span className="text-white/60 text-xs font-medium">
-              Creado el {formatFecha(trip.created_at)}
+              Creado el {formatFecha(trip.createdAt || trip.created_at)}
             </span>
           </div>
         </div>
@@ -177,14 +177,14 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
         {/* Bloque de Precio - rounded-xl aplicado */}
         <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl p-6 shadow-lg border border-white/10">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
               <div className="bg-green-500/20 p-1.5 rounded-xl">
                 <CreditCard className="text-green-400" size={16} />
               </div>
               <div>
                 <span className="text-xs text-white/60 block">Precio total</span>
-                <span className="font-montserrat font-bold text-lg text-white">
-                  €{trip.transfer_details.totalPrice.toLocaleString("es-ES", { minimumFractionDigits: 2 })}
+                  <span className="font-montserrat font-bold text-lg text-white">
+                  €{Number(trip?.transfer_details?.totalPrice ?? 0).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
