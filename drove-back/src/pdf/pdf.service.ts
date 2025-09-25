@@ -1547,8 +1547,8 @@ export class PdfService {
           const titlePaddingDNI = 5;
           const titleBoxHeightDNI = titleHeightDNI + titlePaddingDNI * 2;
 
-          // Posicionar inmediatamente después del mapa
-          currentY -= 180;
+          // Posicionar inmediatamente después del mapa con menor espacio en blanco
+          currentY -= 120;
 
           const drawDniCell = async (x: number, y: number, title: string, url: string) => {
             // Marco de la celda
@@ -1580,7 +1580,8 @@ export class PdfService {
           await drawDniCell(paddingXDNI, currentY, 'Anverso DNI cliente', recipientIdentity.idFrontPhoto || '');
           await drawDniCell(paddingXDNI + cellWidthDNI, currentY, 'Reverso DNI cliente', recipientIdentity.idBackPhoto || '');
 
-          currentY -= cellHeightDNI + 40; // Espacio después de los documentos
+          // Reducir espacio tras los DNI para acercar la selfie
+          currentY -= cellHeightDNI + 20;
           const selfieData = [
             'Foto receptor del vehiculo',
             recipientIdentity.selfieWithId || '',
@@ -1589,10 +1590,11 @@ export class PdfService {
           const titleHeight = 20;
           const titlePadding = 5;
           const cellWidthSelfie = 500;
-          const cellHeightSelfie = 320;
+          const cellHeightSelfie = 420;
           const xPosSelfie = 50; // Centrado si la página es de 600px con márgenes de 50 a cada lado
 
           const ySelfie = currentY - cellHeightSelfie; // dibujar debajo de los DNI
+          console.log("ySelfie", ySelfie);
           page.drawRectangle({
             x: xPosSelfie,
             y: ySelfie,
@@ -1666,7 +1668,7 @@ export class PdfService {
         const signImageWidth = 240;
         const signImageHeight = 100;
         const ySign = currentY - signImageHeight - 20; // base para imágenes
-        const topLineY = ySign + signImageHeight + 40; // línea superior del bloque
+        const topLineY = ySign + signImageHeight + 30; // ligeramente más compacto
 
         // Firma cliente
         const clientSignatureSource = addDniClient
@@ -1698,7 +1700,7 @@ export class PdfService {
         page.drawLine({ start: { x: 50, y: topLineY }, end: { x: 550, y: topLineY }, thickness: 2, color: rgb(0, 0, 0) });
 
         const labelY = ySign - 18; // posición del texto de etiqueta
-        const bottomLineY = labelY - 25; // línea inferior debajo de la etiqueta
+        const bottomLineY = labelY - 18; // reducir gap inferior
 
         // Etiquetas
         page.drawText('Firma del cliente', { x: 100, y: labelY, size: 13, font: font, color: rgb(0,0,0) });
@@ -1718,7 +1720,7 @@ export class PdfService {
           page.drawLine({ start: { x: 300, y: topLineY }, end: { x: 300, y: bottomLineY }, thickness: 3, color: rgb(0, 0, 0) });
         }
 
-        currentY = bottomLineY - 20;
+        currentY = bottomLineY - 10; // texto más cercano a las firmas
 
         // Texto final
         page.drawText(
