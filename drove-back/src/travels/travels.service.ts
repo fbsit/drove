@@ -256,6 +256,20 @@ export class TravelsService {
       url || '',
     );
 
+    // Enviar correo a administrador informando de nuevo traslado
+    try {
+      const adminEmail = process.env.ADMIN_NOTIF_EMAIL || 'info@drove.es';
+      await this.resend.sendTransferCreatedAdminEmail(
+        adminEmail,
+        userDetails?.contactInfo?.fullName || 'Cliente',
+        `${travel.brandVehicle} ${travel.modelVehicle} - ${travel.patentVehicle}`,
+        travel.travelDate || new Date().toLocaleDateString('es-ES'),
+        travel.startAddress.city,
+        travel.endAddress.city,
+        travelInfo.id,
+      );
+    } catch {}
+
     // Notificación para admins: nuevo viaje creado
     try {
       const notif = await this.notifications?.create({
