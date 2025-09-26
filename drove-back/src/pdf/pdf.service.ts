@@ -1535,9 +1535,17 @@ export class PdfService {
       }
 
       if (step === 4) {
-        // BLOQUE EXCLUSIVO PARA STEP 4
+        // ─────────────────────────────────────────────────────────────────────────────
+        // SECCIÓN (STEP 4): Armado de documento de entrega
+        // - Mapa(s) de ruta
+        // - Documentos del usuario (DNI Anverso/Reverso)
+        // - Selfie del receptor con documento
+        // - Bloque de firmas (cliente/chofer)
+        // - Texto legal y fecha de emisión
+        // - Certificado anexo (opcional)
+        // ─────────────────────────────────────────────────────────────────────────────
 
-        // 1. Dibujar Documentos del Usuario (DNI)
+        // 1) DOCUMENTOS (DNI) – dos celdas: Anverso / Reverso
         if (addDniClient) {
           // Render directo sin bucles para evitar problemas de buffers
           const cellWidthDNI = 250;
@@ -1550,6 +1558,7 @@ export class PdfService {
           // Posicionar inmediatamente después del mapa (separación segura para no pisar el mapa)
           currentY -= 180;
 
+          // Helper: pinta marco + título + imagen escalada dentro de la celda
           const drawDniCell = async (x: number, y: number, title: string, url: string) => {
             // Marco de la celda
             page.drawRectangle({ x, y, width: cellWidthDNI, height: cellHeightDNI, borderWidth: 1, borderColor: rgb(0,0,0), color: rgb(1,1,1) });
@@ -1586,14 +1595,15 @@ export class PdfService {
             'Foto receptor del vehiculo',
             recipientIdentity.selfieWithId || '',
           ];
-          // En esta fila se usará una sola celda que abarque el ancho completo (500px)
+          // 2) SELFIE DEL RECEPTOR – celda a lo ancho con imagen centrada/escalada
           const titleHeight = 20;
           const titlePadding = 5;
           const cellWidthSelfie = 500;
           const cellHeightSelfie = 420;
           const xPosSelfie = 50; // Centrado si la página es de 600px con márgenes de 50 a cada lado
 
-          const ySelfie = currentY - cellHeightSelfie; // dibujar debajo de los DNI
+          const ySelfie = currentY - cellHeightSelfie + 150; // subir 150px para evitar espacio en blanco
+          console.log("ySelfie", ySelfie);
           page.drawRectangle({
             x: xPosSelfie,
             y: ySelfie,
@@ -1659,9 +1669,9 @@ export class PdfService {
           } else {
             console.warn(`No hay imagen disponible para ${selfieData[0]}`);
           }
-          currentY = ySelfie - 50;
+          currentY = ySelfie - 50; // actualizar base para firmas manteniendo el nuevo offset
         } // Fin de bloque DNI
-        // 2. Dibujar Bloque de Firmas (con líneas envolventes como en el diseño)
+        // 3) BLOQUE DE FIRMAS – marcos superior/inferior y divisor central (si aplica)
         const signBlockHeight = 140;
         const signImageWidth = 240;
         const signImageHeight = 100;
@@ -1720,7 +1730,7 @@ export class PdfService {
 
         currentY = bottomLineY - 6; // texto más cercano a las firmas
 
-        // Texto final
+        // 4) TEXTO LEGAL FINAL
         page.drawText(
           'Ambas partes confirman la recepción segura del vehículo en destino, según lo indicado en este',
           { x: 60, y: currentY, size: 12, font: font, color: rgb(0, 0, 0) },
@@ -1732,7 +1742,7 @@ export class PdfService {
         );
         currentY -= 20;
 
-        // 3. Información final: Fecha de emisión del documento
+        // 5) FECHA DE EMISIÓN DEL DOCUMENTO
         currentY -= 10;
         const formattedDate = new Date().toLocaleDateString('es-ES', {
           day: '2-digit',
@@ -1747,7 +1757,7 @@ export class PdfService {
           color: rgb(0, 0, 0),
         });
 
-        // 4. Dibujar el Certificado (si existe)
+        // 6) CERTIFICADO/ANEXO (opcional)
         if (addDniClient && handoverDocuments?.delivery_document) {
           const embeddedImage = await this.embedImageFromSource(pdfDoc, handoverDocuments.delivery_document);
           if (embeddedImage) {
