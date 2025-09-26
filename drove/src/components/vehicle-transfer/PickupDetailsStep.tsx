@@ -123,10 +123,13 @@ export const PickupDetailsStep: React.FC<PickupDetailsStepProps> = ({
                 <FormControl>
                   <div className="relative max-w-xs w-full">
                     <Input
-                      type="date"
-                      value={field.value || ""}
-                      onChange={(e) => field.onChange(e.target.value)}
-                      className="new-date w-full pr-10 relative"
+                      type="time"
+                      step="60"
+                      inputMode="numeric"
+                      pattern="[0-9]{2}:[0-9]{2}"
+                      value={(field.value || "").toString().slice(0, 5)}
+                      onChange={(e) => field.onChange(e.target.value.slice(0, 5))}
+                      className="w-full pr-10 relative"
                     />
                   </div>
                 </FormControl>

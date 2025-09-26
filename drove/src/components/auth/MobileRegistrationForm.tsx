@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { UserType, RegistrationFormData } from "@/types/new-registration";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AuthService } from "@/services/authService";
 
 // Importar los pasos existentes
 import MobileUserTypeSelection from "./registration-steps/MobileUserTypeSelection";
@@ -24,6 +25,7 @@ const MobileRegistrationForm: React.FC<Props> = ({
   const [currentStep, setCurrentStep] = useState(0);
   const [userType, setUserType] = useState<UserType | null>(null);
   const [formData, setFormData] = useState<Partial<RegistrationFormData>>({});
+  const [submitting, setSubmitting] = useState(false);
 
   const getSteps = () => {
     if (!userType) return ["Tipo de cuenta"];
@@ -72,8 +74,40 @@ const MobileRegistrationForm: React.FC<Props> = ({
   };
 
   const handleSubmit = async () => {
-    if (formData.userType && isFormComplete()) {
+    if (!formData.userType || !isFormComplete() || submitting) return;
+    setSubmitting(true);
+    try {
+      // Preparar payload para AuthService.signUp (mismo mapping que desktop)
+      const registrationData = {
+        email: formData.email!,
+        password: formData.password!,
+        userType: formData.userType,
+        contactInfo: {
+          fullName: formData.fullName || "",
+          phone: formData.phone || "",
+          documentId: formData.documentNumber || "",
+          documentType: formData.documentType || "DNI",
+          address: formData.address || "",
+          city: formData.city || "",
+          state: formData.province || "",
+          zip: formData.postalCode || "",
+          country: formData.country || "España",
+          // Para drover esperamos URLs en el formData (los pasos ya subieron los archivos)
+          licenseFront: formData.licenseFront as any,
+          licenseBack: formData.licenseBack as any,
+          selfie: formData.profilePhoto as any,
+          imageUpload2: formData.backgroundCheck as any,
+          pdfUpload: formData.backgroundCheck as any,
+          profileComplete: true,
+        },
+      };
+
+      await AuthService.signUp(registrationData as any);
       await onComplete(formData as RegistrationFormData);
+    } catch (e) {
+      console.error("Error registrando usuario (mobile):", e);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -110,6 +144,16 @@ const MobileRegistrationForm: React.FC<Props> = ({
     return Math.round((currentStep / (totalSteps - 1)) * 100);
   };
 
+  // Auto-enviar al llegar al último paso cuando todo está completo (alineado con desktop)
+  useEffect(() => {
+    const isOnLast = currentStep === totalSteps - 1;
+    const isSupported = !!userType;
+    if (isSupported && isOnLast && isFormComplete() && !submitting) {
+      handleSubmit();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep, userType]);
+
   const renderCurrentStep = () => {
     if (currentStep === 0) {
       return <MobileUserTypeSelection onSelect={handleUserTypeSelect} />;
@@ -140,7 +184,7 @@ const MobileRegistrationForm: React.FC<Props> = ({
           return (
             <RegistrationConfirmation
               onConfirm={handleSubmit}
-              isLoading={isLoading}
+              isLoading={isLoading || submitting}
               data={formData}
               onPrevious={handlePrevious}
             />

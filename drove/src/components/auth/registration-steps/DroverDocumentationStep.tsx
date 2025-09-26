@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Upload, Camera, FileText, Shield, Loader2, CheckCircle2 } from "lucide-react";
 import { RegistrationFormData } from '@/types/new-registration';
 import { StorageService } from '@/services/storageService';
@@ -45,14 +45,20 @@ const DroverDocumentationStep: React.FC<Props> = ({ data, onUpdate, onNext }) =>
     },
   });
 
-  // Sincronizar URLs al padre cuando cambian
+  // Sincronizar URLs al padre cuando cambian, evitando bucles por updates idénticas
+  const lastSentRef = useRef<string | null>(null);
   useEffect(() => {
-    onUpdate({
+    const payload = {
       profilePhoto: uploads.profilePhoto.url || undefined,
       licenseFront: uploads.licenseFront.url || undefined,
       licenseBack: uploads.licenseBack.url || undefined,
       backgroundCheck: uploads.backgroundCheck.url || undefined,
-    });
+    };
+    const serialized = JSON.stringify(payload);
+    if (serialized !== lastSentRef.current) {
+      lastSentRef.current = serialized;
+      onUpdate(payload);
+    }
   }, [uploads, onUpdate]);
 
   const startUpload = async (field: Key, file: File) => {
