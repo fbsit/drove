@@ -68,12 +68,15 @@ export class StorageService {
       // Añadir token de autenticación si existe
       const authOptions = withAuth(options);
       
-      const response = await fetch(`${API_BASE_URL}/storage/upload/drover`, authOptions);
-      
+      // Intento primario: endpoint específico para drover
+      let response = await fetch(`${API_BASE_URL}/storage/upload/drover`, authOptions);
+      if (!response.ok) {
+        // Fallback silencioso a endpoint genérico
+        response = await fetch(`${API_BASE_URL}/storage/upload`, authOptions);
+      }
       if (!response.ok) {
         throw new Error(`Error al subir la imagen: ${response.statusText}`);
       }
-      
       const data = await response.json();
       return data.url;
     } catch (error) {

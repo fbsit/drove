@@ -1224,6 +1224,38 @@ export class ResendService {
   };
 
   /**
+   * Envía notificación al administrador cuando se crea un traslado
+   */
+  public sendTransferCreatedAdminEmail = async (
+    adminEmail: string,
+    clientName: string,
+    vehicle: string,
+    requestedDate: string,
+    origin: string,
+    destination: string,
+    transferId: string,
+  ) => {
+    const template = this.loadTemplate('newTransfer');
+    const html = template({
+      name: clientName,
+      vehicle,
+      requested_date: requestedDate,
+      origin,
+      destination,
+      transfer_url: this.buildFrontUrl(`/admin/traslados/${transferId}`),
+    });
+
+    if (!this.client) return false;
+
+    return this.client.emails.send({
+      from: 'contacto@drove.es',
+      to: adminEmail,
+      subject: 'Nuevo traslado creado',
+      html,
+    });
+  };
+
+  /**
    * Envía el correo de “Pago recibido”.
    *
    * Plantilla:  paymentReceived
