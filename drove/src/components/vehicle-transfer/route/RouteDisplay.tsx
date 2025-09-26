@@ -35,17 +35,17 @@ export const RouteDisplay: React.FC<RouteDisplayProps> = ({
     if (!text) return 0;
     const lower = text.toLowerCase().trim();
     if (lower.includes('km')) {
-      const num = lower.replace(/km.*/,'').replace(/[^0-9,.]/g,'').replace(/,/g,'.');
+      const num = lower.replace(/km.*/, '').replace(/[^0-9,.]/g, '').replace(/,/g, '.');
       const val = parseFloat(num);
       return isNaN(val) ? 0 : val;
     }
     if (lower.includes('m')) {
-      const num = lower.replace(/m.*/,'').replace(/[^0-9,.]/g,'').replace(/,/g,'.');
+      const num = lower.replace(/m.*/, '').replace(/[^0-9,.]/g, '').replace(/,/g, '.');
       const meters = parseFloat(num);
       const km = isNaN(meters) ? 0 : meters / 1000;
       return km;
     }
-    const fallback = parseFloat(lower.replace(/[^0-9,.]/g,'').replace(/,/g,'.'));
+    const fallback = parseFloat(lower.replace(/[^0-9,.]/g, '').replace(/,/g, '.'));
     return isNaN(fallback) ? 0 : fallback;
   };
 
@@ -65,7 +65,7 @@ export const RouteDisplay: React.FC<RouteDisplayProps> = ({
       mins = parseFloat(mStr) || 0;
     }
     if (!hMatch && !mMatch) {
-      const onlyNum = parseFloat(lower.replace(/[^0-9,.]/g,'').replace(/,/g,'.'));
+      const onlyNum = parseFloat(lower.replace(/[^0-9,.]/g, '').replace(/,/g, '.'));
       return isNaN(onlyNum) ? 0 : Math.round(onlyNum);
     }
     return Math.round(hours * 60 + mins);
@@ -125,29 +125,27 @@ export const RouteDisplay: React.FC<RouteDisplayProps> = ({
   return (
     <Card className="bg-white/10 border-white/20">
       <CardContent className="p-4 space-y-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 justify-center">
           <Navigation className="w-5 h-5 text-[#6EF7FF]" />
           <h3 className="text-white font-semibold">Información de la Ruta</h3>
         </div>
-        
-        <div className="space-y-3">
+
+        <div className="space-y-3 text-center">
           <div className="flex items-start gap-3">
-            <div className="w-3 h-3 rounded-full bg-green-500 mt-2"></div>
             <div className="flex-1">
               <p className="text-xs text-green-400 font-medium">ORIGEN</p>
               <p className="text-white text-sm">{originAddress.address}</p>
             </div>
           </div>
-          
+
           <div className="flex items-start gap-3">
-            <div className="w-3 h-3 rounded-full bg-red-500 mt-2"></div>
             <div className="flex-1">
               <p className="text-xs text-red-400 font-medium">DESTINO</p>
               <p className="text-white text-sm">{destinationAddress.address}</p>
             </div>
           </div>
         </div>
-        
+
         {distance && duration && (
           <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/20">
             <div className="text-center">
@@ -157,7 +155,7 @@ export const RouteDisplay: React.FC<RouteDisplayProps> = ({
               </div>
               <p className="text-white font-semibold">{distance}</p>
             </div>
-            
+
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Clock className="w-4 h-4 text-[#6EF7FF]" />
@@ -165,7 +163,7 @@ export const RouteDisplay: React.FC<RouteDisplayProps> = ({
               </div>
               <p className="text-white font-semibold">{duration}</p>
             </div>
-            
+
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Euro className="w-4 h-4 text-[#6EF7FF]" />

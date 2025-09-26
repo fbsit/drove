@@ -1,4 +1,4 @@
-
+import { Car, Truck } from 'lucide-react';
 import React from 'react';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -27,45 +27,60 @@ const VehicleDetailsStep: React.FC<VehicleDetailsStepProps> = ({ form }) => {
 
       <FormField
         control={form.control}
-        name="vehicleDetails"
+        name="vehicleDetails.type"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-white font-medium">Tipo de vehículo</FormLabel>
-            <Select 
-              onValueChange={(value) => {
-                const currentDetails = field.value || {};
-                field.onChange({
-                  ...currentDetails,
-                  type: value,
-                  year: "",
-                  brand: "",
-                  model: ""
-                });
-              }} 
-              defaultValue={(field.value as any)?.type || "coche"}
-            >
-              <FormControl>
-                <SelectTrigger 
-                  className={cn(
-                    "w-full max-w-full pl-3 text-left font-normal",
-                    "bg-transparant text-white"
-                  )}
+            <FormLabel className="text-white font-medium text-sm sm:text-base">
+              Tipo de vehículo
+            </FormLabel>
+            <FormControl>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                {/* Coche */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    field.onChange("coche");
+                    // resetear los otros campos si querés
+                    form.setValue("vehicleDetails.year", "");
+                    form.setValue("vehicleDetails.brand", "");
+                    form.setValue("vehicleDetails.model", "");
+                  }}
+                  className={`p-2 rounded-2xl border-2 transition-all duration-200 flex justify-center items-center gap-2 w-full ${field.value === "coche"
+                    ? "border-[#6EF7FF] bg-[#6EF7FF]/10 text-[#6EF7FF]"
+                    : "border-white/20 bg-white/5 text-white/70"
+                    }`}
                 >
-                  <SelectValue placeholder="Selecciona el tipo de vehículo" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value="coche">Coche</SelectItem>
-                <SelectItem value="camioneta">Camioneta</SelectItem>
-              </SelectContent>
-            </Select>
+                  <Car className="h-6 w-6 sm:h-7 sm:w-7" />
+                  <div className="font-medium text-sm sm:text-base">Coche</div>
+                </button>
+
+                {/* Camioneta */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    field.onChange("camioneta");
+                    form.setValue("vehicleDetails.year", "");
+                    form.setValue("vehicleDetails.brand", "");
+                    form.setValue("vehicleDetails.model", "");
+                  }}
+                  className={`p-2 rounded-2xl border-2 transition-all duration-200 flex justify-center items-center gap-2 w-full ${field.value === "camioneta"
+                    ? "border-[#6EF7FF] bg-[#6EF7FF]/10 text-[#6EF7FF]"
+                    : "border-white/20 bg-white/5 text-white/70"
+                    }`}
+                >
+                  <Truck className="h-6 w-6 sm:h-7 sm:w-7" />
+                  <div className="font-medium text-sm sm:text-base">Camioneta</div>
+                </button>
+              </div>
+            </FormControl>
             <FormMessage className="text-red-400" />
           </FormItem>
         )}
       />
 
+
       <YearSelector form={form} />
-      
+
       {vehicleDetails.year && (
         <BrandSelector form={form} />
       )}

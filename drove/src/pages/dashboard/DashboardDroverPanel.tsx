@@ -215,12 +215,12 @@ const DashboardDroverPanel: React.FC = () => {
             {visibleTrips.map((t: any) => (
               <div key={t.id} className="bg-[#2A1B3D] border border-white/10 rounded-2xl p-4 gap-3 shadow">
                 {/* Encabezado centrado con estatus a la derecha */}
-                <div className="relative flex items-center justify-center mb-2">
-                  <div className="text-center">
+                <div className="relative flex items-center justify-between mb-2">
+                  <div className="">
                     <div className="text-white text-base md:text-lg font-bold">
                       {t.origin} → {t.destination}
                     </div>
-                    <div className="text-white/70 text-sm">{new Date(t.createdAt).toLocaleDateString()}</div>
+                    <div className="text-white/70 text-start text-sm">{new Date(t.createdAt).toLocaleDateString()}</div>
                   </div>
                   <div className="absolute right-0 top-0">
                     {(() => {

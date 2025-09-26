@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { Input } from '@/components/ui/input';
-import { format } from 'date-fns';
+import { format, addYears } from 'date-fns';
+import { Calendar } from 'lucide-react';
 
 interface SimpleDatePickerProps {
   value?: Date;
@@ -17,12 +17,9 @@ const SimpleDatePicker: React.FC<SimpleDatePickerProps> = ({
   const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const dateValue = event.target.value;
     if (dateValue) {
-      // Avoid timezone shifts when parsing "yyyy-MM-dd" by constructing
-      // a local Date at noon instead of relying on UTC parsing of the string.
-      // Example: "2025-09-14" -> new Date(2025, 8, 14, 12, 0, 0)
       const [yearStr, monthStr, dayStr] = dateValue.split('-');
       const year = Number(yearStr);
-      const monthIndex = Number(monthStr) - 1; // 0-based
+      const monthIndex = Number(monthStr) - 1;
       const day = Number(dayStr);
       const safeLocalDate = new Date(year, monthIndex, day, 12, 0, 0, 0);
       onChange(safeLocalDate);
@@ -33,14 +30,35 @@ const SimpleDatePicker: React.FC<SimpleDatePickerProps> = ({
 
   const formattedValue = value ? format(value, 'yyyy-MM-dd') : '';
 
+  // Limites: hoy como mínimo, 2 años adelante como máximo
+  const today = new Date();
+  const minDate = format(today, 'yyyy-MM-dd');
+  const maxDate = format(addYears(today, 2), 'yyyy-MM-dd');
+
   return (
-    <Input
-      id={id}
-      type="date"
-      value={formattedValue}
-      onChange={handleDateChange}
-      className="w-full"
-    />
+    <div className="relative max-w-xs w-full">
+      <Input
+        id={id}
+        type="date"
+        value={formattedValue}
+        onChange={handleDateChange}
+        className="w-full pr-10 custom-date-input"
+        min={minDate}
+        max={maxDate}
+      />
+      {/* Icono personalizado que abre el calendario */}
+      <Calendar
+        className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white cursor-pointer"
+        onClick={() => {
+          const input = document.getElementById(id || '') as HTMLInputElement | null;
+          if (input && input.showPicker) {
+            input.showPicker(); // abre el calendario nativo
+          } else {
+            input?.focus(); // fallback
+          }
+        }}
+      />
+    </div>
   );
 };
 

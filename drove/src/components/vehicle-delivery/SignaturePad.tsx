@@ -10,9 +10,9 @@ interface SignaturePadProps {
   label?: string;
 }
 
-const SignaturePad: React.FC<SignaturePadProps> = ({ 
-  onSignatureChange, 
-  height = 200, 
+const SignaturePad: React.FC<SignaturePadProps> = ({
+  onSignatureChange,
+  height = 200,
   width = 400,
   label = "Firmar aquí"
 }) => {
@@ -37,12 +37,12 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     setIsDrawing(true);
     const rect = canvas.getBoundingClientRect();
-    
+
     let clientX, clientY;
-    
+
     if ('touches' in e) {
       // Touch event
       clientX = e.touches[0].clientX;
@@ -52,7 +52,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
       clientX = e.clientX;
       clientY = e.clientY;
     }
-    
+
     setLastX(clientX - rect.left);
     setLastY(clientY - rect.top);
 
@@ -72,9 +72,9 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
     if (!ctx) return;
 
     const rect = canvas.getBoundingClientRect();
-    
+
     let clientX, clientY;
-    
+
     if ('touches' in e) {
       // Touch event
       clientX = e.touches[0].clientX;
@@ -84,7 +84,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
       clientX = e.clientX;
       clientY = e.clientY;
     }
-    
+
     const x = clientX - rect.left;
     const y = clientY - rect.top;
 
@@ -102,9 +102,9 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
 
   const endDrawing = () => {
     if (!isDrawing) return;
-    
+
     setIsDrawing(false);
-    
+
     if (canvasRef.current) {
       const signatureData = canvasRef.current.toDataURL();
       onSignatureChange(signatureData);
@@ -114,12 +114,12 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
   const clearCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+
     setHasSignature(false);
     onSignatureChange('');
   };
@@ -137,9 +137,9 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
         onTouchStart={startDrawing}
         onTouchMove={draw}
         onTouchEnd={endDrawing}
-        className="touch-none w-full h-auto cursor-crosshair rounded-md bg-transparent"
+        className="touch-none w-full h-auto cursor-crosshair rounded-md bg-white"
       />
-      
+
       <Button
         type="button"
         size="sm"
@@ -149,7 +149,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
       >
         <X size={16} />
       </Button>
-      
+
       {/* Sin placeholder para mantener el fondo transparente */}
     </div>
   );

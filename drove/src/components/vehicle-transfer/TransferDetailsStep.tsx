@@ -177,24 +177,7 @@ const TransferDetailsStep: React.FC<Props> = ({
             </div>
           </fieldset>
 
-          {/* Navegación */}
-          <div className="flex justify-between pt-4">
-            {onPrev && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onPrev}
-                className="border-gray-300 text-white hover:bg-gray-100"
-              >
-                Anterior
-              </Button>
-            )}
-            {onNext && (
-              <Button type="submit" className="bg-sky-600 hover:bg-sky-700">
-                Siguiente
-              </Button>
-            )}
-          </div>
+
         </form>
         {distanceKm !== null && (
           <div className="text-right text-white">

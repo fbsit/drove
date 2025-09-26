@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import AddressInput from './AddressInput';
-import SimpleDatePicker from './SimpleDatePicker';
 import RouteDisplay from './route/RouteDisplay';
 import { VehicleTransferFormData } from '@/types/vehicle-transfer-request';
 import { Input } from '@/components/ui/input';
@@ -44,7 +43,7 @@ export const PickupDetailsStep: React.FC<PickupDetailsStepProps> = ({
       <CardHeader>
         <CardTitle className="text-white">Detalles de Recogida y Entrega</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 text-start">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-white">
           <FormField
             control={form.control}
@@ -101,12 +100,15 @@ export const PickupDetailsStep: React.FC<PickupDetailsStepProps> = ({
               <FormItem>
                 <FormLabel className="text-white">Fecha de Recogida</FormLabel>
                 <FormControl>
-                  <SimpleDatePicker
-                    value={field.value}
-                    onChange={field.onChange}
-                    id="pickup-date"
-                  />
+                  <div className="relative max-w-xs w-full">
+                    <Input
+                      type="date"
+                      onChange={(e) => field.onChange(e.target.value)}
+                      className="new-date w-full pr-10 relative"
+                    />
+                  </div>
                 </FormControl>
+
                 <FormMessage />
               </FormItem>
             )}
@@ -119,11 +121,14 @@ export const PickupDetailsStep: React.FC<PickupDetailsStepProps> = ({
               <FormItem>
                 <FormLabel className="text-white">Hora de Recogida</FormLabel>
                 <FormControl>
-                  <Input
-                    type="time"
-                    {...field}
-                    className="w-full"
-                  />
+                  <div className="relative max-w-xs w-full">
+                    <Input
+                      type="date"
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      className="new-date w-full pr-10 relative"
+                    />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>

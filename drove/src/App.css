@@ -58,3 +58,71 @@
 .scrollbar::-webkit-scrollbar-track {
   background-color: transparent;
 }
+
+/* Ocultar el ícono nativo de date */
+.custom-date-input::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.custom-date-input::-webkit-inner-spin-button,
+.custom-date-input::-webkit-clear-button {
+  display: none;
+  -webkit-appearance: none;
+}
+
+/* Ocultar el ícono nativo pero mantenerlo clickeable */
+.custom-time-input::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.custom-time-input::-webkit-clear-button,
+.custom-time-input::-webkit-inner-spin-button {
+  display: none;
+  -webkit-appearance: none;
+}
+
+/* para los inputs con iconos añadidos de calendario y reloj */
+/* Chrome, Safari, Edge */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1); /* negro → blanco */
+  cursor: pointer;
+  opacity: 0.9;
+  position: absolute;
+  right: 8px; /* margen desde el borde derecho */
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+/* Firefox */
+input[type="date"]::-moz-calendar-picker-indicator,
+input[type="time"]::-moz-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+/* Chrome, Safari, Edge */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  right: 8px; /* margen desde el borde derecho */
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+/* Firefox todavía no deja reposicionar, pero respeta el color */
+input[type="date"]::-moz-calendar-picker-indicator,
+input[type="time"]::-moz-calendar-picker-indicator {
+  filter: invert(1);
+}
