@@ -211,7 +211,7 @@ export class PdfService {
         typeof recipientIdentity.selfieWithId === 'string' &&
         recipientIdentity.selfieWithId.trim() !== '';
 
-      if (mustAddCertificate) extraHeight += 900;
+      if (mustAddCertificate) extraHeight += 200;
       if (mustAddFuelReceipt) extraHeight += 600;
       if (mustAddSelfie) extraHeight += 260;
 
@@ -1763,7 +1763,7 @@ export class PdfService {
           if (embeddedImage) {
             const certHeight = 680;
             // Subir el certificado 200px
-            const yCert = Math.max(50, currentY - certHeight - 300 + 300);
+            const yCert = Math.max(50, currentY - certHeight - 300 + 270);
             page.drawImage(embeddedImage, { x: 50, y: yCert, width: 500, height: certHeight });
             currentY = yCert - 20;
           } else {
