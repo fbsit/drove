@@ -1602,7 +1602,7 @@ export class PdfService {
           const cellHeightSelfie = 420;
           const xPosSelfie = 50; // Centrado si la página es de 600px con márgenes de 50 a cada lado
 
-          const ySelfie = currentY - cellHeightSelfie + 150; // subir 150px para evitar espacio en blanco
+          const ySelfie = currentY - cellHeightSelfie + 170; // subir 150px para evitar espacio en blanco
           console.log("ySelfie", ySelfie);
           page.drawRectangle({
             x: xPosSelfie,
@@ -1728,7 +1728,7 @@ export class PdfService {
           page.drawLine({ start: { x: 300, y: topLineY }, end: { x: 300, y: bottomLineY }, thickness: 3, color: rgb(0, 0, 0) });
         }
 
-        currentY = bottomLineY - 6; // texto más cercano a las firmas
+        currentY = bottomLineY - 21; // bajar 15px extra para separar más el texto de la línea
 
         // 4) TEXTO LEGAL FINAL
         page.drawText(
@@ -1762,15 +1762,14 @@ export class PdfService {
           const embeddedImage = await this.embedImageFromSource(pdfDoc, handoverDocuments.delivery_document);
           if (embeddedImage) {
             const certHeight = 680;
-            const yCert = Math.max(50, currentY - certHeight - 300);
+            // Subir el certificado 200px
+            const yCert = Math.max(50, currentY - certHeight - 300 + 200);
             page.drawImage(embeddedImage, { x: 50, y: yCert, width: 500, height: certHeight });
             currentY = yCert - 20;
           } else {
             console.error('Error incrustando delivery_document: formato/URL no soportado');
           }
         }
-
-        // Nota: se elimina la boleta/ticket al final por solicitud del usuario
       } else {
         if (addDniClient) {
           const datosImagenesDNICliente: [string, string][] = [
