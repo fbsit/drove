@@ -608,7 +608,7 @@ const ActiveTrip: React.FC = () => {
         </div>
 
         {/* Barra de acciones fija en mobile */}
-        {isMobile && (
+        {isMobile && trip.status !== 'DELIVERED' && (
           <MobileTripActionBar
             trip={trip}
             transferId={transferId!}
