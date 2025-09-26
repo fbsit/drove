@@ -1763,13 +1763,26 @@ export class PdfService {
           if (embeddedImage) {
             const certHeight = 680;
             // Subir el certificado 200px
-            const yCert = Math.max(50, currentY - certHeight - 300 + 200);
+            const yCert = Math.max(50, currentY - certHeight - 300 + 300);
             page.drawImage(embeddedImage, { x: 50, y: yCert, width: 500, height: certHeight });
             currentY = yCert - 20;
           } else {
             console.error('Error incrustando delivery_document: formato/URL no soportado');
           }
         }
+
+        // 7) AJUSTE DE ALTURA DE PÁGINA (recortar espacio en blanco final)
+        //    - Reducimos ~600px la altura total de la hoja, pero nunca por encima del
+        //      contenido ya dibujado (dejamos un margen inferior de 40px).
+        try {
+          const reducePx = 600;
+          const pageHeight = page.getHeight();
+          const minAllowed = Math.max(80, currentY + 40);
+          const targetHeight = Math.max(minAllowed, pageHeight - reducePx);
+          if (targetHeight < pageHeight) {
+            page.setHeight(targetHeight);
+          }
+        } catch {}
       } else {
         if (addDniClient) {
           const datosImagenesDNICliente: [string, string][] = [
