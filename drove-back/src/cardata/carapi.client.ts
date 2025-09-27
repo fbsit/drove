@@ -79,15 +79,44 @@ export class CarApiClient {
   }
 
   async getMakes(year?: number): Promise<any> {
-    return this.get('/api/makes', year ? { year } : undefined);
+    try {
+      return await this.get('/api/makes/v2', year ? { year } : undefined);
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 401 || status === 403) {
+        await this.ensureAuth();
+        return await this.get('/api/makes/v2', year ? { year } : undefined);
+      }
+      throw err;
+    }
   }
 
   async getModels(make: string, year?: number): Promise<any> {
-    return this.get('/api/models', { make, year });
+    try {
+      // Prefer v2 endpoint as per deprecation notice
+      return await this.get('/api/models/v2', { make, year });
+    } catch (err: any) {
+      const status = err?.response?.status;
+      // If unauthorized or deprecated without JWT, try to re-auth and retry v2
+      if (status === 401 || status === 403) {
+        await this.ensureAuth();
+        return await this.get('/api/models/v2', { make, year });
+      }
+      throw err;
+    }
   }
 
   async getTrims(make: string, model: string, year?: number, all = false): Promise<any> {
-    return this.get('/api/trims', { make, model, year, all });
+    try {
+      return await this.get('/api/trims/v2', { make, model, year, all });
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 401 || status === 403) {
+        await this.ensureAuth();
+        return await this.get('/api/trims/v2', { make, model, year, all });
+      }
+      throw err;
+    }
   }
 
   async decodeVin(vin: string, verbose = false, allTrims = false): Promise<any> {
