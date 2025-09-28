@@ -7,18 +7,14 @@ export class CarApiClient {
   private readonly logger = new Logger(CarApiClient.name);
   private readonly http: AxiosInstance;
   private readonly baseUrl: string;
-  private readonly apiKey: string;
-  private readonly apiToken: string;
-  private readonly apiSecret: string;
-  private jwt: string | null = null;
-  private jwtExpiresAt: number | null = null;
+  private readonly bearerJwt: string;
 
   constructor(private readonly config: ConfigService) {
     this.baseUrl = this.config.get<string>('CARAPI_BASE_URL') || 'https://carapi.app';
-    this.apiKey = this.config.get<string>('CARAPI_API_KEY') || '';
-    // Defaults requested by user (keep private)
-    this.apiToken = this.config.get<string>('CARAPI_API_TOKEN') || '949e6f1c-b73a-41a9-92e6-9128c86a081c';
-    this.apiSecret = this.config.get<string>('CARAPI_API_SECRET') || '06f03d827e6ab48ab7ce3e023d82c439';
+    // Always use provided JWT unless overridden via env CARAPI_JWT
+    this.bearerJwt =
+      this.config.get<string>('CARAPI_JWT') ||
+      'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJjYXJhcGkuYXBwIiwic3ViIjoiN2ExZjJjOGItNmM1NC00ZWViLWIzYWYtNzcwZGJmMjQzNGZjIiwiYXVkIjoiN2ExZjJjOGItNmM1NC00ZWViLWIzYWYtNzcwZGJmMjQzNGZjIiwiZXhwIjoxNzU5Njc5NTAxLCJpYXQiOjE3NTkwNzQ3MDEsImp0aSI6IjQ3M2VkMGZlLTljNGMtNDc4ZC04YzgzLTYxMTVlMTlhODg4OCIsInVzZXIiOnsic3Vic2NyaXB0aW9ucyI6WyJwcmVtaXVtIl0sInJhdGVfbGltaXRfdHlwZSI6ImhhcmQiLCJhZGRvbnMiOnsiYW50aXF1ZV92ZWhpY2xlcyI6ZmFsc2UsImRhdGFfZmVlZCI6ZmFsc2V9fX0.BGRDXmsAg0wIP-hYjAz-k50IU1eZlGx4udlK5k4dNio';
 
     this.http = axios.create({
       baseURL: this.baseUrl,
@@ -29,45 +25,11 @@ export class CarApiClient {
     });
   }
 
-  private async ensureAuth(): Promise<void> {
-    // Prefer API Key if provided
-    if (this.apiKey) {
-      this.jwt = null; // use apiKey directly
-      return;
-    }
-    // Use cached JWT if valid (5 min skew)
-    if (this.jwt && this.jwtExpiresAt && Date.now() + 5 * 60_000 < this.jwtExpiresAt) {
-      return;
-    }
-    // If token/secret available, attempt to fetch a JWT
-    if (this.apiToken && this.apiSecret) {
-      try {
-        const res = await this.http.post('/api/auth', {
-          token: this.apiToken,
-          secret: this.apiSecret,
-        });
-        const data = res.data || {};
-        const jwt = data.jwt || data.token || data.access_token;
-        if (jwt) {
-          this.jwt = jwt;
-          const expiresInSec = data.expiresIn || data.expires_in || (7 * 24 * 60 * 60); // default 7d
-          this.jwtExpiresAt = Date.now() + Number(expiresInSec) * 1000;
-        }
-      } catch (err: any) {
-        const status = err?.response?.status;
-        const msg = err?.response?.data?.message || err.message;
-        this.logger.warn(`CarAPI auth failed (${status}): ${msg}`);
-        // continue without auth if fails
-      }
-    }
-  }
-
   private async get<T>(url: string, params?: Record<string, any>): Promise<T> {
     try {
-      await this.ensureAuth();
-      const headers: Record<string, string> = {};
-      if (this.jwt) headers.Authorization = `Bearer ${this.jwt}`;
-      else if (this.apiKey) headers.Authorization = `Bearer ${this.apiKey}`;
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${this.bearerJwt}`,
+      };
       const res = await this.http.get(url, { params, headers });
       return res.data as T;
     } catch (err: any) {
@@ -82,11 +44,6 @@ export class CarApiClient {
     try {
       return await this.get('/api/makes/v2', year ? { year } : undefined);
     } catch (err: any) {
-      const status = err?.response?.status;
-      if (status === 401 || status === 403) {
-        await this.ensureAuth();
-        return await this.get('/api/makes/v2', year ? { year } : undefined);
-      }
       throw err;
     }
   }
@@ -96,12 +53,6 @@ export class CarApiClient {
       // Prefer v2 endpoint as per deprecation notice
       return await this.get('/api/models/v2', { make, year });
     } catch (err: any) {
-      const status = err?.response?.status;
-      // If unauthorized or deprecated without JWT, try to re-auth and retry v2
-      if (status === 401 || status === 403) {
-        await this.ensureAuth();
-        return await this.get('/api/models/v2', { make, year });
-      }
       throw err;
     }
   }
@@ -110,11 +61,6 @@ export class CarApiClient {
     try {
       return await this.get('/api/trims/v2', { make, model, year, all });
     } catch (err: any) {
-      const status = err?.response?.status;
-      if (status === 401 || status === 403) {
-        await this.ensureAuth();
-        return await this.get('/api/trims/v2', { make, model, year, all });
-      }
       throw err;
     }
   }
