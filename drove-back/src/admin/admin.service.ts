@@ -207,14 +207,14 @@ export class AdminService {
   }
 
   /** Cambiar estado de factura */
-  async updateInvoiceStatus(id: number, status: 'DRAFT'|'SENT'|'PAID'|'VOID'|'REJECTED'|string): Promise<boolean> {
+  async updateInvoiceStatus(id: number, status: 'DRAFT'|'SENT'|'PAID'|'VOID'|'REJECTED'|'ADVANCE'|string): Promise<boolean> {
     const invoice = await this.invoiceRepo.findOne({ where: { id } });
     if (!invoice) throw new NotFoundException();
     const normalized = String(status || '').toUpperCase();
     // normalizar variantes comunes desde el front
     const map: Record<string, InvoiceStatus> = {
       'EMITIDA': InvoiceStatus.SENT,
-      'ANTICIPO': InvoiceStatus.SENT,
+      'ANTICIPO': InvoiceStatus.ADVANCE,
       'PAGADA': InvoiceStatus.PAID,
       'PAID': InvoiceStatus.PAID,
       'SENT': InvoiceStatus.SENT,
@@ -224,9 +224,28 @@ export class AdminService {
       'REJECTED': InvoiceStatus.REJECTED,
       'RECHAZADA': InvoiceStatus.REJECTED,
       'ANULADA': InvoiceStatus.VOID,
+      'ADVANCE': InvoiceStatus.ADVANCE,
     };
     const finalStatus = map[normalized] ?? (InvoiceStatus as any)[normalized] ?? InvoiceStatus.DRAFT;
+    // Persist ADVANCE only if enum exists in DB; otherwise use SENT and mark issuedBy sentinel
+    if (finalStatus === InvoiceStatus.ADVANCE) {
+      try {
+        invoice.status = InvoiceStatus.ADVANCE;
+        invoice.issuedBy = invoice.issuedBy === '__ADVANCE__' ? invoice.issuedBy : '__ADVANCE__';
+        await this.invoiceRepo.save(invoice);
+      } catch {
+        // fallback if enum not present in DB
+        invoice.status = InvoiceStatus.SENT;
+        invoice.issuedBy = '__ADVANCE__';
+        await this.invoiceRepo.save(invoice);
+      }
+      return true;
+    }
+    // For other statuses, clear sentinel if set
     invoice.status = finalStatus;
+    if (finalStatus !== InvoiceStatus.SENT && invoice.issuedBy === '__ADVANCE__') {
+      invoice.issuedBy = null as any;
+    }
     await this.invoiceRepo.save(invoice);
     return true;
   }

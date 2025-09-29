@@ -15,6 +15,7 @@ export enum InvoiceStatus {
   PAID = 'PAID',
   VOID = 'VOID',
   REJECTED = 'REJECTED',
+  ADVANCE = 'ADVANCE'
 }
 
 // Métodos de pago disponibles

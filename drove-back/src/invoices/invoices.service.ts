@@ -38,7 +38,14 @@ export class InvoicesService {
       .where('t.id IN (:...ids)', { ids })
       .getMany();
     const map = new Map<string, Travels>(travels.map((t) => [t.id, t]));
-    return invoices.map((inv) => ({ ...inv, travel: map.get(inv.travelId!) } as any));
+    // surface ADVANCE alias if stored via issuedBy sentinel
+    return invoices.map((inv) => {
+      const withTravel = { ...inv, travel: map.get(inv.travelId!) } as any;
+      if (withTravel?.issuedBy === '__ADVANCE__' && String(withTravel.status).toUpperCase() === 'SENT') {
+        withTravel.status = 'ADVANCE';
+      }
+      return withTravel;
+    });
   }
 
   /** Devuelve una factura por ID y resuelve travel por travelId */
