@@ -156,12 +156,13 @@ const TransferSupportChat: React.FC = () => {
       });
 
       await SupportService.sendMyMessage(payloadText);
-      // Pausa el polling brevemente para evitar sobrescritura con respuestas antiguas
-      pollingPausedUntilRef.current = Date.now() + 1500;
+      // No forzar refresh inmediato: esperamos a la notificación por socket.
+      // A modo de seguridad, un refresh tardío para reconciliar en caso de caída del socket.
+      pollingPausedUntilRef.current = Date.now() + 2000;
       if (pendingRefreshTimeoutRef.current) clearTimeout(pendingRefreshTimeoutRef.current);
       pendingRefreshTimeoutRef.current = setTimeout(() => {
         loadOrCreateTicket({ force: true });
-      }, 600);
+      }, 1800);
     } catch (e: any) {
       console.error('[SUPPORT] send message error', e);
       toast({ variant: 'destructive', title: 'Error', description: e?.message || 'No se pudo enviar el mensaje.' });

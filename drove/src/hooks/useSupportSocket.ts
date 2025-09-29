@@ -17,6 +17,7 @@ export function useSupportSocket(
   onDisconnected?: () => void,
 ) {
   const socketRef = useRef<Socket | null>(null);
+  const currentTicketRef = useRef<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('auth_token') ?? '';
@@ -30,7 +31,10 @@ export function useSupportSocket(
     socketRef.current = s;
 
     s.on('connect', () => {
-      if (ticketId) s.emit('support:join', { ticketId });
+      if (ticketId) {
+        currentTicketRef.current = ticketId;
+        s.emit('support:join', { ticketId });
+      }
       if (onConnected) onConnected();
     });
     s.on('disconnect', () => { if (onDisconnected) onDisconnected(); });
@@ -50,11 +54,22 @@ export function useSupportSocket(
     s.on('support:closed', () => onClosed && onClosed());
 
     return () => {
-      if (ticketId) s.emit('support:leave', { ticketId });
+      if (currentTicketRef.current) s.emit('support:leave', { ticketId: currentTicketRef.current });
       s.disconnect();
       socketRef.current = null;
     };
-  }, [ticketId, onMessage, onStatus, onClosed, onConnected, onDisconnected]);
+  }, [onMessage, onStatus, onClosed, onConnected, onDisconnected]);
+
+  // Reunirse/cambiar de sala cuando cambia ticketId sin recrear el socket
+  useEffect(() => {
+    const s = socketRef.current;
+    if (!s) return;
+    if (!s.connected) return;
+    const prev = currentTicketRef.current;
+    if (prev && prev !== ticketId) s.emit('support:leave', { ticketId: prev });
+    if (ticketId && ticketId !== prev) s.emit('support:join', { ticketId });
+    currentTicketRef.current = ticketId;
+  }, [ticketId]);
 
   return { socket: socketRef.current };
 }

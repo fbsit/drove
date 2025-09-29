@@ -44,6 +44,7 @@ const SupportChatViewer: React.FC<SupportChatViewerProps> = ({
         messagesRef.current = next;
         return next;
       });
+      // Enviar por REST; socket del cliente recibirá el broadcast y el admin se reconciliará sin requerir refresh manual
       onSendMessage(ticket.id, newMessage);
       setNewMessage("");
     }
