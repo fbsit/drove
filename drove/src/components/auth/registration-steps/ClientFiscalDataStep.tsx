@@ -14,9 +14,10 @@ interface Props {
   onUpdate: (data: Partial<RegistrationFormData>) => void;
   onNext: () => void;
   onPrevious?: () => void;
+  externalErrors?: Record<string, string>;
 }
 
-const ClientFiscalDataStep: React.FC<Props> = ({ data, onUpdate, onNext, onPrevious }) => {
+const ClientFiscalDataStep: React.FC<Props> = ({ data, onUpdate, onNext, onPrevious, externalErrors }) => {
   const [formData, setFormData] = useState({
     documentNumber: data.documentNumber || '',
     address: data.address || '',
@@ -29,10 +30,21 @@ const ClientFiscalDataStep: React.FC<Props> = ({ data, onUpdate, onNext, onPrevi
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const docRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     onUpdate(formData);
   }, [formData, onUpdate]);
+
+  // Sincroniza errores externos (provenientes del backend)
+  useEffect(() => {
+    if (externalErrors && Object.keys(externalErrors).length > 0) {
+      setErrors((prev) => ({ ...prev, ...externalErrors }));
+      if (externalErrors.documentNumber && docRef.current) {
+        try { docRef.current.focus(); } catch {}
+      }
+    }
+  }, [externalErrors]);
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -107,6 +119,7 @@ const ClientFiscalDataStep: React.FC<Props> = ({ data, onUpdate, onNext, onPrevi
               placeholder={getDocumentPlaceholder('cif')}
               value={formData.documentNumber}
               onChange={(e) => handleChange('documentNumber', e.target.value)}
+              ref={docRef}
               className={`pl-12 bg-white/5 border-white/20 text-white ${errors.documentNumber ? 'border-red-500' : ''}`}
             />
           </div>
