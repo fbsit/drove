@@ -86,6 +86,7 @@ const MobileRegistrationForm: React.FC<Props> = ({
         userType: formData.userType,
         contactInfo: {
           fullName: formData.fullName || "",
+          companyName: (formData as any).companyName || "",
           phone: formData.phone || "",
           documentId: formData.documentNumber || "",
           documentType: formData.documentType || "DNI",
@@ -122,12 +123,14 @@ const MobileRegistrationForm: React.FC<Props> = ({
       if (lower.includes('dni inválido') || lower.includes('nie inválido') || lower.includes('cif inválido')) {
         nextErrors.documentNumber = msg;
       }
+      if (lower.includes('ya existe') || lower.includes('registrado')) {
+        nextErrors.email = msg;
+        setCurrentStep(1);
+      }
       setExternalErrors(nextErrors);
 
       // Volver al paso "Datos fiscales" si hubo error en documento
-      if (nextErrors.documentNumber) {
-        setCurrentStep(userType === 'client' ? 2 : currentStep);
-      }
+      if (nextErrors.documentNumber) setCurrentStep(2);
     } finally {
       setSubmitting(false);
     }

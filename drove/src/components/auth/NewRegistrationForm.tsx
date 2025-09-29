@@ -143,6 +143,7 @@ const NewRegistrationForm: React.FC<Props> = ({
         userType: formData.userType,
         contactInfo: {
           fullName: formData.fullName || "",
+          companyName: (formData as any).companyName || "",
           phone: formData.phone || "",
           documentId: formData.documentNumber || "",
           documentType: formData.documentType || "DNI",
@@ -186,6 +187,11 @@ const NewRegistrationForm: React.FC<Props> = ({
           "No se pudo completar el registro. Inténtalo de nuevo.",
       });
       setSubmissionError(error?.message || 'No se pudo completar el registro.');
+      // Si el correo ya está registrado, volver a Datos básicos para corregir
+      const lower = String(error?.message || '').toLowerCase();
+      if (lower.includes('ya existe') || lower.includes('registrado')) {
+        setCurrentStep(1);
+      }
     } finally {
       setIsSubmitting(false);
     }
