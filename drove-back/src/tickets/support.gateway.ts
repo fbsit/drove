@@ -20,11 +20,18 @@ export class SupportGateway implements OnGatewayInit, OnGatewayConnection, OnGat
 
   handleConnection(client: Socket) {
     try {
-      const auth = (client.handshake.headers['authorization'] || client.handshake.headers['Authorization']) as string | undefined;
-      if (!auth) return client.disconnect(true);
-      const parts = auth.split(' ');
-      if (parts.length !== 2 || !/^Bearer$/i.test(parts[0])) return client.disconnect(true);
-      const token = parts[1];
+      // Soporta token via headers Authorization: Bearer <token>, via handshake.auth.token o via query ?token=
+      const headerAuth = (client.handshake.headers['authorization'] || client.handshake.headers['Authorization']) as string | undefined;
+      const authToken = (client.handshake.auth && (client.handshake.auth as any).token) as string | undefined;
+      const queryToken = (client.handshake.query && (client.handshake.query['token'] as string)) as string | undefined;
+      let token: string | undefined;
+      if (headerAuth && typeof headerAuth === 'string') {
+        const parts = headerAuth.split(' ');
+        if (parts.length === 2 && /^Bearer$/i.test(parts[0])) token = parts[1];
+      }
+      if (!token && authToken) token = authToken.startsWith('Bearer ') ? authToken.split(' ')[1] : authToken;
+      if (!token && queryToken) token = queryToken.startsWith('Bearer ') ? queryToken.split(' ')[1] : queryToken;
+      if (!token) return client.disconnect(true);
       const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'supersecretkey');
       (client.data as any).user = {
         id: decoded.sub ?? decoded.id,
