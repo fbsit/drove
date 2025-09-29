@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
-import { User } from './entities/user.entity';
+import { User, UserAccountType } from './entities/user.entity';
 import { CreateUserDto } from './dtos/createUser.dto';
 import { UpdateUserDto } from './dtos/updatedUser.dto';
 import * as bcrypt from 'bcrypt';
@@ -15,6 +15,7 @@ import { TransferStatus } from '../travels/entities/travel.entity';
 import { Travels } from '../travels/entities/travel.entity';
 import { ResendService } from '../resend/resend.service';
 import { BadRequestException } from '@nestjs/common';
+import { classifyId, normalizeId, validateDni, validateNie, isLikelyCompanyName } from './utils/spanish-id';
 
 import { randomBytes } from 'crypto';
 
@@ -47,11 +48,26 @@ export class UserService {
 
       const role = mapRawUserTypeToRole(userType);
 
+      // Clasificación y validación de documento + subtipo de cuenta
+      const ci = { ...(contactInfo || {}) } as any;
+      if (ci.documentId) {
+        ci.documentId = normalizeId(ci.documentId);
+        const kind = classifyId(ci.documentId);
+        ci.documentType = kind;
+        if (kind === 'DNI' && !validateDni(ci.documentId)) throw new BadRequestException('DNI inválido');
+        if (kind === 'NIE' && !validateNie(ci.documentId)) throw new BadRequestException('NIE inválido');
+      }
+
+      const acctType = (ci.documentType === 'CIF' || isLikelyCompanyName(ci.fullName))
+        ? UserAccountType.COMPANY
+        : UserAccountType.PERSON;
+
       const user = this.userRepo.create({
         email,
         password: hashed,
         role,
-        contactInfo,
+        contactInfo: ci,
+        accountType: acctType,
       });
       const created = await this.userRepo.save(user);
 
@@ -161,7 +177,19 @@ export class UserService {
 
     // Merge nested contactInfo
     if (updateUserDto.contactInfo) {
-      user.contactInfo = { ...user.contactInfo, ...updateUserDto.contactInfo };
+      const ci = { ...user.contactInfo, ...updateUserDto.contactInfo } as any;
+      if (ci.documentId) {
+        ci.documentId = normalizeId(ci.documentId);
+        const kind = classifyId(ci.documentId);
+        ci.documentType = kind;
+        if (kind === 'DNI' && !validateDni(ci.documentId)) throw new BadRequestException('DNI inválido');
+        if (kind === 'NIE' && !validateNie(ci.documentId)) throw new BadRequestException('NIE inválido');
+      }
+      user.contactInfo = ci;
+      // recalcular accountType sin cambiar roles/permisos
+      user.accountType = (ci.documentType === 'CIF' || isLikelyCompanyName(ci.fullName))
+        ? UserAccountType.COMPANY
+        : UserAccountType.PERSON;
     }
 
     // Asigna otros campos

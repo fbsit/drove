@@ -36,15 +36,55 @@ export default function AddressInput({
   const emitPlaceData = useCallback(
     (place?: google.maps.places.PlaceResult | null) => {
       if (!place?.geometry?.location) return;
-
+      console.log("place", place);
       const lat = place.geometry.location.lat();
       const lng = place.geometry.location.lng();
       const address = place.formatted_address || "";
-      const city =
-        place.address_components?.find((c) => c.types.includes("locality"))
-          ?.long_name ?? "";
+      const components = place.address_components || [];
+      const get = (type: string) => components.find((c) => c.types.includes(type))?.long_name || '';
+      // City with robust fallbacks across countries
+      const preferredTypes = [
+        'locality',
+        'postal_town',
+        'administrative_area_level_3',
+        'administrative_area_level_2',
+        'sublocality_level_1',
+        'sublocality',
+        'neighborhood',
+      ];
+      let city = '';
+      const cityComp1 = components.find(c => (c.types || []).some(t => preferredTypes.includes(t)));
+      if (cityComp1) city = cityComp1.long_name || '';
+      const state = get('administrative_area_level_1');
+      // Country puede venir en diferentes posiciones; usa long_name si existe, si no short_name
+      const countryComp = components.find((c) => c.types.includes('country')) as any;
+      const country = countryComp?.long_name || countryComp?.short_name || '';
+      const zip = get('postal_code') || get('postal_code_prefix') || '';
 
-      onChange({ address, city, lat, lng });
+      if (!city) {
+        // Heurística: tomar el token antes del CP/provincia si viene separado por comas
+        const parts = address.split(',').map(s => s.trim());
+        // Busca una parte que contenga el CP y usa la anterior como ciudad
+        const idxZip = parts.findIndex(p => /\b\d{5}\b/.test(p));
+        if (idxZip > 0) city = parts[idxZip - 1];
+        else if (parts.length >= 2) city = parts[parts.length - 2];
+      }
+
+      // Último recurso: primer componente político que no sea state ni country
+      if (!city) {
+        const fallback = components.find(c =>
+          c.long_name && c.long_name !== state && c.long_name !== country && (c.types || []).includes('political')
+        );
+        if (fallback) city = fallback.long_name;
+      }
+
+      // Si aún no hay ciudad, usa el primer componente legible
+      if (!city && components.length > 0) {
+        city = components[0].long_name || '';
+      }
+
+      const payload = { address, city, state, country, zip, lat, lng };
+      onChange(payload as any);
       setText(address); // sincroniza el input con la dirección formateada
     },
     [onChange]
