@@ -117,7 +117,7 @@ const TransferSupportChat: React.FC = () => {
       const existingNonTmp = (messagesRef.current || []).filter(m => !m.id.startsWith('tmp-'));
       const byId = new Map<string, Message>();
       for (const m of [...serverMsgs, ...existingNonTmp]) byId.set(m.id, m);
-      let merged = Array.from(byId.values());
+      let merged = Array.from(byId.values()).sort((a: any, b: any) => (a.ts ?? 0) - (b.ts ?? 0));
       // 3) Añadir optimistas
       merged = [...merged, ...optimistic];
       // 4) Ordenar por timestamp si es posible, de lo contrario por inserción

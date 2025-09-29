@@ -27,8 +27,8 @@ export class SupportService {
 
   async getOrCreateUserOpenTicket(ownerUserId: string, ownerRole: ClientType, subject = 'Soporte'): Promise<SupportTicket> {
     let ticket = await this.ticketRepo.findOne({ where: { ownerUserId, status: TicketStatus.OPEN } });
-    if (ticket) return ticket;
-    ticket = this.ticketRepo.create({
+    if (!ticket) {
+      ticket = this.ticketRepo.create({
       subject,
       message: '',
       status: TicketStatus.OPEN,
@@ -39,7 +39,12 @@ export class SupportService {
       ownerUserId,
       ownerRole,
     } as Partial<SupportTicket>);
-    return this.ticketRepo.save(ticket);
+      ticket = await this.ticketRepo.save(ticket);
+    }
+    // Adjuntar historial de mensajes ordenado ascendente por fecha
+    const msgs = await this.messageRepo.find({ where: { ticketId: ticket.id }, order: { timestamp: 'ASC' } });
+    (ticket as any).messages = msgs;
+    return ticket;
   }
 
   async appendMessage(ticketId: string, content: string, sender: MessageSender, senderName: string, senderUserId?: string): Promise<SupportMessage> {
