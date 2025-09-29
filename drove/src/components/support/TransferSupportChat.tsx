@@ -100,12 +100,16 @@ const TransferSupportChat: React.FC = () => {
       if (myLoadId !== latestLoadIdRef.current) return;
 
       setTicketId(ticket?.id || null);
-      const serverMsgs = (ticket?.messages || []).map((m: any) => ({
-        id: String(m.id),
-        sender: (String(m.sender || '').toUpperCase() === 'ADMIN') ? 'soporte' : 'user',
-        text: m.content || '',
-        timestamp: new Date(m.timestamp || Date.now()).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-      })) as Message[];
+      const serverMsgs = (ticket?.messages || []).map((m: any) => {
+        const ts = new Date(m.timestamp || Date.now()).getTime();
+        return {
+          id: String(m.id),
+          sender: (String(m.sender || '').toUpperCase() === 'ADMIN') ? 'soporte' : 'user',
+          text: m.content || '',
+          timestamp: new Date(ts).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+          ts,
+        } as any;
+      }) as any;
       // Merge:
       // 1) Mantener mensajes optimistas tmp- que aún no llegaron del server
       const optimistic = (messagesRef.current || []).filter(m => m.id.startsWith('tmp-'));
@@ -138,11 +142,12 @@ const TransferSupportChat: React.FC = () => {
 
     try {
       // Optimista: muestra el mensaje localmente mientras llega la actualización
-      const optimistic: Message = {
+      const optimistic: any = {
         id: `tmp-${Date.now()}`,
         sender: 'user',
         text: payloadText,
         timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+        ts: Date.now(),
       };
       setMessages(prev => {
         const next = [...prev, optimistic];

@@ -79,8 +79,8 @@ const SupportChatViewer: React.FC<SupportChatViewerProps> = ({
     // onClosed
     () => onUpdateStatus(ticket.id, 'cerrado'),
     // onConnected/onDisconnected (admin vista no necesita pausar polling aquí)
-    undefined,
-    undefined,
+    () => {},
+    () => {},
   );
 
   const getSenderIcon = (sender: string) => {
