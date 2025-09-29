@@ -13,6 +13,8 @@ export function useSupportSocket(
   onMessage: (m: Message) => void,
   onStatus?: (status: string) => void,
   onClosed?: () => void,
+  onConnected?: () => void,
+  onDisconnected?: () => void,
 ) {
   const socketRef = useRef<Socket | null>(null);
 
@@ -29,7 +31,9 @@ export function useSupportSocket(
 
     s.on('connect', () => {
       if (ticketId) s.emit('support:join', { ticketId });
+      if (onConnected) onConnected();
     });
+    s.on('disconnect', () => { if (onDisconnected) onDisconnected(); });
 
     s.on('support:message', (msg: any) => {
       const mapped: Message = {
@@ -49,7 +53,7 @@ export function useSupportSocket(
       s.disconnect();
       socketRef.current = null;
     };
-  }, [ticketId, onMessage, onStatus, onClosed]);
+  }, [ticketId, onMessage, onStatus, onClosed, onConnected, onDisconnected]);
 
   return { socket: socketRef.current };
 }

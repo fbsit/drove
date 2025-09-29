@@ -73,7 +73,11 @@ const TransferSupportChat: React.FC = () => {
     (status) => {
       if (status === 'closed') setStatus('resuelto');
     },
-    () => setStatus('resuelto')
+    () => setStatus('resuelto'),
+    // onConnected: pausar polling por completo
+    () => { pollingPausedUntilRef.current = Date.now() + 60_000; },
+    // onDisconnected: reactivar polling inmediato
+    () => { pollingPausedUntilRef.current = 0; loadOrCreateTicket({ force: true }); }
   );
 
   useEffect(() => {
@@ -101,9 +105,17 @@ const TransferSupportChat: React.FC = () => {
         text: m.content || '',
         timestamp: new Date(m.timestamp || Date.now()).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
       })) as Message[];
-      // Merge: conserva mensajes optimistas temporales (id empieza por 'tmp-') hasta que el servidor los devuelva
+      // Merge:
+      // 1) Mantener mensajes optimistas tmp- que aún no llegaron del server
       const optimistic = (messagesRef.current || []).filter(m => m.id.startsWith('tmp-'));
-      const merged = [...serverMsgs, ...optimistic];
+      // 2) Mantener mensajes ya existentes que no estén en server (p.ej. recibidos por socket mientras carga)
+      const existingNonTmp = (messagesRef.current || []).filter(m => !m.id.startsWith('tmp-'));
+      const byId = new Map<string, Message>();
+      for (const m of [...serverMsgs, ...existingNonTmp]) byId.set(m.id, m);
+      let merged = Array.from(byId.values());
+      // 3) Añadir optimistas
+      merged = [...merged, ...optimistic];
+      // 4) Ordenar por timestamp si es posible, de lo contrario por inserción
       setMessages(merged);
       messagesRef.current = merged;
       setStatus(ticket?.status === 'closed' ? 'resuelto' : 'en_progreso');
