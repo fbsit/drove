@@ -23,6 +23,11 @@ export enum UserRole {
   TRAFFICBOSS = 'TRAFFICBOSS',
 }
 
+export enum UserAccountType {
+  PERSON = 'PERSON',
+  COMPANY = 'COMPANY',
+}
+
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -52,6 +57,10 @@ export class User {
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.CLIENT })
   role: UserRole;
+
+  // Subtipo de cuenta para distinguir persona vs empresa (no afecta permisos)
+  @Column({ type: 'enum', enum: UserAccountType, default: UserAccountType.PERSON })
+  accountType: UserAccountType;
 
   // Posición actual del drover cuando el tracking está activo
   @Column({ type: 'float', nullable: true })

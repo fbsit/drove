@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Form } from '@/components/ui/form';
 import { useVehicleTransferRequest } from '@/hooks/useVehicleTransferRequest';
 import TransferService from '@/services/transferService';
+import CarDataService from '@/services/cardataService';
 import MobileFooterNav from '@/components/layout/MobileFooterNav';
 
 import MobileVehicleDetailsStep from '@/components/vehicle-transfer/mobile/MobileVehicleDetailsStep';
@@ -30,6 +31,12 @@ const MobileTransferRequest = () => {
   const handleNext = async () => {
     const isValid = await validateStep(step);
     if (isValid) {
+      if (step === 1) {
+        const vin = form.getValues()?.vehicleDetails?.vin;
+        if (vin && vin.length === 17) {
+          try { await CarDataService.decodeVin(vin); } catch {}
+        }
+      }
       nextStep();
     }
   };

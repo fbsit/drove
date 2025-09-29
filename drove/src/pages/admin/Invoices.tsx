@@ -84,7 +84,8 @@ const Invoices: React.FC = () => {
         toAddress: destination || undefined,
         droverName: inv.droverName || inv?.drover?.contactInfo?.fullName || inv.drover_name || t?.drover?.contactInfo?.fullName,
         paymentMethod: inv.paymentMethod || inv.payment_method || inv.method,
-        status: inv.status,
+        status: inv.status || inv.invoiceStatus || inv.state,
+        isAdvance: inv.isAdvance ?? inv.advance ?? false,
         transferStatus: inv.transferStatus || inv.transfer_status || inv.tripStatus || t?.status,
         urlPDF: inv.urlPDF || inv.pdfUrl || inv.pdf_url || null,
         transferId,
@@ -122,9 +123,9 @@ const Invoices: React.FC = () => {
       // Si llegamos aquí, la petición fue exitosa (no se lanzó error)
       toast({
         title: 'PDF subido',
-        description: 'El PDF de la factura se ha subido correctamente. Marcando como Pagada…',
+        description: 'El PDF de la factura se ha subido correctamente.',
       });
-      // Forzar refetch para traer el estado actualizado desde backend (PAID)
+      // Refetch para mostrar URL PDF, el estado queda manual (Emitida/Anticipo/Pagada)
       await refetchInvoices();
       return 'success';
     } catch (error) {

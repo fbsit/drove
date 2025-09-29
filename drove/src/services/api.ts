@@ -70,9 +70,15 @@ class ApiService {
       }
 
       if (!resp.ok) {
-        /* intenta extraer mensaje JSON */
+        /* intenta extraer mensaje JSON o texto plano del backend (Nest) */
         let msg = `HTTP ${resp.status}: ${resp.statusText}`;
-        try { msg = (await resp.json()).message ?? msg; } catch { /* ignore */ }
+        try {
+          const data = await resp.json();
+          msg = data?.message || data?.error || msg;
+          if (Array.isArray(data?.message)) msg = data.message.join('. ');
+        } catch {
+          try { msg = await resp.text(); } catch {}
+        }
         const err: any = new Error(msg);
         err.status = resp.status;
         throw err;

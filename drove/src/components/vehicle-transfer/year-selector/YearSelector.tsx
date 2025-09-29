@@ -6,7 +6,7 @@ import { VehicleTransferRequest } from '@/types/vehicle-transfer-request';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getValidYears } from '@/data/vehicle-brands';
+import { useMemo } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 
@@ -17,7 +17,12 @@ interface YearSelectorProps {
 const YearSelector = ({ form }: YearSelectorProps) => {
   const [open, setOpen] = useState(false);
   const currentValue = form.watch("vehicleDetails.year");
-  const years = getValidYears();
+  const years = useMemo(() => {
+    const current = new Date().getFullYear();
+    const arr: string[] = [];
+    for (let y = current; y >= 1990; y--) arr.push(String(y));
+    return arr;
+  }, []);
 
   return (
     <FormField

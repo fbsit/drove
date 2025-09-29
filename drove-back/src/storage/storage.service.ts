@@ -123,9 +123,8 @@ export class StorageService {
     // 6. URL pública
     const url = `${this.endpoint.replace(/\/$/, '')}/${this.bucket}/${keyName}`;
 
-    // 7. Guarda URL en la factura
+    // 7. Guarda URL en la factura (no cambiar estado automáticamente)
     invoice.urlPDF = url;
-    invoice.status = InvoiceStatus.PAID;
     await this.invoicesRepo.save(invoice);
 
     // 8. Buscar el viaje

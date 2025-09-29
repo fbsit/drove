@@ -3,6 +3,7 @@ import React from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileTransferRequest from './MobileTransferRequest';
 import TransferService from '@/services/transferService';
+import CarDataService from '@/services/cardataService';
 // Desktop version
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
@@ -47,6 +48,15 @@ const DesktopTransferRequest: React.FC = () => {
   const handleNext = async () => {
     const isValid = await validateStep(step);
     if (isValid) {
+      // Validate VIN only when moving past vehicle step
+      if (step === 1) {
+        const vin = form.getValues()?.vehicleDetails?.vin;
+        if (vin && vin.length === 17) {
+          try {
+            await CarDataService.decodeVin(vin);
+          } catch {}
+        }
+      }
       nextStep();
     }
   };
@@ -98,21 +108,21 @@ const DesktopTransferRequest: React.FC = () => {
   const renderStep = () => {
     switch (step) {
       case 1:
-        return <VehicleDetailsStep form={form} />;
+        return <VehicleDetailsStep form={form as any} />;
       case 2:
-        return <PickupDetailsStep form={form} />;
+        return <PickupDetailsStep form={form as any} />;
       case 3:
-        return <SenderDetailsStep form={form} />;
+        return <SenderDetailsStep form={form as any} />;
       case 4:
-        return <ReceiverDetailsStep form={form} />;
+        return <ReceiverDetailsStep form={form as any} />;
       case 5:
-        return <TransferDetailsStep form={form} />;
+        return <TransferDetailsStep form={form as any} />;
       case 6:
-        return <PaymentMethodStep form={form} />;
+        return <PaymentMethodStep form={form as any} />;
       case 7:
-        return <ConfirmationStep form={form} />;
+        return <ConfirmationStep form={form as any} />;
       default:
-        return <VehicleDetailsStep form={form} />;
+        return <VehicleDetailsStep form={form as any} />;
     }
   };
 

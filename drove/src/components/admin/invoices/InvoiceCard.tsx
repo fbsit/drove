@@ -76,7 +76,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
   // Estado visual de pago
   let estadoPago = "";
   if ((invoice.paymentMethod || '').toLowerCase() === "transferencia") {
-    if (invoice.status === "anticipo") {
+    if (String((invoice as any).status || '').toUpperCase() === 'ADVANCE') {
       estadoPago = "Anticipado por banco";
     } else if (invoice.status === "pagada") {
       estadoPago = "Pagado";
@@ -97,6 +97,10 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
     case 'SENT':
       estadoFactura = 'Emitida';
       estadoFacturaColor = 'text-blue-400';
+      break;
+    case 'ADVANCE':
+      estadoFactura = 'Anticipo';
+      estadoFacturaColor = 'text-purple-400';
       break;
     case 'PAID':
       estadoFactura = 'Pagada';
@@ -120,14 +124,12 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
   const canReject = statusUpper !== 'REJECTED';
   const canVoid = statusUpper !== 'VOID';
 
-  // Acciones SOLO para transferencia
-  const esTransferencia = invoice.paymentMethod === "transferencia";
-  // Anticipo solo es posible cuando es transferencia, tiene PDF, y está en estado "emitida"
-  const showAnticipo = esTransferencia && tienePDF && invoice.status === "emitida";
-  // Pagada solo debe mostrarse si está "emitida" o en "anticipo" y tiene PDF
-  const showPagada = esTransferencia && tienePDF && ["emitida", "anticipo"].includes(invoice.status);
-  // Revertir solo aparece si está en "anticipo"
-  const showRevertir = esTransferencia && tienePDF && invoice.status === "anticipo";
+  // Acciones visibles en todas las facturas (según pedido), con desactivación por estado
+  const statusLower = String(invoice.status || '').toLowerCase();
+  const showAnticipo = true;
+  const showPagada = true;
+  const disableAnticipo = statusUpper === 'ADVANCE' || statusUpper === 'PAID';
+  const disablePagada = statusUpper === 'PAID';
 
   const handleUploadSuccess = () => {
     // Simular que se subió el PDF y cambiar estado a "emitida"
@@ -237,47 +239,39 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
           </Button>
         </div>
 
-        {esTransferencia && (
-          <>
-            {showAnticipo && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="rounded-2xl text-purple-300 hover:bg-purple-700/40 font-bold"
-                onClick={() => setConfirmDialog({ open: true, type: "anticipo" })}
-                title="Anticipo bancario"
-              >
-                <Plus size={16} />
-                <span className="ml-1">Anticipo</span>
-              </Button>
-            )}
-            {showPagada && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="rounded-2xl text-green-400 hover:bg-green-700/30 font-bold"
-                onClick={() => setConfirmDialog({ open: true, type: "pagada" })}
-                title="Pagada por cliente"
-                disabled={invoice.status === "pagada"}
-              >
-                <Check size={16} />
-                <span className="ml-1">Pagada</span>
-              </Button>
-            )}
-            {showRevertir && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="rounded-2xl text-slate-400 hover:bg-blue-900/50 font-bold"
-                onClick={() => setConfirmDialog({ open: true, type: "revertir" })}
-                title="Revertir estado"
-              >
-                <X size={16} />
-                <span className="ml-1">Revertir</span>
-              </Button>
-            )}
-          </>
-        )}
+        <>
+          {(showAnticipo || showPagada) && (
+            <div className="flex flex-row flex-wrap gap-4 items-center justify-center">
+              {showAnticipo && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="rounded-2xl text-purple-300 hover:bg-purple-700/40 font-bold"
+                  onClick={() => setConfirmDialog({ open: true, type: "anticipo" })}
+                  title="Anticipo bancario"
+                  disabled={disableAnticipo}
+                >
+                  <Plus size={16} />
+                  <span className="ml-1">Anticipo</span>
+                </Button>
+              )}
+              {showPagada && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="rounded-2xl text-green-400 hover:bg-green-700/30 font-bold"
+                  onClick={() => setConfirmDialog({ open: true, type: "pagada" })}
+                  title="Pagada por cliente"
+                  disabled={disablePagada}
+                >
+                  <Check size={16} />
+                  <span className="ml-1">Pagada</span>
+                </Button>
+              )}
+            </div>
+          )}
+          {/* Revertir estado removido por requerimiento */}
+        </>
 
         {/* Rechazar / Anular */}
         <div className="flex flex-row gap-6 items-center mt-1 text-sm justify-center">
@@ -420,7 +414,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
                 try {
                   if (confirmDialog.type === "pagada" || confirmDialog.type === "anticipo") {
                     await Promise.resolve(onChangeStatus(invoice.id, confirmDialog.type));
-                    toast({ title: "Estado actualizado", description: confirmDialog.type === "pagada" ? "Factura marcada como Pagada." : "Factura marcada como Emitida.", duration: 1400 });
+                    toast({ title: "Estado actualizado", description: confirmDialog.type === "pagada" ? "Factura marcada como Pagada." : "Factura marcada como Anticipo.", duration: 1400 });
                   } else if (confirmDialog.type === "reject") {
                     await Promise.resolve(onReject?.(invoice.id));
                     toast({ title: "Estado actualizado", description: "Factura marcada como Rechazada.", duration: 1400 });

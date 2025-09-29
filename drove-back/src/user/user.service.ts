@@ -3,10 +3,11 @@ import {
   NotFoundException,
   ConflictException,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
-import { User } from './entities/user.entity';
+import { User, UserAccountType } from './entities/user.entity';
 import { CreateUserDto } from './dtos/createUser.dto';
 import { UpdateUserDto } from './dtos/updatedUser.dto';
 import * as bcrypt from 'bcrypt';
@@ -15,11 +16,13 @@ import { TransferStatus } from '../travels/entities/travel.entity';
 import { Travels } from '../travels/entities/travel.entity';
 import { ResendService } from '../resend/resend.service';
 import { BadRequestException } from '@nestjs/common';
+import { classifyId, normalizeId, validateDni, validateNie, isLikelyCompanyName } from './utils/spanish-id';
 
 import { randomBytes } from 'crypto';
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
@@ -33,6 +36,8 @@ export class UserService {
    */
   async create(createUserDto: CreateUserDto): Promise<User> {
     const { email, password, userType, contactInfo } = createUserDto;
+    this.logger.log(`Create user attempt email=${email} type=${userType}`);
+    this.logger.debug(`CreateUserDto.contactInfo=${JSON.stringify(contactInfo ?? {})}`);
 
     // Verificar duplicados
     const existing = await this.userRepo.findOneBy({
@@ -47,12 +52,32 @@ export class UserService {
 
       const role = mapRawUserTypeToRole(userType);
 
+      // Clasificación y validación de documento + subtipo de cuenta
+      const ci = { ...(contactInfo || {}) } as any;
+      if (ci.documentId) {
+        ci.documentId = normalizeId(ci.documentId);
+        const kind = classifyId(ci.documentId);
+        ci.documentType = kind;
+        if (kind === 'DNI' && !validateDni(ci.documentId)) {
+          throw new BadRequestException('DNI inválido. Formato: 8 dígitos + letra (p.ej. 12345678Z).');
+        }
+        if (kind === 'NIE' && !validateNie(ci.documentId)) {
+          throw new BadRequestException('NIE inválido. Formato: X/Y/Z + 7 dígitos + letra (p.ej. X1234567L).');
+        }
+      }
+
+      const acctType = (ci.documentType === 'CIF' || isLikelyCompanyName(ci.fullName))
+        ? UserAccountType.COMPANY
+        : UserAccountType.PERSON;
+
       const user = this.userRepo.create({
         email,
         password: hashed,
         role,
-        contactInfo,
+        contactInfo: ci,
+        accountType: acctType,
       });
+      this.logger.debug(`Persisting user role=${user.role} accountType=${user.accountType}`);
       const created = await this.userRepo.save(user);
 
       // Enviar verificación de email (server-side) con LINK y código unificado de 6 dígitos
@@ -70,8 +95,10 @@ export class UserService {
         // No interrumpir la creación de usuario si falla el envío
       }
 
+      this.logger.log(`User created id=${created.id}`);
       return created;
     } catch (error: any) {
+      this.logger.error(`Create user failed: ${error?.message}`, error?.stack);
       if (error.code === '23505') {
         throw new ConflictException(`El email ${email} ya existe.`);
       }
@@ -151,24 +178,38 @@ export class UserService {
    * Actualiza datos de usuario, incluyendo nested contactInfo y contraseña opcional
    */
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+    this.logger.log(`Update user id=${id}`);
     const user = await this.findOne(id);
-    console.log('usuario encontrado', user);
     if (updateUserDto.userType) {
       user.role = mapRawUserTypeToRole(updateUserDto.userType);
     }
 
-    console.log('updateUserDto', updateUserDto);
+    this.logger.debug(`Update payload: ${JSON.stringify(updateUserDto ?? {})}`);
 
     // Merge nested contactInfo
     if (updateUserDto.contactInfo) {
-      user.contactInfo = { ...user.contactInfo, ...updateUserDto.contactInfo };
+      const ci = { ...user.contactInfo, ...updateUserDto.contactInfo } as any;
+      if (ci.documentId) {
+        ci.documentId = normalizeId(ci.documentId);
+        const kind = classifyId(ci.documentId);
+        ci.documentType = kind;
+        if (kind === 'DNI' && !validateDni(ci.documentId)) throw new BadRequestException('DNI inválido');
+        if (kind === 'NIE' && !validateNie(ci.documentId)) throw new BadRequestException('NIE inválido');
+      }
+      user.contactInfo = ci;
+      // recalcular accountType sin cambiar roles/permisos
+      user.accountType = (ci.documentType === 'CIF' || isLikelyCompanyName(ci.fullName))
+        ? UserAccountType.COMPANY
+        : UserAccountType.PERSON;
     }
 
     // Asigna otros campos
     const { password, contactInfo, ...rest } = updateUserDto as any;
     Object.assign(user, rest);
 
-    return this.userRepo.save(user);
+    const saved = await this.userRepo.save(user);
+    this.logger.log(`User updated id=${id}`);
+    return saved;
   }
 
   async findOneById(id: string): Promise<User | null> {

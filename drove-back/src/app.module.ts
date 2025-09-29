@@ -22,10 +22,19 @@ import { PdfModule } from './pdf/pdf.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { SupportModule } from './tickets/support.module';
 import { join } from 'path';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { CarDataModule } from './cardata/cardata.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60,
+        limit: 60,
+      },
+    ]),
     TypeOrmModule.forRootAsync({
       useFactory: () => {
         const hasDatabaseUrl = !!process.env.DATABASE_URL;
@@ -78,6 +87,13 @@ import { join } from 'path';
     InvoicesModule,
     PaymentsModule,
     PdfModule,
+    CarDataModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule implements NestModule {

@@ -26,6 +26,7 @@ const MobileRegistrationForm: React.FC<Props> = ({
   const [userType, setUserType] = useState<UserType | null>(null);
   const [formData, setFormData] = useState<Partial<RegistrationFormData>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [externalErrors, setExternalErrors] = useState<Record<string, string>>({});
 
   const getSteps = () => {
     if (!userType) return ["Tipo de cuenta"];
@@ -104,8 +105,26 @@ const MobileRegistrationForm: React.FC<Props> = ({
 
       await AuthService.signUp(registrationData as any);
       await onComplete(formData as RegistrationFormData);
-    } catch (e) {
+    } catch (e: any) {
       console.error("Error registrando usuario (mobile):", e);
+      const msg = e?.message || 'No se pudo completar el registro. Verifica tus datos.';
+      try {
+        const { toast } = await import('@/hooks/use-toast');
+        toast({ variant: 'destructive', title: 'Error en registro', description: msg });
+      } catch {}
+
+      // Mapeo de error → campos del paso fiscal para permitir corrección
+      const lower = String(msg).toLowerCase();
+      const nextErrors: Record<string, string> = {};
+      if (lower.includes('dni inválido') || lower.includes('nie inválido') || lower.includes('cif inválido')) {
+        nextErrors.documentNumber = msg;
+      }
+      setExternalErrors(nextErrors);
+
+      // Volver al paso "Datos fiscales" si hubo error en documento
+      if (nextErrors.documentNumber) {
+        setCurrentStep(userType === 'client' ? 2 : currentStep);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -178,6 +197,7 @@ const MobileRegistrationForm: React.FC<Props> = ({
               onUpdate={handleStepData}
               onNext={handleNext}
               onPrevious={handlePrevious}
+              externalErrors={externalErrors}
             />
           );
         case 3:
@@ -273,7 +293,7 @@ const MobileRegistrationForm: React.FC<Props> = ({
               </div>
             </div>
 
-            <h1 className="text-base font-bold text-white truncate">
+            <h1 className="text/base font-bold text-white truncate">
               {steps[currentStep]}
             </h1>
           </>

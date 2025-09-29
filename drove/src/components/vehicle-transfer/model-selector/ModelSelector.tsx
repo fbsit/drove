@@ -6,7 +6,8 @@ import { VehicleTransferRequest } from '@/types/vehicle-transfer-request';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check } from 'lucide-react';
 import { cn } from "@/lib/utils";
-import { getModelsByBrand } from '@/data/vehicle-brands';
+import { useEffect } from 'react';
+import CarDataService, { CarModelDto } from '@/services/cardataService';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 
@@ -16,12 +17,25 @@ interface ModelSelectorProps {
 
 const ModelSelector = ({ form }: ModelSelectorProps) => {
   const [open, setOpen] = useState(false);
-  const vehicleType = form.watch("vehicleDetails.type");
   const brand = form.watch("vehicleDetails.brand");
   const year = form.watch("vehicleDetails.year");
   const currentValue = form.watch("vehicleDetails.model");
   
-  const models = getModelsByBrand(brand, year, vehicleType);
+  const [models, setModels] = React.useState<CarModelDto[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!brand) { setModels([]); return; }
+    (async () => {
+      try {
+        const data = await CarDataService.getModels(brand, year);
+        if (isMounted) setModels(data);
+      } catch {
+        setModels([]);
+      }
+    })();
+    return () => { isMounted = false; };
+  }, [brand, year]);
 
   const normalizeText = (text: string) => 
     text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -56,9 +70,8 @@ const ModelSelector = ({ form }: ModelSelectorProps) => {
                     <CommandEmpty>No se encontraron modelos</CommandEmpty>
                     <CommandGroup>
                       {models
-                        .filter(model => 
-                          normalizeText(model).includes(normalizeText(field.value || ""))
-                        )
+                        .map(m => m.name)
+                        .filter(model => normalizeText(model).includes(normalizeText(field.value || "")))
                         .map(model => (
                           <CommandItem
                             key={model}

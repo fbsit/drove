@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
+import AddressInput from '@/components/vehicle-transfer/AddressInput';
+import { LatLngCity } from '@/types/lat-lng-city';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Building, MapPin, FileText } from 'lucide-react';
@@ -12,25 +14,57 @@ interface Props {
   onUpdate: (data: Partial<RegistrationFormData>) => void;
   onNext: () => void;
   onPrevious?: () => void;
+  externalErrors?: Record<string, string>;
 }
 
-const ClientFiscalDataStep: React.FC<Props> = ({ data, onUpdate, onNext, onPrevious }) => {
+const ClientFiscalDataStep: React.FC<Props> = ({ data, onUpdate, onNext, onPrevious, externalErrors }) => {
   const [formData, setFormData] = useState({
     documentNumber: data.documentNumber || '',
     address: data.address || '',
+    addressCity: (data as any)?.addressCity || '',
+    addressLat: (data as any)?.addressLat || null as number | null,
+    addressLng: (data as any)?.addressLng || null as number | null,
+    province: (data as any)?.province || '',
+    postalCode: (data as any)?.postalCode || '',
+    country: (data as any)?.country || '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const docRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     onUpdate(formData);
   }, [formData, onUpdate]);
+
+  // Sincroniza errores externos (provenientes del backend)
+  useEffect(() => {
+    if (externalErrors && Object.keys(externalErrors).length > 0) {
+      setErrors((prev) => ({ ...prev, ...externalErrors }));
+      if (externalErrors.documentNumber && docRef.current) {
+        try { docRef.current.focus(); } catch {}
+      }
+    }
+  }, [externalErrors]);
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+
+  const handleAddressSelect = (v: any) => {
+    setFormData(prev => ({
+      ...prev,
+      address: v.address,
+      addressCity: v.city,
+      province: v.state || prev.province,
+      postalCode: v.zip || prev.postalCode,
+      country: v.country || prev.country,
+      addressLat: v.lat,
+      addressLng: v.lng,
+    }));
+    if (errors.address) setErrors(prev => ({ ...prev, address: '' }));
   };
 
   const validateForm = () => {
@@ -85,6 +119,7 @@ const ClientFiscalDataStep: React.FC<Props> = ({ data, onUpdate, onNext, onPrevi
               placeholder={getDocumentPlaceholder('cif')}
               value={formData.documentNumber}
               onChange={(e) => handleChange('documentNumber', e.target.value)}
+              ref={docRef}
               className={`pl-12 bg-white/5 border-white/20 text-white ${errors.documentNumber ? 'border-red-500' : ''}`}
             />
           </div>
@@ -96,21 +131,21 @@ const ClientFiscalDataStep: React.FC<Props> = ({ data, onUpdate, onNext, onPrevi
           </p>
         </div>
 
-        {/* Dirección */}
+        {/* Dirección (con Google Places) */}
         <div>
           <Label htmlFor="address" className="text-white/80 mb-2 block">
             Dirección Fiscal/Comercial *
           </Label>
           <div className="relative">
             <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-5 h-5" />
-            <Input
-              id="address"
-              type="text"
-              placeholder="Calle, número, ciudad, código postal"
-              value={formData.address}
-              onChange={(e) => handleChange('address', e.target.value)}
-              className={`pl-12 bg-white/5 border-white/20 text-white ${errors.address ? 'border-red-500' : ''}`}
-            />
+            <div className="pl-12">
+              <AddressInput
+                id="fiscal-address"
+                value={{ address: formData.address || '', city: formData.addressCity || '', lat: formData.addressLat || 0, lng: formData.addressLng || 0 }}
+                onChange={handleAddressSelect}
+                placeholder="Calle, número, ciudad, código postal"
+              />
+            </div>
           </div>
           {errors.address && (
             <p className="text-red-400 text-sm mt-1">{errors.address}</p>
