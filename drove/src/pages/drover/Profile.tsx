@@ -104,7 +104,7 @@ const DroverProfile = () => {
         <Card className="bg-white/10 border-white/20 backdrop-blur-sm mb-6 text-left">
           <CardContent className="p-5">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4 w-full">
+              <div className="flex flex-col md:flex-row items-center gap-4 w-full text-center md:text-left">
                 <div className="w-16 h-16 rounded-full bg-[#6EF7FF]/20 flex items-center justify-center text-white text-2xl font-bold">
                   {user?.full_name?.[0] || 'D'}
                 </div>
@@ -126,7 +126,7 @@ const DroverProfile = () => {
         </Card>
 
         {/* Métricas separadas en cards con iconos/colores */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-6 ">
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6 ">
           <Card className="bg-white/10 border-white/20">
             <CardContent className="p-6 text-center">
               <div className="bg-white/90 p-3 rounded-2xl w-fit mx-auto mb-3"><Euro size={24} className="text-emerald-600" /></div>

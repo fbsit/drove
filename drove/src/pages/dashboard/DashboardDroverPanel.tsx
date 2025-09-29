@@ -213,30 +213,33 @@ const DashboardDroverPanel: React.FC = () => {
               <div className="text-white/60">No tienes traslados para mostrar.</div>
             )}
             {visibleTrips.map((t: any) => (
-              <div key={t.id} className="bg-[#2A1B3D] border border-white/10 rounded-2xl p-4 gap-3 shadow">
+              <div key={t.id} className="bg-[#2A1B3D] border border-white/10 rounded-2xl p-4 gap-3 shadow flex flex-col">
+
                 {/* Encabezado centrado con estatus a la derecha */}
-                <div className="relative flex items-center justify-between mb-2">
-                  <div className="">
-                    <div className="text-white text-base md:text-lg font-bold">
+                <div className="w-fit mb-2">
+                  {(() => {
+                    const s = String(t.status || '').toUpperCase();
+                    if (s === 'DELIVERED') return <span className="text-white text-xs px-3 py-1 rounded-full bg-green-500">Completado</span>;
+                    if (s === 'IN_PROGRESS') return <span className="text-black text-xs px-3 py-1 rounded-full bg-yellow-400">En progreso</span>;
+                    if (s === 'REQUEST_FINISH') return <span className="text-amber-400 text-xs px-2 py-1 rounded-full bg-amber-500/20 border border-amber-500/30">Solicitando entrega</span>;
+                    if (s === 'RESCHEDULED') return <span className="text-amber-400 text-xs px-2 py-1 rounded-full bg-amber-500/20 border border-amber-500/30">Reprogramado</span>;
+                    if (s === 'CANCELLED') return <span className="text-white text-xs px-3 py-1 rounded-full bg-red-500">Cancelado</span>;
+                    return <span className="text-white text-xs px-3 py-1 rounded-full" style={{ background: '#6366F1' }}>Asignado</span>;
+                  })()}
+                </div>
+
+                <div className="relative flex justify-between mb-2">
+                  <div>
+                    <div className="text-white text-base md:text-lg font-bold text-left">
                       {t.origin} → {t.destination}
                     </div>
                     <div className="text-white/70 text-start text-sm">{new Date(t.createdAt).toLocaleDateString()}</div>
                   </div>
-                  <div className="absolute right-0 top-0">
-                    {(() => {
-                      const s = String(t.status || '').toUpperCase();
-                      if (s === 'DELIVERED') return <span className="text-white text-xs px-3 py-1 rounded-full bg-green-500">Completado</span>;
-                      if (s === 'IN_PROGRESS') return <span className="text-black text-xs px-3 py-1 rounded-full bg-yellow-400">En progreso</span>;
-                      if (s === 'REQUEST_FINISH') return <span className="text-amber-400 text-xs px-2 py-1 rounded-full bg-amber-500/20 border border-amber-500/30">Solicitando entrega</span>;
-                      if (s === 'RESCHEDULED') return <span className="text-amber-400 text-xs px-2 py-1 rounded-full bg-amber-500/20 border border-amber-500/30">Reprogramado</span>;
-                      if (s === 'CANCELLED') return <span className="text-white text-xs px-3 py-1 rounded-full bg-red-500">Cancelado</span>;
-                      return <span className="text-white text-xs px-3 py-1 rounded-full" style={{ background: '#6366F1' }}>Asignado</span>;
-                    })()}
-                  </div>
+
                 </div>
                 {/* Pie con ganancia a la izquierda y botón a la derecha */}
-                <div className="flex items-center justify-between">
-                  <div className="text-[#6EF7FF] text-lg font-bold">Ganancia: €{(+t.totalPrice).toLocaleString()}</div>
+                <div className="flex justify-between items-center gap-4">
+                  <div className="text-[#6EF7FF] text-lg font-bold flex-1 text-start">Ganancia: €{(+t.totalPrice).toLocaleString()}</div>
                   <Link to={`/traslados/activo/${t.id}`} className="px-5 py-2 h-9 rounded-2xl bg-[#6EF7FF] text-[#22142A] text-sm hover:bg-[#22142A] hover:text-white transition-colors">Ver detalles</Link>
                 </div>
               </div>
