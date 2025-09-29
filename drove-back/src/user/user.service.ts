@@ -66,9 +66,11 @@ export class UserService {
         }
       }
 
-      const acctType = (ci.documentType === 'CIF' || isLikelyCompanyName(ci.fullName) || isLikelyCompanyName(ci.companyName))
+      const acctType = (ci?.companyName && String(ci.companyName).trim().length > 0)
         ? UserAccountType.COMPANY
-        : UserAccountType.PERSON;
+        : (ci.documentType === 'CIF' || isLikelyCompanyName(ci.fullName) || isLikelyCompanyName(ci.companyName))
+          ? UserAccountType.COMPANY
+          : UserAccountType.PERSON;
 
       const user = this.userRepo.create({
         email,
@@ -202,9 +204,11 @@ export class UserService {
       }
       user.contactInfo = ci;
       // recalcular accountType sin cambiar roles/permisos
-      user.accountType = (ci.documentType === 'CIF' || isLikelyCompanyName(ci.fullName))
+      user.accountType = (ci?.companyName && String(ci.companyName).trim().length > 0)
         ? UserAccountType.COMPANY
-        : UserAccountType.PERSON;
+        : (ci.documentType === 'CIF' || isLikelyCompanyName(ci.fullName) || isLikelyCompanyName(ci.companyName))
+          ? UserAccountType.COMPANY
+          : UserAccountType.PERSON;
     }
 
     // Asigna otros campos
