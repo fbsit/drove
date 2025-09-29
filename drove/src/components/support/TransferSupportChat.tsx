@@ -64,9 +64,10 @@ const TransferSupportChat: React.FC = () => {
       setMessages(prev => {
         const withoutTmpOfSameText = prev.filter(m => !(m.id.startsWith('tmp-') && m.text === incoming.text));
         const exists = withoutTmpOfSameText.some(m => m.id === incoming.id);
-        const next = exists ? withoutTmpOfSameText : [...withoutTmpOfSameText, incoming];
-        messagesRef.current = next;
-        return next;
+        const added = exists ? withoutTmpOfSameText : [...withoutTmpOfSameText, incoming];
+        const sorted = [...added].sort((a: any, b: any) => (a.ts ?? 0) - (b.ts ?? 0));
+        messagesRef.current = sorted as any;
+        return sorted as any;
       });
       setStatus('en_progreso');
     },

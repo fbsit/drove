@@ -62,6 +62,7 @@ export class SupportService {
         sender: saved.sender,
         senderName: saved.senderName,
         timestamp: saved.timestamp,
+        ticketId: ticket.id,
       });
     } catch {}
     return saved;

@@ -1,10 +1,11 @@
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Send, User, UserCheck, Clock } from "lucide-react";
 import { SupportTicket, SupportMessage } from "@/types/support-ticket";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useSupportSocket } from "@/hooks/useSupportSocket";
 
 interface SupportChatViewerProps {
   ticket: SupportTicket;
@@ -12,19 +13,75 @@ interface SupportChatViewerProps {
   onUpdateStatus: (ticketId: string, status: string) => void;
 }
 
-const SupportChatViewer: React.FC<SupportChatViewerProps> = ({ 
-  ticket, 
-  onSendMessage, 
-  onUpdateStatus 
+const SupportChatViewer: React.FC<SupportChatViewerProps> = ({
+  ticket,
+  onSendMessage,
+  onUpdateStatus,
 }) => {
   const [newMessage, setNewMessage] = useState("");
+  const [messages, setMessages] = useState<SupportMessage[]>([]);
+  const messagesRef = useRef<SupportMessage[]>([]);
+
+  // Inicializa y ordena mensajes por timestamp cuando cambia el ticket
+  useEffect(() => {
+    const base = (ticket?.messages || []).slice().sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    setMessages(base);
+    messagesRef.current = base;
+  }, [ticket?.id]);
 
   const handleSendMessage = () => {
     if (newMessage.trim()) {
+      const optimistic: SupportMessage = {
+        id: `tmp-${Date.now()}`,
+        content: newMessage,
+        sender: "admin" as any,
+        senderName: "Admin",
+        timestamp: new Date().toISOString(),
+        ticketId: ticket.id,
+      } as any;
+      setMessages(prev => {
+        const next = [...prev, optimistic].sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        messagesRef.current = next;
+        return next;
+      });
       onSendMessage(ticket.id, newMessage);
       setNewMessage("");
     }
   };
+
+  // Socket en tiempo real para el ticket actual
+  useSupportSocket(
+    ticket?.id || null,
+    (incoming) => {
+      // Mapear a SupportMessage shape
+      const msg: SupportMessage = {
+        id: incoming.id,
+        content: incoming.text,
+        sender: incoming.sender === 'soporte' ? 'admin' as any : 'client' as any,
+        senderName: incoming.sender === 'soporte' ? 'Admin' : 'Usuario',
+        timestamp: new Date().toISOString(),
+        ticketId: ticket.id,
+      } as any;
+      setMessages(prev => {
+        // Eliminar optimistas que coincidan en texto y admin/user
+        const filtered = prev.filter(m => !(String(m.id).startsWith('tmp-') && m.content === msg.content && m.sender === msg.sender));
+        // Evitar duplicados por id
+        if (filtered.some(m => String(m.id) === String(msg.id))) return filtered;
+        const next = [...filtered, msg].sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        messagesRef.current = next;
+        return next;
+      });
+    },
+    // onStatus
+    (status) => {
+      if (status === 'closed') onUpdateStatus(ticket.id, 'cerrado');
+    },
+    // onClosed
+    () => onUpdateStatus(ticket.id, 'cerrado'),
+    // onConnected/onDisconnected (admin vista no necesita pausar polling aquí)
+    undefined,
+    undefined,
+  );
 
   const getSenderIcon = (sender: string) => {
     switch (sender) {
@@ -69,7 +126,7 @@ const SupportChatViewer: React.FC<SupportChatViewerProps> = ({
 
       {/* Messages */}
       <div className="flex-1 p-4 overflow-y-auto space-y-4">
-        {ticket.messages.map((message: SupportMessage) => (
+        {messages.map((message: SupportMessage) => (
           <div key={message.id} className={`p-3 rounded-xl ${getSenderBg(message.sender)}`}>
             <div className="flex items-center gap-2 mb-2">
               {getSenderIcon(message.sender)}

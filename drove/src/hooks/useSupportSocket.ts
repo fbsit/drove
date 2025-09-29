@@ -42,6 +42,7 @@ export function useSupportSocket(
         text: msg.content || '',
         timestamp: new Date(msg.timestamp || Date.now()).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
       };
+      (mapped as any).ts = new Date(msg.timestamp || Date.now()).getTime();
       onMessage(mapped);
     });
 
