@@ -66,7 +66,7 @@ export class UserService {
         }
       }
 
-      const acctType = (ci.documentType === 'CIF' || isLikelyCompanyName(ci.fullName))
+      const acctType = (ci.documentType === 'CIF' || isLikelyCompanyName(ci.fullName) || isLikelyCompanyName(ci.companyName))
         ? UserAccountType.COMPANY
         : UserAccountType.PERSON;
 
@@ -99,6 +99,10 @@ export class UserService {
       return created;
     } catch (error: any) {
       this.logger.error(`Create user failed: ${error?.message}`, error?.stack);
+      if (error?.response?.statusCode === 400 || error?.status === 400) {
+        // Repropaga errores 400 de validación para que el front reciba el mensaje específico
+        throw error;
+      }
       if (error.code === '23505') {
         throw new ConflictException(`El email ${email} ya existe.`);
       }

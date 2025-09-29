@@ -11,6 +11,9 @@ export class ContactInfoDto {
   @ApiProperty() @IsBoolean()
   profileComplete: boolean;
 
+  // Nombre de empresa (opcional) utilizado para clasificar PERSON/COMPANY
+  @ApiPropertyOptional() @IsOptional() @IsString() companyName?: string;
+
   /* ❷ Campos legacy — los dejamos opcionales por si los usas más adelante */
   @ApiPropertyOptional() @IsOptional() @IsString() identificationNumber?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() firstName?: string;
