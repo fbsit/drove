@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "react-router-dom";
 import SupportService from "@/services/supportService";
+import { useSupportSocket } from "@/hooks/useSupportSocket";
 
 type Message = {
   id: string;
@@ -51,6 +52,29 @@ const TransferSupportChat: React.FC = () => {
   const [status, setStatus] = useState<TicketStatus>(INITIAL_STATUS);
   const [ticketId, setTicketId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const latestLoadIdRef = useRef<number>(0);
+  const messagesRef = useRef<Message[]>([]);
+  const pollingPausedUntilRef = useRef<number>(0);
+  const pendingRefreshTimeoutRef = useRef<any>(null);
+
+  useSupportSocket(
+    ticketId,
+    (incoming) => {
+      // Dedup por id y reemplazar optimistas tmp- si coincide contenido
+      setMessages(prev => {
+        const withoutTmpOfSameText = prev.filter(m => !(m.id.startsWith('tmp-') && m.text === incoming.text));
+        const exists = withoutTmpOfSameText.some(m => m.id === incoming.id);
+        const next = exists ? withoutTmpOfSameText : [...withoutTmpOfSameText, incoming];
+        messagesRef.current = next;
+        return next;
+      });
+      setStatus('en_progreso');
+    },
+    (status) => {
+      if (status === 'closed') setStatus('resuelto');
+    },
+    () => setStatus('resuelto')
+  );
 
   useEffect(() => {
     // Scroll al último mensaje
@@ -60,17 +84,28 @@ const TransferSupportChat: React.FC = () => {
   }, [messages]);
 
   // Cargar/conectar con tickets reales
-  const loadOrCreateTicket = React.useCallback(async () => {
+  const loadOrCreateTicket = React.useCallback(async (opts?: { force?: boolean }) => {
+    const force = !!opts?.force;
+    // Pausa el polling si acabamos de enviar un mensaje (evita sobrescribir la UI optimista)
+    if (!force && Date.now() < pollingPausedUntilRef.current) return;
+    const myLoadId = ++latestLoadIdRef.current;
     try {
       const ticket = await SupportService.getMyOpen();
+      // Ignora respuestas obsoletas si hubo otra carga más reciente
+      if (myLoadId !== latestLoadIdRef.current) return;
+
       setTicketId(ticket?.id || null);
       const serverMsgs = (ticket?.messages || []).map((m: any) => ({
         id: String(m.id),
-        sender: m.sender === 'admin' ? 'soporte' : 'user',
+        sender: (String(m.sender || '').toUpperCase() === 'ADMIN') ? 'soporte' : 'user',
         text: m.content || '',
         timestamp: new Date(m.timestamp || Date.now()).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
       })) as Message[];
-      setMessages(serverMsgs);
+      // Merge: conserva mensajes optimistas temporales (id empieza por 'tmp-') hasta que el servidor los devuelva
+      const optimistic = (messagesRef.current || []).filter(m => m.id.startsWith('tmp-'));
+      const merged = [...serverMsgs, ...optimistic];
+      setMessages(merged);
+      messagesRef.current = merged;
       setStatus(ticket?.status === 'closed' ? 'resuelto' : 'en_progreso');
     } catch (e: any) {
       console.error('[SUPPORT] load tickets error', e);
@@ -89,8 +124,26 @@ const TransferSupportChat: React.FC = () => {
     setInput('');
 
     try {
+      // Optimista: muestra el mensaje localmente mientras llega la actualización
+      const optimistic: Message = {
+        id: `tmp-${Date.now()}`,
+        sender: 'user',
+        text: payloadText,
+        timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages(prev => {
+        const next = [...prev, optimistic];
+        messagesRef.current = next;
+        return next;
+      });
+
       await SupportService.sendMyMessage(payloadText);
-      await loadOrCreateTicket();
+      // Pausa el polling brevemente para evitar sobrescritura con respuestas antiguas
+      pollingPausedUntilRef.current = Date.now() + 1500;
+      if (pendingRefreshTimeoutRef.current) clearTimeout(pendingRefreshTimeoutRef.current);
+      pendingRefreshTimeoutRef.current = setTimeout(() => {
+        loadOrCreateTicket({ force: true });
+      }, 600);
     } catch (e: any) {
       console.error('[SUPPORT] send message error', e);
       toast({ variant: 'destructive', title: 'Error', description: e?.message || 'No se pudo enviar el mensaje.' });

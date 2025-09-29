@@ -6,6 +6,7 @@ import { SupportMessage, MessageSender } from './entity/support-message.entity';
 import { UpdateTicketStatusDTO } from './dto/update-ticket.status.dto';
 import { RespondToTicketDTO } from './dto/respond-to-ticket.dto';
 import { PublicContactDTO } from './dto/public-contact.dto';
+import { SupportGateway } from './support.gateway';
 
 @Injectable()
 export class SupportService {
@@ -14,6 +15,7 @@ export class SupportService {
     private ticketRepo: Repository<SupportTicket>,
     @InjectRepository(SupportMessage)
     private messageRepo: Repository<SupportMessage>,
+    private gateway: SupportGateway,
   ) {}
 
   findAll(): Promise<SupportTicket[]> {
@@ -53,6 +55,15 @@ export class SupportService {
     const saved = await this.messageRepo.save(msg);
     ticket.lastMessageAt = new Date();
     await this.ticketRepo.save(ticket);
+    try {
+      this.gateway.emitMessage(ticket.id, {
+        id: saved.id,
+        content: saved.content,
+        sender: saved.sender,
+        senderName: saved.senderName,
+        timestamp: saved.timestamp,
+      });
+    } catch {}
     return saved;
   }
 
@@ -63,7 +74,9 @@ export class SupportService {
     const ticket = await this.ticketRepo.findOne({ where: { id } });
     if (!ticket) throw new NotFoundException(`Ticket ${id} not found`);
     ticket.status = dto.status;
-    return this.ticketRepo.save(ticket);
+    const saved = await this.ticketRepo.save(ticket);
+    try { this.gateway.emitStatus(ticket.id, ticket.status); } catch {}
+    return saved;
   }
 
   async respond(id: string, dto: RespondToTicketDTO): Promise<SupportMessage> {
@@ -74,7 +87,9 @@ export class SupportService {
     const ticket = await this.ticketRepo.findOne({ where: { id } });
     if (!ticket) throw new NotFoundException(`Ticket ${id} not found`);
     ticket.status = TicketStatus.CLOSED;
-    return this.ticketRepo.save(ticket);
+    const saved = await this.ticketRepo.save(ticket);
+    try { this.gateway.emitClosed(ticket.id); } catch {}
+    return saved;
   }
 
   async createPublic(dto: PublicContactDTO): Promise<SupportTicket> {
