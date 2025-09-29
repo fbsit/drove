@@ -58,8 +58,12 @@ export class UserService {
         ci.documentId = normalizeId(ci.documentId);
         const kind = classifyId(ci.documentId);
         ci.documentType = kind;
-        if (kind === 'DNI' && !validateDni(ci.documentId)) throw new BadRequestException('DNI inválido');
-        if (kind === 'NIE' && !validateNie(ci.documentId)) throw new BadRequestException('NIE inválido');
+        if (kind === 'DNI' && !validateDni(ci.documentId)) {
+          throw new BadRequestException('DNI inválido. Formato: 8 dígitos + letra (p.ej. 12345678Z).');
+        }
+        if (kind === 'NIE' && !validateNie(ci.documentId)) {
+          throw new BadRequestException('NIE inválido. Formato: X/Y/Z + 7 dígitos + letra (p.ej. X1234567L).');
+        }
       }
 
       const acctType = (ci.documentType === 'CIF' || isLikelyCompanyName(ci.fullName))

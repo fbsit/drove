@@ -104,8 +104,13 @@ const MobileRegistrationForm: React.FC<Props> = ({
 
       await AuthService.signUp(registrationData as any);
       await onComplete(formData as RegistrationFormData);
-    } catch (e) {
+    } catch (e: any) {
       console.error("Error registrando usuario (mobile):", e);
+      const msg = e?.message || 'No se pudo completar el registro. Verifica tus datos.';
+      try {
+        const { toast } = await import('@/hooks/use-toast');
+        toast({ variant: 'destructive', title: 'Error en registro', description: msg });
+      } catch {}
     } finally {
       setSubmitting(false);
     }
