@@ -23,6 +23,39 @@ export class SupportService {
     });
   }
 
+  async getOrCreateUserOpenTicket(ownerUserId: string, ownerRole: ClientType, subject = 'Soporte'): Promise<SupportTicket> {
+    let ticket = await this.ticketRepo.findOne({ where: { ownerUserId, status: TicketStatus.OPEN } });
+    if (ticket) return ticket;
+    ticket = this.ticketRepo.create({
+      subject,
+      message: '',
+      status: TicketStatus.OPEN,
+      priority: TicketPriority.MEDIUM,
+      clientName: '',
+      clientEmail: '',
+      clientType: ownerRole,
+      ownerUserId,
+      ownerRole,
+    } as Partial<SupportTicket>);
+    return this.ticketRepo.save(ticket);
+  }
+
+  async appendMessage(ticketId: string, content: string, sender: MessageSender, senderName: string, senderUserId?: string): Promise<SupportMessage> {
+    const ticket = await this.ticketRepo.findOne({ where: { id: ticketId } });
+    if (!ticket) throw new NotFoundException(`Ticket ${ticketId} not found`);
+    const msg = this.messageRepo.create({
+      content,
+      sender,
+      senderName,
+      senderUserId,
+      ticketId: ticket.id,
+    });
+    const saved = await this.messageRepo.save(msg);
+    ticket.lastMessageAt = new Date();
+    await this.ticketRepo.save(ticket);
+    return saved;
+  }
+
   async updateStatus(
     id: string,
     dto: UpdateTicketStatusDTO,
@@ -34,16 +67,7 @@ export class SupportService {
   }
 
   async respond(id: string, dto: RespondToTicketDTO): Promise<SupportMessage> {
-    const ticket = await this.ticketRepo.findOne({ where: { id } });
-    if (!ticket) throw new NotFoundException(`Ticket ${id} not found`);
-    const msg = this.messageRepo.create({
-      content: dto.response,
-      sender: MessageSender.ADMIN,
-      senderName: 'Admin',
-      ticket,
-      ticketId: ticket.id,
-    });
-    return this.messageRepo.save(msg);
+    return this.appendMessage(id, dto.response, MessageSender.ADMIN, 'Admin');
   }
 
   async close(id: string): Promise<SupportTicket> {
@@ -65,13 +89,7 @@ export class SupportService {
     } as Partial<SupportTicket>);
     const saved: SupportTicket = await this.ticketRepo.save(ticket);
     // registrar primer mensaje
-    const msg = this.messageRepo.create({
-      content: dto.message,
-      sender: MessageSender.CLIENT,
-      senderName: dto.name,
-      ticketId: saved.id,
-    });
-    await this.messageRepo.save(msg);
+    await this.appendMessage(saved.id, dto.message, MessageSender.CLIENT, dto.name);
     return saved;
   }
 }

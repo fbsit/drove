@@ -39,6 +39,13 @@ export class SupportTicket {
   @Column('text')
   message: string;
 
+  // Dueño del ticket (usuario autenticado que lo creó)
+  @Column({ type: 'uuid', nullable: true })
+  ownerUserId?: string | null;
+  // Rol del dueño (CLIENT/DROVER)
+  @Column({ type: 'enum', enum: ClientType, nullable: true })
+  ownerRole?: ClientType | null;
+
   @Column({ type: 'enum', enum: TicketStatus, default: TicketStatus.OPEN })
   status: TicketStatus;
 
@@ -48,6 +55,10 @@ export class SupportTicket {
     default: TicketPriority.MEDIUM,
   })
   priority: TicketPriority;
+
+  // Admin asignado (si aplica)
+  @Column({ type: 'uuid', nullable: true })
+  assignedAdminId?: string | null;
 
   @Column()
   clientName: string;
@@ -63,6 +74,12 @@ export class SupportTicket {
 
   @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  closedAt?: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  lastMessageAt?: Date | null;
 
   @OneToMany(() => SupportMessage, (msg) => msg.ticket, { cascade: true })
   messages: SupportMessage[];

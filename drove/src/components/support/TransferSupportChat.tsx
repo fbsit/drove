@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "react-router-dom";
-import { AdminService } from "@/services/adminService";
+import SupportService from "@/services/supportService";
 
 type Message = {
   id: string;
@@ -62,32 +62,16 @@ const TransferSupportChat: React.FC = () => {
   // Cargar/conectar con tickets reales
   const loadOrCreateTicket = React.useCallback(async () => {
     try {
-      // Buscar ticket existente del usuario (por email) y/o por asunto del traslado
-      const tickets = await AdminService.getSupportTickets({} as any);
-      const email = (user as any)?.email || '';
-      const subjectHint = transferId ? `Traslado ${transferId}` : '';
-      const mine = (tickets || []).filter((t: any) => (t.clientEmail || '').toLowerCase() === email.toLowerCase());
-      const target =
-        mine.find((t: any) => subjectHint && (t.subject || '').includes(subjectHint)) ||
-        mine[0] ||
-        (tickets || [])[0];
-
-      if (target) {
-        setTicketId(target.id);
-        // mapear mensajes
-        const serverMsgs = (target.messages || []).map((m: any) => ({
-          id: String(m.id),
-          sender: (m.senderName || '').toLowerCase().includes('admin') ? 'soporte' : 'user',
-          text: m.content || m.message || '',
-          timestamp: new Date(m.createdAt || Date.now()).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-        })) as Message[];
-        setMessages(serverMsgs);
-        setStatus('en_progreso');
-      } else {
-        setTicketId(null);
-        setMessages([]);
-        setStatus('pendiente');
-      }
+      const ticket = await SupportService.getMyOpen();
+      setTicketId(ticket?.id || null);
+      const serverMsgs = (ticket?.messages || []).map((m: any) => ({
+        id: String(m.id),
+        sender: m.sender === 'admin' ? 'soporte' : 'user',
+        text: m.content || '',
+        timestamp: new Date(m.timestamp || Date.now()).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+      })) as Message[];
+      setMessages(serverMsgs);
+      setStatus(ticket?.status === 'closed' ? 'resuelto' : 'en_progreso');
     } catch (e: any) {
       console.error('[SUPPORT] load tickets error', e);
     }
@@ -105,23 +89,23 @@ const TransferSupportChat: React.FC = () => {
     setInput('');
 
     try {
-      // si no hay ticket aún, crearlo con el primer mensaje
-      if (!ticketId) {
-        const name = (user as any)?.full_name || (user as any)?.name || 'Usuario';
-        const email = (user as any)?.email || '';
-        const subject = transferId ? `Traslado ${transferId}` : 'Soporte de traslado';
-        await AdminService.createSupportTicket({ name, email, subject, message: payloadText } as any);
-        toast({ title: 'Mensaje enviado', description: 'Creamos un ticket de soporte para tu consulta.' });
-        await loadOrCreateTicket();
-        return;
-      }
-
-      // si ya existe ticket, agregamos respuesta (usamos endpoint de respuesta existente)
-      await AdminService.respondToTicket(ticketId, { response: payloadText } as any);
+      await SupportService.sendMyMessage(payloadText);
       await loadOrCreateTicket();
     } catch (e: any) {
       console.error('[SUPPORT] send message error', e);
       toast({ variant: 'destructive', title: 'Error', description: e?.message || 'No se pudo enviar el mensaje.' });
+    }
+  };
+
+  const handleCloseChat = async () => {
+    try {
+      await SupportService.closeMyTicket();
+      setStatus('resuelto');
+      toast({ title: 'Conversación cerrada', description: 'Hemos cerrado tu ticket de soporte.' });
+      // refrescar estado por si el backend retorna más datos
+      setTimeout(loadOrCreateTicket, 300);
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Error', description: e?.message || 'No se pudo cerrar el ticket.' });
     }
   };
 
@@ -151,6 +135,17 @@ const TransferSupportChat: React.FC = () => {
         <span className="text-xs text-white/80 mb-0.5 text-center" style={{ fontFamily: "Helvetica" }}>
           Resuelve dudas o incidencias de tu traslado vía chat privado.
         </span>
+        {status !== 'resuelto' && (
+          <div className="mt-2">
+            <Button
+              variant="outline"
+              className="rounded-2xl border-white/30 text-white hover:bg-white/10 px-3 py-1 h-8"
+              onClick={handleCloseChat}
+            >
+              Cerrar conversación
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Mensaje gamificado si está pendiente */}

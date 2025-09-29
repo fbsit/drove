@@ -29,6 +29,9 @@ export class SupportMessage {
   @Column()
   senderName: string;
 
+  @Column({ type: 'uuid', nullable: true })
+  senderUserId?: string | null;
+
   @CreateDateColumn({ type: 'timestamptz' })
   timestamp: Date;
 
