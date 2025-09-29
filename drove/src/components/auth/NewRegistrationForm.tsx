@@ -27,6 +27,7 @@ const NewRegistrationForm: React.FC<Props> = ({
   const [userType, setUserType] = useState<UserType | null>(null);
   const [formData, setFormData] = useState<Partial<RegistrationFormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Prefijar el tipo de usuario si viene por URL (/registro/:userType)
@@ -165,6 +166,7 @@ const NewRegistrationForm: React.FC<Props> = ({
 
       console.log("Respuesta del registro:", response);
 
+      setSubmissionError(null);
       toast({
         title: "¡Registro exitoso!",
         description:
@@ -183,6 +185,7 @@ const NewRegistrationForm: React.FC<Props> = ({
           error?.message ||
           "No se pudo completar el registro. Inténtalo de nuevo.",
       });
+      setSubmissionError(error?.message || 'No se pudo completar el registro.');
     } finally {
       setIsSubmitting(false);
     }
@@ -247,9 +250,10 @@ const NewRegistrationForm: React.FC<Props> = ({
           return (
             <RegistrationConfirmation
               onConfirm={handleSubmit}
-              isLoading={isSubmitting}
+              isLoading={true}
               data={formData}
               onPrevious={handlePrevious}
+              errorMessage={submissionError}
             />
           );
         default:

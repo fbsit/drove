@@ -27,6 +27,7 @@ const MobileRegistrationForm: React.FC<Props> = ({
   const [formData, setFormData] = useState<Partial<RegistrationFormData>>({});
   const [submitting, setSubmitting] = useState(false);
   const [externalErrors, setExternalErrors] = useState<Record<string, string>>({});
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   const getSteps = () => {
     if (!userType) return ["Tipo de cuenta"];
@@ -103,7 +104,8 @@ const MobileRegistrationForm: React.FC<Props> = ({
         },
       };
 
-      await AuthService.signUp(registrationData as any);
+      const res = await AuthService.signUp(registrationData as any);
+      setSubmissionError(null);
       await onComplete(formData as RegistrationFormData);
     } catch (e: any) {
       console.error("Error registrando usuario (mobile):", e);
@@ -112,6 +114,7 @@ const MobileRegistrationForm: React.FC<Props> = ({
         const { toast } = await import('@/hooks/use-toast');
         toast({ variant: 'destructive', title: 'Error en registro', description: msg });
       } catch {}
+      setSubmissionError(msg);
 
       // Mapeo de error → campos del paso fiscal para permitir corrección
       const lower = String(msg).toLowerCase();
@@ -204,9 +207,10 @@ const MobileRegistrationForm: React.FC<Props> = ({
           return (
             <RegistrationConfirmation
               onConfirm={handleSubmit}
-              isLoading={isLoading || submitting}
+              isLoading={true}
               data={formData}
               onPrevious={handlePrevious}
+              errorMessage={submissionError}
             />
           );
         default:

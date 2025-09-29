@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { CheckCircle, Mail, ShieldCheck, Clock } from 'lucide-react';
+import { CheckCircle, Mail, ShieldCheck, Clock, AlertTriangle } from 'lucide-react';
 import { RegistrationFormData } from '@/types/new-registration';
 
 interface Props {
@@ -8,14 +8,63 @@ interface Props {
   isLoading?: boolean;
   data?: Partial<RegistrationFormData>;
   onPrevious?: () => void;
+  errorMessage?: string | null;
 }
 
 const RegistrationConfirmation: React.FC<Props> = ({ 
   onConfirm, 
   isLoading = false,
   data = {},
-  onPrevious
+  onPrevious,
+  errorMessage = null,
 }) => {
+  if (errorMessage) {
+    return (
+      <div className="text-center space-y-6">
+        <div className="flex justify-center">
+          <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center">
+            <AlertTriangle className="w-10 h-10 text-red-400" />
+          </div>
+        </div>
+        <h3 className="text-2xl font-extrabold text-white" style={{ fontFamily: 'Helvetica' }}>No pudimos completar tu registro</h3>
+        <p className="text-white/80 max-w-xl mx-auto">
+          {errorMessage}
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          {onPrevious && (
+            <button
+              type="button"
+              onClick={onPrevious}
+              className="rounded-2xl border border-white/30 text-white px-4 py-2 hover:bg-white/10"
+            >
+              Volver y corregir
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="rounded-2xl bg-[#6EF7FF] text-[#22142A] font-bold px-4 py-2 hover:bg-[#58e7ef]"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="text-center space-y-6">
+        <div className="flex justify-center">
+          <div className="w-20 h-20 bg-[#6EF7FF]/10 rounded-full flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-[#6EF7FF] border-t-transparent rounded-full animate-spin" />
+          </div>
+        </div>
+        <h3 className="text-2xl font-extrabold text-white" style={{ fontFamily: 'Helvetica' }}>Finalizando tu registro…</h3>
+        <p className="text-white/80 max-w-xl mx-auto">Estamos validando tus datos. Esto puede tardar unos segundos.</p>
+      </div>
+    );
+  }
   return (
     <div className="text-center space-y-8">
       <div className="flex justify-center">
