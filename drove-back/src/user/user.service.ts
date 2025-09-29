@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
@@ -21,6 +22,7 @@ import { randomBytes } from 'crypto';
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
@@ -34,6 +36,8 @@ export class UserService {
    */
   async create(createUserDto: CreateUserDto): Promise<User> {
     const { email, password, userType, contactInfo } = createUserDto;
+    this.logger.log(`Create user attempt email=${email} type=${userType}`);
+    this.logger.debug(`CreateUserDto.contactInfo=${JSON.stringify(contactInfo ?? {})}`);
 
     // Verificar duplicados
     const existing = await this.userRepo.findOneBy({
@@ -69,6 +73,7 @@ export class UserService {
         contactInfo: ci,
         accountType: acctType,
       });
+      this.logger.debug(`Persisting user role=${user.role} accountType=${user.accountType}`);
       const created = await this.userRepo.save(user);
 
       // Enviar verificación de email (server-side) con LINK y código unificado de 6 dígitos
@@ -86,8 +91,10 @@ export class UserService {
         // No interrumpir la creación de usuario si falla el envío
       }
 
+      this.logger.log(`User created id=${created.id}`);
       return created;
     } catch (error: any) {
+      this.logger.error(`Create user failed: ${error?.message}`, error?.stack);
       if (error.code === '23505') {
         throw new ConflictException(`El email ${email} ya existe.`);
       }
@@ -167,13 +174,13 @@ export class UserService {
    * Actualiza datos de usuario, incluyendo nested contactInfo y contraseña opcional
    */
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+    this.logger.log(`Update user id=${id}`);
     const user = await this.findOne(id);
-    console.log('usuario encontrado', user);
     if (updateUserDto.userType) {
       user.role = mapRawUserTypeToRole(updateUserDto.userType);
     }
 
-    console.log('updateUserDto', updateUserDto);
+    this.logger.debug(`Update payload: ${JSON.stringify(updateUserDto ?? {})}`);
 
     // Merge nested contactInfo
     if (updateUserDto.contactInfo) {
@@ -196,7 +203,9 @@ export class UserService {
     const { password, contactInfo, ...rest } = updateUserDto as any;
     Object.assign(user, rest);
 
-    return this.userRepo.save(user);
+    const saved = await this.userRepo.save(user);
+    this.logger.log(`User updated id=${id}`);
+    return saved;
   }
 
   async findOneById(id: string): Promise<User | null> {
