@@ -125,14 +125,11 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
   const canVoid = statusUpper !== 'VOID';
 
   // Acciones visibles en todas las facturas (según pedido), con desactivación por estado
-  const pmLower = (invoice.paymentMethod || '').toLowerCase();
   const statusLower = String(invoice.status || '').toLowerCase();
   const showAnticipo = true;
   const showPagada = true;
   const disableAnticipo = statusUpper === 'ADVANCE' || statusUpper === 'PAID';
   const disablePagada = statusUpper === 'PAID';
-  // Revertir solo aparece si está en "anticipo"
-  const showRevertir = statusUpper === "ADVANCE";
 
   const handleUploadSuccess = () => {
     // Simular que se subió el PDF y cambiar estado a "emitida"
@@ -273,18 +270,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
               )}
             </div>
           )}
-          {showRevertir && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="rounded-2xl text-slate-400 hover:bg-blue-900/50 font-bold"
-              onClick={() => setConfirmDialog({ open: true, type: "revertir" })}
-              title="Revertir estado"
-            >
-              <X size={16} />
-              <span className="ml-1">Revertir</span>
-            </Button>
-          )}
+          {/* Revertir estado removido por requerimiento */}
         </>
 
         {/* Rechazar / Anular */}

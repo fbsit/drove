@@ -123,9 +123,9 @@ const Invoices: React.FC = () => {
       // Si llegamos aquí, la petición fue exitosa (no se lanzó error)
       toast({
         title: 'PDF subido',
-        description: 'El PDF de la factura se ha subido correctamente. Marcando como Pagada…',
+        description: 'El PDF de la factura se ha subido correctamente.',
       });
-      // Forzar refetch para traer el estado actualizado desde backend (PAID)
+      // Refetch para mostrar URL PDF, el estado queda manual (Emitida/Anticipo/Pagada)
       await refetchInvoices();
       return 'success';
     } catch (error) {
