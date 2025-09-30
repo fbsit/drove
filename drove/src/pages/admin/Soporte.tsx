@@ -46,6 +46,12 @@ const Soporte: React.FC = () => {
     return list.find((t) => t.id === selectedTicketId) || list[0];
   }, [filteredTickets, selectedTicketId]);
 
+  React.useEffect(() => {
+    if (!selectedTicketId && filteredTickets.length > 0) {
+      setSelectedTicketId(filteredTickets[0].id);
+    }
+  }, [filteredTickets.length]);
+
   const handleUpdateStatus = (ticketId: string, status: string) => {
     (updateTicketStatus as any)({ ticketId, status });
   };
@@ -253,62 +259,4 @@ const Soporte: React.FC = () => {
                     <span className={`px-2 py-1 rounded-full text-xs font-bold ${selectedTicket.status === 'abierto' ? 'bg-blue-500 text-white' :
                         selectedTicket.status === 'en_progreso' ? 'bg-yellow-500 text-black' :
                           selectedTicket.status === 'resuelto' ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'
-                      }`}>
-                      {selectedTicket.status.replace('_', ' ')}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="bg-white/5 rounded-xl p-4">
-                  <p className="text-white/90 leading-relaxed">{selectedTicket.message}</p>
-                </div>
-
-                <div className="flex gap-2 flex-wrap mt-4">
-                  <Button
-                    size="sm"
-                    className="h-9 rounded-xl px-3 text-[#6EF7FF] hover:bg-[#6EF7FF]/10"
-                    variant="ghost"
-                    onClick={() => handleRespond(selectedTicket.id)}
-                    disabled={isResponding}
-                  >
-                    {isResponding ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4 mr-1" />}
-                    Responder
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleUpdateStatus(selectedTicket.id, 'en_progreso')}
-                    disabled={isUpdatingStatus || selectedTicket.status === 'en_progreso'}
-                  >
-                    En Progreso
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleUpdateStatus(selectedTicket.id, 'resuelto')}
-                    disabled={isUpdatingStatus || selectedTicket.status === 'resuelto'}
-                  >
-                    Resolver
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="text-white/60">No hay tickets seleccionados</div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {filteredTickets.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-white/70 text-lg">No se encontraron tickets de soporte</p>
-          <p className="text-white/50 text-sm mt-2">
-            Ajusta los filtros para encontrar los tickets que buscas
-          </p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default Soporte;
+                      }`

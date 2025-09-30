@@ -10,11 +10,13 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import * as jwt from 'jsonwebtoken';
+import { Logger } from '@nestjs/common';
 
 @WebSocketGateway({ namespace: '/support', cors: true })
 export class SupportGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
+  private readonly logger = new Logger('SupportGateway');
 
   afterInit() {}
 
@@ -38,7 +40,9 @@ export class SupportGateway implements OnGatewayInit, OnGatewayConnection, OnGat
         role: decoded.role,
         email: decoded.email,
       };
+      this.logger.log(`Socket connected ${client.id} user=${(client.data as any).user?.id || 'unknown'}`);
     } catch {
+      this.logger.warn(`Socket auth failed ${client.id}`);
       client.disconnect(true);
     }
   }
@@ -50,6 +54,8 @@ export class SupportGateway implements OnGatewayInit, OnGatewayConnection, OnGat
     if (!payload?.ticketId) return;
     const room = `ticket:${payload.ticketId}`;
     await client.join(room);
+    this.logger.log(`Client ${client.id} joined room ${room}`);
+    return { ok: true, room };
   }
 
   @SubscribeMessage('support:leave')
@@ -57,6 +63,7 @@ export class SupportGateway implements OnGatewayInit, OnGatewayConnection, OnGat
     if (!payload?.ticketId) return;
     const room = `ticket:${payload.ticketId}`;
     await client.leave(room);
+    this.logger.log(`Client ${client.id} left room ${room}`);
   }
 
   emitMessage(ticketId: string, message: any) {
@@ -64,6 +71,7 @@ export class SupportGateway implements OnGatewayInit, OnGatewayConnection, OnGat
     this.server.to(room).emit('support:message', message);
     // Broadcast global para panel admin; los clientes deben filtrar por ticketId
     this.server.emit('support:message-all', { ticketId, ...message });
+    this.logger.debug(`Emitted message to ${room} and global: id=${message?.id} seq=${message?.seq}`);
   }
 
   emitStatus(ticketId: string, status: string) {

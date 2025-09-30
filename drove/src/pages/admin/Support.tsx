@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectGroup, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSupportManagement } from "@/hooks/admin/useSupportManagement";
+import { useSupportSocket } from "@/hooks/useSupportSocket";
+import SupportService from "@/services/supportService";
 import { useDebouncedValue } from "@/hooks/useDebounce";
 import { Input } from "@/components/ui/input";
 
@@ -29,6 +31,46 @@ const Support: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const filteredTickets = useMemo(() => tickets, [tickets]);
   const selected = useMemo(() => filteredTickets.find((t: any) => t.id === selectedId) || filteredTickets[0], [filteredTickets, selectedId]);
+  React.useEffect(() => { if (!selectedId && filteredTickets.length > 0) setSelectedId(filteredTickets[0].id); }, [filteredTickets.length]);
+
+  // Mensajes del ticket seleccionado con delta-sync
+  const [selectedMessages, setSelectedMessages] = useState<any[]>([]);
+  const lastSeqRef = React.useRef<number>(0);
+  React.useEffect(() => {
+    const msgs = (selected?.messages || []).slice().sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    setSelectedMessages(msgs);
+    lastSeqRef.current = Math.max(0, ...msgs.map((m: any) => m.seq || 0));
+  }, [selected?.id]);
+
+  const fetchDeltaAndMerge = React.useCallback(async () => {
+    if (!selected?.id) return;
+    try {
+      const res: any = await SupportService.getTicketMessagesDelta(selected.id, lastSeqRef.current);
+      const fresh = res?.messages || [];
+      if (fresh.length) {
+        const mapped = fresh.map((m: any) => ({
+          id: String(m.id), content: m.content, sender: String(m.sender).toLowerCase(), senderName: m.senderName, timestamp: m.timestamp, seq: m.seq,
+        }));
+        setSelectedMessages(prev => {
+          const byId = new Map<string, any>();
+          for (const m of [...prev, ...mapped]) byId.set(String(m.id), m);
+          return Array.from(byId.values()).sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        });
+        lastSeqRef.current = res?.lastSeq ?? lastSeqRef.current;
+      }
+    } catch {}
+  }, [selected?.id]);
+
+  // Escuchar socket para el ticket seleccionado
+  useSupportSocket(
+    selected?.id || null,
+    () => { console.log('[ADMIN] onMessage room'); fetchDeltaAndMerge(); },
+    undefined,
+    undefined,
+    () => console.log('[ADMIN] socket connected'),
+    () => console.log('[ADMIN] socket disconnected'),
+    (payload: any) => { if (payload?.ticketId === selected?.id) { console.log('[ADMIN] onMessage all'); fetchDeltaAndMerge(); } }
+  );
 
   const handleUpdateStatus = (ticketId: string, status: string) => {
     updateTicketStatus(ticketId, status);
@@ -250,8 +292,8 @@ const Support: React.FC = () => {
               </CardHeader>
               <CardContent>
                 {/* Conversación completa */}
-                <div className="space-y-3 mb-4">
-                  {((selected.messages || []).length === 0) ? (
+                <div className="space-y-3 mb-4 max-h-[56vh] overflow-y-auto pr-1">
+                  {(selectedMessages.length === 0) ? (
                     // Si el ticket no tiene historial en backend, mostramos el mensaje inicial del cliente
                     <div className="bg-white/5 text-white rounded-xl px-4 py-3 border border-white/10">
                       <div className="flex items-center justify-between text-white/80 text-xs mb-1">
@@ -261,10 +303,7 @@ const Support: React.FC = () => {
                       <div className="text-sm">{selected.message}</div>
                     </div>
                   ) : (
-                    (selected.messages || [])
-                      .slice()
-                      .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-                      .map((m: any) => {
+                    selectedMessages.map((m: any) => {
                         const isAdmin = String(m.sender).toLowerCase() === 'admin';
                         const bubble = isAdmin
                           ? 'bg-[#29485a] text-white border border-[#6EF7FF33]'

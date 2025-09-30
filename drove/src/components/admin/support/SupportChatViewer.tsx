@@ -59,6 +59,7 @@ const SupportChatViewer: React.FC<SupportChatViewerProps> = ({
     if (isMergingRef.current) return;
     isMergingRef.current = true;
     try {
+      console.debug('[ADMIN] fetch delta from seq', lastSeqRef.current);
       const res = await SupportService.getTicketMessagesDelta(ticket.id, lastSeqRef.current);
       const fresh = (res?.messages || []) as any[];
       if (fresh.length) {
@@ -74,6 +75,7 @@ const SupportChatViewer: React.FC<SupportChatViewerProps> = ({
           return merged;
         });
         lastSeqRef.current = nextSeq;
+        console.debug('[ADMIN] delta merged, lastSeq', lastSeqRef.current);
       }
     } catch {}
     isMergingRef.current = false;

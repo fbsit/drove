@@ -45,15 +45,19 @@ export function useSupportSocket(
     socketRef.current = s;
 
     s.on('connect', () => {
+      console.log('[WS] connected', s.id);
       if (ticketId) {
         currentTicketRef.current = ticketId;
-        s.emit('support:join', { ticketId });
+        s.emit('support:join', { ticketId }, (ack: any) => {
+          console.debug('[WS] join ack', ack);
+        });
       }
       if (onConnectedRef.current) onConnectedRef.current();
     });
-    s.on('disconnect', () => { if (onDisconnectedRef.current) onDisconnectedRef.current(); });
+    s.on('disconnect', (reason: any) => { console.log('[WS] disconnected', reason); if (onDisconnectedRef.current) onDisconnectedRef.current(); });
 
     s.on('support:message', (msg: any) => {
+      console.log('[WS] support:message', msg?.id, msg?.seq);
       const mapped: Message = {
         id: String(msg.id),
         sender: (String(msg.sender || '').toUpperCase() === 'ADMIN') ? 'soporte' : 'user',
@@ -66,8 +70,15 @@ export function useSupportSocket(
 
     s.on('support:status', (p: any) => onStatusRef.current && onStatusRef.current(p?.status));
     s.on('support:closed', () => onClosedRef.current && onClosedRef.current());
-    s.on('support:message-admin', (p: any) => onAdminMessageRef.current && onAdminMessageRef.current(p));
-    s.on('support:message-all', (p: any) => onAdminMessageRef.current && onAdminMessageRef.current(p));
+    s.on('support:message-admin', (p: any) => { console.log('[WS] support:message-admin', p?.ticketId, p?.id); onAdminMessageRef.current && onAdminMessageRef.current(p); });
+    s.on('support:message-all', (p: any) => { console.log('[WS] support:message-all', p?.ticketId, p?.id); onAdminMessageRef.current && onAdminMessageRef.current(p); });
+
+    // errores y diagnósticos
+    s.on('connect_error', (err: any) => console.log('[WS] connect_error', err?.message || err));
+    s.on('error', (err: any) => console.log('[WS] error', err));
+    s.on('reconnect_attempt', (n: any) => console.log('[WS] reconnect_attempt', n));
+    s.on('reconnect_error', (err: any) => console.log('[WS] reconnect_error', err));
+    s.on('reconnect_failed', () => console.log('[WS] reconnect_failed'));
 
     return () => {
       if (currentTicketRef.current) s.emit('support:leave', { ticketId: currentTicketRef.current });
@@ -83,7 +94,7 @@ export function useSupportSocket(
     if (!s.connected) return;
     const prev = currentTicketRef.current;
     if (prev && prev !== ticketId) s.emit('support:leave', { ticketId: prev });
-    if (ticketId && ticketId !== prev) s.emit('support:join', { ticketId });
+    if (ticketId && ticketId !== prev) s.emit('support:join', { ticketId }, (ack: any) => console.debug('[WS] join switch ack', ack));
     currentTicketRef.current = ticketId;
   }, [ticketId]);
 
