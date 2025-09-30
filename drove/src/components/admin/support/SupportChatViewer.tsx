@@ -23,6 +23,7 @@ const SupportChatViewer: React.FC<SupportChatViewerProps> = ({
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const messagesRef = useRef<SupportMessage[]>([]);
   const lastSeqRef = useRef<number>(0);
+  const isMergingRef = useRef<boolean>(false);
 
   // Inicializa y ordena mensajes por timestamp cuando cambia el ticket
   useEffect(() => {
@@ -53,6 +54,30 @@ const SupportChatViewer: React.FC<SupportChatViewerProps> = ({
     }
   };
 
+  const fetchDeltaAndMerge = async () => {
+    if (isMergingRef.current) return;
+    isMergingRef.current = true;
+    try {
+      const res = await SupportService.getTicketMessagesDelta(ticket.id, lastSeqRef.current);
+      const fresh = (res?.messages || []) as any[];
+      if (fresh.length) {
+        const nextSeq = res?.lastSeq ?? lastSeqRef.current;
+        const mapped = fresh.map((m: any) => ({
+          id: String(m.id), content: m.content, sender: String(m.sender).toLowerCase(), senderName: m.senderName, timestamp: m.timestamp, ticketId: ticket.id,
+        })) as any;
+        setMessages(prev => {
+          const byId = new Map<string, SupportMessage>();
+          for (const m of [...prev, ...mapped]) byId.set(String(m.id), m as any);
+          const merged = Array.from(byId.values()).sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+          messagesRef.current = merged;
+          return merged;
+        });
+        lastSeqRef.current = nextSeq;
+      }
+    } catch {}
+    isMergingRef.current = false;
+  };
+
   // Socket en tiempo real para el ticket actual
   useSupportSocket(
     ticket?.id || null,
@@ -75,6 +100,8 @@ const SupportChatViewer: React.FC<SupportChatViewerProps> = ({
         messagesRef.current = next;
         return next;
       });
+      // Delta inmediato para asegurar consistencia con BD
+      fetchDeltaAndMerge();
     },
     // onStatus
     (status) => {
@@ -102,18 +129,8 @@ const SupportChatViewer: React.FC<SupportChatViewerProps> = ({
         messagesRef.current = next;
         return next;
       });
-      // Fallback: refrescar desde servidor para garantizar consistencia si algún evento se perdió
-      setTimeout(async () => {
-        try {
-          const tickets = await SupportService.getTickets();
-          const found = (tickets || []).find((t: any) => t.id === ticket.id);
-          if (found) {
-            const fresh = (found.messages || []).slice().sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-            setMessages(fresh);
-            messagesRef.current = fresh;
-          }
-        } catch {}
-      }, 250);
+      // Delta inmediato para asegurar consistencia con BD
+      fetchDeltaAndMerge();
     }
   );
 
