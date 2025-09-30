@@ -112,26 +112,7 @@ const SupportChatViewer: React.FC<SupportChatViewerProps> = ({
     // onConnected/onDisconnected (admin vista no necesita pausar polling aquí)
     () => {},
     () => {},
-    // onAdminMessage: asegura recepción aunque no se haya hecho join aún
-    (payload: any) => {
-      if (!payload || payload.ticketId !== ticket.id) return;
-      const msg: SupportMessage = {
-        id: String(payload.id),
-        content: payload.content,
-        sender: String(payload.sender).toLowerCase() as any,
-        senderName: payload.senderName || (payload.sender === 'ADMIN' ? 'Admin' : 'Usuario'),
-        timestamp: payload.timestamp || new Date().toISOString(),
-        ticketId: ticket.id,
-      } as any;
-      setMessages(prev => {
-        if (prev.some(m => String(m.id) === String(msg.id))) return prev;
-        const next = [...prev, msg].sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-        messagesRef.current = next;
-        return next;
-      });
-      // Delta inmediato para asegurar consistencia con BD
-      fetchDeltaAndMerge();
-    }
+    undefined
   );
 
   // Polling de respaldo cada 3s para garantizar que el admin vea mensajes nuevos

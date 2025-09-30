@@ -134,8 +134,12 @@ const TransferSupportChat: React.FC = () => {
       // 3) Añadir optimistas
       merged = [...merged, ...filteredOptimistic];
       // 4) Ordenar por timestamp si es posible, de lo contrario por inserción
-      setMessages(merged);
-      messagesRef.current = merged;
+      // Dedupe final por id (por si socket y server llegaron a la vez)
+      const finalById = new Map<string, any>();
+      for (const m of merged) finalById.set(m.id, m);
+      const finalList = Array.from(finalById.values()).sort((a: any, b: any) => (a.ts ?? 0) - (b.ts ?? 0));
+      setMessages(finalList as any);
+      messagesRef.current = finalList as any;
       setStatus(ticket?.status === 'closed' ? 'resuelto' : 'en_progreso');
     } catch (e: any) {
       console.error('[SUPPORT] load tickets error', e);
