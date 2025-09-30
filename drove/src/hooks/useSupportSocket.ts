@@ -15,9 +15,23 @@ export function useSupportSocket(
   onClosed?: () => void,
   onConnected?: () => void,
   onDisconnected?: () => void,
+  onAdminMessage?: (payload: any) => void,
 ) {
   const socketRef = useRef<Socket | null>(null);
   const currentTicketRef = useRef<string | null>(null);
+  const onMessageRef = useRef(onMessage);
+  const onStatusRef = useRef(onStatus);
+  const onClosedRef = useRef(onClosed);
+  const onConnectedRef = useRef(onConnected);
+  const onDisconnectedRef = useRef(onDisconnected);
+  const onAdminMessageRef = useRef(onAdminMessage);
+
+  useEffect(() => { onMessageRef.current = onMessage; }, [onMessage]);
+  useEffect(() => { onStatusRef.current = onStatus; }, [onStatus]);
+  useEffect(() => { onClosedRef.current = onClosed; }, [onClosed]);
+  useEffect(() => { onConnectedRef.current = onConnected; }, [onConnected]);
+  useEffect(() => { onDisconnectedRef.current = onDisconnected; }, [onDisconnected]);
+  useEffect(() => { onAdminMessageRef.current = onAdminMessage; }, [onAdminMessage]);
 
   useEffect(() => {
     const token = localStorage.getItem('auth_token') ?? '';
@@ -35,9 +49,9 @@ export function useSupportSocket(
         currentTicketRef.current = ticketId;
         s.emit('support:join', { ticketId });
       }
-      if (onConnected) onConnected();
+      if (onConnectedRef.current) onConnectedRef.current();
     });
-    s.on('disconnect', () => { if (onDisconnected) onDisconnected(); });
+    s.on('disconnect', () => { if (onDisconnectedRef.current) onDisconnectedRef.current(); });
 
     s.on('support:message', (msg: any) => {
       const mapped: Message = {
@@ -47,18 +61,19 @@ export function useSupportSocket(
         timestamp: new Date(msg.timestamp || Date.now()).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
       };
       (mapped as any).ts = new Date(msg.timestamp || Date.now()).getTime();
-      onMessage(mapped);
+      if (onMessageRef.current) onMessageRef.current(mapped);
     });
 
-    s.on('support:status', (p: any) => onStatus && onStatus(p?.status));
-    s.on('support:closed', () => onClosed && onClosed());
+    s.on('support:status', (p: any) => onStatusRef.current && onStatusRef.current(p?.status));
+    s.on('support:closed', () => onClosedRef.current && onClosedRef.current());
+    s.on('support:message-admin', (p: any) => onAdminMessageRef.current && onAdminMessageRef.current(p));
 
     return () => {
       if (currentTicketRef.current) s.emit('support:leave', { ticketId: currentTicketRef.current });
       s.disconnect();
       socketRef.current = null;
     };
-  }, [onMessage, onStatus, onClosed, onConnected, onDisconnected]);
+  }, []);
 
   // Reunirse/cambiar de sala cuando cambia ticketId sin recrear el socket
   useEffect(() => {

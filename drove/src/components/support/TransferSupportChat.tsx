@@ -62,7 +62,15 @@ const TransferSupportChat: React.FC = () => {
     (incoming) => {
       // Dedup por id y reemplazar optimistas tmp- si coincide contenido
       setMessages(prev => {
-        const withoutTmpOfSameText = prev.filter(m => !(m.id.startsWith('tmp-') && m.text === incoming.text));
+        // Elimina optimistas con mismo texto y sender en ventana de 60s
+        const nowTs = (incoming as any).ts ?? Date.now();
+        const withoutTmpOfSameText = prev.filter(m => {
+          if (!m.id.startsWith('tmp-')) return true;
+          if (m.text !== incoming.text) return true;
+          if (m.sender !== incoming.sender) return true;
+          const dt = Math.abs(((m as any).ts ?? nowTs) - nowTs);
+          return dt > 60_000; // mantener si está muy lejos en el tiempo
+        });
         const exists = withoutTmpOfSameText.some(m => m.id === incoming.id);
         const added = exists ? withoutTmpOfSameText : [...withoutTmpOfSameText, incoming];
         const sorted = [...added].sort((a: any, b: any) => (a.ts ?? 0) - (b.ts ?? 0));
@@ -113,13 +121,15 @@ const TransferSupportChat: React.FC = () => {
       // Merge:
       // 1) Mantener mensajes optimistas tmp- que aún no llegaron del server
       const optimistic = (messagesRef.current || []).filter(m => m.id.startsWith('tmp-'));
+      // Filtra optimistas que ya están en server (mismo texto+sender en ±60s)
+      const filteredOptimistic = optimistic.filter(o => !serverMsgs.some((s: any) => s.text === o.text && s.sender === o.sender && Math.abs((o as any).ts - (s as any).ts) < 60_000));
       // 2) Mantener mensajes ya existentes que no estén en server (p.ej. recibidos por socket mientras carga)
       const existingNonTmp = (messagesRef.current || []).filter(m => !m.id.startsWith('tmp-'));
       const byId = new Map<string, Message>();
       for (const m of [...serverMsgs, ...existingNonTmp]) byId.set(m.id, m);
       let merged = Array.from(byId.values()).sort((a: any, b: any) => (a.ts ?? 0) - (b.ts ?? 0));
       // 3) Añadir optimistas
-      merged = [...merged, ...optimistic];
+      merged = [...merged, ...filteredOptimistic];
       // 4) Ordenar por timestamp si es posible, de lo contrario por inserción
       setMessages(merged);
       messagesRef.current = merged;

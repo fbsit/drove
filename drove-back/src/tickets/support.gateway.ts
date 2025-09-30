@@ -62,6 +62,8 @@ export class SupportGateway implements OnGatewayInit, OnGatewayConnection, OnGat
   emitMessage(ticketId: string, message: any) {
     const room = `ticket:${ticketId}`;
     this.server.to(room).emit('support:message', message);
+    // También emitir a admins globalmente si es necesario (namespace listeners sin sala)
+    this.server.emit('support:message-admin', { ticketId, ...message });
   }
 
   emitStatus(ticketId: string, status: string) {

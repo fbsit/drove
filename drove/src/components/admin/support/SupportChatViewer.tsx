@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSupportSocket } from "@/hooks/useSupportSocket";
+import SupportService from "@/services/supportService";
 
 interface SupportChatViewerProps {
   ticket: SupportTicket;
@@ -82,7 +83,63 @@ const SupportChatViewer: React.FC<SupportChatViewerProps> = ({
     // onConnected/onDisconnected (admin vista no necesita pausar polling aquí)
     () => {},
     () => {},
+    // onAdminMessage: asegura recepción aunque no se haya hecho join aún
+    (payload: any) => {
+      if (!payload || payload.ticketId !== ticket.id) return;
+      const msg: SupportMessage = {
+        id: String(payload.id),
+        content: payload.content,
+        sender: String(payload.sender).toLowerCase() as any,
+        senderName: payload.senderName || (payload.sender === 'ADMIN' ? 'Admin' : 'Usuario'),
+        timestamp: payload.timestamp || new Date().toISOString(),
+        ticketId: ticket.id,
+      } as any;
+      setMessages(prev => {
+        if (prev.some(m => String(m.id) === String(msg.id))) return prev;
+        const next = [...prev, msg].sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        messagesRef.current = next;
+        return next;
+      });
+      // Fallback: refrescar desde servidor para garantizar consistencia si algún evento se perdió
+      setTimeout(async () => {
+        try {
+          const tickets = await SupportService.getTickets();
+          const found = (tickets || []).find((t: any) => t.id === ticket.id);
+          if (found) {
+            const fresh = (found.messages || []).slice().sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+            setMessages(fresh);
+            messagesRef.current = fresh;
+          }
+        } catch {}
+      }, 250);
+    }
   );
+
+  // Polling de respaldo cada 3s para garantizar que el admin vea mensajes nuevos
+  useEffect(() => {
+    let mounted = true;
+    const fetchOnce = async () => {
+      try {
+        const tickets = await SupportService.getTickets();
+        if (!mounted) return;
+        const found = (tickets || []).find((t: any) => t.id === ticket.id);
+        if (found) {
+          const fresh = (found.messages || []).slice().sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+          // Dedupe contra local
+          const byId = new Map<string, SupportMessage>();
+          for (const m of [...messagesRef.current, ...fresh]) byId.set(String(m.id), m as any);
+          const merged = Array.from(byId.values()).sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+          setMessages(merged);
+          messagesRef.current = merged;
+        }
+      } catch {}
+    };
+    const id = setInterval(fetchOnce, 3000);
+    // primera sincronización rápida
+    fetchOnce();
+    return () => { mounted = false; clearInterval(id); };
+  }, [ticket.id]);
+
 
   const getSenderIcon = (sender: string) => {
     switch (sender) {
