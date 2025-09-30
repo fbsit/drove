@@ -81,6 +81,12 @@ export class SupportService {
     });
     const saved = await this.messageRepo.save(msg);
     ticket.lastMessageAt = new Date();
+    // Incrementar no leídos según lado receptor
+    if (sender === MessageSender.ADMIN) {
+      ticket.unreadForClient = (ticket.unreadForClient || 0) + 1;
+    } else {
+      ticket.unreadForAdmin = (ticket.unreadForAdmin || 0) + 1;
+    }
     await this.ticketRepo.save(ticket);
     try {
       this.gateway.emitMessage(ticket.id, {
@@ -106,6 +112,14 @@ export class SupportService {
     const saved = await this.ticketRepo.save(ticket);
     try { this.gateway.emitStatus(ticket.id, ticket.status); } catch {}
     return saved;
+  }
+
+  async markRead(ticketId: string, side: 'admin' | 'client') {
+    const ticket = await this.ticketRepo.findOne({ where: { id: ticketId } });
+    if (!ticket) return;
+    if (side === 'admin') ticket.unreadForAdmin = 0;
+    else ticket.unreadForClient = 0;
+    await this.ticketRepo.save(ticket);
   }
 
   async respond(id: string, dto: RespondToTicketDTO): Promise<SupportMessage> {

@@ -118,6 +118,8 @@ export class SupportController {
     const role = String(req.user.role || '').toLowerCase() === 'drover' ? ClientType.DROVER : ClientType.CLIENT;
     const ticket = await this.supportService.getOrCreateUserOpenTicket(req.user.id, role);
     const afterSeq = Number((req.query?.afterSeq as string) ?? 0);
+    // Marcar como leídos para el cliente
+    await this.supportService.markRead(ticket.id, 'client');
     return this.supportService.getMessagesDelta(ticket.id, afterSeq);
   }
 

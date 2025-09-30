@@ -73,6 +73,8 @@ const Support: React.FC = () => {
         lastSeqRef.current = res?.lastSeq ?? lastSeqRef.current;
       }
     } catch {}
+    // marcar como leídos en backend para admin (opcional: ya se resetea en front, pero persistimos)
+    try { await (SupportService as any).getTicketMessagesDelta(selected.id, lastSeqRef.current); } catch {}
   }, [selected?.id]);
 
   // Escuchar socket para el ticket seleccionado
@@ -88,12 +90,26 @@ const Support: React.FC = () => {
     () => { console.log('[ADMIN] closed event'); fetchDeltaAndMerge(); },
     () => console.log('[ADMIN] socket connected'),
     () => console.log('[ADMIN] socket disconnected'),
-    (payload: any) => { if (payload?.ticketId === selected?.id) { console.log('[ADMIN] onMessage all'); fetchDeltaAndMerge(); } },
+    (payload: any) => {
+      if (!payload?.ticketId) return;
+      if (payload.ticketId === selected?.id) {
+        console.log('[ADMIN] onMessage all');
+        fetchDeltaAndMerge();
+      } else {
+        // Marca no leído si proviene del cliente/drover
+        const s = String(payload.sender || '').toLowerCase();
+        if (s !== 'admin') {
+          setUnreadByTicket(prev => ({ ...prev, [payload.ticketId]: (prev[payload.ticketId] || 0) + 1 }));
+        }
+      }
+    },
     // onJoinedRoom
     () => { fetchDeltaAndMerge(); },
     // onUnread
     (p: any) => {
       if (!p?.ticketId) return;
+      // Solo contar no leídos destinados al admin
+      if (String(p.side).toLowerCase() !== 'admin') return;
       // Si el admin está viendo otro ticket, incrementar badge
       if (selected?.id !== p.ticketId) {
         setUnreadByTicket(prev => ({ ...prev, [p.ticketId]: (prev[p.ticketId] || 0) + 1 }));
@@ -102,7 +118,7 @@ const Support: React.FC = () => {
   );
 
   const handleUpdateStatus = (ticketId: string, status: string) => {
-    updateTicketStatus(ticketId, status);
+    (updateTicketStatus as any)({ ticketId, status });
   };
 
   const [replyText, setReplyText] = useState('');
@@ -293,14 +309,12 @@ const Support: React.FC = () => {
                 className={`w-full text-left px-4 py-3 border-b border-white/10 hover:bg-white/10 transition ${selected?.id === t.id ? 'bg-white/10' : ''}`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="text-white font-semibold truncate flex items-center gap-2">
-                    {t.clientName || t.clientEmail || 'Usuario'}
-                    {!!unreadByTicket[t.id] && (
-                      <span className="inline-flex items-center justify-center px-2 py-0.5 text-[10px] rounded-full bg-red-500 text-white font-bold">
-                        {unreadByTicket[t.id]}
-                      </span>
-                    )}
-                  </div>
+                  <div className="text-white font-semibold truncate">{t.clientName || t.clientEmail || 'Usuario'}</div>
+                  {!!unreadByTicket[t.id] && (
+                    <span className="min-w-[14px] h-[14px] inline-flex items-center justify-center px-1 text-[10px] rounded-full bg-red-500 text-white font-bold ml-2">
+                      {unreadByTicket[t.id]}
+                    </span>
+                  )}
                   <div className="flex items-center gap-2 ml-2">
                     <span className={`px-2 py-0.5 rounded text-[10px] ${getStatusColor(t.status)} text-white`}>{t.status}</span>
                     <span className={`text-[10px] ${getPriorityColor(t.priority)}`}>{t.priority}</span>

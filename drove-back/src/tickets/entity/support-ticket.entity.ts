@@ -83,4 +83,11 @@ export class SupportTicket {
 
   @OneToMany(() => SupportMessage, (msg) => msg.ticket, { cascade: true })
   messages: SupportMessage[];
+
+  // Contadores persistentes de no leídos
+  @Column({ type: 'int', default: 0 })
+  unreadForAdmin: number;
+
+  @Column({ type: 'int', default: 0 })
+  unreadForClient: number;
 }

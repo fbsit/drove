@@ -272,6 +272,7 @@ const TransferSupportChat: React.FC = () => {
               });
             }
             lastSeqRef.current = lastSeq;
+            // marcar como leído del lado del cliente (se realiza en backend dentro del endpoint delta)
           })
           .catch(() => loadOrCreateTicket({ force: true }));
       }, 1800);
