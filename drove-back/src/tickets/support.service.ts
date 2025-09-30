@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { SupportTicket, TicketStatus, TicketPriority, ClientType } from './entity/support-ticket.entity';
 import { SupportMessage, MessageSender } from './entity/support-message.entity';
 import { UpdateTicketStatusDTO } from './dto/update-ticket.status.dto';
@@ -28,13 +28,12 @@ export class SupportService {
   async getMessagesDelta(ticketId: string, afterSeq: number) {
     const ticket = await this.ticketRepo.findOne({ where: { id: ticketId } });
     if (!ticket) throw new NotFoundException(`Ticket ${ticketId} not found`);
-    const msgs = await this.messageRepo.find({
-      where: afterSeq > 0 ? { ticketId, seq: (any) => (any as any) } : { ticketId },
-      order: { seq: 'ASC' },
-    } as any);
-    const filtered = afterSeq > 0 ? msgs.filter(m => m.seq > afterSeq) : msgs;
-    const lastSeq = filtered.length > 0 ? filtered[filtered.length - 1].seq : afterSeq;
-    return { lastSeq, messages: filtered };
+    const where = afterSeq > 0
+      ? { ticketId, seq: MoreThan(afterSeq) }
+      : { ticketId } as any;
+    const msgs = await this.messageRepo.find({ where, order: { seq: 'ASC' } });
+    const lastSeq = msgs.length > 0 ? msgs[msgs.length - 1].seq : afterSeq;
+    return { lastSeq, messages: msgs };
   }
 
   async getOrCreateUserOpenTicket(ownerUserId: string, ownerRole: ClientType, subject = 'Soporte'): Promise<SupportTicket> {
