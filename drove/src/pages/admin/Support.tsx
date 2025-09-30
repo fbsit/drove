@@ -36,11 +36,19 @@ const Support: React.FC = () => {
   // Mensajes del ticket seleccionado con delta-sync
   const [selectedMessages, setSelectedMessages] = useState<any[]>([]);
   const lastSeqRef = React.useRef<number>(0);
+  const listRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
     const msgs = (selected?.messages || []).slice().sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
     setSelectedMessages(msgs);
     lastSeqRef.current = Math.max(0, ...msgs.map((m: any) => m.seq || 0));
   }, [selected?.id]);
+
+  // Auto-scroll al último mensaje
+  React.useEffect(() => {
+    if (listRef.current) {
+      listRef.current.scrollTop = listRef.current.scrollHeight;
+    }
+  }, [selectedMessages, selected?.id]);
 
   const fetchDeltaAndMerge = React.useCallback(async () => {
     if (!selected?.id) return;
@@ -77,11 +85,17 @@ const Support: React.FC = () => {
   };
 
   const [replyText, setReplyText] = useState('');
+  const [isSending, setIsSending] = useState(false);
 
-  const submitInlineReply = () => {
-    if (!selected?.id || !replyText.trim()) return;
-    respondToTicket({ ticketId: selected.id, response: replyText.trim() } as any);
-    setReplyText('');
+  const submitInlineReply = async () => {
+    if (!selected?.id || !replyText.trim() || isSending) return;
+    try {
+      setIsSending(true);
+      await (respondToTicket as any)({ ticketId: selected.id, response: replyText.trim() });
+      setReplyText('');
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const getPriorityColor = (priority: string) => {
@@ -292,7 +306,7 @@ const Support: React.FC = () => {
               </CardHeader>
               <CardContent>
                 {/* Conversación completa */}
-                <div className="space-y-3 mb-4 max-h-[56vh] overflow-y-auto pr-1">
+                <div ref={listRef} className="space-y-3 mb-4 max-h-[56vh] overflow-y-auto pr-1">
                   {(selectedMessages.length === 0) ? (
                     // Si el ticket no tiene historial en backend, mostramos el mensaje inicial del cliente
                     <div className="bg-white/5 text-white rounded-xl px-4 py-3 border border-white/10">
@@ -344,8 +358,8 @@ const Support: React.FC = () => {
                     onChange={(e) => setReplyText(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') submitInlineReply(); }}
                   />
-                  <Button className="rounded-2xl bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold px-4 py-2" disabled={!replyText.trim() || isResponding} onClick={submitInlineReply}>
-                    {isResponding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  <Button className="rounded-2xl bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold px-4 py-2" disabled={!replyText.trim() || isResponding || isSending} onClick={submitInlineReply}>
+                    {isResponding || isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </Button>
                 </div>
               </CardContent>

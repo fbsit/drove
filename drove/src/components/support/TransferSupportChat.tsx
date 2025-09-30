@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
-import { User as UserIcon, Check, MessageCircle, ArrowRight, Send } from "lucide-react";
+import { User as UserIcon, Check, MessageCircle, ArrowRight, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
@@ -49,6 +49,7 @@ const TransferSupportChat: React.FC = () => {
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [isSending, setIsSending] = useState(false);
   const [status, setStatus] = useState<TicketStatus>(INITIAL_STATUS);
   const [ticketId, setTicketId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -88,7 +89,28 @@ const TransferSupportChat: React.FC = () => {
     () => { pollingPausedUntilRef.current = Date.now() + 60_000; },
     // onDisconnected: reactivar polling inmediato
     () => { pollingPausedUntilRef.current = 0; loadOrCreateTicket({ force: true }); },
-    undefined
+    // onAdminMessage/broadcast: merge también si coincide el ticketId
+    (payload: any) => {
+      if (!payload || payload.ticketId !== ticketId) return;
+      const ts = new Date(payload.timestamp || Date.now()).getTime();
+      const mapped: any = {
+        id: String(payload.id),
+        sender: (String(payload.sender || '').toUpperCase() === 'ADMIN') ? 'soporte' : 'user',
+        text: payload.content || '',
+        timestamp: new Date(ts).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+        ts,
+      };
+      setMessages(prev => {
+        const exists = prev.some(m => m.id === mapped.id);
+        const base = exists ? prev : [...prev, mapped];
+        const dedup = new Map<string, any>();
+        for (const m of base) dedup.set(m.id, m);
+        const list = Array.from(dedup.values()).sort((a: any, b: any) => (a.ts ?? 0) - (b.ts ?? 0));
+        messagesRef.current = list;
+        return list as any;
+      });
+      setStatus('en_progreso');
+    }
   );
 
   useEffect(() => {
@@ -153,11 +175,12 @@ const TransferSupportChat: React.FC = () => {
   }, [loadOrCreateTicket]);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isSending) return;
     const payloadText = input.trim();
     setInput('');
 
     try {
+      setIsSending(true);
       // Optimista: muestra el mensaje localmente mientras llega la actualización
       const optimistic: any = {
         id: `tmp-${Date.now()}`,
@@ -208,6 +231,8 @@ const TransferSupportChat: React.FC = () => {
     } catch (e: any) {
       console.error('[SUPPORT] send message error', e);
       toast({ variant: 'destructive', title: 'Error', description: e?.message || 'No se pudo enviar el mensaje.' });
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -337,11 +362,11 @@ const TransferSupportChat: React.FC = () => {
         />
         <Button
           className="rounded-2xl bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold px-4 py-2 shadow-lg text-base transition-all duración-150"
-          disabled={status === "resuelto" || !input.trim()}
+          disabled={status === "resuelto" || !input.trim() || isSending}
           onClick={handleSend}
           style={{ fontFamily: "Montserrat, Helvetica", fontWeight: 700 }}
         >
-          <Send size={20} />
+          {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send size={20} />}
           <span className="hidden md:block">Enviar</span>
         </Button>
 
