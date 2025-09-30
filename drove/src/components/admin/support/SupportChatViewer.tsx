@@ -22,12 +22,14 @@ const SupportChatViewer: React.FC<SupportChatViewerProps> = ({
   const [newMessage, setNewMessage] = useState("");
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const messagesRef = useRef<SupportMessage[]>([]);
+  const lastSeqRef = useRef<number>(0);
 
   // Inicializa y ordena mensajes por timestamp cuando cambia el ticket
   useEffect(() => {
     const base = (ticket?.messages || []).slice().sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
     setMessages(base);
     messagesRef.current = base;
+    lastSeqRef.current = Math.max(0, ...((ticket?.messages || []) as any[]).map((m: any) => m.seq || 0));
   }, [ticket?.id]);
 
   const handleSendMessage = () => {
@@ -120,22 +122,24 @@ const SupportChatViewer: React.FC<SupportChatViewerProps> = ({
     let mounted = true;
     const fetchOnce = async () => {
       try {
-        const tickets = await SupportService.getTickets();
+        const res = await SupportService.getTicketMessagesDelta(ticket.id, lastSeqRef.current);
         if (!mounted) return;
-        const found = (tickets || []).find((t: any) => t.id === ticket.id);
-        if (found) {
-          const fresh = (found.messages || []).slice().sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-          // Dedupe contra local
+        const fresh = (res?.messages || []) as any[];
+        if (fresh.length) {
+          const nextSeq = res?.lastSeq ?? lastSeqRef.current;
+          const mapped = fresh.map((m: any) => ({
+            id: String(m.id), content: m.content, sender: String(m.sender).toLowerCase(), senderName: m.senderName, timestamp: m.timestamp, ticketId: ticket.id,
+          })) as any;
           const byId = new Map<string, SupportMessage>();
-          for (const m of [...messagesRef.current, ...fresh]) byId.set(String(m.id), m as any);
+          for (const m of [...messagesRef.current, ...mapped]) byId.set(String(m.id), m as any);
           const merged = Array.from(byId.values()).sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
           setMessages(merged);
           messagesRef.current = merged;
+          lastSeqRef.current = nextSeq;
         }
       } catch {}
     };
     const id = setInterval(fetchOnce, 3000);
-    // primera sincronización rápida
     fetchOnce();
     return () => { mounted = false; clearInterval(id); };
   }, [ticket.id]);

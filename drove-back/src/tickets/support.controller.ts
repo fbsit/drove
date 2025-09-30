@@ -37,6 +37,14 @@ export class SupportController {
     return this.supportService.findAll();
   }
 
+  @Get('admin/support/tickets/:id/messages')
+  @ApiOperation({ summary: 'Delta de mensajes por ticket (admin)' })
+  @ApiParam({ name: 'id' })
+  getMessagesDeltaAdmin(@Param('id') id: string, @Body() body: any) {
+    const afterSeq = Number((body && body.afterSeq) ?? 0);
+    return this.supportService.getMessagesDelta(id, afterSeq);
+  }
+
   @Put('admin/support/tickets/:id/status')
   @ApiOperation({ summary: 'Actualizar estado de ticket' })
   @ApiParam({ name: 'id' })
@@ -100,6 +108,16 @@ export class SupportController {
     const ticket = await this.supportService.getOrCreateUserOpenTicket(req.user.id, role);
     const sender = role === ClientType.DROVER ? 'drover' : 'client';
     return this.supportService.appendMessage(ticket.id, dto.content, sender as any, req.user.email || 'Usuario', req.user.id);
+  }
+
+  @UseGuards(JwtOrTestGuard)
+  @Get('support/my/messages')
+  @ApiOperation({ summary: 'Delta de mensajes de mi ticket abierto' })
+  async myMessagesDelta(@Req() req) {
+    const role = String(req.user.role || '').toLowerCase() === 'drover' ? ClientType.DROVER : ClientType.CLIENT;
+    const ticket = await this.supportService.getOrCreateUserOpenTicket(req.user.id, role);
+    const afterSeq = Number((req.query?.afterSeq as string) ?? 0);
+    return this.supportService.getMessagesDelta(ticket.id, afterSeq);
   }
 
   // Autenticado: cerrar mi ticket

@@ -56,6 +56,7 @@ const TransferSupportChat: React.FC = () => {
   const messagesRef = useRef<Message[]>([]);
   const pollingPausedUntilRef = useRef<number>(0);
   const pendingRefreshTimeoutRef = useRef<any>(null);
+  const lastSeqRef = useRef<number>(0);
 
   useSupportSocket(
     ticketId,
@@ -86,7 +87,8 @@ const TransferSupportChat: React.FC = () => {
     // onConnected: pausar polling por completo
     () => { pollingPausedUntilRef.current = Date.now() + 60_000; },
     // onDisconnected: reactivar polling inmediato
-    () => { pollingPausedUntilRef.current = 0; loadOrCreateTicket({ force: true }); }
+    () => { pollingPausedUntilRef.current = 0; loadOrCreateTicket({ force: true }); },
+    undefined
   );
 
   useEffect(() => {
@@ -118,6 +120,7 @@ const TransferSupportChat: React.FC = () => {
           ts,
         } as any;
       }) as any;
+      lastSeqRef.current = Math.max(0, ...((ticket?.messages || []).map((m: any) => m.seq || 0)));
       // Merge:
       // 1) Mantener mensajes optimistas tmp- que aún no llegaron del server
       const optimistic = (messagesRef.current || []).filter(m => m.id.startsWith('tmp-'));
@@ -167,11 +170,36 @@ const TransferSupportChat: React.FC = () => {
 
       await SupportService.sendMyMessage(payloadText);
       // No forzar refresh inmediato: esperamos a la notificación por socket.
-      // A modo de seguridad, un refresh tardío para reconciliar en caso de caída del socket.
+      // A modo de seguridad, un refresh tardío para reconciliar en caso de caída del socket con delta-sync
       pollingPausedUntilRef.current = Date.now() + 2000;
       if (pendingRefreshTimeoutRef.current) clearTimeout(pendingRefreshTimeoutRef.current);
       pendingRefreshTimeoutRef.current = setTimeout(() => {
-        loadOrCreateTicket({ force: true });
+        SupportService.getMyMessagesDelta(lastSeqRef.current)
+          .then((res: any) => {
+            const messagesDelta = res?.messages || [];
+            const lastSeq = res?.lastSeq ?? lastSeqRef.current;
+            if (messagesDelta.length) {
+              const delta = messagesDelta.map((m: any) => {
+                const ts = new Date(m.timestamp || Date.now()).getTime();
+                return {
+                  id: String(m.id),
+                  sender: (String(m.sender || '').toUpperCase() === 'ADMIN') ? 'soporte' : 'user',
+                  text: m.content || '',
+                  timestamp: new Date(ts).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+                  ts,
+                } as any;
+              });
+              setMessages(prev => {
+                const byId = new Map<string, any>();
+                for (const m of [...prev, ...delta]) byId.set(m.id, m);
+                const merged = Array.from(byId.values()).sort((a: any, b: any) => (a.ts ?? 0) - (b.ts ?? 0));
+                messagesRef.current = merged;
+                return merged;
+              });
+            }
+            lastSeqRef.current = lastSeq;
+          })
+          .catch(() => loadOrCreateTicket({ force: true }));
       }, 1800);
     } catch (e: any) {
       console.error('[SUPPORT] send message error', e);

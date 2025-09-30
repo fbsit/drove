@@ -25,6 +25,18 @@ export class SupportService {
     });
   }
 
+  async getMessagesDelta(ticketId: string, afterSeq: number) {
+    const ticket = await this.ticketRepo.findOne({ where: { id: ticketId } });
+    if (!ticket) throw new NotFoundException(`Ticket ${ticketId} not found`);
+    const msgs = await this.messageRepo.find({
+      where: afterSeq > 0 ? { ticketId, seq: (any) => (any as any) } : { ticketId },
+      order: { seq: 'ASC' },
+    } as any);
+    const filtered = afterSeq > 0 ? msgs.filter(m => m.seq > afterSeq) : msgs;
+    const lastSeq = filtered.length > 0 ? filtered[filtered.length - 1].seq : afterSeq;
+    return { lastSeq, messages: filtered };
+  }
+
   async getOrCreateUserOpenTicket(ownerUserId: string, ownerRole: ClientType, subject = 'Soporte'): Promise<SupportTicket> {
     let ticket = await this.ticketRepo.findOne({ where: { ownerUserId, status: TicketStatus.OPEN } });
     if (!ticket) {
@@ -50,12 +62,16 @@ export class SupportService {
   async appendMessage(ticketId: string, content: string, sender: MessageSender, senderName: string, senderUserId?: string): Promise<SupportMessage> {
     const ticket = await this.ticketRepo.findOne({ where: { id: ticketId } });
     if (!ticket) throw new NotFoundException(`Ticket ${ticketId} not found`);
+    // calcular siguiente secuencia por ticket
+    const last = await this.messageRepo.findOne({ where: { ticketId: ticket.id }, order: { seq: 'DESC' } });
+    const nextSeq = (last?.seq ?? 0) + 1;
     const msg = this.messageRepo.create({
       content,
       sender,
       senderName,
       senderUserId,
       ticketId: ticket.id,
+      seq: nextSeq,
     });
     const saved = await this.messageRepo.save(msg);
     ticket.lastMessageAt = new Date();
@@ -67,6 +83,7 @@ export class SupportService {
         sender: saved.sender,
         senderName: saved.senderName,
         timestamp: saved.timestamp,
+        seq: saved.seq,
         ticketId: ticket.id,
       });
     } catch {}

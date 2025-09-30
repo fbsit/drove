@@ -26,6 +26,16 @@ export class SupportService {
     return ApiService.put('/support/my/close');
   }
 
+  // Delta para usuario autenticado
+  static async getMyMessagesDelta(afterSeq: number): Promise<{ lastSeq: number; messages: any[] }> {
+    return ApiService.get(`/support/my/messages?afterSeq=${afterSeq}`);
+  }
+
+  // Admin: delta por ticket
+  static async getTicketMessagesDelta(ticketId: string, afterSeq: number): Promise<{ lastSeq: number; messages: any[] }> {
+    return ApiService.get(`/admin/support/tickets/${ticketId}/messages`, { method: 'GET', body: JSON.stringify({ afterSeq }) } as any);
+  }
+
   // Admin: listar todos los tickets
   static async getTickets(): Promise<any[]> {
     return ApiService.get('/admin/support/tickets');
