@@ -67,6 +67,7 @@ export function useSupportSocket(
     s.on('support:status', (p: any) => onStatusRef.current && onStatusRef.current(p?.status));
     s.on('support:closed', () => onClosedRef.current && onClosedRef.current());
     s.on('support:message-admin', (p: any) => onAdminMessageRef.current && onAdminMessageRef.current(p));
+    s.on('support:message-all', (p: any) => onAdminMessageRef.current && onAdminMessageRef.current(p));
 
     return () => {
       if (currentTicketRef.current) s.emit('support:leave', { ticketId: currentTicketRef.current });

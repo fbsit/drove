@@ -24,6 +24,7 @@ const SupportChatViewer: React.FC<SupportChatViewerProps> = ({
   const messagesRef = useRef<SupportMessage[]>([]);
   const lastSeqRef = useRef<number>(0);
   const isMergingRef = useRef<boolean>(false);
+  const listRef = useRef<HTMLDivElement>(null);
 
   // Inicializa y ordena mensajes por timestamp cuando cambia el ticket
   useEffect(() => {
@@ -78,6 +79,13 @@ const SupportChatViewer: React.FC<SupportChatViewerProps> = ({
     isMergingRef.current = false;
   };
 
+  // Scroll al final cuando llegan mensajes nuevos
+  useEffect(() => {
+    if (listRef.current) {
+      listRef.current.scrollTop = listRef.current.scrollHeight;
+    }
+  }, [messages]);
+
   // Socket en tiempo real para el ticket actual
   useSupportSocket(
     ticket?.id || null,
@@ -112,7 +120,25 @@ const SupportChatViewer: React.FC<SupportChatViewerProps> = ({
     // onConnected/onDisconnected (admin vista no necesita pausar polling aquí)
     () => {},
     () => {},
-    undefined
+    // onAdminMessage: recibir broadcast global y filtrar por ticketId
+    (payload: any) => {
+      if (!payload || payload.ticketId !== ticket.id) return;
+      const msg: SupportMessage = {
+        id: String(payload.id),
+        content: payload.content,
+        sender: String(payload.sender).toLowerCase() as any,
+        senderName: payload.senderName || (payload.sender === 'ADMIN' ? 'Admin' : 'Usuario'),
+        timestamp: payload.timestamp || new Date().toISOString(),
+        ticketId: ticket.id,
+      } as any;
+      setMessages(prev => {
+        if (prev.some(m => String(m.id) === String(msg.id))) return prev;
+        const next = [...prev, msg].sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        messagesRef.current = next;
+        return next;
+      });
+      fetchDeltaAndMerge();
+    }
   );
 
   // Polling de respaldo cada 3s para garantizar que el admin vea mensajes nuevos
@@ -185,7 +211,7 @@ const SupportChatViewer: React.FC<SupportChatViewerProps> = ({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 p-4 overflow-y-auto space-y-4">
+      <div ref={listRef} className="flex-1 p-4 overflow-y-auto space-y-4 max-h-[60vh]">
         {messages.map((message: SupportMessage) => (
           <div key={message.id} className={`p-3 rounded-xl ${getSenderBg(message.sender)}`}>
             <div className="flex items-center gap-2 mb-2">
