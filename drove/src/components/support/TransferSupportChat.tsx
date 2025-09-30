@@ -51,6 +51,7 @@ const TransferSupportChat: React.FC = () => {
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [status, setStatus] = useState<TicketStatus>(INITIAL_STATUS);
+  const statusRef = useRef<TicketStatus>(INITIAL_STATUS);
   const [ticketId, setTicketId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const latestLoadIdRef = useRef<number>(0);
@@ -58,11 +59,58 @@ const TransferSupportChat: React.FC = () => {
   const pollingPausedUntilRef = useRef<number>(0);
   const pendingRefreshTimeoutRef = useRef<any>(null);
   const lastSeqRef = useRef<number>(0);
+  const inFlightKeyRef = useRef<Set<string>>(new Set());
+  const [hasUnreadFromAdmin, setHasUnreadFromAdmin] = useState(false);
+
+  const coalesce = React.useCallback((items: any[]) => {
+    const byId = new Map<string, any>();
+    const seenBucket = new Map<string, any>();
+    for (const m of items) {
+      if (m?.id) byId.set(String(m.id), m);
+    }
+    const unique: any[] = [];
+    for (const m of items) {
+      const id = String(m.id);
+      if (byId.get(id) !== m) continue; // keep only last occurrence by id
+      const bucketTs = Math.floor((m.ts ?? 0) / 10_000); // 10s bucket
+      const bucketKey = `${m.sender}|${m.text}|${bucketTs}`;
+      if (seenBucket.has(bucketKey)) continue;
+      seenBucket.set(bucketKey, m);
+      unique.push(m);
+    }
+    return unique.sort((a: any, b: any) => (a.ts ?? 0) - (b.ts ?? 0));
+  }, []);
+
+  const handleStartNewConversation = async () => {
+    try {
+      setStatus('pendiente');
+      const ticket = await SupportService.getMyOpen();
+      setTicketId(ticket?.id || null);
+      const serverMsgs = (ticket?.messages || []).map((m: any) => {
+        const ts = new Date(m.timestamp || Date.now()).getTime();
+        return {
+          id: String(m.id),
+          sender: (String(m.sender || '').toUpperCase() === 'ADMIN') ? 'soporte' : 'user',
+          text: m.content || '',
+          timestamp: new Date(ts).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+          ts,
+        } as any;
+      }) as any;
+      messagesRef.current = serverMsgs;
+      setMessages(serverMsgs);
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Error', description: e?.message || 'No se pudo iniciar una nueva conversación.' });
+    }
+  };
 
   useSupportSocket(
     ticketId,
     (incoming) => {
       // Dedup por id y reemplazar optimistas tmp- si coincide contenido
+      if (pendingRefreshTimeoutRef.current) {
+        clearTimeout(pendingRefreshTimeoutRef.current);
+        pendingRefreshTimeoutRef.current = null;
+      }
       setMessages(prev => {
         // Elimina optimistas con mismo texto y sender en ventana de 60s
         const nowTs = (incoming as any).ts ?? Date.now();
@@ -75,41 +123,32 @@ const TransferSupportChat: React.FC = () => {
         });
         const exists = withoutTmpOfSameText.some(m => m.id === incoming.id);
         const added = exists ? withoutTmpOfSameText : [...withoutTmpOfSameText, incoming];
-        const sorted = [...added].sort((a: any, b: any) => (a.ts ?? 0) - (b.ts ?? 0));
+        const sorted = coalesce(added as any);
         messagesRef.current = sorted as any;
         return sorted as any;
       });
+      // limpiar marca de envío optimista si coincide por texto+sender
+      const key = `${incoming.sender}|${incoming.text}`;
+      if (inFlightKeyRef.current.has(key)) inFlightKeyRef.current.delete(key);
       setStatus('en_progreso');
+      statusRef.current = 'en_progreso';
     },
     (status) => {
-      if (status === 'closed') setStatus('resuelto');
+      if (status === 'closed') {
+        setStatus('resuelto');
+        statusRef.current = 'resuelto';
+        toast({ title: 'Conversación cerrada', description: 'Esta conversación ha sido cerrada.' });
+      }
     },
-    () => setStatus('resuelto'),
+    () => { setStatus('resuelto'); statusRef.current = 'resuelto'; toast({ title: 'Conversación cerrada', description: 'Esta conversación ha sido cerrada.' }); },
     // onConnected: pausar polling por completo
     () => { pollingPausedUntilRef.current = Date.now() + 60_000; },
     // onDisconnected: reactivar polling inmediato
     () => { pollingPausedUntilRef.current = 0; loadOrCreateTicket({ force: true }); },
-    // onAdminMessage/broadcast: merge también si coincide el ticketId
-    (payload: any) => {
-      if (!payload || payload.ticketId !== ticketId) return;
-      const ts = new Date(payload.timestamp || Date.now()).getTime();
-      const mapped: any = {
-        id: String(payload.id),
-        sender: (String(payload.sender || '').toUpperCase() === 'ADMIN') ? 'soporte' : 'user',
-        text: payload.content || '',
-        timestamp: new Date(ts).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-        ts,
-      };
-      setMessages(prev => {
-        const exists = prev.some(m => m.id === mapped.id);
-        const base = exists ? prev : [...prev, mapped];
-        const dedup = new Map<string, any>();
-        for (const m of base) dedup.set(m.id, m);
-        const list = Array.from(dedup.values()).sort((a: any, b: any) => (a.ts ?? 0) - (b.ts ?? 0));
-        messagesRef.current = list;
-        return list as any;
-      });
-      setStatus('en_progreso');
+    undefined,
+    // onUnread: si el admin envía y no estamos enfocados en la sala, mostrar badge
+    (p: any) => {
+      if (p?.ticketId === ticketId && p?.side === 'admin') setHasUnreadFromAdmin(true);
     }
   );
 
@@ -125,6 +164,8 @@ const TransferSupportChat: React.FC = () => {
     const force = !!opts?.force;
     // Pausa el polling si acabamos de enviar un mensaje (evita sobrescribir la UI optimista)
     if (!force && Date.now() < pollingPausedUntilRef.current) return;
+    // Si la conversación está cerrada, no recrear automáticamente un ticket nuevo
+    if (!force && statusRef.current === 'resuelto') return;
     const myLoadId = ++latestLoadIdRef.current;
     try {
       const ticket = await SupportService.getMyOpen();
@@ -157,9 +198,7 @@ const TransferSupportChat: React.FC = () => {
       merged = [...merged, ...filteredOptimistic];
       // 4) Ordenar por timestamp si es posible, de lo contrario por inserción
       // Dedupe final por id (por si socket y server llegaron a la vez)
-      const finalById = new Map<string, any>();
-      for (const m of merged) finalById.set(m.id, m);
-      const finalList = Array.from(finalById.values()).sort((a: any, b: any) => (a.ts ?? 0) - (b.ts ?? 0));
+      const finalList = coalesce(merged as any);
       setMessages(finalList as any);
       messagesRef.current = finalList as any;
       setStatus(ticket?.status === 'closed' ? 'resuelto' : 'en_progreso');
@@ -189,6 +228,10 @@ const TransferSupportChat: React.FC = () => {
         timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
         ts: Date.now(),
       };
+      // marcar envío optimista para evitar flasheo si llega server inmediatamente
+      const key = `${optimistic.sender}|${optimistic.text}`;
+      inFlightKeyRef.current.add(key);
+      setTimeout(() => inFlightKeyRef.current.delete(key), 2500);
       setMessages(prev => {
         const next = [...prev, optimistic];
         messagesRef.current = next;
@@ -201,7 +244,9 @@ const TransferSupportChat: React.FC = () => {
       pollingPausedUntilRef.current = Date.now() + 2000;
       if (pendingRefreshTimeoutRef.current) clearTimeout(pendingRefreshTimeoutRef.current);
       pendingRefreshTimeoutRef.current = setTimeout(() => {
-        SupportService.getMyMessagesDelta(lastSeqRef.current)
+        // Usa seq del último mensaje real (no tmp) para evitar duplicar el más reciente
+        const lastRealSeq = Math.max(0, ...messagesRef.current.filter((m: any) => !String(m.id).startsWith('tmp-')).map((m: any) => m.seq || 0));
+        SupportService.getMyMessagesDelta(lastRealSeq)
           .then((res: any) => {
             const messagesDelta = res?.messages || [];
             const lastSeq = res?.lastSeq ?? lastSeqRef.current;
@@ -214,12 +259,14 @@ const TransferSupportChat: React.FC = () => {
                   text: m.content || '',
                   timestamp: new Date(ts).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
                   ts,
+                  seq: m.seq,
                 } as any;
               });
               setMessages(prev => {
-                const byId = new Map<string, any>();
-                for (const m of [...prev, ...delta]) byId.set(m.id, m);
-                const merged = Array.from(byId.values()).sort((a: any, b: any) => (a.ts ?? 0) - (b.ts ?? 0));
+                const merged = coalesce([...
+                  prev,
+                  ...delta,
+                ] as any);
                 messagesRef.current = merged;
                 return merged;
               });
@@ -294,6 +341,23 @@ const TransferSupportChat: React.FC = () => {
           Un agente responderá pronto...
         </div>
       )}
+      {hasUnreadFromAdmin && status !== "resuelto" && (
+        <div className="w-full flex items-center justify-center text-xs bg-[#6EF7FF]/20 text-white rounded-xl px-3 py-1 mb-2 mx-auto border border-[#6EF7FF]/40" style={{ fontFamily: "Helvetica" }}>
+          Tienes nuevas respuestas del soporte
+        </div>
+      )}
+      {status === "resuelto" && (
+        <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-3 text-sm bg-white/10 text-white rounded-xl px-4 py-3 mb-2 mx-auto border border-white/20" style={{ fontFamily: "Helvetica" }}>
+          <span className="text-center">Conversación cerrada.</span>
+          <Button
+            variant="outline"
+            className="rounded-xl border-white/30 text-white hover:bg-white/10 h-8 px-3"
+            onClick={handleStartNewConversation}
+          >
+            Iniciar nueva conversación
+          </Button>
+        </div>
+      )}
       {/* Chat */}
       <div
         ref={listRef}
@@ -349,28 +413,30 @@ const TransferSupportChat: React.FC = () => {
       </div>
 
       {/* Input */}
-      <div className="w-full flex flex-row items-center gap-2 p-3 pt-2 border-t border-white/10 bg-[#22142A] rounded-b-2xl" style={{ minHeight: 58 }}>
-        <Input
-          className="rounded-2xl flex-1 text-base placeholder:text-drove-gray bg-white/5 border-0 ring-2 ring-drove-accent focus:ring-2 focus:ring-[#6EF7FF] text-white font-normal"
-          placeholder="Escribe tu mensaje…"
-          disabled={status === "resuelto"}
-          maxLength={400}
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter") handleSend(); }}
-          style={{ fontFamily: "Helvetica" }}
-        />
-        <Button
-          className="rounded-2xl bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold px-4 py-2 shadow-lg text-base transition-all duración-150"
-          disabled={status === "resuelto" || !input.trim() || isSending}
-          onClick={handleSend}
-          style={{ fontFamily: "Montserrat, Helvetica", fontWeight: 700 }}
-        >
-          {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send size={20} />}
-          <span className="hidden md:block">Enviar</span>
-        </Button>
+      {(status as string) !== "resuelto" && (
+        <div className="w-full flex flex-row items-center gap-2 p-3 pt-2 border-t border-white/10 bg-[#22142A] rounded-b-2xl" style={{ minHeight: 58 }}>
+          <Input
+            className="rounded-2xl flex-1 text-base placeholder:text-drove-gray bg-white/5 border-0 ring-2 ring-drove-accent focus:ring-2 focus:ring-[#6EF7FF] text-white font-normal"
+            placeholder="Escribe tu mensaje…"
+            disabled={(status as string) === "resuelto"}
+            maxLength={400}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") handleSend(); }}
+            style={{ fontFamily: "Helvetica" }}
+          />
+          <Button
+            className="rounded-2xl bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold px-4 py-2 shadow-lg text-base transition-all duración-150"
+            disabled={(status as string) === "resuelto" || !input.trim() || isSending}
+            onClick={handleSend}
+            style={{ fontFamily: "Montserrat, Helvetica", fontWeight: 700 }}
+          >
+            {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send size={20} />}
+            <span className="hidden md:block">Enviar</span>
+          </Button>
 
-      </div>
+        </div>
+      )}
     </div>
   );
 };

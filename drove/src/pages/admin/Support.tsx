@@ -32,11 +32,17 @@ const Support: React.FC = () => {
   const filteredTickets = useMemo(() => tickets, [tickets]);
   const selected = useMemo(() => filteredTickets.find((t: any) => t.id === selectedId) || filteredTickets[0], [filteredTickets, selectedId]);
   React.useEffect(() => { if (!selectedId && filteredTickets.length > 0) setSelectedId(filteredTickets[0].id); }, [filteredTickets.length]);
+  React.useEffect(() => { if (selected?.id) setUnreadByTicket(prev => ({ ...prev, [selected.id]: 0 })); }, [selected?.id]);
+  const [unreadByTicket, setUnreadByTicket] = useState<Record<string, number>>({});
 
   // Mensajes del ticket seleccionado con delta-sync
   const [selectedMessages, setSelectedMessages] = useState<any[]>([]);
   const lastSeqRef = React.useRef<number>(0);
   const listRef = React.useRef<HTMLDivElement>(null);
+  const isClosed = React.useMemo(() => {
+    const s = String(selected?.status || '').toLowerCase();
+    return s === 'closed' || s === 'cerrado' || s === 'resuelto' || s === 'resolved';
+  }, [selected?.status]);
   React.useEffect(() => {
     const msgs = (selected?.messages || []).slice().sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
     setSelectedMessages(msgs);
@@ -73,11 +79,26 @@ const Support: React.FC = () => {
   useSupportSocket(
     selected?.id || null,
     () => { console.log('[ADMIN] onMessage room'); fetchDeltaAndMerge(); },
-    undefined,
-    undefined,
+    (status) => {
+      if (status === 'closed') {
+        console.log('[ADMIN] status closed');
+        fetchDeltaAndMerge();
+      }
+    },
+    () => { console.log('[ADMIN] closed event'); fetchDeltaAndMerge(); },
     () => console.log('[ADMIN] socket connected'),
     () => console.log('[ADMIN] socket disconnected'),
-    (payload: any) => { if (payload?.ticketId === selected?.id) { console.log('[ADMIN] onMessage all'); fetchDeltaAndMerge(); } }
+    (payload: any) => { if (payload?.ticketId === selected?.id) { console.log('[ADMIN] onMessage all'); fetchDeltaAndMerge(); } },
+    // onJoinedRoom
+    () => { fetchDeltaAndMerge(); },
+    // onUnread
+    (p: any) => {
+      if (!p?.ticketId) return;
+      // Si el admin está viendo otro ticket, incrementar badge
+      if (selected?.id !== p.ticketId) {
+        setUnreadByTicket(prev => ({ ...prev, [p.ticketId]: (prev[p.ticketId] || 0) + 1 }));
+      }
+    }
   );
 
   const handleUpdateStatus = (ticketId: string, status: string) => {
@@ -272,7 +293,14 @@ const Support: React.FC = () => {
                 className={`w-full text-left px-4 py-3 border-b border-white/10 hover:bg-white/10 transition ${selected?.id === t.id ? 'bg-white/10' : ''}`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="text-white font-semibold truncate">{t.clientName}</div>
+                  <div className="text-white font-semibold truncate flex items-center gap-2">
+                    {t.clientName || t.clientEmail || 'Usuario'}
+                    {!!unreadByTicket[t.id] && (
+                      <span className="inline-flex items-center justify-center px-2 py-0.5 text-[10px] rounded-full bg-red-500 text-white font-bold">
+                        {unreadByTicket[t.id]}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2 ml-2">
                     <span className={`px-2 py-0.5 rounded text-[10px] ${getStatusColor(t.status)} text-white`}>{t.status}</span>
                     <span className={`text-[10px] ${getPriorityColor(t.priority)}`}>{t.priority}</span>
@@ -280,6 +308,11 @@ const Support: React.FC = () => {
                 </div>
                 <div className="text-white/50 text-xs truncate">{t.subject}</div>
                 <div className="mt-1 text-white/60 text-xs line-clamp-2">{t.message}</div>
+                {Array.isArray(t.messages) && t.messages.length > 0 && (
+                  <div className="mt-1 text-white/50 text-[11px] truncate">
+                    Último: {(t.messages[t.messages.length - 1].senderName) || t.clientName || t.clientEmail}
+                  </div>
+                )}
                 <div className="mt-2 flex items-center gap-2 text-white/40 text-xs">
                   <Clock size={12} /> {new Date(t.createdAt).toLocaleDateString()}
                 </div>
@@ -341,7 +374,7 @@ const Support: React.FC = () => {
                     <span>Creado: {new Date(selected.createdAt).toLocaleDateString()}</span>
                   </div>
                   <div className="flex gap-2">
-                    {selected.status !== 'resuelto' && (
+                    {!isClosed && (
                       <Button size="sm" onClick={() => handleUpdateStatus(selected.id, 'resuelto')} disabled={isUpdatingStatus} className="bg-green-600 hover:bg-green-700">
                         {isUpdatingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
                       </Button>
@@ -349,19 +382,23 @@ const Support: React.FC = () => {
                   </div>
                 </div>
                 {/* Responder inline */}
-                <div className="w-full flex flex-row items-center gap-2 mt-4">
-                  <Input
-                    className="rounded-2xl flex-1 text-base placeholder:text-white/60 bg-white/5 border border-white/10 focus:ring-2 focus:ring-[#6EF7FF] text-white"
-                    placeholder="Escribe tu respuesta..."
-                    maxLength={500}
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') submitInlineReply(); }}
-                  />
-                  <Button className="rounded-2xl bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold px-4 py-2" disabled={!replyText.trim() || isResponding || isSending} onClick={submitInlineReply}>
-                    {isResponding || isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  </Button>
-                </div>
+                {isClosed ? (
+                  <div className="mt-4 text-white/70 text-sm bg-white/10 border border-white/20 rounded-xl px-3 py-2">Este ticket está cerrado. No se pueden enviar mensajes.</div>
+                ) : (
+                  <div className="w-full flex flex-row items-center gap-2 mt-4">
+                    <Input
+                      className="rounded-2xl flex-1 text-base placeholder:text-white/60 bg-white/5 border border-white/10 focus:ring-2 focus:ring-[#6EF7FF] text-white"
+                      placeholder="Escribe tu respuesta..."
+                      maxLength={500}
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') submitInlineReply(); }}
+                    />
+                    <Button className="rounded-2xl bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold px-4 py-2" disabled={!replyText.trim() || isResponding || isSending} onClick={submitInlineReply}>
+                      {isResponding || isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ) : (

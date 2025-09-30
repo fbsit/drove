@@ -71,6 +71,8 @@ export class SupportGateway implements OnGatewayInit, OnGatewayConnection, OnGat
     this.server.to(room).emit('support:message', message);
     // Broadcast global para panel admin; los clientes deben filtrar por ticketId
     this.server.emit('support:message-all', { ticketId, ...message });
+    // Notificaciones de no leídos (simple broadcast, el front filtra por ticket)
+    this.server.emit('support:unread', { ticketId, side: String(message?.sender).toLowerCase() === 'admin' ? 'client' : 'admin' });
     this.logger.debug(`Emitted message to ${room} and global: id=${message?.id} seq=${message?.seq}`);
   }
 

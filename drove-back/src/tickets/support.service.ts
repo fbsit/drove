@@ -36,7 +36,7 @@ export class SupportService {
     return { lastSeq, messages: msgs };
   }
 
-  async getOrCreateUserOpenTicket(ownerUserId: string, ownerRole: ClientType, subject = 'Soporte'): Promise<SupportTicket> {
+  async getOrCreateUserOpenTicket(ownerUserId: string, ownerRole: ClientType, subject = 'Soporte', opts?: { name?: string; email?: string }): Promise<SupportTicket> {
     let ticket = await this.ticketRepo.findOne({ where: { ownerUserId, status: TicketStatus.OPEN } });
     if (!ticket) {
       ticket = this.ticketRepo.create({
@@ -44,13 +44,20 @@ export class SupportService {
       message: '',
       status: TicketStatus.OPEN,
       priority: TicketPriority.MEDIUM,
-      clientName: '',
-      clientEmail: '',
+      clientName: opts?.name || '',
+      clientEmail: opts?.email || '',
       clientType: ownerRole,
       ownerUserId,
       ownerRole,
     } as Partial<SupportTicket>);
       ticket = await this.ticketRepo.save(ticket);
+    }
+    // Completar datos de cliente si estaban vacíos
+    const needsUpdate = (!ticket.clientName && opts?.name) || (!ticket.clientEmail && opts?.email);
+    if (needsUpdate) {
+      ticket.clientName = ticket.clientName || opts?.name || '';
+      ticket.clientEmail = ticket.clientEmail || opts?.email || '';
+      await this.ticketRepo.save(ticket);
     }
     // Adjuntar historial de mensajes ordenado ascendente por fecha
     const msgs = await this.messageRepo.find({ where: { ticketId: ticket.id }, order: { timestamp: 'ASC' } });
@@ -110,7 +117,10 @@ export class SupportService {
     if (!ticket) throw new NotFoundException(`Ticket ${id} not found`);
     ticket.status = TicketStatus.CLOSED;
     const saved = await this.ticketRepo.save(ticket);
-    try { this.gateway.emitClosed(ticket.id); } catch {}
+    try {
+      this.gateway.emitClosed(ticket.id);
+      this.gateway.emitStatus(ticket.id, 'closed');
+    } catch {}
     return saved;
   }
 

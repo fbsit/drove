@@ -16,6 +16,8 @@ export function useSupportSocket(
   onConnected?: () => void,
   onDisconnected?: () => void,
   onAdminMessage?: (payload: any) => void,
+  onJoinedRoom?: (room: string) => void,
+  onUnread?: (payload: { ticketId: string; side: 'admin' | 'client' }) => void,
 ) {
   const socketRef = useRef<Socket | null>(null);
   const currentTicketRef = useRef<string | null>(null);
@@ -25,6 +27,8 @@ export function useSupportSocket(
   const onConnectedRef = useRef(onConnected);
   const onDisconnectedRef = useRef(onDisconnected);
   const onAdminMessageRef = useRef(onAdminMessage);
+  const onJoinedRoomRef = useRef(onJoinedRoom);
+  const onUnreadRef = useRef(onUnread);
 
   useEffect(() => { onMessageRef.current = onMessage; }, [onMessage]);
   useEffect(() => { onStatusRef.current = onStatus; }, [onStatus]);
@@ -32,6 +36,8 @@ export function useSupportSocket(
   useEffect(() => { onConnectedRef.current = onConnected; }, [onConnected]);
   useEffect(() => { onDisconnectedRef.current = onDisconnected; }, [onDisconnected]);
   useEffect(() => { onAdminMessageRef.current = onAdminMessage; }, [onAdminMessage]);
+  useEffect(() => { onJoinedRoomRef.current = onJoinedRoom; }, [onJoinedRoom]);
+  useEffect(() => { onUnreadRef.current = onUnread; }, [onUnread]);
 
   useEffect(() => {
     const token = localStorage.getItem('auth_token') ?? '';
@@ -50,6 +56,7 @@ export function useSupportSocket(
         currentTicketRef.current = ticketId;
         s.emit('support:join', { ticketId }, (ack: any) => {
           console.debug('[WS] join ack', ack);
+          if (ack?.room && onJoinedRoomRef.current) onJoinedRoomRef.current(ack.room);
         });
       }
       if (onConnectedRef.current) onConnectedRef.current();
@@ -72,6 +79,7 @@ export function useSupportSocket(
     s.on('support:closed', () => onClosedRef.current && onClosedRef.current());
     s.on('support:message-admin', (p: any) => { console.log('[WS] support:message-admin', p?.ticketId, p?.id); onAdminMessageRef.current && onAdminMessageRef.current(p); });
     s.on('support:message-all', (p: any) => { console.log('[WS] support:message-all', p?.ticketId, p?.id); onAdminMessageRef.current && onAdminMessageRef.current(p); });
+    s.on('support:unread', (p: any) => { if (onUnreadRef.current) onUnreadRef.current(p); });
 
     // errores y diagnósticos
     s.on('connect_error', (err: any) => console.log('[WS] connect_error', err?.message || err));
@@ -94,7 +102,7 @@ export function useSupportSocket(
     if (!s.connected) return;
     const prev = currentTicketRef.current;
     if (prev && prev !== ticketId) s.emit('support:leave', { ticketId: prev });
-    if (ticketId && ticketId !== prev) s.emit('support:join', { ticketId }, (ack: any) => console.debug('[WS] join switch ack', ack));
+    if (ticketId && ticketId !== prev) s.emit('support:join', { ticketId }, (ack: any) => { console.debug('[WS] join switch ack', ack); if (ack?.room && onJoinedRoomRef.current) onJoinedRoomRef.current(ack.room); });
     currentTicketRef.current = ticketId;
   }, [ticketId]);
 

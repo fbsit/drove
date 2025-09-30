@@ -86,7 +86,7 @@ export class SupportController {
   @ApiOperation({ summary: 'Obtener ticket abierto del usuario autenticado' })
   getMyOpen(@Req() req) {
     const role = String(req.user.role || '').toLowerCase() === 'drover' ? ClientType.DROVER : ClientType.CLIENT;
-    return this.supportService.getOrCreateUserOpenTicket(req.user.id, role);
+    return this.supportService.getOrCreateUserOpenTicket(req.user.id, role, 'Soporte', { name: req.user?.full_name || req.user?.name, email: req.user?.email });
   }
 
   // Autenticado: listar mis tickets
@@ -106,7 +106,7 @@ export class SupportController {
   @HttpCode(HttpStatus.CREATED)
   async myMessage(@Req() req, @Body() dto: MyMessageDTO) {
     const role = String(req.user.role || '').toLowerCase() === 'drover' ? ClientType.DROVER : ClientType.CLIENT;
-    const ticket = await this.supportService.getOrCreateUserOpenTicket(req.user.id, role);
+    const ticket = await this.supportService.getOrCreateUserOpenTicket(req.user.id, role, 'Soporte', { name: req.user?.full_name || req.user?.name, email: req.user?.email });
     const sender = role === ClientType.DROVER ? 'drover' : 'client';
     return this.supportService.appendMessage(ticket.id, dto.content, sender as any, req.user.email || 'Usuario', req.user.id);
   }
