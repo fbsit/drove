@@ -33,7 +33,7 @@ export class SupportService {
 
   // Admin: delta por ticket
   static async getTicketMessagesDelta(ticketId: string, afterSeq: number): Promise<{ lastSeq: number; messages: any[] }> {
-    return ApiService.get(`/admin/support/tickets/${ticketId}/messages`, { method: 'GET', body: JSON.stringify({ afterSeq }) } as any);
+    return ApiService.get(`/admin/support/tickets/${ticketId}/messages?afterSeq=${afterSeq}`);
   }
 
   // Admin: listar todos los tickets

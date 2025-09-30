@@ -10,6 +10,7 @@ import {
   HttpStatus,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { SupportService } from './support.service';
 import { UpdateTicketStatusDTO } from './dto/update-ticket.status.dto';
@@ -40,9 +41,9 @@ export class SupportController {
   @Get('admin/support/tickets/:id/messages')
   @ApiOperation({ summary: 'Delta de mensajes por ticket (admin)' })
   @ApiParam({ name: 'id' })
-  getMessagesDeltaAdmin(@Param('id') id: string, @Body() body: any) {
-    const afterSeq = Number((body && body.afterSeq) ?? 0);
-    return this.supportService.getMessagesDelta(id, afterSeq);
+  getMessagesDeltaAdmin(@Param('id') id: string, @Query('afterSeq') afterSeq?: string) {
+    const n = Number(afterSeq ?? 0);
+    return this.supportService.getMessagesDelta(id, isNaN(n) ? 0 : n);
   }
 
   @Put('admin/support/tickets/:id/status')
