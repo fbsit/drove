@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { UserType, RegistrationFormData } from "@/types/new-registration";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ const MobileRegistrationForm: React.FC<Props> = ({
   const [externalErrors, setExternalErrors] = useState<Record<string, string>>({});
   const [submissionError, setSubmissionError] = useState<string | null>(null);
 
-  const getSteps = () => {
+  const getSteps = useCallback(() => {
     if (!userType) return ["Tipo de cuenta"];
 
     if (userType === "client") {
@@ -48,9 +48,9 @@ const MobileRegistrationForm: React.FC<Props> = ({
       "Documentación",
       "Confirmación",
     ];
-  };
+  }, [userType]);
 
-  const steps = getSteps();
+  const steps = useMemo(() => getSteps(), [getSteps]);
   const totalSteps = steps.length;
 
   const handleUserTypeSelect = (type: UserType) => {
@@ -59,23 +59,52 @@ const MobileRegistrationForm: React.FC<Props> = ({
     setCurrentStep(1);
   };
 
-  const handleStepData = (stepData: Partial<RegistrationFormData>) => {
+  const handleStepData = useCallback((stepData: Partial<RegistrationFormData>) => {
     setFormData((prev) => ({ ...prev, ...stepData }));
-  };
+  }, []);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentStep < totalSteps - 1) {
       setCurrentStep((prev) => prev + 1);
     }
-  };
+  }, [currentStep, totalSteps]);
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (currentStep > 0) {
       setCurrentStep((prev) => prev - 1);
     }
-  };
+  }, [currentStep]);
 
-  const handleSubmit = async () => {
+  const isFormComplete = useCallback(() => {
+    const data = formData;
+    if (!data.userType) return false;
+
+    const baseFields = ["fullName", "email", "phone", "password"];
+    const hasBaseFields = baseFields.every(
+      (field) => data[field as keyof typeof data]
+    );
+
+    if (data.userType === "client") {
+      return hasBaseFields && data.documentNumber && data.address;
+    }
+
+    if (data.userType === "drover") {
+      return (
+        hasBaseFields &&
+        data.documentType &&
+        data.documentNumber &&
+        data.address &&
+        data.profilePhoto &&
+        data.licenseFront &&
+        data.licenseBack &&
+        data.backgroundCheck
+      );
+    }
+
+    return false;
+  }, [formData]);
+
+  const handleSubmit = useCallback(async () => {
     if (!formData.userType || !isFormComplete() || submitting) return;
     setSubmitting(true);
     try {
@@ -134,40 +163,13 @@ const MobileRegistrationForm: React.FC<Props> = ({
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [formData, isFormComplete, submitting, onComplete]);
 
-  const isFormComplete = () => {
-    const data = formData;
-    if (!data.userType) return false;
+  
 
-    const baseFields = ["fullName", "email", "phone", "password"];
-    const hasBaseFields = baseFields.every(
-      (field) => data[field as keyof typeof data]
-    );
-
-    if (data.userType === "client") {
-      return hasBaseFields && data.documentNumber && data.address;
-    }
-
-    if (data.userType === "drover") {
-      return (
-        hasBaseFields &&
-        data.documentType &&
-        data.documentNumber &&
-        data.address &&
-        data.profilePhoto &&
-        data.licenseFront &&
-        data.licenseBack &&
-        data.backgroundCheck
-      );
-    }
-
-    return false;
-  };
-
-  const getStepProgress = () => {
+  const getStepProgress = useCallback(() => {
     return Math.round((currentStep / (totalSteps - 1)) * 100);
-  };
+  }, [currentStep, totalSteps]);
 
   // Auto-enviar al llegar al último paso cuando todo está completo (alineado con desktop)
   useEffect(() => {
@@ -267,7 +269,7 @@ const MobileRegistrationForm: React.FC<Props> = ({
   };
 
   return (
-    <div className="pt-36 min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] flex flex-col">
+    <div className="pt-40 min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] flex flex-col">
       {/* Header móvil fijo */}
       <div className="fixed top-0 left-0 right-0 bg-[#22142A] z-50 px-4 py-3">
         <div className="flex items-center justify-between">
