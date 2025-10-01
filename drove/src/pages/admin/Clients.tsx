@@ -59,12 +59,14 @@ const Clients: React.FC = () => {
     isRejecting,
   } = useClientsManagement({ type: typeTab, status: statusFilter === 'todos' ? undefined : statusFilter, search });
 
-  const filteredClients = clients.filter(
-    (c) =>
-      contains(c, search) &&
-      (statusFilter === "todos" || c.status === statusFilter) &&
-      (typeTab === "todos" || c.tipo === typeTab)
-  );
+  const filteredClients = clients.filter((c) => {
+    const matchesSearch = contains(c, search);
+    const matchesStatus = statusFilter === "todos" || c.status === statusFilter;
+    const matchesType = typeTab === 'todos' || c.tipo === typeTab ||
+      (typeTab === 'empresa' && (c.accountType === 'COMPANY')) ||
+      (typeTab === 'persona' && (c.accountType === 'PERSON'));
+    return matchesSearch && matchesStatus && matchesType;
+  });
 
   if (isLoading)
     return (

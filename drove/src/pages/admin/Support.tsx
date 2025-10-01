@@ -95,24 +95,22 @@ const Support: React.FC = () => {
       if (payload.ticketId === selected?.id) {
         console.log('[ADMIN] onMessage all');
         fetchDeltaAndMerge();
-      } else {
-        // Marca no leído si proviene del cliente/drover
-        const s = String(payload.sender || '').toLowerCase();
-        if (s !== 'admin') {
-          setUnreadByTicket(prev => ({ ...prev, [payload.ticketId]: (prev[payload.ticketId] || 0) + 1 }));
-        }
       }
+      // No incrementamos aquí para evitar doble conteo; usamos sólo support:unread
     },
     // onJoinedRoom
     () => { fetchDeltaAndMerge(); },
     // onUnread
     (p: any) => {
       if (!p?.ticketId) return;
-      // Solo contar no leídos destinados al admin
+      // Sólo contar no leídos destinados al admin
       if (String(p.side).toLowerCase() !== 'admin') return;
-      // Si el admin está viendo otro ticket, incrementar badge
+      // Si no estamos viendo ese ticket, incrementa en 1 (evitando blowup en reconexiones)
       if (selected?.id !== p.ticketId) {
-        setUnreadByTicket(prev => ({ ...prev, [p.ticketId]: (prev[p.ticketId] || 0) + 1 }));
+        setUnreadByTicket(prev => {
+          const current = prev[p.ticketId] || 0;
+          return { ...prev, [p.ticketId]: current + 1 };
+        });
       }
     }
   );
