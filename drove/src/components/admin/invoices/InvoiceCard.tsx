@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { FileText, Upload, Info, Check, X, Plus, CreditCard, Banknote, Eye, UserPlus, Ban, AlertTriangle, Loader2 } from "lucide-react";
 import InvoiceStatusBadge from "./InvoiceStatusBadge";
 import { Button } from "@/components/ui/button";
@@ -142,9 +142,11 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
     setUploadDialog(false);
   };
 
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
     <div
-      className="rounded-2xl bg-white/10 px-4 py-3 shadow-lg flex flex-col hover:shadow-[0_2px_24px_0_#6EF7FF22] transition-all duration-200 relative group justify-between"
+      className="rounded-2xl bg-white/10 px-4 py-3 shadow-lg hover:shadow-[0_2px_24px_0_#6EF7FF22] transition-all duration-200 relative group justify-between h-fit"
       style={{ fontFamily: "Helvetica", minWidth: 0 }}
     >
       {isUpdating && (
@@ -152,299 +154,380 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
           <Loader2 className="h-6 w-6 animate-spin text-[#6EF7FF]" />
         </div>
       )}
-      {/* Header */}
-      <div className="flex items-center gap-2 justify-between min-w-0" tabIndex={0}>
+
+      {/* Header (colapsable) */}
+      <div
+        className="flex items-center gap-2 justify-between min-w-0 cursor-pointer"
+        tabIndex={0}
+        onClick={() => setIsOpen(!isOpen)}
+      >
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-base font-bold text-white leading-snug truncate">INV-{String(invoice.id).padStart(6, '0')}</span>
-          <span className="text-xs text-white/60 truncate">{invoice.invoiceDate}</span>
+          <span className="text-base font-bold text-white leading-snug truncate">
+            INV-{String(invoice.id).padStart(6, "0")}
+          </span>
+          <span className="text-left text-xs text-white/60 truncate">
+            {invoice.invoiceDate}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           {metodoIcono}
           <span className="text-xs text-white/80">{metodoPago}</span>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
         </div>
       </div>
 
-      {/* Cliente y estado pago */}
-      <div className="mt-2 flex flex-wrap gap-1 items-center justify-between text-sm">
-        <span title={invoice.client || invoice.client_name} className="truncate max-w-[60%] text-white font-semibold">{invoice.client || invoice.client_name}</span>
-        <span className={`truncate ml-2 text-xs rounded-xl px-2 py-1 font-bold ${estadoPago === "Pagado"
-          ? "bg-green-600"
-          : estadoPago === "Anticipado por banco"
-            ? "bg-purple-600"
-            : "bg-white/10 text-white/60"
-          }`}>
-          {estadoPago}
-        </span>
-      </div>
-
-      {/* Estado factura (desde backend) */}
-      <div className="flex items-center gap-2 mt-2">
-        <span className="text-xs font-semibold">
-          Estado Factura:&nbsp;
-          <span className={estadoFacturaColor}>
-            {estadoFactura}
-          </span>
-        </span>
-      </div>
-
-      {/* Ruta y drover (cuando existan) */}
-      {(invoice.vehicle || invoice.fromAddress || invoice.toAddress || invoice.droverName) && (
-        <div className="mt-3 rounded-xl border border-white/15 bg-white/5 p-3 text-sm text-white/80">
-          {invoice.vehicle && <div className="mb-1">{invoice.vehicle}</div>}
-          {invoice.fromAddress && <div className="mb-1">{invoice.fromAddress}</div>}
-          {invoice.toAddress && <div className="mb-1">{invoice.toAddress}</div>}
-          {invoice.droverName && <div className="flex items-center justify-center gap-1 text-white/70"><UserPlus size={14} /> Drover: {invoice.droverName}</div>}
-        </div>
-      )}
-
-      {/* Acciones */}
-      <div className="flex flex-col gap-2 mt-3">
-        {!tienePDF ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="rounded-2xl bg-[#6EF7FF] text-[#22142A] font-bold hover:bg-[#32dfff]"
-            onClick={() => setUploadDialog(true)}
-          >
-            <Upload size={16} />
-            <span className="ml-2">Subir Factura</span>
-          </Button>
-        ) : (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="rounded-2xl bg-[#22142A] hover:bg-[#403E43] text-white font-bold shadow-none w-fit"
-            onClick={() => window.open(invoice.urlPDF, '_blank')}
-          >
-            <FileText size={16} />
-            <span className="ml-2">Ver Factura</span>
-          </Button>
-        )}
-        <div className="flex flex-row flex-wrap gap-4 items-center text-sm justify-center">
-          {!(invoice as any)?.droverName && (
-            <Button
-              variant="link"
-              className="text-white hover:text-white/80 p-0 h-auto"
-              onClick={() => window.open(`/admin/asignar/${invoice.transferId || invoice.id}`, '_self')}
+      {/* Contenido colapsable */}
+      {isOpen && (
+        <div className="mt-2 flex flex-col gap-2 transition-all duration-300">
+          {/* Cliente y estado pago */}
+          <div className="mt-2 flex flex-wrap gap-1 items-center justify-between text-sm">
+            <span
+              title={invoice.client || invoice.client_name}
+              className="truncate max-w-[60%] text-white font-semibold"
             >
-              Asignar
-            </Button>
-          )}
-          <Button
-            variant="link"
-            className="text-white/80 hover:text-white p-0 h-auto flex items-center gap-1"
-            onClick={() => window.open(`/traslados/${invoice.transferId}`, '_self')}
-          >
-            <Eye size={14} /> Ver Traslado
-          </Button>
-        </div>
+              {invoice.client || invoice.client_name}
+            </span>
+            <span
+              className={`truncate ml-2 text-xs rounded-xl px-2 py-1 font-bold ${estadoPago === "Pagado"
+                ? "bg-green-600"
+                : estadoPago === "Anticipado por banco"
+                  ? "bg-purple-600"
+                  : "bg-white/10 text-white/60"
+                }`}
+            >
+              {estadoPago}
+            </span>
+          </div>
 
-        <>
-          {(showAnticipo || showPagada) && (
-            <div className="flex flex-row flex-wrap gap-4 items-center justify-center">
-              {showAnticipo && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="rounded-2xl text-purple-300 hover:bg-purple-700/40 font-bold"
-                  onClick={() => setConfirmDialog({ open: true, type: "anticipo" })}
-                  title="Anticipo bancario"
-                  disabled={disableAnticipo}
-                >
-                  <Plus size={16} />
-                  <span className="ml-1">Anticipo</span>
-                </Button>
-              )}
-              {showPagada && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="rounded-2xl text-green-400 hover:bg-green-700/30 font-bold"
-                  onClick={() => setConfirmDialog({ open: true, type: "pagada" })}
-                  title="Pagada por cliente"
-                  disabled={disablePagada}
-                >
-                  <Check size={16} />
-                  <span className="ml-1">Pagada</span>
-                </Button>
+          {/* Estado factura */}
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-xs font-semibold">
+              Estado Factura:&nbsp;
+              <span className={estadoFacturaColor}>{estadoFactura}</span>
+            </span>
+          </div>
+
+          {/* Ruta y drover */}
+          {(invoice.vehicle || invoice.fromAddress || invoice.toAddress || invoice.droverName) && (
+            <div className="mt-3 rounded-xl border border-white/15 bg-white/5 p-3 text-sm text-white/80">
+              {invoice.vehicle && <div className="mb-1">{invoice.vehicle}</div>}
+              {invoice.fromAddress && <div className="mb-1">{invoice.fromAddress}</div>}
+              {invoice.toAddress && <div className="mb-1">{invoice.toAddress}</div>}
+              {invoice.droverName && (
+                <div className="flex items-center justify-center gap-1 text-white/70">
+                  <UserPlus size={14} /> Drover: {invoice.droverName}
+                </div>
               )}
             </div>
           )}
-          {/* Revertir estado removido por requerimiento */}
-        </>
 
-        {/* Rechazar / Anular */}
-        <div className="flex flex-row gap-6 items-center mt-1 text-sm justify-center">
-          {canReject && (
-            <button
-              className="flex items-center gap-2 text-red-400 hover:text-red-300"
-              onClick={() => setConfirmDialog({ open: true, type: "reject" })}
-              title="Rechazar"
-            >
-              <Ban size={16} />
-              <span>Rechazar</span>
-            </button>
-          )}
-          {canVoid && (
-            <button
-              className="flex items-center gap-2 text-orange-400 hover:text-orange-300"
-              onClick={() => setConfirmDialog({ open: true, type: "void" })}
-              title="Anular"
-            >
-              <AlertTriangle size={16} />
-              <span>Anular</span>
-            </button>
-          )}
-        </div>
+          {/* Acciones */}
+          <div className="flex flex-col gap-2 mt-3">
+            {!tienePDF ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="rounded-2xl bg-[#6EF7FF] text-[#22142A] font-bold hover:bg-[#32dfff]"
+                onClick={() => setUploadDialog(true)}
+              >
+                <Upload size={16} />
+                <span className="ml-2">Subir Factura</span>
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="rounded-2xl bg-[#22142A] hover:bg-[#403E43] text-white font-bold shadow-none w-full"
+                onClick={() => window.open(invoice.urlPDF, "_blank")}
+              >
+                <FileText size={16} />
+                <span className="ml-2">Ver Factura</span>
+              </Button>
+            )}
 
-        {/* Información (siempre visible) */}
-        <InvoiceInfoTooltip
-          trigger={
-            <Button
-              size="icon"
-              variant="ghost"
-              className="rounded-2xl text-[#6EF7FF] ml-1 hover:bg-[#6EF7FF]/10 w-fit px-4"
-              aria-label="Información de factura"
-              tabIndex={0}
-            >
-              <Info size={18} />
-              <span>Ver más información</span>
-            </Button>
-          }
-          invoice={{
-            client: invoice.client || invoice.client_name,
-            invoiceId: invoice.id,
-            transferId: invoice.transferId || invoice.id,
-            notes: invoice.notes,
-          }}
-        />
-      </div>
+            <div className="flex flex-row flex-wrap gap-4 gap-x-[2%] items-center text-sm justify-center">
+              {!(invoice as any)?.droverName && (
+                <Button
+                  variant="link"
+                  className="text-white hover:text-white/80 p-0 h-auto flex-1 bg-white/10 py-2 px-4 justify-center rounded-full"
+                  onClick={() =>
+                    window.open(`/admin/asignar/${invoice.transferId || invoice.id}`, "_self")
+                  }
+                >
+                  Asignar
+                </Button>
+              )}
+              <Button
+                variant="link"
+                className="text-white/80 hover:text-white p-0 h-auto flex items-center gap-1 flex-1 bg-white/10 py-2 px-4 justify-center rounded-full"
+                onClick={() => window.open(`/traslados/${invoice.transferId}`, "_self")}
+              >
+                <Eye size={14} /> Ver Traslado
+              </Button>
+            </div>
 
-      {/* Modal subir PDF */}
-      <Dialog open={uploadDialog} onOpenChange={(open) => { if (!isUpdating) setUploadDialog(open); }}>
-        <DialogContent className="bg-[#22142A] text-white rounded-2xl max-w-md border-none text-center">
-          <DialogHeader>
-            <DialogTitle>Subir Factura PDF</DialogTitle>
-          </DialogHeader>
-          <div>
-            <p className="text-white/70 mb-3">
-              Adjunta el PDF emitido oficialmente en Hacienda para este traslado.
-            </p>
-            {/* Resumen mínimo de la factura para identificarla */}
-            {(() => {
-              const anyInv: any = invoice as any;
-              const amount = anyInv.amount ?? anyInv.total ?? anyInv.total_with_tax ?? anyInv.price ?? anyInv.totalPrice;
-              return (
-                <div className="mb-3 text-sm text-white/80 flex flex-col items-center gap-1">
-                  <div><b>Factura:</b> INV-{String(invoice.id).padStart(6,'0')}</div>
-                  {invoice.invoiceDate && <div><b>Fecha:</b> {invoice.invoiceDate}</div>}
-                  {(invoice.client || invoice.client_name) && (
-                    <div className="truncate max-w-[280px]"><b>Cliente:</b> {invoice.client || invoice.client_name}</div>
+            <>
+              {(showAnticipo || showPagada) && (
+                <div className="flex flex-row flex-wrap gap-4 gap-x-[2%] items-center justify-center">
+                  {showAnticipo && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className=" text-purple-300 hover:bg-purple-700/40 font-bold flex-1 bg-white/10 py-2 px-4 justify-center rounded-full"
+                      onClick={() => setConfirmDialog({ open: true, type: "anticipo" })}
+                      title="Anticipo bancario"
+                      disabled={disableAnticipo}
+                    >
+                      <Plus size={16} />
+                      <span>Anticipo</span>
+                    </Button>
                   )}
-                  {typeof amount !== 'undefined' && (
-                    <div><b>Monto:</b> €{Number(amount).toLocaleString()}</div>
+                  {showPagada && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className=" text-green-400 hover:bg-green-700/30 font-bold flex-1 bg-white/10 py-2 px-4 justify-center rounded-full"
+                      onClick={() => setConfirmDialog({ open: true, type: "pagada" })}
+                      title="Pagada por cliente"
+                      disabled={disablePagada}
+                    >
+                      <Check size={16} />
+                      <span>Pagada</span>
+                    </Button>
                   )}
                 </div>
-              );
-            })()}
-            <InvoicePDFUpload
-              disabled={isUpdating}
-              onUpload={async file => {
-                setIsUpdating(true);
-                const res = await onUploadPDF(file, String(invoice.id));
-                if (res === 'success') {
-                  handleUploadSuccess();
-                }
-                setIsUpdating(false);
-                return res;
+              )}
+            </>
+
+            {/* Rechazar / Anular */}
+            <div className="flex flex-row gap-4 gap-x-[2%] items-center text-sm justify-center">
+              {canReject && (
+                <button
+                  className="flex items-center gap-2 text-red-400 hover:text-red-300 flex-1 bg-white/10 py-2 px-4 justify-center rounded-full"
+                  onClick={() => setConfirmDialog({ open: true, type: "reject" })}
+                  title="Rechazar"
+                >
+                  <Ban size={16} />
+                  <span>Rechazar</span>
+                </button>
+              )}
+              {canVoid && (
+                <button
+                  className="flex items-center gap-2 text-orange-400 hover:text-orange-300 flex-1 bg-white/10 py-2 px-4 justify-center rounded-full"
+                  onClick={() => setConfirmDialog({ open: true, type: "void" })}
+                  title="Anular"
+                >
+                  <AlertTriangle size={16} />
+                  <span>Anular</span>
+                </button>
+              )}
+            </div>
+
+            {/* Información */}
+            <InvoiceInfoTooltip
+              trigger={
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="rounded-2xl text-[#6EF7FF] ml-1 hover:bg-[#6EF7FF]/10 w-fit px-4"
+                  aria-label="Información de factura"
+                  tabIndex={0}
+                >
+                  <Info size={18} />
+                  <span>Ver más información</span>
+                </Button>
+              }
+              invoice={{
+                client: invoice.client || invoice.client_name,
+                invoiceId: invoice.id,
+                transferId: invoice.transferId || invoice.id,
+                notes: invoice.notes,
               }}
             />
           </div>
-          <DialogFooter>
-            <Button variant="ghost" disabled={isUpdating} onClick={() => setUploadDialog(false)} className="rounded-2xl">
-              Cancelar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      {/* Modal confirmación acciones de estado */}
-      <Dialog open={confirmDialog.open} onOpenChange={() => setConfirmDialog({ open: false, type: undefined })}>
-        <DialogContent className="bg-[#22142A] text-white rounded-2xl max-w-sm border-none">
-          <DialogHeader>
-            <DialogTitle>
-              {confirmDialog.type === "pagada"
-                ? "Confirmar pago"
-                : confirmDialog.type === "anticipo"
-                  ? "Confirmar anticipo bancario"
-                  : confirmDialog.type === "reject"
-                    ? "Confirmar rechazo de factura"
-                    : confirmDialog.type === "void"
-                      ? "Confirmar anulación de factura"
-                      : "Revertir estado"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-2">
-            {confirmDialog.type === "pagada" && (
-              <span>¿Seguro que deseas marcar esta factura como <b>pagada por cliente</b>?</span>
-            )}
-            {confirmDialog.type === "anticipo" && (
-              <span>¿Seguro que deseas marcar esta factura como <b>anticipada por banco</b>?</span>
-            )}
-            {confirmDialog.type === "reject" && (
-              <span>¿Seguro que deseas <b>rechazar</b> esta factura? El estado será "rejected".</span>
-            )}
-            {confirmDialog.type === "void" && (
-              <span>¿Seguro que deseas <b>anular</b> esta factura? El estado será "voided".</span>
-            )}
-            {confirmDialog.type === "revertir" && (
-              <span>¿Estás seguro de que deseas revertir esta factura a su estado inicial (emitida)?</span>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setConfirmDialog({ open: false, type: undefined })} className="rounded-2xl">
-              Cancelar
-            </Button>
-            <Button
-              variant="default"
-              className="rounded-2xl bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold"
-              disabled={isUpdating}
-              onClick={async () => {
-                setIsUpdating(true);
-                try {
-                  if (confirmDialog.type === "pagada" || confirmDialog.type === "anticipo") {
-                    await Promise.resolve(onChangeStatus(invoice.id, confirmDialog.type));
-                    toast({ title: "Estado actualizado", description: confirmDialog.type === "pagada" ? "Factura marcada como Pagada." : "Factura marcada como Anticipo.", duration: 1400 });
-                  } else if (confirmDialog.type === "reject") {
-                    await Promise.resolve(onReject?.(invoice.id));
-                    toast({ title: "Estado actualizado", description: "Factura marcada como Rechazada.", duration: 1400 });
-                  } else if (confirmDialog.type === "void") {
-                    await Promise.resolve(onCancel?.(invoice.id));
-                    toast({ title: "Estado actualizado", description: "Factura marcada como Anulada.", duration: 1400 });
-                  } else if (confirmDialog.type === "revertir") {
-                    await Promise.resolve(onRevertStatus(invoice.id));
-                    toast({ title: "Estado actualizado", description: "Factura devuelta a estado Emitida.", duration: 1400 });
-                  }
-                } finally {
-                  setIsUpdating(false);
-                  setConfirmDialog({ open: false, type: undefined });
-                }
-              }}
-            >
-              {isUpdating ? (
-                <span className="inline-flex items-center">
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Cambiando…
-                </span>
-              ) : (
-                'Confirmar'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          {/* Modal subir PDF */}
+          <Dialog
+            open={uploadDialog}
+            onOpenChange={(open) => {
+              if (!isUpdating) setUploadDialog(open);
+            }}
+          >
+            <DialogContent className="bg-[#22142A] text-white rounded-2xl max-w-md border-none text-center">
+              <DialogHeader>
+                <DialogTitle>Subir Factura PDF</DialogTitle>
+              </DialogHeader>
+              <div>
+                <p className="text-white/70 mb-3">
+                  Adjunta el PDF emitido oficialmente en Hacienda para este traslado.
+                </p>
+                {(() => {
+                  const anyInv: any = invoice as any;
+                  const amount =
+                    anyInv.amount ??
+                    anyInv.total ??
+                    anyInv.total_with_tax ??
+                    anyInv.price ??
+                    anyInv.totalPrice;
+                  return (
+                    <div className="mb-3 text-sm text-white/80 flex flex-col items-center gap-1">
+                      <div>
+                        <b>Factura:</b> INV-{String(invoice.id).padStart(6, "0")}
+                      </div>
+                      {invoice.invoiceDate && <div><b>Fecha:</b> {invoice.invoiceDate}</div>}
+                      {(invoice.client || invoice.client_name) && (
+                        <div className="truncate max-w-[280px]">
+                          <b>Cliente:</b> {invoice.client || invoice.client_name}
+                        </div>
+                      )}
+                      {typeof amount !== "undefined" && (
+                        <div>
+                          <b>Monto:</b> €{Number(amount).toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+                <InvoicePDFUpload
+                  disabled={isUpdating}
+                  onUpload={async (file) => {
+                    setIsUpdating(true);
+                    const res = await onUploadPDF(file, String(invoice.id));
+                    if (res === "success") {
+                      handleUploadSuccess();
+                    }
+                    setIsUpdating(false);
+                    return res;
+                  }}
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="ghost"
+                  disabled={isUpdating}
+                  onClick={() => setUploadDialog(false)}
+                  className="rounded-2xl"
+                >
+                  Cancelar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Modal confirmación */}
+          <Dialog
+            open={confirmDialog.open}
+            onOpenChange={() => setConfirmDialog({ open: false, type: undefined })}
+          >
+            <DialogContent className="bg-[#22142A] text-white rounded-2xl max-w-sm border-none">
+              <DialogHeader>
+                <DialogTitle>
+                  {confirmDialog.type === "pagada"
+                    ? "Confirmar pago"
+                    : confirmDialog.type === "anticipo"
+                      ? "Confirmar anticipo bancario"
+                      : confirmDialog.type === "reject"
+                        ? "Confirmar rechazo de factura"
+                        : confirmDialog.type === "void"
+                          ? "Confirmar anulación de factura"
+                          : "Revertir estado"}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="py-2">
+                {confirmDialog.type === "pagada" && (
+                  <span>¿Seguro que deseas marcar esta factura como <b>pagada por cliente</b>?</span>
+                )}
+                {confirmDialog.type === "anticipo" && (
+                  <span>¿Seguro que deseas marcar esta factura como <b>anticipada por banco</b>?</span>
+                )}
+                {confirmDialog.type === "reject" && (
+                  <span>¿Seguro que deseas <b>rechazar</b> esta factura? El estado será "rejected".</span>
+                )}
+                {confirmDialog.type === "void" && (
+                  <span>¿Seguro que deseas <b>anular</b> esta factura? El estado será "voided".</span>
+                )}
+                {confirmDialog.type === "revertir" && (
+                  <span>¿Estás seguro de que deseas revertir esta factura a su estado inicial (emitida)?</span>
+                )}
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="ghost"
+                  onClick={() => setConfirmDialog({ open: false, type: undefined })}
+                  className="rounded-2xl"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="default"
+                  className="rounded-2xl bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold"
+                  disabled={isUpdating}
+                  onClick={async () => {
+                    setIsUpdating(true);
+                    try {
+                      if (confirmDialog.type === "pagada" || confirmDialog.type === "anticipo") {
+                        await Promise.resolve(onChangeStatus(invoice.id, confirmDialog.type));
+                        toast({
+                          title: "Estado actualizado",
+                          description:
+                            confirmDialog.type === "pagada"
+                              ? "Factura marcada como Pagada."
+                              : "Factura marcada como Anticipo.",
+                          duration: 1400,
+                        });
+                      } else if (confirmDialog.type === "reject") {
+                        await Promise.resolve(onReject?.(invoice.id));
+                        toast({
+                          title: "Estado actualizado",
+                          description: "Factura marcada como Rechazada.",
+                          duration: 1400,
+                        });
+                      } else if (confirmDialog.type === "void") {
+                        await Promise.resolve(onCancel?.(invoice.id));
+                        toast({
+                          title: "Estado actualizado",
+                          description: "Factura marcada como Anulada.",
+                          duration: 1400,
+                        });
+                      } else if (confirmDialog.type === "revertir") {
+                        await Promise.resolve(onRevertStatus(invoice.id));
+                        toast({
+                          title: "Estado actualizado",
+                          description: "Factura devuelta a estado Emitida.",
+                          duration: 1400,
+                        });
+                      }
+                    } finally {
+                      setIsUpdating(false);
+                      setConfirmDialog({ open: false, type: undefined });
+                    }
+                  }}
+                >
+                  {isUpdating ? (
+                    <span className="inline-flex items-center">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Cambiando…
+                    </span>
+                  ) : (
+                    "Confirmar"
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
     </div>
   );
+
 };
 
 export default InvoiceCard;
