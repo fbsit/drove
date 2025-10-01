@@ -74,6 +74,7 @@ export class AdminService {
       email: user.email,
       status: user.status,
       role: user.role,
+      accountType: user.accountType,
       contactInfo: {
         fullName: user.contactInfo.fullName,
         phone: user.contactInfo.phone,

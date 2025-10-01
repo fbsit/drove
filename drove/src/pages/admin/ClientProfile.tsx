@@ -46,32 +46,36 @@ const estadoLabels = {
   rechazado: "Rechazado",
 };
 
-const tipoBadge = (tipo) => (
-  <span
-    className={`rounded-full px-2 py-1 text-xs font-semibold ${
-      tipo === "empresa"
-        ? "bg-[#2c76b8] text-white flex items-center gap-1"
-        : "bg-[#6ef7ff] text-[#22142A]"
-    }`}
-    style={{ fontFamily: "Helvetica" }}
-  >
-    {tipo === "empresa" ? (
-      <>
-        <span className="flex gap-1 py-1">
-          <Building2 size={13} className="mr-1" />
-          Empresa
-        </span>
-      </>
-    ) : (
-      <>
-        <span className="flex gap-1 py-1">
-          <User size={13} className="mr-1" />
-          Persona natural
-        </span>
-      </>
-    )}
-  </span>
-);
+const tipoBadge = (tipo) => {
+
+  console.log('tipo', tipo);
+
+  return (
+    <span
+      className={`rounded-full px-2 py-1 text-xs font-semibold ${tipo === "empresa"
+          ? "bg-[#2c76b8] text-white flex items-center gap-1"
+          : "bg-[#6ef7ff] text-[#22142A]"
+        }`}
+      style={{ fontFamily: "Helvetica" }}
+    >
+      {tipo === "empresa" ? (
+        <>
+          <span className="flex gap-1 py-1">
+            <Building2 size={13} className="mr-1" />
+            Empresa
+          </span>
+        </>
+      ) : (
+        <>
+          <span className="flex gap-1 py-1">
+            <User size={13} className="mr-1" />
+            Persona natural
+          </span>
+        </>
+      )}
+    </span>
+  )
+}
 
 const gamificationBadges = [
   {
@@ -94,6 +98,7 @@ const ClientProfile: React.FC = () => {
       setIsLoading(true);
       // Obtener resumen desde backend unificado
       const summary = await AdminService.getClientSummary(id as string);
+      console.log('summary', summary);
       setClient({
         ...summary,
         // Compatibilidad con render actual
@@ -111,9 +116,11 @@ const ClientProfile: React.FC = () => {
         gamificacion: { traslados: summary?.tripsCount || 0 },
         gastoTotal: summary?.totalSpent || 0,
         contactInfo: summary?.contactInfo || {},
-        tipo: (summary?.contactInfo?.companyName
-          ? "empresa"
-          : "persona") as any,
+        tipo: ((summary?.accountType || '')
+          .toString()
+          .toUpperCase() === 'COMPANY'
+          ? 'empresa'
+          : 'persona') as any,
       });
     } catch (e) {
       console.error("Error cargando perfil", e);
