@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { UserType, RegistrationFormData } from "@/types/new-registration";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,8 @@ const MobileRegistrationForm: React.FC<Props> = ({
   const [submitting, setSubmitting] = useState(false);
   const [externalErrors, setExternalErrors] = useState<Record<string, string>>({});
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const successTimeoutRef = useRef<number | null>(null);
 
   const getSteps = useCallback(() => {
     if (!userType) return ["Tipo de cuenta"];
@@ -136,7 +138,11 @@ const MobileRegistrationForm: React.FC<Props> = ({
 
       const res = await AuthService.signUp(registrationData as any);
       setSubmissionError(null);
-      await onComplete(formData as RegistrationFormData);
+      setShowSuccess(true);
+      // Mostrar éxito por ~1.5s y luego continuar con onComplete
+      successTimeoutRef.current = window.setTimeout(() => {
+        onComplete(formData as RegistrationFormData);
+      }, 1500);
     } catch (e: any) {
       console.error("Error registrando usuario (mobile):", e);
       const msg = e?.message || 'No se pudo completar el registro. Verifica tus datos.';
@@ -165,8 +171,6 @@ const MobileRegistrationForm: React.FC<Props> = ({
     }
   }, [formData, isFormComplete, submitting, onComplete]);
 
-  
-
   const getStepProgress = useCallback(() => {
     return Math.round((currentStep / (totalSteps - 1)) * 100);
   }, [currentStep, totalSteps]);
@@ -180,6 +184,25 @@ const MobileRegistrationForm: React.FC<Props> = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep, userType]);
+
+  // Al reingresar al último paso, resetear error y éxito para evitar UI obsoleta
+  useEffect(() => {
+    const isOnLast = currentStep === totalSteps - 1;
+    if (isOnLast) {
+      setSubmissionError(null);
+      setShowSuccess(false);
+    }
+  }, [currentStep, totalSteps]);
+
+  // Limpiar timeout de éxito al desmontar
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+        successTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   const renderCurrentStep = () => {
     if (currentStep === 0) {
@@ -212,7 +235,7 @@ const MobileRegistrationForm: React.FC<Props> = ({
           return (
             <RegistrationConfirmation
               onConfirm={handleSubmit}
-              isLoading={true}
+              isLoading={!showSuccess && !submissionError}
               data={formData}
               onPrevious={handlePrevious}
               errorMessage={submissionError}
@@ -255,9 +278,10 @@ const MobileRegistrationForm: React.FC<Props> = ({
           return (
             <RegistrationConfirmation
               onConfirm={handleSubmit}
-              isLoading={isLoading}
+              isLoading={!showSuccess && !submissionError}
               data={formData}
               onPrevious={handlePrevious}
+              errorMessage={submissionError}
             />
           );
         default:
