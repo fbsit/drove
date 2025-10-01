@@ -126,6 +126,11 @@ export class AdminService {
     await ApiService.post(`/admin/drovers/${droverId}/reject`, {});
   }
 
+  // Actualizar usuario (empleo del drover, etc.)
+  static async updateUser(userId: string, data: any): Promise<void> {
+    await ApiService.put(`/users/${userId}`, data);
+  }
+
   // === GESTIÓN DE TRASLADOS ===
   static async getTransfers(params?: { search?: string; status?: string; from?: string; to?: string }): Promise<any[]> {
     const qs = new URLSearchParams();

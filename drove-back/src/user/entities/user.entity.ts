@@ -28,6 +28,12 @@ export enum UserAccountType {
   COMPANY = 'COMPANY',
 }
 
+// Tipo de relación laboral del drover (aplica sólo cuando role === DROVER)
+export enum DroverEmploymentType {
+  FREELANCE = 'FREELANCE',
+  CONTRACTED = 'CONTRACTED',
+}
+
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -61,6 +67,10 @@ export class User {
   // Subtipo de cuenta para distinguir persona vs empresa (no afecta permisos)
   @Column({ type: 'enum', enum: UserAccountType, default: UserAccountType.PERSON })
   accountType: UserAccountType;
+
+  // Relación laboral del drover (freelance/contratado). Null para roles que no son DROVER.
+  @Column({ type: 'enum', enum: DroverEmploymentType, nullable: true, default: DroverEmploymentType.FREELANCE })
+  employmentType?: DroverEmploymentType | null;
 
   // Posición actual del drover cuando el tracking está activo
   @Column({ type: 'float', nullable: true })

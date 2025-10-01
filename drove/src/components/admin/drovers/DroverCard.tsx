@@ -13,7 +13,7 @@ export interface DroverCardProps {
     traslados: number;
     calificacion: number;
     tiempo: string;
-    tipoDrover: DroverTipo;
+    tipoDrover: DroverTipo; // core = CONTRACTED, flex = FREELANCE
   };
   onClickPerfil?: () => void;
 }

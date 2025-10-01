@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
-import { User, UserAccountType } from './entities/user.entity';
+import { User, UserAccountType, DroverEmploymentType } from './entities/user.entity';
 import { CreateUserDto } from './dtos/createUser.dto';
 import { UpdateUserDto } from './dtos/updatedUser.dto';
 import * as bcrypt from 'bcrypt';
@@ -78,6 +78,7 @@ export class UserService {
         role,
         contactInfo: ci,
         accountType: acctType,
+        employmentType: role === 'DROVER' ? DroverEmploymentType.FREELANCE : null,
       });
       this.logger.debug(`Persisting user role=${user.role} accountType=${user.accountType}`);
       const created = await this.userRepo.save(user);
@@ -214,6 +215,11 @@ export class UserService {
     // Asigna otros campos
     const { password, contactInfo, ...rest } = updateUserDto as any;
     Object.assign(user, rest);
+
+    // Si se está promoviendo a DROVER y no tenía employmentType, asignar default
+    if (user.role === 'DROVER' && !user.employmentType) {
+      user.employmentType = DroverEmploymentType.FREELANCE;
+    }
 
     const saved = await this.userRepo.save(user);
     this.logger.log(`User updated id=${id}`);

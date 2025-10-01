@@ -113,11 +113,14 @@ const DroverProfile: React.FC = () => {
   };
 
   const handleHire = async () => {
-    // Acción placeholder: en el futuro conectar con flujo de contratación
-    toast({
-      title: "Contratación",
-      description: "Se inició el proceso de contratación para este drover.",
-    });
+    const target = String(drover.employmentType || '').toUpperCase() === 'CONTRACTED' ? 'FREELANCE' : 'CONTRACTED';
+    try {
+      await AdminService.updateUser(drover.id, { employmentType: target });
+      toast({ title: target === 'CONTRACTED' ? 'Contratado' : 'Marcado como Flex', description: 'Estado laboral actualizado.' });
+      await handleGetUser();
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Error', description: e?.message || 'No se pudo actualizar el estado laboral.' });
+    }
   };
 
   return (
@@ -132,15 +135,13 @@ const DroverProfile: React.FC = () => {
           <ArrowLeft size={16} className="mr-2" /> Volver a Drovers
         </Button>
         <div className="flex items-center gap-2">
-          {drover?.role !== "drover_core" && (
-            <Button
-              onClick={handleHire}
-              variant="outline"
-              className="rounded-xl bg-green-700 text-white hover:text-green-900 hover:bg-green-200 font-bold h-10 px-6 py-2"
-            >
-              <ShieldCheck size={16} className="mr-2" /> Contratar
-            </Button>
-          )}
+          <Button
+            onClick={handleHire}
+            variant="outline"
+            className="rounded-xl bg-green-700 text-white hover:text-green-900 hover:bg-green-200 font-bold h-10 px-6 py-2"
+          >
+            <ShieldCheck size={16} className="mr-2" /> {String(drover.employmentType || '').toUpperCase() === 'CONTRACTED' ? 'Marcar Flex' : 'Contratar'}
+          </Button>
           {(drover.status === "PENDING" || drover.status === "REJECTED") && (
             <Button
               onClick={handleApproved}
@@ -185,7 +186,7 @@ const DroverProfile: React.FC = () => {
             >
               {drover?.contactInfo?.fullName}
             </h1>
-            {tipoBadge(drover.role)}
+            {tipoBadge(String(drover.employmentType || '').toLowerCase() === 'contracted' ? 'drover_core' : 'drover_flex')}
             <span
               className={`px-3 py-1 rounded-full font-semibold text-xs md:text-sm ${estadoColors[drover.status] || "bg-zinc-700 text-white"
                 }`}
