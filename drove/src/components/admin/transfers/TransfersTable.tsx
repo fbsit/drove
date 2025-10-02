@@ -46,6 +46,43 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [selectedTransferForReschedule, setSelectedTransferForReschedule] = useState<any>(null);
 
+  const parseLocalDate = (dateStr?: string, timeStr?: string): Date | null => {
+    if (!dateStr || typeof dateStr !== 'string') return null;
+    // yyyy-mm-dd
+    const m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return null;
+    const y = Number(m[1]);
+    const mo = Number(m[2]);
+    const d = Number(m[3]);
+    let h = 0, mi = 0;
+    if (typeof timeStr === 'string') {
+      const mt = timeStr.match(/^(\d{2}):(\d{2})/);
+      if (mt) { h = Number(mt[1]); mi = Number(mt[2]); }
+    }
+    // Construye fecha en zona local para evitar offset UTC (-X hrs) que adelanta/atrasa el día
+    return new Date(y, mo - 1, d, h, mi, 0, 0);
+  };
+
+  const getPreferredDate = (transfer: any): Date | null => {
+    // 1) travelDate (+ travelTime) guardado como strings
+    const byTravel = parseLocalDate(transfer?.travelDate, transfer?.travelTime);
+    if (byTravel) return byTravel;
+    // 2) scheduledDate si existe
+    const sched = typeof transfer?.scheduledDate === 'string'
+      ? (parseLocalDate(transfer.scheduledDate, transfer.scheduledTime) || new Date(transfer.scheduledDate))
+      : (transfer?.scheduledDate instanceof Date ? transfer.scheduledDate : null);
+    if (sched) return sched;
+    // 3) createdAt/created_at
+    const created = transfer?.createdAt || transfer?.created_at;
+    if (created) {
+      if (typeof created === 'string' || typeof created === 'number') {
+        const d = new Date(created); return isNaN(d.getTime()) ? null : d;
+      }
+      if (created instanceof Date) return created;
+    }
+    return null;
+  };
+
   const formatDate = (dateInput: any) => {
     if (!dateInput) return '—';
     try {
@@ -95,6 +132,16 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
     } catch {
       return { top: '—', bottom: '' };
     }
+  };
+
+  const formatDatePartsFromTransfer = (transfer: any): { top: string; bottom: string } => {
+    const pref = getPreferredDate(transfer);
+    if (!pref) return { top: '—', bottom: '' };
+    const top = new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short' })
+      .format(pref)
+      .replace('.', '');
+    const bottom = new Intl.DateTimeFormat('es-ES', { year: 'numeric' }).format(pref);
+    return { top, bottom };
   };
 
   const toggleRow = (transferId: string) => {
@@ -155,9 +202,12 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                   const isCompleted = transfer.status === TransferStatus.DELIVERED;
                   const isAssigned = transfer.status === TransferStatus.ASSIGNED;
                   const isInProgress = transfer.status === TransferStatus.IN_PROGRESS;
+                  const isCreated = transfer.status === TransferStatus.CREATED;
+                  const isPendingPaid = transfer.status === TransferStatus.PENDINGPAID;
                   const assignedDriver = transfer.droverName || transfer.drivers?.full_name;
                   const isExpanded = expandedRows.has(transfer.id);
                   const shouldShowAssignButton = !isCompleted && !isAssigned && !isInProgress;
+                  const canReschedule = (isCreated || isAssigned || isPendingPaid) && !isCompleted;
 
                   return (
                     <React.Fragment key={transfer.id}>
@@ -211,7 +261,7 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                           <div className="flex items-center gap-2">
                             <Calendar size={14} className="text-white/70" />
                             {(() => {
-                              const p = formatDateParts(transfer.scheduledDate || transfer.createdAt || transfer.created_at); return (
+                              const p = formatDatePartsFromTransfer(transfer); return (
                                 <div className="leading-tight">
                                   <div className="text-white text-sm">{p.top}</div>
                                   <div className="text-white/60 text-xs">{p.bottom}</div>
@@ -273,20 +323,21 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                                   </Link>
                                 </DropdownMenuItem>
 
-                                {isAssigned && (
-                                  <>
-                                    <DropdownMenuItem
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleRescheduleClick(transfer);
-                                      }}
-                                      className="flex items-center gap-2 text-purple-400 hover:bg-purple-400/10 cursor-pointer"
-                                    >
-                                      <Calendar size={16} />
-                                      Reprogramar
-                                    </DropdownMenuItem>
+                                {canReschedule && (
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRescheduleClick(transfer);
+                                    }}
+                                    className="flex items-center gap-2 text-purple-400 hover:bg-purple-400/10 cursor-pointer"
+                                  >
+                                    <Calendar size={16} />
+                                    Reprogramar
+                                  </DropdownMenuItem>
+                                )}
 
-                                    <DropdownMenuItem asChild>
+                                {isAssigned && (
+                                  <DropdownMenuItem asChild>
                                       <Link
                                         to={`/admin/reasignar/${transfer.id}`}
                                         className="flex items-center gap-2 text-orange-400 hover:bg-orange-400/10 cursor-pointer"
@@ -294,8 +345,7 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                                         <RefreshCcw size={16} />
                                         Reasignar Drover
                                       </Link>
-                                    </DropdownMenuItem>
-                                  </>
+                                  </DropdownMenuItem>
                                 )}
                               </DropdownMenuContent>
                             </DropdownMenu>
