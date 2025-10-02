@@ -373,6 +373,34 @@ export class AdminService {
     return true;
   }
 
+  /** Rechazar/Cancelar traslado (CREATED o ASSIGNED) con motivo */
+  async cancelTransfer(transferId: string, reason: string, adminId?: string): Promise<boolean> {
+    const travel = await this.transferRepo.findOne({ where: { id: transferId }, relations: this.defaultRelations });
+    if (!travel) throw new NotFoundException('Transfer not found');
+    const allowed = [TransferStatus.CREATED, TransferStatus.ASSIGNED, TransferStatus.PENDINGPAID];
+    if (!allowed.includes(travel.status as any)) {
+      throw new BadRequestException('Solo se puede rechazar un traslado creado o asignado');
+    }
+    travel.status = TransferStatus.CANCELLED;
+    (travel as any).reasonCancellation = reason || 'Rechazado por administración';
+    await this.transferRepo.save(travel);
+
+    // Notificar por correo al cliente
+    try {
+      const client = travel.client;
+      await this.resend.sendTransferCancelledEmail(
+        client?.email || '',
+        client?.contactInfo?.fullName || '',
+        new Date().toLocaleDateString('es-ES'),
+        travel?.startAddress?.city || '',
+        travel?.endAddress?.city || '',
+        (travel as any)?.reasonCancellation || 'No especificado',
+      );
+    } catch {}
+
+    return true;
+  }
+
   async getReportData(): Promise<any> {
     // 1) Totales
     const totalTransfers = await this.transferRepo.count();

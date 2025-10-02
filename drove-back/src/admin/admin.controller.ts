@@ -222,6 +222,23 @@ export class AdminController {
       .then((ok) => res.status(HttpStatus.CREATED).json(ok));
   }
 
+  /** POST /admin/transfers/:id/cancel */
+  @Post('transfers/:transferId/cancel')
+  @ApiOperation({ summary: 'Cancelar/Rechazar traslado con motivo' })
+  @ApiParam({ name: 'transferId' })
+  @ApiBody({ schema: { properties: { reason: { type: 'string' }, adminId: { type: 'string' } } } })
+  @ApiCreatedResponse({ schema: { type: 'boolean', example: true } })
+  cancelTransfer(
+    @Param('transferId') transferId: string,
+    @Body('reason') reason: string,
+    @Body('adminId') adminId: string,
+    @Res() res: Response,
+  ) {
+    return this.adminService
+      .cancelTransfer(transferId, reason, adminId)
+      .then((ok) => res.status(HttpStatus.CREATED).json(ok));
+  }
+
   /* ─────────── Métricas ─────────── */
 
   /** GET /admin/metrics?startDate=&endDate=&clientType= */

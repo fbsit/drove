@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import StatusBadge from './StatusBadge';
 import { Button } from "@/components/ui/button";
-import { Car, User, Calendar, MapPin, ArrowRight, Trophy, Zap, AlertCircle, Eye, ChevronDown, ChevronRight, UserCheck, RefreshCcw, MoreHorizontal } from 'lucide-react';
+import { Car, User, Calendar, MapPin, ArrowRight, Trophy, Zap, AlertCircle, Eye, ChevronDown, ChevronRight, UserCheck, RefreshCcw, MoreHorizontal, XCircle } from 'lucide-react';
 import TransferCard from "./TransferCard";
 import { useState } from 'react';
 import RescheduleModal from './RescheduleModal';
@@ -45,6 +45,8 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [selectedTransferForReschedule, setSelectedTransferForReschedule] = useState<any>(null);
+  const [confirmReject, setConfirmReject] = useState<{ open: boolean; id?: string }>({ open: false });
+  const [rejectReason, setRejectReason] = useState('');
 
   const parseLocalDate = (dateStr?: string, timeStr?: string): Date | null => {
     if (!dateStr || typeof dateStr !== 'string') return null;
@@ -157,6 +159,18 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
   const handleRescheduleClick = (transfer: any) => {
     setSelectedTransferForReschedule(transfer);
     setShowRescheduleModal(true);
+  };
+
+  const openRejectModal = (id: string) => { setConfirmReject({ open: true, id }); setRejectReason(''); };
+  const closeRejectModal = () => { setConfirmReject({ open: false, id: undefined }); setRejectReason(''); };
+  const submitReject = async () => {
+    if (!confirmReject.id) return;
+    try {
+      await (await import('@/services/adminService')).AdminService.cancelTransfer(confirmReject.id, rejectReason || 'Rechazado por administración');
+      closeRejectModal();
+      // TODO: idealmente invalidar query externa; por simplicidad forzamos recarga ligera
+      window.dispatchEvent(new Event('admin-transfers-updated'));
+    } catch (e) {}
   };
 
   // En móvil (< 768px) mostramos cards
@@ -336,6 +350,16 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
                                   </DropdownMenuItem>
                                 )}
 
+                                {(isCreated || isAssigned) && (
+                                  <DropdownMenuItem
+                                    onClick={(e) => { e.stopPropagation(); openRejectModal(transfer.id); }}
+                                    className="flex items-center gap-2 text-red-400 hover:bg-red-400/10 cursor-pointer"
+                                  >
+                                    <XCircle size={16} />
+                                    Rechazar traslado
+                                  </DropdownMenuItem>
+                                )}
+
                                 {isAssigned && (
                                   <DropdownMenuItem asChild>
                                       <Link
@@ -430,6 +454,22 @@ const TransfersTable: React.FC<TransfersTableProps> = ({
         currentDate={selectedTransferForReschedule?.pickup_details?.pickupDate}
         currentTime={selectedTransferForReschedule?.pickup_details?.pickupTime}
       />
+
+      {/* Modal básico de rechazo */}
+      {confirmReject.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={closeRejectModal}></div>
+          <div className="relative bg-[#22142A] text-white border border-white/20 rounded-2xl p-5 w-[92vw] max-w-md shadow-xl">
+            <div className="text-lg font-semibold mb-2">Rechazar traslado</div>
+            <div className="text-white/70 text-sm mb-3">Agrega el motivo del rechazo (opcional):</div>
+            <textarea className="w-full rounded-xl bg-white/10 border border-white/20 p-3 text-sm outline-none" rows={4} value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Motivo del rechazo" />
+            <div className="flex justify-end gap-2 mt-4">
+              <button className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20" onClick={closeRejectModal}>Cancelar</button>
+              <button className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700" onClick={submitReject}>Rechazar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

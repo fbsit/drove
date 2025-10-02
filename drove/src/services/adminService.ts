@@ -150,6 +150,10 @@ export class AdminService {
     await ApiService.put(`/admin/transfers/${transferId}/status`, { status });
   }
 
+  static async cancelTransfer(transferId: string, reason: string, adminId?: string): Promise<boolean> {
+    return await ApiService.post(`/admin/transfers/${transferId}/cancel`, { reason, adminId });
+  }
+
   // === MÉTRICAS Y REPORTES ===
   static async getBusinessMetrics(): Promise<any> {
     return await ApiService.get('/admin/metrics');
