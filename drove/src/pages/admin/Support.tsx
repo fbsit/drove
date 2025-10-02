@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectGroup, SelectTrigger, SelectValue, SelectI
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSupportManagement } from "@/hooks/admin/useSupportManagement";
 import { useSupportSocket } from "@/hooks/useSupportSocket";
+import { playMessageTone, resumeAudioIfNeeded } from "@/lib/sound";
 import SupportService from "@/services/supportService";
 import { useDebouncedValue } from "@/hooks/useDebounce";
 import { Input } from "@/components/ui/input";
@@ -80,7 +81,7 @@ const Support: React.FC = () => {
   // Escuchar socket para el ticket seleccionado
   useSupportSocket(
     selected?.id || null,
-    () => { console.log('[ADMIN] onMessage room'); fetchDeltaAndMerge(); },
+    () => { console.log('[ADMIN] onMessage room'); fetchDeltaAndMerge(); resumeAudioIfNeeded(); playMessageTone(); },
     (status) => {
       if (status === 'closed') {
         console.log('[ADMIN] status closed');
@@ -95,6 +96,8 @@ const Support: React.FC = () => {
       if (payload.ticketId === selected?.id) {
         console.log('[ADMIN] onMessage all');
         fetchDeltaAndMerge();
+        resumeAudioIfNeeded();
+        playMessageTone();
       }
       // No incrementamos aquí para evitar doble conteo; usamos sólo support:unread
     },
@@ -111,6 +114,8 @@ const Support: React.FC = () => {
           const current = prev[p.ticketId] || 0;
           return { ...prev, [p.ticketId]: current + 1 };
         });
+        resumeAudioIfNeeded();
+        playMessageTone();
       }
     }
   );

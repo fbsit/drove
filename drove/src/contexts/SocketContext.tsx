@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { playNotificationChime, resumeAudioIfNeeded } from '@/lib/sound';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 
@@ -69,6 +70,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // Notificaciones para cualquier rol
       newSocket.on('notification:new', (n: any) => {
         console.log('🔔 notification:new', n);
+        // Intentar asegurar el contexto de audio (si el usuario ya interactuó, reanuda)
+        resumeAudioIfNeeded();
+        playNotificationChime();
         window.dispatchEvent(new CustomEvent('notification:new', { detail: n }));
       });
 

@@ -3,6 +3,7 @@ import { MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSupportChat } from '@/contexts/SupportChatContext';
 import { useSupportSocket } from '@/hooks/useSupportSocket';
+import { playMessageTone, resumeAudioIfNeeded } from '@/lib/sound';
 
 const DroverSupportChatFab = () => {
   const { openChat } = useSupportChat();
@@ -23,10 +24,22 @@ const DroverSupportChatFab = () => {
     undefined,
     undefined,
     undefined,
-    // onAdminMessage: cualquier mensaje nuevo del admin enciende el badge
-    (payload: any) => { if (String(payload?.sender || '').toLowerCase() === 'admin') setHasUnread(true); },
-    // onUnread: marcar badge si es para el cliente/drover
-    (p: any) => { if (String(p?.side).toLowerCase() === 'client') setHasUnread(true); }
+    // onAdminMessage: cualquier mensaje nuevo del admin enciende el badge y suena
+    (payload: any) => {
+      if (String(payload?.sender || '').toLowerCase() === 'admin') {
+        setHasUnread(true);
+        resumeAudioIfNeeded();
+        playMessageTone();
+      }
+    },
+    // onUnread: marcar badge si es para el cliente/drover y suena
+    (p: any) => {
+      if (String(p?.side).toLowerCase() === 'client') {
+        setHasUnread(true);
+        resumeAudioIfNeeded();
+        playMessageTone();
+      }
+    }
   );
 
   if (!isAuthenticated || (role !== 'client' && role !== 'drover')) {

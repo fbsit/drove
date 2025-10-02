@@ -453,7 +453,7 @@ export class ResendService {
     );
     return this.sendToMultipleSequential(recipients, {
       from: 'contacto@drove.es',
-      subject: 'DROVER se dirigue a su destino',
+      subject: 'Comprobante de inicio de transporte del vehículo',
       html,
       ...(attachments ? { attachments } : {}),
     });
@@ -542,7 +542,7 @@ export class ResendService {
     );
     return this.sendToMultipleSequential(recipients, {
       from: 'contacto@drove.es',
-      subject: 'DROVER se dirigue a su destino',
+      subject: '¡Vas camino al punto de destino!',
       html,
       ...(attachments ? { attachments } : {}),
     });

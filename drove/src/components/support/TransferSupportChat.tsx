@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "react-router-dom";
 import SupportService from "@/services/supportService";
 import { useSupportSocket } from "@/hooks/useSupportSocket";
+import { playMessageTone, resumeAudioIfNeeded } from "@/lib/sound";
 
 type Message = {
   id: string;
@@ -132,6 +133,10 @@ const TransferSupportChat: React.FC = () => {
       if (inFlightKeyRef.current.has(key)) inFlightKeyRef.current.delete(key);
       setStatus('en_progreso');
       statusRef.current = 'en_progreso';
+      // Notificar con sonido cada mensaje nuevo entrante
+      resumeAudioIfNeeded();
+      // Sólo sonar si lo envió el soporte
+      if ((incoming as any)?.sender === 'soporte') playMessageTone();
     },
     (status) => {
       if (status === 'closed') {
@@ -149,6 +154,7 @@ const TransferSupportChat: React.FC = () => {
     // onUnread: si el admin envía y no estamos enfocados en la sala, mostrar badge
     (p: any) => {
       if (p?.ticketId === ticketId && p?.side === 'admin') setHasUnreadFromAdmin(true);
+      if (p?.ticketId === ticketId && p?.side === 'admin') { resumeAudioIfNeeded(); playMessageTone(); }
     }
   );
 
