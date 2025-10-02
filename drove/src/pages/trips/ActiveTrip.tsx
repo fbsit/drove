@@ -528,7 +528,12 @@ const ActiveTrip: React.FC = () => {
               <div className="mt-4 space-y-2 text-white">
                 <div className="font-semibold">{trip.personDelivery?.fullName || '—'}</div>
                 <div className="text-white/70 text-sm">DNI: {trip.personDelivery?.dni || '—'}</div>
-                <div className="flex items-center gap-2 text-white/80 text-sm"><Phone className="h-4 w-4 text-[#6EF7FF]" /> {trip.personDelivery?.phone || '—'}</div>
+                <div className="flex items-center gap-2 text-white/80 text-sm">
+                  <Phone className="h-4 w-4 text-[#6EF7FF]" />
+                  {trip.personDelivery?.phone ? (
+                    <a href={`tel:${String(trip.personDelivery.phone).replace(/\s+/g,'')}`} className="underline underline-offset-2 hover:text-white">{trip.personDelivery.phone}</a>
+                  ) : '—'}
+                </div>
                 <div className="flex items-center gap-2 text-white/80 text-sm"><Mail className="h-4 w-4 text-[#6EF7FF]" /> {trip.personDelivery?.email || '—'}</div>
               </div>
             </CardContent>
@@ -572,7 +577,12 @@ const ActiveTrip: React.FC = () => {
               <div className="mt-4 space-y-2 text-white">
                 <div className="font-semibold">{trip.personReceive?.fullName || '—'}</div>
                 <div className="text-white/70 text-sm">DNI: {trip.personReceive?.dni || '—'}</div>
-                <div className="flex items-center gap-2 text-white/80 text-sm"><Phone className="h-4 w-4 text-[#6EF7FF]" /> {trip.personReceive?.phone || '—'}</div>
+                <div className="flex items-center gap-2 text-white/80 text-sm">
+                  <Phone className="h-4 w-4 text-[#6EF7FF]" />
+                  {trip.personReceive?.phone ? (
+                    <a href={`tel:${String(trip.personReceive.phone).replace(/\s+/g,'')}`} className="underline underline-offset-2 hover:text-white">{trip.personReceive.phone}</a>
+                  ) : '—'}
+                </div>
                 <div className="flex items-center gap-2 text-white/80 text-sm"><Mail className="h-4 w-4 text-[#6EF7FF]" /> {trip.personReceive?.email || '—'}</div>
               </div>
             </CardContent>

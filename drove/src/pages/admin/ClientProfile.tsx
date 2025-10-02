@@ -364,7 +364,11 @@ const ClientProfile: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-1">
                   <Phone size={16} className="opacity-70" />
-                  <span>{client.contactInfo.phone}</span>
+                  {client?.contactInfo?.phone ? (
+                    <a href={`tel:${String(client.contactInfo.phone).replace(/\s+/g,'')}`} className="underline underline-offset-2">{client.contactInfo.phone}</a>
+                  ) : (
+                    <span>—</span>
+                  )}
                 </div>
               </div>
             </div>
