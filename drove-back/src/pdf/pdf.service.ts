@@ -1472,66 +1472,38 @@ export class PdfService {
         });
       });
       currentY = tableDetailTop - tableDetailHeight - 50;
-      if (travel.status === 'REQUEST_FINISH') {
-        const mapToEnd = await this.getMapImage(
-          travel.endAddress.lat,
-          travel.endAddress.lng,
-        );
-        const imgMapEnd = mapToEnd.split(',')[1];
-        const imgEndMapReady = await pdfDoc.embedPng(
-          Buffer.from(imgMapEnd, 'base64'),
-        );
-        const mapY = currentY - 280;
-        page.drawImage(imgEndMapReady, {
-          x: 50,
-          y: mapY,
-          width: 500,
-          height: 300,
-        });
-        currentY = mapY - 40; // margen razonable bajo el mapa
-      }
-      if (travel.status === 'FINISH') {
+      // Mostrar el mapa con la ruta capturada (polyline) cuando exista: aplica tanto para REQUEST_FINISH como para DELIVERED
+      const capturedPolyline = (travel as any)?.routePolyline && String((travel as any).routePolyline).trim() !== ''
+        ? String((travel as any).routePolyline)
+        : '';
+      if (capturedPolyline) {
         const mapWithRoute = await this.getMapImageWithRoute(
-          {
-            lat: travel.startAddress.lat,
-            lng: travel.startAddress.lng,
-          },
-          {
-            lat: travel.endAddress.lat,
-            lng: travel.endAddress.lng,
-          },
-          travel.finalRoutePolyline,
+          { lat: travel.startAddress.lat, lng: travel.startAddress.lng },
+          { lat: travel.endAddress.lat, lng: travel.endAddress.lng },
+          capturedPolyline,
         );
         const imgMapRoute = mapWithRoute.split(',')[1];
-        const imgRouteMapReady = await pdfDoc.embedPng(
-          Buffer.from(imgMapRoute, 'base64'),
-        );
+        const imgRouteMapReady = await pdfDoc.embedPng(Buffer.from(imgMapRoute, 'base64'));
         const mapY = currentY - 280;
-        page.drawImage(imgRouteMapReady, {
-          x: 50,
-          y: mapY,
-          width: 500,
-          height: 300,
-        });
-        currentY = mapY - 40; // margen razonable bajo el mapa
-      }
-      if (travel.status !== 'REQUEST_FINISH' && travel.status !== 'FINISH') {
-        const mapToStart = await this.getMapImage(
-          travel.startAddress.lat,
-          travel.startAddress.lng,
-        );
-        const imgMap = mapToStart.split(',')[1];
-        const imgMapReady = await pdfDoc.embedPng(
-          Buffer.from(imgMap, 'base64'),
-        );
-        const mapY = currentY - 280;
-        page.drawImage(imgMapReady, {
-          x: 50,
-          y: mapY,
-          width: 500,
-          height: 300,
-        });
-        currentY = mapY - 40; // margen razonable bajo el mapa
+        page.drawImage(imgRouteMapReady, { x: 50, y: mapY, width: 500, height: 300 });
+        currentY = mapY - 40;
+      } else {
+        // Fallbacks anteriores si aún no hay polyline capturado
+        if (travel.status === 'REQUEST_FINISH' || travel.status === 'DELIVERED') {
+          const mapToEnd = await this.getMapImage(travel.endAddress.lat, travel.endAddress.lng);
+          const imgMapEnd = mapToEnd.split(',')[1];
+          const imgEndMapReady = await pdfDoc.embedPng(Buffer.from(imgMapEnd, 'base64'));
+          const mapY = currentY - 280;
+          page.drawImage(imgEndMapReady, { x: 50, y: mapY, width: 500, height: 300 });
+          currentY = mapY - 40;
+        } else {
+          const mapToStart = await this.getMapImage(travel.startAddress.lat, travel.startAddress.lng);
+          const imgMap = mapToStart.split(',')[1];
+          const imgMapReady = await pdfDoc.embedPng(Buffer.from(imgMap, 'base64'));
+          const mapY = currentY - 280;
+          page.drawImage(imgMapReady, { x: 50, y: mapY, width: 500, height: 300 });
+          currentY = mapY - 40;
+        }
       }
 
       if (step === 4) {

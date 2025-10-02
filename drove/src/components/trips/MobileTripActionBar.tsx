@@ -113,17 +113,7 @@ const MobileTripActionBar: React.FC<MobileTripActionBarProps> = ({
               <button onClick={() => setIsOpen(false)} className="text-white/50 hover:text-white">×</button>
             </div>
             <div className="mt-3">
-              <div className="text-white/70 text-sm mb-3 text-left">Completa las siguientes verificaciones para finalizar el traslado</div>
-              <div className="mb-4 rounded-2xl bg-white/5 border border-white/10 p-3">
-                <div className="flex items-center justify-between text-xs text-white/70">
-                  <span className="font-medium">Progreso</span>
-                  <span className="rounded-full px-2 py-0.5 bg-[#2e2238] text-white">{completed}/{total}</span>
-                </div>
-                <div className="h-2 mt-2 rounded-full bg-[#2b1f37] overflow-hidden">
-                  <div className="h-full bg-[#6EF7FF] transition-all" style={{ width: `${Math.min(100, Math.round((completed / total) * 100))}%` }} />
-                </div>
-              </div>
-              <div className="my-3 border-t border-white/10" />
+              <div className="my-2 border-t border-white/10" />
               <div className="space-y-3">
                 {pendingItems.map((item) => (
                   <div key={item.key} className="rounded-2xl border border-orange-400/50 bg-[#2b1b23]/40 p-4">
