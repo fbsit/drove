@@ -209,7 +209,7 @@ const ActiveTrip: React.FC = () => {
   const getStatusText = (status: string): string => {
     const statusTexts = {
       'PENDINGPAID': 'Pendiente de Pago',
-      'CREATED': 'Asignado',
+      'CREATED': 'Creado',
       'ASSIGNED': 'Drover Asignado',
       'PICKED_UP': 'Vehículo Recogido',
       'IN_PROGRESS': 'En Progreso',
@@ -340,7 +340,7 @@ const ActiveTrip: React.FC = () => {
 
   return (
     <div>
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-3 md:space-y-6">
         {/* Top bar */}
         <div className="flex items-center justify-between text-white/80 ">
           <button onClick={() => navigate(-1)} className="flex items-center gap-2 hover:text-white ">
@@ -359,12 +359,12 @@ const ActiveTrip: React.FC = () => {
         </div>
 
         {/* Steps moved above title */}
-        <div className="mt-2">
+        <div className="mt-1 md:mt-2">
           <TransferStepsBar trip={trip} />
         </div>
 
         {/* Title + meta */}
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between mt-0 md:mt-1">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-white text-left" style={{ fontFamily: 'Helvetica' }}>
               Traslado #{String(trip.id).slice(0, 8)}
