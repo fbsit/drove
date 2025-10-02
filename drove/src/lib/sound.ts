@@ -254,10 +254,11 @@ export function playMessageTone() {
   lastPlayedAtMessage = now;
   resumeAudioIfNeeded();
   if (shouldForceSynth()) { playBeep({ frequency: 660, durationMs: 220, volume: 0.34 }); return; }
-  // Si el buffer ya está disponible, reproducirlo; si no, cargar y caer al sintético ahora
-  if (messageBuffer && playBuffer(messageBuffer, 0.8)) return;
-  ensureMessageBuffer();
-  playBeep({ frequency: 660, durationMs: 220, volume: 0.34 });
+  // Intentar sonido de mensaje; si no existe, usar campana; luego caer al sintetizado
+  const elMsg = getMessageElement();
+  const elBell = getBellElement();
+  const tryBell = () => tryPlayWithFallback(elBell, 0.85, () => playBeep({ frequency: 660, durationMs: 220, volume: 0.34 }), 300);
+  tryPlayWithFallback(elMsg, 0.8, tryBell, 300);
 }
 
 export function resumeAudioIfNeeded() {

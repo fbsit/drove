@@ -81,7 +81,7 @@ const Support: React.FC = () => {
   // Escuchar socket para el ticket seleccionado
   useSupportSocket(
     selected?.id || null,
-    () => { console.log('[ADMIN] onMessage room'); fetchDeltaAndMerge(); resumeAudioIfNeeded(); playMessageTone(); },
+    (incoming) => { console.log('[ADMIN] onMessage room'); fetchDeltaAndMerge(); /* No sonido si admin está en la conversación */ },
     (status) => {
       if (status === 'closed') {
         console.log('[ADMIN] status closed');
@@ -96,8 +96,7 @@ const Support: React.FC = () => {
       if (payload.ticketId === selected?.id) {
         console.log('[ADMIN] onMessage all');
         fetchDeltaAndMerge();
-        resumeAudioIfNeeded();
-        playMessageTone();
+        // No sonido: admin está viendo este ticket
       }
       // No incrementamos aquí para evitar doble conteo; usamos sólo support:unread
     },
