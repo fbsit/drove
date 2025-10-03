@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DroverService } from '@/services/droverService';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin, Calendar, Clock, Phone, Mail, Package } from 'lucide-react';
+import { AuthService } from '@/services/authService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -31,6 +32,20 @@ const DroverTraslados = () => {
       }
     }
   });
+
+  const [employmentType, setEmploymentType] = React.useState<string>('FREELANCE');
+  React.useEffect(() => {
+    // employmentType viene del backend en /users/me si fue expuesto; fallback a FREELANCE
+    (async () => {
+      try {
+        const me: any = await AuthService.getCurrentUser();
+        const t = (me as any)?.employmentType || (me as any)?.user?.employmentType || 'FREELANCE';
+        setEmploymentType(String(t).toUpperCase());
+      } catch {
+        setEmploymentType('FREELANCE');
+      }
+    })();
+  }, []);
 
   const filteredTransfers = transfers;
 
@@ -113,7 +128,6 @@ const DroverTraslados = () => {
           {filteredTransfers.map((transfer) => (
             <Card key={transfer.id} className="bg-white/10 border-white/20 backdrop-blur-sm">
               <CardHeader>
-                {console.log(transfer)}
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-white flex items-center gap-2">
                     <Package className="h-5 w-5" />
@@ -155,7 +169,13 @@ const DroverTraslados = () => {
                   <div className="text-sm text-white/60">Marca: {transfer.brandVehicle || 'No especificado'}</div>
                   <div className="text-sm text-white/60">Modelo: {transfer.modelVehicle || 'No especificado'}</div>
                   <div className="text-sm text-white/60">Tipo: {transfer.typeVehicle || 'No especificado'}</div>
-                  <div className="text-sm text-white/60">Precio: €{transfer.totalPrice || 0}</div>
+                  <div className="text-sm text-white/60">
+                    {employmentType === 'FREELANCE' ? (
+                      <>Compensación: {typeof transfer.driverFee === 'number' ? `€${Number(transfer.driverFee).toFixed(2)}` : '—'}</>
+                    ) : (
+                      <>Compensación: —</>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex gap-2 pt-4">

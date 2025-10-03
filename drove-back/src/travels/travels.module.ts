@@ -1,5 +1,5 @@
 // src/travels/travels.module.ts
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Travels } from './entities/travel.entity';
 import { Payment } from '../payment/entities/payment.entity';
@@ -12,12 +12,14 @@ import { TravelOffer } from './entities/travel-offer.entity';
 import { TravelsGateway } from './travel.gateway';
 import { User } from '../user/entities/user.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { PricesModule } from '../rates/prices.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Travels, Payment, TravelOffer, User]), // ← aquí agregamos Payment
     InvoicesModule,
     ResendModule,
     NotificationsModule,
+    forwardRef(() => PricesModule),
   ],
   controllers: [TravelsController],
   providers: [TravelsService, TravelsGateway, StripeService],

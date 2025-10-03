@@ -147,6 +147,13 @@ export class Travels {
   @Column({ type: 'float', nullable: true })
   totalPrice?: number;
 
+  // — Compensación del drover (persistida para uso transversal) —
+  @Column({ type: 'float', nullable: true })
+  driverFee?: number | null;
+
+  @Column({ type: 'simple-json', nullable: true })
+  driverFeeMeta?: any;
+
   // — Columnas JSON para objetos anidados —
   @Column({ type: 'simple-json', nullable: true })
   personDelivery?: PersonDto;

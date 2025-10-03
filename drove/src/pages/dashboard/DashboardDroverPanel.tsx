@@ -100,6 +100,7 @@ const DashboardDroverPanel: React.FC = () => {
     status: t.status || t.transferStatus || t.state || 'ASSIGNED',
     createdAt: t.createdAt || t.created_at || t.scheduledDate || t.pickup_details?.pickupDate || Date.now(),
     totalPrice: t.totalPrice ?? t.price ?? t.amount ?? 0,
+    driverFee: typeof t.driverFee === 'number' ? t.driverFee : undefined,
   }));
   const [search, setSearch] = React.useState('');
   const [status, setStatus] = React.useState('');
@@ -239,7 +240,7 @@ const DashboardDroverPanel: React.FC = () => {
                 </div>
                 {/* Pie con ganancia a la izquierda y botón a la derecha */}
                 <div className="flex justify-between items-center gap-4">
-                  <div className="text-[#6EF7FF] text-lg font-bold flex-1 text-start">Ganancia: €{(+t.totalPrice).toLocaleString()}</div>
+                  <div className="text-[#6EF7FF] text-lg font-bold flex-1 text-start">Ganancia: €{Number((t.driverFee ?? 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                   <Link to={`/traslados/activo/${t.id}`} className="px-5 py-2 h-9 rounded-2xl bg-[#6EF7FF] text-[#22142A] text-sm hover:bg-[#22142A] hover:text-white transition-colors">Ver detalles</Link>
                 </div>
               </div>

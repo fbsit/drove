@@ -4,6 +4,7 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import * as QrImage from 'qr-image';
 import fetch from 'node-fetch';
 import { PricingService } from './../rates/prices.service';
+import { CompensationService } from './../rates/compensation.service';
 import { User } from './../user/entities/user.entity';
 import { Travels } from './../travels/entities/travel.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -21,6 +22,7 @@ export class PdfService {
   constructor(
     private readonly configService: ConfigService,
     private readonly priceService: PricingService,
+    private readonly compensationService: CompensationService,
     private readonly routesService: RoutesService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
@@ -1399,12 +1401,34 @@ export class PdfService {
         ? `${Number(distanceKmRaw).toFixed(2)} Kilómetros`
         : '—';
       const rawTotalCliente = (detailRoute as any)?.priceResult?.Total_Cliente;
-      const totalWithVat =
+      let totalWithVat =
         rawTotalCliente != null && rawTotalCliente !== ''
           ? (typeof rawTotalCliente === 'number'
               ? `${rawTotalCliente} €`
               : (String(rawTotalCliente).includes('€') ? String(rawTotalCliente) : `${rawTotalCliente} €`))
           : (typeof (travel?.totalPrice) === 'number' ? `${(travel.totalPrice as number).toFixed(2)} €` : '—');
+
+      // Regla de visualización para el PDF del drover: autónomo ve su compensación; contratado no ve total por viaje.
+      try {
+        const isDroverPdf = detailInfo === 'chofer';
+        const droverEmpType = (chofer as any)?.employmentType || (travel?.drover as any)?.employmentType;
+        // Determinar KM para freelance
+        const kmNumber = Number((distanceKmRaw as any) || parseFloat(String(travel?.distanceTravel || '0')) || 0);
+        if (isDroverPdf && String(droverEmpType || '').toUpperCase() === 'FREELANCE') {
+          // Preferir compensación persistida si existe
+          const storedFee = (travel as any)?.driverFee;
+          if (typeof storedFee === 'number' && !isNaN(storedFee)) {
+            totalWithVat = `${Number(storedFee).toFixed(2)} € (compensación)`;
+          } else {
+            const preview = this.compensationService.calcFreelancePerTrip(kmNumber);
+            totalWithVat = `${preview.driverFee.toFixed(2)} € (compensación)`;
+          }
+        }
+        if (isDroverPdf && String(droverEmpType || '').toUpperCase() === 'CONTRACTED') {
+          // Ocultar importe por viaje para contratados
+          totalWithVat = '—';
+        }
+      } catch {}
       const detailTravelTabla = [
         ['Distancia', distanceFormatted],
         ['Total con I.V.A', totalWithVat],

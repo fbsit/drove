@@ -16,6 +16,8 @@ import { useSupportChat } from '@/contexts/SupportChatContext';
 import { toast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatDateTimeEs } from '@/utils/datetime';
+import { AuthService } from '@/services/authService';
+import DroverService from '@/services/droverService';
 
 interface TripStep {
   id: string;
@@ -85,6 +87,38 @@ const ActiveTrip: React.FC = () => {
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });
+
+  const [employmentType, setEmploymentType] = useState<string>('FREELANCE');
+  const [freelanceFee, setFreelanceFee] = useState<number | null>(null);
+  useEffect(() => {
+    (async () => {
+      try {
+        const me: any = await AuthService.getCurrentUser();
+        const t = (me as any)?.employmentType || (me as any)?.user?.employmentType || 'FREELANCE';
+        setEmploymentType(String(t).toUpperCase());
+      } catch {
+        setEmploymentType('FREELANCE');
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!trip) return;
+        const kmRaw = (trip as any)?.distanceTravel;
+        const km = typeof kmRaw === 'number' ? kmRaw : parseFloat(String(kmRaw || '0').replace(/[^0-9.,]/g, '').replace(',', '.'));
+        if (employmentType === 'FREELANCE' && !isNaN(km)) {
+          const res: any = await DroverService.getFreelanceCompensationForKm(km);
+          setFreelanceFee(Number(res?.driverFee ?? 0));
+        } else {
+          setFreelanceFee(null);
+        }
+      } catch {
+        setFreelanceFee(null);
+      }
+    })();
+  }, [trip, employmentType]);
 
   // Asegurar datos frescos tras redirecciones (p. ej. después de recoger)
   useEffect(() => {
@@ -413,8 +447,17 @@ const ActiveTrip: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-green-300">€{Number(trip.totalPrice ?? 0).toFixed(2)}</div>
-              <div className="text-white/60 text-sm mt-2">Esta es tu ganancia neta estimada</div>
+              {employmentType === 'FREELANCE' ? (
+                <>
+                  <div className="text-3xl font-bold text-green-300">€{Number(freelanceFee ?? 0).toFixed(2)}</div>
+                  <div className="text-white/60 text-sm mt-2">Compensación estimada por traslado</div>
+                </>
+              ) : (
+                <>
+                  <div className="text-3xl font-bold text-green-300">—</div>
+                  <div className="text-white/60 text-sm mt-2">Visible sólo al superar umbral mensual</div>
+                </>
+              )}
             </CardContent>
           </Card>
 
