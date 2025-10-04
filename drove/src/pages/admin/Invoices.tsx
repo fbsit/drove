@@ -14,7 +14,10 @@ const Invoices: React.FC = () => {
   /* ----------------------------- filtros locale ---------------------------- */
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('todos');
+  const [filterTransfer, setFilterTransfer] = useState<string>('todos');
   const [filterClient, setFilterClient] = useState('');
+  const [filterDrover, setFilterDrover] = useState<string>('todos');
+  const [onlyPending, setOnlyPending] = useState<boolean>(false);
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
 
   const debouncedSearch = useDebouncedValue(search, 300);
@@ -25,16 +28,33 @@ const Invoices: React.FC = () => {
     isLoading,
     refetch: refetchInvoices,
   } = useQuery<any[]>({
-    queryKey: ['invoices', { search: debouncedSearch, status: filterStatus, clientId: filterClient, from: dateRange.from?.toISOString().slice(0, 10), to: dateRange.to?.toISOString().slice(0, 10) }],
+    queryKey: ['invoices', {
+      search: debouncedSearch,
+      status: filterStatus,
+      clientId: undefined,
+      clientName: filterClient || undefined,
+      transferStatus: filterTransfer !== 'todos' ? filterTransfer : undefined,
+      droverName: filterDrover !== 'todos' ? filterDrover : undefined,
+      from: dateRange.from?.toISOString().slice(0, 10),
+      to: dateRange.to?.toISOString().slice(0, 10),
+      onlyPending,
+      page: 1,
+      limit: 50,
+    }],
     queryFn: async ({ queryKey }) => {
       try {
-        const [, params] = queryKey as [string, { search?: string; status?: string; clientId?: string; from?: string; to?: string }];
+        const [, params] = queryKey as [string, any];
         return await AdminService.getAllInvoices({
           search: params?.search || undefined,
           status: params?.status && params.status !== 'todos' ? params.status : undefined,
-          clientId: params?.clientId || undefined,
+          clientName: params?.clientName,
+          transferStatus: params?.transferStatus,
+          droverName: params?.droverName,
           from: params?.from,
           to: params?.to,
+          onlyPending: params?.onlyPending,
+          page: params?.page,
+          limit: params?.limit,
         });
       } catch (e) {
         toast({
@@ -95,18 +115,58 @@ const Invoices: React.FC = () => {
   }, [invoices]);
 
   const clients = useMemo(
-    () => Array.from(new Set(normalizedInvoices?.map((inv: any) => inv?.client_name))),
+    () => Array.from(new Set(normalizedInvoices?.map((inv: any) => inv?.client_name).filter(Boolean))),
+    [normalizedInvoices],
+  );
+
+  const drovers = useMemo(
+    () => Array.from(new Set(normalizedInvoices?.map((inv: any) => inv?.droverName).filter(Boolean))),
     [normalizedInvoices],
   );
 
   // Fallback: si el backend ignora filtros, aplicamos filtrado local por estado
   const filteredInvoices = React.useMemo(() => {
     const list = Array.isArray(normalizedInvoices) ? normalizedInvoices : [];
-    if (filterStatus && filterStatus !== 'todos') {
-      return list.filter((inv) => inv?.status === filterStatus);
-    }
-    return list;
-  }, [normalizedInvoices, filterStatus]);
+    const term = (search || '').toLowerCase();
+    const from = dateRange.from ? new Date(dateRange.from.setHours(0,0,0,0)) : undefined;
+    const to = dateRange.to ? new Date(dateRange.to.setHours(23,59,59,999)) : undefined;
+
+    return list.filter((inv) => {
+      const statusNorm = String(inv?.status || '').toLowerCase();
+      const transferNorm = String(inv?.transferStatus || '').toLowerCase();
+      const clientName = String(inv?.client_name || '').toLowerCase();
+      const droverName = String(inv?.droverName || '').toLowerCase();
+      const vehicle = String(inv?.vehicle || '').toLowerCase();
+      const fromAddr = String(inv?.fromAddress || '').toLowerCase();
+      const toAddr = String(inv?.toAddress || '').toLowerCase();
+      const transferIdStr = String(inv?.transferId || '').toLowerCase();
+
+      const matchesSearch = !term
+        || clientName.includes(term)
+        || droverName.includes(term)
+        || vehicle.includes(term)
+        || fromAddr.includes(term)
+        || toAddr.includes(term)
+        || transferIdStr.includes(term);
+
+      const matchesStatus = filterStatus === 'todos' || statusNorm === String(filterStatus).toLowerCase();
+      const matchesTransfer = filterTransfer === 'todos' || transferNorm === String(filterTransfer).toLowerCase();
+      const matchesClient = !filterClient || clientName === String(filterClient).toLowerCase();
+      const matchesDrover = filterDrover === 'todos' || droverName === String(filterDrover).toLowerCase();
+
+      let matchesDate = true;
+      if (inv?.invoiceDate && (from || to)) {
+        const dateVal = new Date(inv.invoiceDate);
+        if (from && dateVal < from) matchesDate = false;
+        if (to && dateVal > to) matchesDate = false;
+      }
+
+      const isPending = String(inv?.status || '').toUpperCase() !== 'PAID';
+      const matchesPending = !onlyPending || isPending;
+
+      return matchesSearch && matchesStatus && matchesTransfer && matchesClient && matchesDrover && matchesDate && matchesPending;
+    });
+  }, [normalizedInvoices, search, filterStatus, filterTransfer, filterClient, filterDrover, dateRange.from, dateRange.to, onlyPending]);
 
 
   async function handleUploadPDF(file: File, invoiceId: string): Promise<'success' | 'exists' | 'error'> {
@@ -155,16 +215,18 @@ const Invoices: React.FC = () => {
         setSearch={setSearch}
         filterStatus={filterStatus}
         setFilterStatus={setFilterStatus}
-        filterTransfer="todos"
-        setFilterTransfer={() => { }}
+        filterTransfer={filterTransfer}
+        setFilterTransfer={setFilterTransfer}
         filterClient={filterClient}
         setFilterClient={setFilterClient}
-        filterDrover="todos"
-        setFilterDrover={() => { }}
+        filterDrover={filterDrover}
+        setFilterDrover={setFilterDrover}
         dateRange={dateRange}
         setDateRange={setDateRange}
         clients={clients}
-        drovers={[]} // ajusta si manejas drovers
+        drovers={drovers}
+        onlyPending={onlyPending}
+        setOnlyPending={setOnlyPending}
       />
 
       {/* ------------- listado de facturas ------------- */}

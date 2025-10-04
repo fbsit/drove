@@ -138,7 +138,7 @@ const NewRegistrationForm: React.FC<Props> = ({
 
       // Preparar datos para el servicio de autenticación
       const registrationData = {
-        email: formData.email!,
+        email: String(formData.email!).trim().toLowerCase(),
         password: formData.password!,
         userType: formData.userType,
         contactInfo: {
@@ -152,6 +152,8 @@ const NewRegistrationForm: React.FC<Props> = ({
           state: formData.province || "",
           zip: formData.postalCode || "",
           country: formData.country || "España",
+          latitud: formData.lat != null ? String(formData.lat) : undefined,
+          longitud: formData.lng != null ? String(formData.lng) : undefined,
           // Campos específicos para drover (como strings/URLs)
           licenseFront: licenseFrontUrl ?? (formData.licenseFront as unknown as string),
           licenseBack: licenseBackUrl ?? (formData.licenseBack as unknown as string),
@@ -164,6 +166,11 @@ const NewRegistrationForm: React.FC<Props> = ({
 
       // Llamar al servicio de registro
       const response = await AuthService.signUp(registrationData);
+      // Exigir respuesta de éxito (por si el servicio no lanza en 4xx/5xx)
+      if (response && (response.error || response.status >= 400)) {
+        const msg = response?.message || 'Error en el registro';
+        throw new Error(msg);
+      }
 
       console.log("Respuesta del registro:", response);
 
@@ -174,7 +181,7 @@ const NewRegistrationForm: React.FC<Props> = ({
           "Tu cuenta ha sido creada correctamente. Te enviamos un correo para verificar tu cuenta.",
       });
 
-      // Llamar al callback de finalización
+      // Llamar al callback de finalización SOLO tras éxito
       await onComplete(formData as RegistrationFormData);
     } catch (error: any) {
       console.error("Error en el registro:", error);
@@ -187,10 +194,14 @@ const NewRegistrationForm: React.FC<Props> = ({
           "No se pudo completar el registro. Inténtalo de nuevo.",
       });
       setSubmissionError(error?.message || 'No se pudo completar el registro.');
-      // Si el correo ya está registrado, volver a Datos básicos para corregir
+      // En error, no avanzar; mostrar UI de error en confirmación y/o volver al paso correspondiente
       const lower = String(error?.message || '').toLowerCase();
       if (lower.includes('ya existe') || lower.includes('registrado')) {
         setCurrentStep(1);
+      }
+      if (lower.includes('dni') || lower.includes('nie') || lower.includes('cif')) {
+        // Volver a identificación para corregir documento
+        setCurrentStep(2);
       }
     } finally {
       setIsSubmitting(false);
@@ -302,6 +313,7 @@ const NewRegistrationForm: React.FC<Props> = ({
               isLoading={isSubmitting}
               data={formData}
               onPrevious={handlePrevious}
+              errorMessage={submissionError}
             />
           );
         default:

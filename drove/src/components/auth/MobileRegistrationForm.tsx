@@ -112,7 +112,7 @@ const MobileRegistrationForm: React.FC<Props> = ({
     try {
       // Preparar payload para AuthService.signUp (mismo mapping que desktop)
       const registrationData = {
-        email: formData.email!,
+        email: String(formData.email!).trim().toLowerCase(),
         password: formData.password!,
         userType: formData.userType,
         contactInfo: {
@@ -126,6 +126,8 @@ const MobileRegistrationForm: React.FC<Props> = ({
           state: formData.province || "",
           zip: formData.postalCode || "",
           country: formData.country || "España",
+          latitud: formData.lat != null ? String(formData.lat) : undefined,
+          longitud: formData.lng != null ? String(formData.lng) : undefined,
           // Para drover esperamos URLs en el formData (los pasos ya subieron los archivos)
           licenseFront: formData.licenseFront as any,
           licenseBack: formData.licenseBack as any,
@@ -137,6 +139,9 @@ const MobileRegistrationForm: React.FC<Props> = ({
       };
 
       const res = await AuthService.signUp(registrationData as any);
+      if (res && (res.error || (typeof res.status === 'number' && res.status >= 400))) {
+        throw new Error(res?.message || 'Error en registro');
+      }
       setSubmissionError(null);
       setShowSuccess(true);
       // Mostrar éxito por ~1.5s y luego continuar con onComplete
@@ -152,7 +157,7 @@ const MobileRegistrationForm: React.FC<Props> = ({
       } catch {}
       setSubmissionError(msg);
 
-      // Mapeo de error → campos del paso fiscal para permitir corrección
+      // Mapeo de error → campos del paso correcto para permitir corrección
       const lower = String(msg).toLowerCase();
       const nextErrors: Record<string, string> = {};
       if (lower.includes('dni inválido') || lower.includes('nie inválido') || lower.includes('cif inválido')) {

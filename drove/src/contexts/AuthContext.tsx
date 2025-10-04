@@ -83,14 +83,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const login = async (data: AuthSignInData) => {
     authState.setIsLoading(true);
     try {
-      console.log("Iniciando login real con:", data.email);
+      const normalizedEmail = String(data.email ?? '').trim().toLowerCase();
+      const payload = { ...data, email: normalizedEmail } as AuthSignInData;
+      console.log("Iniciando login real con:", normalizedEmail);
 
-      const res = await AuthService.signIn(data);
+      const res = await AuthService.signIn(payload);
       console.log("Respuesta del login:", res);
 
       authState.setSession({ access_token: res.access_token, expiresIn: res.expiresIn });
       
-      localStorage.setItem('auth_user_email', data.email);
+      localStorage.setItem('auth_user_email', normalizedEmail);
       console.log("Usuario obtenido del login:", res.user);
   
       // IMPORTANTE: Esperar a obtener los datos completos del usuario

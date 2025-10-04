@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere } from 'typeorm';
+import { Repository, FindOptionsWhere, ILike } from 'typeorm';
 import { User, UserAccountType, DroverEmploymentType } from './entities/user.entity';
 import { CreateUserDto } from './dtos/createUser.dto';
 import { UpdateUserDto } from './dtos/updatedUser.dto';
@@ -36,15 +36,16 @@ export class UserService {
    */
   async create(createUserDto: CreateUserDto): Promise<User> {
     const { email, password, userType, contactInfo } = createUserDto;
-    this.logger.log(`Create user attempt email=${email} type=${userType}`);
+    const normalizedEmail = String(email).trim().toLowerCase();
+    this.logger.log(`Create user attempt email=${normalizedEmail} type=${userType}`);
     this.logger.debug(`CreateUserDto.contactInfo=${JSON.stringify(contactInfo ?? {})}`);
 
     // Verificar duplicados
     const existing = await this.userRepo.findOneBy({
-      email,
+      email: normalizedEmail,
     } as unknown as FindOptionsWhere<User>);
     if (existing) {
-      throw new ConflictException(`El email ${email} ya está registrado.`);
+      throw new ConflictException(`El email ${normalizedEmail} ya está registrado.`);
     }
 
     try {
@@ -73,7 +74,7 @@ export class UserService {
           : UserAccountType.PERSON;
 
       const user = this.userRepo.create({
-        email,
+        email: normalizedEmail,
         password: hashed,
         role,
         contactInfo: ci,
@@ -167,11 +168,14 @@ export class UserService {
    * Busca un usuario por email
    */
   async findByEmail(email: string): Promise<User> {
-    const user = await this.userRepo.findOneBy({
-      email,
-    } as unknown as FindOptionsWhere<User>);
+    const normalized = String(email ?? '').trim().toLowerCase();
+    let user = await this.userRepo.findOne({ where: { email: normalized } });
+    if (!user) {
+      // Fallback por si existen registros antiguos con mayúsculas
+      user = await this.userRepo.findOne({ where: { email: ILike(email) } });
+    }
     if (!user)
-      throw new NotFoundException(`Usuario con email ${email} no encontrado`);
+      throw new NotFoundException(`Usuario con email ${normalized} no encontrado`);
     return user;
   }
 

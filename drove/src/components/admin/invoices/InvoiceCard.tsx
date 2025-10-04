@@ -390,7 +390,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({
                       )}
                       {typeof amount !== "undefined" && (
                         <div>
-                          <b>Monto:</b> €{Number(amount).toLocaleString()}
+                          <b>Precio:</b> €{Number(amount).toLocaleString()}
                         </div>
                       )}
                     </div>
