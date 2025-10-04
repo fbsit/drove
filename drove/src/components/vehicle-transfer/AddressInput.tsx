@@ -134,20 +134,34 @@ export default function AddressInput({
   /* input onChange SOLO actualiza el texto local */
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setText(e.target.value);
-
-    /* Si el usuario presiona Enter tras escribir una dirección completa
-       Google rellena el 'place' y podemos emitirlo */
-    if (acRef.current) {
-      emitPlaceData(acRef.current.getPlace());
-    } else {
-      // Fallback: sin Google Places, propaga el texto como dirección simple
-      const typed = e.target.value?.trim() || "";
-      onChangeRef.current({ address: typed, city: value.city || "", lat: value.lat || 0, lng: value.lng || 0 } as any);
+    const typed = e.target.value || "";
+    // Permitir borrar completamente el campo
+    if (typed.trim() === "") {
+      setPlaceSelected(false);
+      onChangeRef.current({ address: "", city: "", lat: 0, lng: 0 } as any);
+      return;
+    }
+    // Fallback: sin Google Places, propaga el texto como dirección simple mientras escribe
+    if (!acRef.current) {
+      onChangeRef.current({ address: typed.trim(), city: value.city || "", lat: value.lat || 0, lng: value.lng || 0 } as any);
     }
   };
 
-  /* Fallback adicional: al salir del input, si no hubo selección de place, emite lo escrito */
+  /* Tecla Enter/Tab: forzar emisión del place actual si existe */
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if ((e.key === 'Enter' || e.key === 'Tab') && acRef.current) {
+      // Google actualiza el place async; usa microtask
+      setTimeout(() => emitPlaceData(acRef.current?.getPlace()), 0);
+    }
+  };
+
+  /* Blur: si hay un place válido, emitirlo; si no, fallback a texto */
   const handleBlur = () => {
+    const place = acRef.current?.getPlace();
+    if (place?.geometry?.location) {
+      emitPlaceData(place);
+      return;
+    }
     if (!placeSelected) {
       const typed = (text || "").trim();
       if (typed) {
@@ -162,6 +176,7 @@ export default function AddressInput({
       ref={inputRef}
       value={text}
       onChange={handleInputChange}
+      onKeyDown={handleKeyDown}
       onBlur={handleBlur}
       placeholder={placeholder}
       className="bg-transparent border-gray-700 text-white placeholder:text-white"
