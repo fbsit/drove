@@ -73,15 +73,16 @@ export class UserController {
   }
 
   @Get('role/:role')
-  @ApiOperation({ summary: 'Listar usuarios por rol' })
+  @ApiOperation({ summary: 'Listar usuarios por rol (optimizado para asignación)' })
   @ApiParam({ name: 'role', enum: ['CLIENT', 'DROVER', 'ADMIN', 'TRAFFICBOSS'] })
-  findByRole(@Param('role') roleParam: string, @Request() req) {
+  async findByRole(@Param('role') roleParam: string, @Request() req) {
     const role = roleParam.toUpperCase();
     const onlyAvailable = String(req?.query?.available || '').toLowerCase();
-    if (onlyAvailable === 'true' || onlyAvailable === '1') {
-      return this.userService.findByRoleAndAvailability(role, true);
-    }
-    return this.userService.findByRole(role);
+    const list = (onlyAvailable === 'true' || onlyAvailable === '1')
+      ? await this.userService.findByRoleAndAvailability(role, true)
+      : await this.userService.findByRole(role);
+    // Sanitizar y enriquecer
+    return this.userService.mapUsersForAssignment(list);
   }
 
   @UseGuards(AuthGuard('jwt'))

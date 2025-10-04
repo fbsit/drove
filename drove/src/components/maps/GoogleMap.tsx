@@ -209,13 +209,16 @@ const GoogleMapComponent = ({
             <MapMarker position={new google.maps.LatLng(markers.destination.lat, markers.destination.lng)} isOrigin />
           )}
           {/* Marcadores de drovers disponibles cerca del origen */}
-          {Array.isArray((droverMarkers as any)) && (droverMarkers as any).map((d: DroverMarker) => {
+          {Array.isArray((droverMarkers as any)) && (droverMarkers as any).map((d: DroverMarker & { address?: string }) => {
             if (typeof d.lat !== 'number' || typeof d.lng !== 'number') return null;
+            try {
+              console.log('[MAP] Drover marker:', { id: d.id, name: d?.name, address: (d as any)?.address, lat: d.lat, lng: d.lng });
+            } catch {}
+            const pos = { lat: Number(d.lat), lng: Number(d.lng) } as google.maps.LatLngLiteral;
             return (
               <Marker
                 key={d.id}
-                position={new google.maps.LatLng(d.lat, d.lng)}
-                // Pin rojo estándar de Google para alta visibilidad
+                position={pos}
                 icon={{ url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png' }}
                 zIndex={999}
               />

@@ -23,10 +23,14 @@ interface Driver {
   rating: number;
   completedTrips: number;
   status: 'disponible' | 'ocupado' | 'APPROVED';
+  currentLat?: number;
+  currentLng?: number;
   location: {
     address: string;
     city: string;
     distance: string;
+    lat?: number;
+    lng?: number;
   };
   contactInfo: {
     fullName: string;
@@ -90,11 +94,19 @@ export const AssignDriver: React.FC = () => {
   const { user } = useAuth();
   const isReassignmentMode = Boolean(transferId && user?.role === 'admin');
 
+  /* filtros UI (deben declararse antes de usarlos en hooks) */
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] =
+    useState<'todos' | 'disponible' | 'ocupado'>('todos');
+  const [sortBy, setSortBy] =
+    useState<'distancia' | 'rating' | 'viajes' | 'nombre'>('distancia');
+  const [showFilters, setShowFilters] = useState(false);
+
   const {
     assignDriver,
     drovers,
     isLoading
-  } = useTransfersManagement();
+  } = useTransfersManagement(undefined, { droverAvailable: statusFilter === 'disponible' ? 'true' : statusFilter === 'ocupado' ? 'false' : undefined });
 
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -115,12 +127,6 @@ export const AssignDriver: React.FC = () => {
   }, []);
 
   /* filtros UI */
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] =
-    useState<'todos' | 'disponible' | 'ocupado'>('disponible');
-  const [sortBy, setSortBy] =
-    useState<'distancia' | 'rating' | 'viajes' | 'nombre'>('distancia');
-  const [showFilters, setShowFilters] = useState(false);
 
   /* filtrado + orden */
   const originCoords = useMemo(() => {
@@ -139,10 +145,14 @@ export const AssignDriver: React.FC = () => {
       rating: 4.5, // Default rating
       completedTrips: 0, // Default completed trips
       status: d.status === 'APPROVED' ? 'APPROVED' : 'disponible',
+      currentLat: typeof d.currentLat === 'number' ? d.currentLat : undefined,
+      currentLng: typeof d.currentLng === 'number' ? d.currentLng : undefined,
       location: {
-        address: 'Madrid, España', // Default location
-        city: 'Madrid',
-        distance: '5km'
+        address: d?.location?.address || d?.contactInfo?.city || '—',
+        city: d?.location?.city || d?.contactInfo?.city || '—',
+        distance: '—',
+        lat: typeof d.currentLat === 'number' ? d.currentLat : undefined,
+        lng: typeof d.currentLng === 'number' ? d.currentLng : undefined,
       },
       contactInfo: {
         fullName: d.full_name || d?.contactInfo?.fullName || '',
@@ -196,12 +206,15 @@ export const AssignDriver: React.FC = () => {
   }, [drovers, searchTerm, statusFilter, sortBy, originCoords]);
 
   const droverMarkers = useMemo(() => {
-    return (filteredAndSortedDrivers as any[]).map((d: any) => ({
+    const markers = (filteredAndSortedDrivers as any[]).map((d: any) => ({
       id: d.id,
-      lat: d.currentLat ?? d?.location?.lat,
-      lng: d.currentLng ?? d?.location?.lng,
+      lat: (typeof d.currentLat === 'number' ? d.currentLat : d?.location?.lat),
+      lng: (typeof d.currentLng === 'number' ? d.currentLng : d?.location?.lng),
       name: d?.contactInfo?.fullName,
+      address: d?.location?.address || d?.location?.city || undefined,
     })).filter((m: any) => typeof m.lat === 'number' && typeof m.lng === 'number');
+    try { console.log('[ASSIGN] droverMarkers', markers); } catch {}
+    return markers;
   }, [filteredAndSortedDrivers]);
 
   const missingLocationCount = useMemo(() => {

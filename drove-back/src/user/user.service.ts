@@ -190,6 +190,62 @@ export class UserService {
   }
 
   /**
+   * Mapea usuarios para la UI de asignación (sin contraseña) y con métricas.
+   * - Elimina `password`
+   * - Añade `completedTrips` (DELIVERED) y `rating` promedio desde reviews
+   */
+  async mapUsersForAssignment(users: User[]): Promise<any[]> {
+    if (!Array.isArray(users) || users.length === 0) return [];
+    const ids = users.map(u => u.id);
+    // Conteo de viajes completados por drover
+    const completedByDrover = await this.travelsRepo
+      .createQueryBuilder('t')
+      .select('t.droverId', 'droverId')
+      .addSelect('COUNT(*)', 'count')
+      .where('t.droverId IN (:...ids)', { ids })
+      .andWhere("t.status = 'DELIVERED'")
+      .groupBy('t.droverId')
+      .getRawMany<{ droverId: string; count: string }>();
+    const mapCompleted = new Map<string, number>(
+      completedByDrover.map(r => [r.droverId, Number(r.count || 0)])
+    );
+
+    // Promedio de rating: usamos reviews.service via query directa para evitar dependencias circulares
+    const reviewRows = await (this.userRepo.manager as any)
+      .query(
+        `SELECT "droverId" as id, AVG(rating) as avg, COUNT(*) as cnt
+         FROM reviews
+         WHERE "droverId" = ANY($1)
+         GROUP BY "droverId"`,
+        [ids],
+      );
+    const mapRating = new Map<string, { average: number; count: number }>(
+      reviewRows.map((r: any) => [r.id, { average: Number(r.avg || 0), count: Number(r.cnt || 0) }])
+    );
+
+    const now = Date.now();
+    const recentMs = (Number(process.env.DROVER_RECENT_LOCATION_MINUTES) || 10) * 60 * 1000;
+
+    return users.map((u) => {
+      const { password, ...rest } = u as any;
+      const completedTrips = mapCompleted.get(u.id) || 0;
+      const ratingInfo = mapRating.get(u.id) || { average: 0, count: 0 };
+      const lastPosAt: Date | null = (u as any)?.currentPositionUpdatedAt || null;
+      const ageMs = lastPosAt ? (now - new Date(lastPosAt).getTime()) : null;
+      const hasRecentLocation = typeof ageMs === 'number' ? ageMs <= recentMs : false;
+      return {
+        ...rest,
+        completedTrips,
+        rating: Number(ratingInfo.average?.toFixed?.(2) || 0),
+        ratingCount: ratingInfo.count,
+        lastPositionAt: lastPosAt || null,
+        locationAgeSec: typeof ageMs === 'number' ? Math.max(0, Math.round(ageMs / 1000)) : null,
+        hasRecentLocation,
+      };
+    });
+  }
+
+  /**
    * Actualiza datos de usuario, incluyendo nested contactInfo y contraseña opcional
    */
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {

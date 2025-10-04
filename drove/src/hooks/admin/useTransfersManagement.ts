@@ -26,7 +26,10 @@ export interface TransferData {
   distance: string;
 }
 
-export const useTransfersManagement = (filters?: { search?: string; status?: string; from?: Date; to?: Date }) => {
+export const useTransfersManagement = (
+  filters?: { search?: string; status?: string; from?: Date; to?: Date },
+  options?: { droverAvailable?: 'true' | 'false' | undefined }
+) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const debouncedSearch = useDebouncedValue(filters?.search ?? '', 300);
@@ -89,11 +92,11 @@ export const useTransfersManagement = (filters?: { search?: string; status?: str
   });
 
   const { data: drovers = [], isLoading: isLoadingDrovers } = useQuery({
-    queryKey: ['admin-drover', { available: true }],
+    queryKey: ['admin-drover', { available: options?.droverAvailable }],
     queryFn: async (): Promise<TransferData[]> => {
       try {
         console.log('[TRANSFERS] 🔄 Obteniendo drovers...');
-        const response = await AdminService.getDrovers('true');
+        const response = await AdminService.getDrovers(options?.droverAvailable);
         // Normalizar selfie si viene anidada
         return (response as any[] || []).map((d: any) => ({
           ...d,
