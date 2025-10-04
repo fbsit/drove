@@ -123,6 +123,12 @@ export const AssignDriver: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   /* filtrado + orden */
+  const originCoords = useMemo(() => {
+    const lat = (travelDetails as any)?.startAddress?.lat || (travelDetails as any)?.pickup?.lat || null;
+    const lng = (travelDetails as any)?.startAddress?.lng || (travelDetails as any)?.pickup?.lng || null;
+    return (typeof lat === 'number' && typeof lng === 'number') ? { lat, lng } : null;
+  }, [travelDetails]);
+
   const filteredAndSortedDrivers = useMemo(() => {
     // Transform drovers to match Driver interface (tipado flexible)
     const transformedDrivers: Driver[] = (drovers as any[]).map((d: any) => ({
@@ -162,7 +168,24 @@ export const AssignDriver: React.FC = () => {
 
     result.sort((a, b) => {
       switch (sortBy) {
-        case 'distancia': return parseFloat(a.location.distance) - parseFloat(b.location.distance);
+        case 'distancia': {
+          // Si tenemos coordenadas de origen y de drovers, usar Haversine en tiempo real
+          const getDist = (d: any) => {
+            const lat = d?.currentLat ?? d?.location?.lat;
+            const lng = d?.currentLng ?? d?.location?.lng;
+            if (!originCoords || typeof lat !== 'number' || typeof lng !== 'number') return Number.POSITIVE_INFINITY;
+            const toRad = (deg: number) => (deg * Math.PI) / 180;
+            const R = 6371e3;
+            const dLat = toRad(lat - originCoords.lat);
+            const dLng = toRad(lng - originCoords.lng);
+            const a1 = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(originCoords.lat)) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2;
+            const c = 2 * Math.atan2(Math.sqrt(a1), Math.sqrt(1 - a1));
+            return R * c; // metros
+          };
+          const da = getDist(a as any);
+          const db = getDist(b as any);
+          return da - db;
+        }
         case 'rating': return b.rating - a.rating;
         case 'viajes': return b.completedTrips - a.completedTrips;
         case 'nombre': return a.contactInfo.fullName.localeCompare(b.contactInfo.fullName);
@@ -170,7 +193,22 @@ export const AssignDriver: React.FC = () => {
       }
     });
     return result;
-  }, [drovers, searchTerm, statusFilter, sortBy]);
+  }, [drovers, searchTerm, statusFilter, sortBy, originCoords]);
+
+  const droverMarkers = useMemo(() => {
+    return (filteredAndSortedDrivers as any[]).map((d: any) => ({
+      id: d.id,
+      lat: d.currentLat ?? d?.location?.lat,
+      lng: d.currentLng ?? d?.location?.lng,
+      name: d?.contactInfo?.fullName,
+    })).filter((m: any) => typeof m.lat === 'number' && typeof m.lng === 'number');
+  }, [filteredAndSortedDrivers]);
+
+  const missingLocationCount = useMemo(() => {
+    const total = (filteredAndSortedDrivers as any[]).length;
+    const withPos = (droverMarkers as any[]).length;
+    return Math.max(0, total - withPos);
+  }, [filteredAndSortedDrivers, droverMarkers]);
 
   /* asignar / reasignar */
   const handleAssign = async (driver: Driver) => {
@@ -249,7 +287,7 @@ export const AssignDriver: React.FC = () => {
       {/* detalles traslado */}
       {travelDetails ? (
         <div className="mb-8">
-          <TransferDetailsCard transfer={travelDetails} />
+          <TransferDetailsCard transfer={travelDetails} droverMarkers={droverMarkers} />
         </div>
       ) : (
         <Card className="mb-8 bg-white/10 text-white border-none">
@@ -265,7 +303,16 @@ export const AssignDriver: React.FC = () => {
         showFilters={showFilters} setShowFilters={setShowFilters}
       />
 
+      {/* aviso drovers sin ubicación */}
+      {missingLocationCount > 0 && (
+        <div className="mb-4 rounded-xl border border-yellow-400/40 bg-yellow-500/10 text-yellow-200 px-4 py-2 text-sm">
+          {missingLocationCount} drover{missingLocationCount === 1 ? '' : 's'} sin ubicación reciente. Pide que activen el switch de disponibilidad y permisos de ubicación para aparecer en el mapa.
+        </div>
+      )}
+
       {/* debug eliminado para evitar renderizar void en JSX */}
+
+      {/* mapa con ruta y drovers cercanos */}
 
       {/* lista drovers */}
       {filteredAndSortedDrivers.length === 0 ? (

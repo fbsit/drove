@@ -88,12 +88,12 @@ export const useTransfersManagement = (filters?: { search?: string; status?: str
     refetchInterval: 60000,
   });
 
-   const { data: drovers = [], isLoading: isLoadingDrovers } = useQuery({
-    queryKey: ['admin-drover'],
+  const { data: drovers = [], isLoading: isLoadingDrovers } = useQuery({
+    queryKey: ['admin-drover', { available: true }],
     queryFn: async (): Promise<TransferData[]> => {
       try {
         console.log('[TRANSFERS] 🔄 Obteniendo drovers...');
-        const response = await AdminService.getDrovers();
+        const response = await AdminService.getDrovers('true');
         // Normalizar selfie si viene anidada
         return (response as any[] || []).map((d: any) => ({
           ...d,

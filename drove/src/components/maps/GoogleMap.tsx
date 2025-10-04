@@ -1,6 +1,6 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { GoogleMap as ReactGoogleMap } from '@react-google-maps/api';
+import { GoogleMap as ReactGoogleMap, Marker } from '@react-google-maps/api';
 import { useGoogleMapsInit } from '@/hooks/useGoogleMapsInit';
 import { useGoogleMapsRouting } from '@/hooks/useGoogleMapsRouting';
 import { MapProps } from './types/map-types';
@@ -38,6 +38,8 @@ interface ExtendedMapDirectionsProps {
   onRouteReady?: (polyline: string) => void;
 }
 
+type DroverMarker = { id: string; lat: number; lng: number; name?: string };
+
 const GoogleMapComponent = ({ 
   originAddress, 
   destinationAddress,
@@ -45,7 +47,8 @@ const GoogleMapComponent = ({
   onDestinationSelect,
   onRouteCalculated,
   isAddressesSelected = false,
-  onPolylineCalculated
+  onPolylineCalculated,
+  droverMarkers
 }: MapProps) => {
   const { isReady, error, isApiBlocked } = useGoogleMapsInit();
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -201,7 +204,23 @@ const GoogleMapComponent = ({
           options={mapOptions}
         >
           {markers?.origin && <MapMarker position={new google.maps.LatLng(markers.origin.lat, markers.origin.lng)} isOrigin />}
-          {markers?.destination && <MapMarker position={new google.maps.LatLng(markers.destination.lat, markers.destination.lng)} />}
+          {markers?.destination && (
+            // Destino con el mismo círculo azul para alta visibilidad
+            <MapMarker position={new google.maps.LatLng(markers.destination.lat, markers.destination.lng)} isOrigin />
+          )}
+          {/* Marcadores de drovers disponibles cerca del origen */}
+          {Array.isArray((droverMarkers as any)) && (droverMarkers as any).map((d: DroverMarker) => {
+            if (typeof d.lat !== 'number' || typeof d.lng !== 'number') return null;
+            return (
+              <Marker
+                key={d.id}
+                position={new google.maps.LatLng(d.lat, d.lng)}
+                // Pin rojo estándar de Google para alta visibilidad
+                icon={{ url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png' }}
+                zIndex={999}
+              />
+            );
+          })}
           
           {markers?.origin && markers?.destination && !isLoading && (
             <MapDirections 
