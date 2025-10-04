@@ -142,8 +142,8 @@ export const AssignDriver: React.FC = () => {
       full_name: d.full_name || d?.contactInfo?.fullName || '',
       email: d.email || d?.contactInfo?.email || '',
       phone: d?.contactInfo?.phone || d.phone || '',
-      rating: 4.5, // Default rating
-      completedTrips: 0, // Default completed trips
+      rating: typeof d.rating === 'number' ? d.rating : 0,
+      completedTrips: Number(d?.completedTrips ?? 0),
       status: d.status === 'APPROVED' ? 'APPROVED' : 'disponible',
       currentLat: typeof d.currentLat === 'number' ? d.currentLat : undefined,
       currentLng: typeof d.currentLng === 'number' ? d.currentLng : undefined,
@@ -357,9 +357,13 @@ export const AssignDriver: React.FC = () => {
                     <p className="font-bold text-lg truncate">{d?.contactInfo?.fullName}</p>
                     <p className="text-sm text-gray-300 truncate">{d?.contactInfo?.email}</p>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="text-sm text-yellow-400">★ {d?.rating}</span>
+                      <span className="text-sm text-yellow-400" title={`${d?.rating?.toFixed?.(2) ?? d?.rating} / 5`}>
+                        ★ {Number(d?.rating ?? 0).toFixed(1)}
+                      </span>
                       <span className="text-sm text-gray-400">•</span>
-                      <span className="text-sm text-gray-400">{d?.completedTrips} viajes</span>
+                      <span className="text-sm text-gray-400" title="Viajes completados">
+                        {Number(d?.completedTrips ?? 0)} viajes
+                      </span>
                     </div>
                     <span className={`text-sm font-medium ${statusColor(d?.status)}`}>
                       {statusText(d?.status)}
@@ -371,7 +375,16 @@ export const AssignDriver: React.FC = () => {
                 <div className="space-y-3 pt-4 border-t border-white/10">
                   <div className="flex items-center gap-2">
                     <Phone size={16} className="text-[#6EF7FF]" />
-                    <span className="text-sm truncate">{d?.contactInfo?.phone}</span>
+                    {d?.contactInfo?.phone ? (
+                      <a
+                        href={`tel:${String(d.contactInfo.phone).replace(/\s+/g, '')}`}
+                        className="text-sm truncate underline underline-offset-2 hover:text-white"
+                      >
+                        {d.contactInfo.phone}
+                      </a>
+                    ) : (
+                      <span className="text-sm truncate">—</span>
+                    )}
                   </div>
                   <div className="flex items-start gap-2">
                     <MapPin size={16} className="text-[#6EF7FF] mt-0.5" />

@@ -347,6 +347,78 @@ const DroverProfile: React.FC = () => {
               </div>
             </AccordionContent>
           </AccordionItem>
+          {/* Documentos del registro */}
+          <AccordionItem value="docs" className="border-none">
+            <AccordionTrigger className="px-3 xs:px-4 md:px-8 py-4 md:py-5 no-underline">
+              <div className="flex items-center gap-3">
+                <div className="bg-[#6EF7FF]/20 p-2.5 rounded-xl">
+                  <ShieldCheck size={18} className="text-[#6EF7FF]" />
+                </div>
+                <span
+                  className="text-white font-semibold text-base md:text-lg"
+                  style={{ fontFamily: "Helvetica" }}
+                >
+                  Documentos verificados
+                </span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-3 xs:px-4 md:px-8 pb-6 pt-0">
+              {(() => {
+                const docs: Array<{ key: string; label: string; url?: string }> = [
+                  { key: 'licenseFront', label: 'Licencia (frontal)', url: drover?.contactInfo?.licenseFront },
+                  { key: 'licenseBack', label: 'Licencia (reverso)', url: drover?.contactInfo?.licenseBack },
+                  { key: 'selfie', label: 'Selfie', url: drover?.contactInfo?.selfie },
+                  { key: 'imageUpload2', label: 'Antecedentes / Background Check', url: drover?.contactInfo?.imageUpload2 },
+                  { key: 'pdfUpload', label: 'PDF adjunto', url: drover?.contactInfo?.pdfUpload },
+                ];
+                const isImage = (u?: string) => !!u && /\.(png|jpe?g|webp|gif|bmp|svg|heic|heif)(\?|$)/i.test(u);
+                const isPdf = (u?: string) => !!u && /\.pdf(\?|$)/i.test(u);
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {docs.map((d) => (
+                      <div key={d.key} className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+                        <div className="px-3 pt-3 text-white/70 text-xs">{d.label}</div>
+                        <div className="p-3 min-h-[3.5rem] flex items-center">
+                          {d.url ? (
+                            isImage(d.url) ? (
+                              <a href={d.url} target="_blank" rel="noreferrer" className="block w-full">
+                                <img
+                                  src={d.url}
+                                  alt={d.label}
+                                  loading="lazy"
+                                  className="w-full h-40 object-cover rounded-lg border border-white/10"
+                                />
+                              </a>
+                            ) : isPdf(d.url) ? (
+                              <a
+                                href={d.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-2 text-[#6EF7FF] underline"
+                              >
+                                Ver PDF
+                              </a>
+                            ) : (
+                              <a
+                                href={d.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-2 text-[#6EF7FF] underline break-all"
+                              >
+                                Abrir documento
+                              </a>
+                            )
+                          ) : (
+                            <span className="text-white/60 text-sm">No disponible</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </AccordionContent>
+          </AccordionItem>
         </Accordion>
       </div>
 
