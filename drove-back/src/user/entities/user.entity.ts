@@ -81,6 +81,10 @@ export class User {
 
   @Column({ type: 'timestamp', nullable: true })
   currentPositionUpdatedAt?: Date | null;
+
+  // Disponibilidad del drover en el sistema (visible para asignación)
+  @Column({ type: 'boolean', nullable: true, default: false })
+  isAvailable?: boolean | null;
   /* ─────────────────────────────── */
 
   @CreateDateColumn({ type: 'timestamp with time zone' })

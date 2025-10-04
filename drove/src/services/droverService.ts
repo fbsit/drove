@@ -55,6 +55,10 @@ export class DroverService {
     return ApiService.post('/users/me/current-position', { lat, lng });
   }
 
+  static async setAvailability(isAvailable: boolean) {
+    return ApiService.post('/users/me/availability', { isAvailable });
+  }
+
   // === COMPENSACIONES ===
   static async getFreelanceCompensationForKm(km: number) {
     return ApiService.get(`/rates/compensation/freelance?km=${encodeURIComponent(String(km))}`);

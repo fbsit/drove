@@ -185,6 +185,10 @@ export class UserService {
     return this.userRepo.find({ where: { role } });
   }
 
+  async findByRoleAndAvailability(role: any, isAvailable: boolean): Promise<User[]> {
+    return this.userRepo.find({ where: { role, isAvailable } as any });
+  }
+
   /**
    * Actualiza datos de usuario, incluyendo nested contactInfo y contraseña opcional
    */
@@ -277,6 +281,14 @@ export class UserService {
     user.currentPositionUpdatedAt = new Date();
     await this.userRepo.save(user);
     return { ok: true };
+  }
+
+  async setAvailability(userId: string, isAvailable: boolean) {
+    const user = await this.findOne(userId);
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    user.isAvailable = !!isAvailable;
+    await this.userRepo.save(user);
+    return { ok: true, isAvailable: user.isAvailable };
   }
 
   /**

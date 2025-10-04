@@ -115,7 +115,8 @@ export class AdminService {
 
   // === GESTIÓN DE DROVERS ===
   static async getDrovers(): Promise<any[]> {
-    return await ApiService.get('/users/role/drover');
+    // Por defecto, traer sólo disponibles para la UI de asignación
+    return await ApiService.get('/users/role/drover?available=true');
   }
 
   static async approveDrover(droverId: string): Promise<void> {

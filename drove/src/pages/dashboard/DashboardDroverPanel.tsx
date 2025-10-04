@@ -29,6 +29,8 @@ const DashboardDroverPanel: React.FC = () => {
     try { return localStorage.getItem('drover_available') === '1'; } catch { return false; }
   });
   const watcherRef = React.useRef<number | null>(null);
+  const intervalRef = React.useRef<number | null>(null);
+  const UPDATE_MINUTES = 3; // intervalo de envío en minutos (optimizable)
 
   /* ------------------ fetch datos reales ------------------ */
   const { data: dashboard, isLoading } = useQuery({
@@ -115,11 +117,25 @@ const DashboardDroverPanel: React.FC = () => {
   // Rehidratar tracking al montar si estaba activo (colocado antes de cualquier return)
   React.useEffect(() => {
     const active = (() => { try { return localStorage.getItem('drover_tracking_active') === '1'; } catch { return false; } })();
-    if (active && watcherRef.current == null && 'geolocation' in navigator) {
-      watcherRef.current = navigator.geolocation.watchPosition(async (pos) => {
-        try { await DroverService.updateCurrentPosition(pos.coords.latitude, pos.coords.longitude); } catch { }
-      }, () => { }, { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 });
+    const startInterval = () => {
+      if (intervalRef.current != null) return;
+      intervalRef.current = window.setInterval(() => {
+        if ('geolocation' in navigator) {
+          navigator.geolocation.getCurrentPosition(async (pos) => {
+            try { await DroverService.updateCurrentPosition(pos.coords.latitude, pos.coords.longitude); } catch { }
+          });
+        }
+      }, UPDATE_MINUTES * 60 * 1000);
+    };
+    if (active) {
       setTracking(true);
+      // Enviar una vez al recuperar foco y al iniciar
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+          try { await DroverService.updateCurrentPosition(pos.coords.latitude, pos.coords.longitude); } catch { }
+        });
+      }
+      startInterval();
     }
     const onVisibility = () => {
       if (document.visibilityState === 'visible' && active) {
@@ -131,6 +147,7 @@ const DashboardDroverPanel: React.FC = () => {
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
+      if (intervalRef.current != null) { window.clearInterval(intervalRef.current); intervalRef.current = null; }
     };
   }, []);
 
@@ -143,12 +160,28 @@ const DashboardDroverPanel: React.FC = () => {
   const handleAvailabilityChange = async (checked: boolean) => {
     setAvailable(checked);
     try { localStorage.setItem('drover_available', checked ? '1' : '0'); } catch { }
+    try { await DroverService.setAvailability(checked); } catch { }
     if (checked && 'geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(async (pos) => {
         try {
           await DroverService.updateCurrentPosition(pos.coords.latitude, pos.coords.longitude);
         } catch { }
       });
+      // Activar tracking interval persistente
+      try { localStorage.setItem('drover_tracking_active', '1'); } catch {}
+      if (intervalRef.current == null) {
+        intervalRef.current = window.setInterval(() => {
+          if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+              try { await DroverService.updateCurrentPosition(pos.coords.latitude, pos.coords.longitude); } catch { }
+            });
+          }
+        }, UPDATE_MINUTES * 60 * 1000);
+      }
+    } else {
+      // Desactivar interval si no está disponible
+      try { localStorage.setItem('drover_tracking_active', '0'); } catch {}
+      if (intervalRef.current != null) { window.clearInterval(intervalRef.current); intervalRef.current = null; }
     }
   };
 

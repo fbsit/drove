@@ -106,6 +106,19 @@ export class ResendService {
     this.client = new Resend(apiKey);
   }
 
+  private localizeInvoiceStatus(status: string | undefined | null): string {
+    const key = String(status || '').toUpperCase();
+    const map: Record<string, string> = {
+      DRAFT: 'Borrador',
+      SENT: 'Emitida',
+      PAID: 'Pagada',
+      VOID: 'Anulada',
+      REJECTED: 'Rechazada',
+      ADVANCE: 'Anticipo',
+    };
+    return map[key] || (status || '');
+  }
+
   private loadTemplate(name: string): HandlebarsTemplateDelegate {
     if (this.compiledTemplates[name]) return this.compiledTemplates[name];
 
@@ -143,7 +156,8 @@ export class ResendService {
   /* ============== NUEVOS: Notificaciones de estado de factura ============== */
   async sendInvoiceStatusEmailClient(payload: { email: string; name: string; status: string; invoiceNumber?: string; amount?: number; invoiceUrl?: string; travelId?: string; updatedAt?: string; }) {
     if (!this.client) return false;
-    const subject = `Estado de tu factura: ${payload.status}`;
+    const statusEs = this.localizeInvoiceStatus(payload.status);
+    const subject = `Estado de tu factura: ${statusEs}`;
     const html = `
       <table cellspacing="0" cellpadding="0" width="100%">
         <tr><td align="center">
@@ -151,7 +165,7 @@ export class ResendService {
             <tr><td align="center"><img width="160" alt="DROVE" src="https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null"></td></tr>
             <tr><td>
               <h2 style="color:#6EF7FF;margin:0 0 8px">Actualización de factura</h2>
-              <p>Hola ${payload.name || 'cliente'}, tu factura ha cambiado al estado <strong>${payload.status}</strong>.</p>
+              <p>Hola ${payload.name || 'cliente'}, tu factura ha cambiado al estado <strong>${statusEs}</strong>.</p>
               ${payload.invoiceNumber ? `<p>N° de factura: <strong>${payload.invoiceNumber}</strong></p>` : ''}
               ${payload.amount != null ? `<p>Monto: €${Number(payload.amount || 0).toFixed(2)}</p>` : ''}
               ${payload.travelId ? `<p>Traslado: ${payload.travelId}</p>` : ''}
@@ -168,13 +182,14 @@ export class ResendService {
   async sendInvoiceStatusEmailAdmin(payload: { email?: string; status: string; invoiceNumber?: string; amount?: number; travelId?: string; updatedAt?: string; clientEmail?: string; }) {
     if (!this.client) return false;
     const admin = payload.email || process.env.ADMIN_NOTIF_EMAIL || 'info@drove.es';
-    const subject = `Factura ${payload.status}${payload.invoiceNumber ? ` #${payload.invoiceNumber}` : ''}`;
+    const statusEs = this.localizeInvoiceStatus(payload.status);
+    const subject = `Factura ${statusEs}${payload.invoiceNumber ? ` #${payload.invoiceNumber}` : ''}`;
     const html = `
       <table cellspacing="0" cellpadding="0" width="100%">
         <tr><td align="center">
           <table width="600" cellspacing="0" cellpadding="20" style="background:#1a1122;border-radius:10px;color:#fff">
             <tr><td>
-              <h2 style="color:#6EF7FF;margin:0 0 8px">Factura ${payload.status}</h2>
+              <h2 style="color:#6EF7FF;margin:0 0 8px">Factura ${statusEs}</h2>
               ${payload.invoiceNumber ? `<p><strong>N°:</strong> ${payload.invoiceNumber}</p>` : ''}
               ${payload.travelId ? `<p><strong>Transfer:</strong> ${payload.travelId}</p>` : ''}
               ${payload.amount != null ? `<p><strong>Monto:</strong> €${Number(payload.amount || 0).toFixed(2)}</p>` : ''}

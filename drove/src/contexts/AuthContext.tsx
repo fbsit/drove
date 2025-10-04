@@ -8,6 +8,7 @@ import React, {
 import { useAuthState } from '@/hooks/auth/useAuthState';
 import { useAuthActions } from '@/hooks/useAuthActions';
 import { AuthService, User } from '@/services/authService';
+import DroverService from '@/services/droverService';
 import { toast } from '@/hooks/use-toast';
 import type { AuthSignInData } from '@/types/auth';
 import { useNavigate } from 'react-router-dom';
@@ -108,6 +109,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           localStorage.setItem('auth_user_email', (userData as any).email);
           localStorage.setItem('auth_user_name', (userData as any).full_name || '');
           localStorage.setItem('auth_user_type', (userData as any).user_type || '');
+          // Sincronizar disponibilidad y enviar ubicación inicial si aplica
+          try {
+            const roleLower = String((userData as any).role || '').toLowerCase();
+            const backendAvailable = Boolean((userData as any).isAvailable);
+            const storedAvailable = (() => { try { return localStorage.getItem('drover_available') === '1'; } catch { return false; } })();
+            const isDrover = roleLower === 'drover';
+            const isAvailable = isDrover && (backendAvailable || storedAvailable);
+            if (isAvailable) {
+              try { localStorage.setItem('drover_available', '1'); } catch {}
+              try { localStorage.setItem('drover_tracking_active', '1'); } catch {}
+              if (typeof window !== 'undefined' && 'geolocation' in navigator) {
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                  try { await DroverService.updateCurrentPosition(pos.coords.latitude, pos.coords.longitude); } catch {}
+                });
+              }
+            }
+          } catch {}
           
           console.log("✅ Usuario completo establecido:", userData);
           getRedirectPathForUser();
