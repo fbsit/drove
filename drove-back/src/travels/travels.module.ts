@@ -13,6 +13,7 @@ import { TravelsGateway } from './travel.gateway';
 import { User } from '../user/entities/user.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PricesModule } from '../rates/prices.module';
+import { RoutesModule } from '../routes/routes.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Travels, Payment, TravelOffer, User]), // ← aquí agregamos Payment
@@ -20,6 +21,7 @@ import { PricesModule } from '../rates/prices.module';
     ResendModule,
     NotificationsModule,
     forwardRef(() => PricesModule),
+    RoutesModule,
   ],
   controllers: [TravelsController],
   providers: [TravelsService, TravelsGateway, StripeService],
