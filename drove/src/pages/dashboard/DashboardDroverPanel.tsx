@@ -79,6 +79,13 @@ const DashboardDroverPanel: React.FC = () => {
     return '—';
   };
 
+  const parseMoney = (value: any): number => {
+    if (typeof value === 'number') return isFinite(value) ? value : 0;
+    if (value == null) return 0;
+    const num = parseFloat(String(value).replace(/[^0-9,.-]/g, '').replace(',', '.'));
+    return isNaN(num) ? 0 : num;
+  };
+
   const trips = (droverTrips as any[]).map((t: any) => ({
     id: t.id || t._id,
     origin: readAddr(t, [
@@ -101,8 +108,9 @@ const DashboardDroverPanel: React.FC = () => {
     ]),
     status: t.status || t.transferStatus || t.state || 'ASSIGNED',
     createdAt: t.createdAt || t.created_at || t.scheduledDate || t.pickup_details?.pickupDate || Date.now(),
-    totalPrice: t.totalPrice ?? t.price ?? t.amount ?? 0,
-    driverFee: typeof t.driverFee === 'number' ? t.driverFee : undefined,
+    totalPrice: parseMoney(t.totalPrice ?? t.price ?? t.amount ?? 0),
+    driverFee: parseMoney(t.driverFee ?? (t as any)?.fee ?? (t as any)?.compensation ?? 0),
+    distanceTravel: t.distanceTravel ?? t.transfer_details?.distance ?? t.distance ?? '-',
   }));
   const [search, setSearch] = React.useState('');
   const [status, setStatus] = React.useState('');
@@ -273,7 +281,31 @@ const DashboardDroverPanel: React.FC = () => {
                 </div>
                 {/* Pie con ganancia a la izquierda y botón a la derecha */}
                 <div className="flex justify-between items-center gap-4">
-                  <div className="text-[#6EF7FF] text-lg font-bold flex-1 text-start">Ganancia: €{Number((t.driverFee ?? 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                  {(() => {
+                    const empType = String(user?.employmentType || '').toUpperCase();
+                    const km = (() => { const n = parseFloat(String(t.distanceTravel || '').replace(/[^0-9,.-]/g, '').replace(',', '.')); return isNaN(n) ? 0 : Math.round(n); })();
+                    const freelanceTable: Array<{ min: number; max: number; driverFee: number }> = [
+                      { min: 0, max: 99, driverFee: 50 }, { min: 100, max: 199, driverFee: 70 },
+                      { min: 200, max: 299, driverFee: 95 }, { min: 300, max: 399, driverFee: 110 },
+                      { min: 400, max: 499, driverFee: 119 }, { min: 500, max: 599, driverFee: 127 },
+                      { min: 600, max: 699, driverFee: 145 }, { min: 700, max: 799, driverFee: 160 },
+                      { min: 800, max: 899, driverFee: 175 }, { min: 900, max: 999, driverFee: 195 },
+                      { min: 1000, max: 1099, driverFee: 210 }, { min: 1100, max: 1199, driverFee: 230 },
+                      { min: 1200, max: 1299, driverFee: 236 }, { min: 1300, max: 1399, driverFee: 245 },
+                      { min: 1400, max: 1499, driverFee: 270 }, { min: 1500, max: 1599, driverFee: 280 },
+                      { min: 1600, max: 1699, driverFee: 290 }, { min: 1700, max: 1799, driverFee: 300 },
+                      { min: 1800, max: 1899, driverFee: 310 }, { min: 1900, max: 1999, driverFee: 320 },
+                    ];
+                    const fee = Number(t.driverFee || 0);
+                    const display = fee > 0
+                      ? fee
+                      : (empType === 'FREELANCE' && km > 0
+                          ? (freelanceTable.find(r => km >= r.min && km <= r.max) || freelanceTable[freelanceTable.length - 1]).driverFee
+                          : 0);
+                    return (
+                      <div className="text-[#6EF7FF] text-lg font-bold flex-1 text-start">Ganancia: €{Number(display).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    );
+                  })()}
                   <Link to={`/traslados/activo/${t.id}`} className="px-5 py-2 h-9 rounded-2xl bg-[#6EF7FF] text-[#22142A] text-sm hover:bg-[#22142A] hover:text-white transition-colors">Ver detalles</Link>
                 </div>
               </div>

@@ -439,23 +439,24 @@ const ActiveTrip: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Ganancia estimada */}
+          {/* Precio/Ganancia por rol */}
           <Card className="bg-gradient-to-br from-green-900/20 to-green-500/10 border-white/10 text-start">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-green-300" /> Ganancia Estimada
+                <DollarSign className="h-5 w-5 text-green-300" />
+                {String(user?.role || '').toLowerCase() === 'drover' ? 'Ganancia Estimada' : 'Precio del traslado'}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {employmentType === 'FREELANCE' ? (
+              {String(user?.role || '').toLowerCase() === 'drover' ? (
                 <>
-                  <div className="text-3xl font-bold text-green-300">€{Number(freelanceFee ?? 0).toFixed(2)}</div>
+                  <div className="text-3xl font-bold text-green-300">€{Number((trip?.driverFee ?? freelanceFee ?? 0)).toFixed(2)}</div>
                   <div className="text-white/60 text-sm mt-2">Compensación estimada por traslado</div>
                 </>
               ) : (
                 <>
-                  <div className="text-3xl font-bold text-green-300">—</div>
-                  <div className="text-white/60 text-sm mt-2">Visible sólo al superar umbral mensual</div>
+                  <div className="text-3xl font-bold text-green-300">€{Number(trip?.totalPrice ?? 0).toFixed(2)}</div>
+                  <div className="text-white/60 text-sm mt-2">Este es el precio total a abonar por el servicio</div>
                 </>
               )}
             </CardContent>

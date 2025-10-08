@@ -17,6 +17,7 @@ import {
   Download,
   ArrowLeft,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import TransferStepsBar, { getStatusLabel } from "@/components/trips/TransferStepsBar";;
 import GoogleMapComponent from "@/components/maps/GoogleMap";
 import { useToast } from "@/hooks/use-toast";
@@ -64,6 +65,7 @@ export default function ClientTripDetail() {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
 
   useEffect(() => {
     handleGetTravel();
@@ -146,6 +148,10 @@ export default function ClientTripDetail() {
   const canLeaveReview = isCompleted && !trip?.review;
   // Mostrar datos bancarios mientras el pago no esté marcado como PAID
   const isPendingPayment = String(trip?.invoice?.status || trip?.status || '').toUpperCase() !== 'PAID';
+  const role = String(user?.role || '').toLowerCase();
+  const isAdmin = role === 'admin' || role === 'traffic_manager' || role === 'trafficboss' || role === 'traffic_boss';
+  const isDrover = role === 'drover';
+  const driverFeeNumber = typeof trip?.driverFee === 'number' ? trip?.driverFee : Number(trip?.driverFee);
 
   const statusInfo = {
     PENDINGPAID: { label: 'Pendiente de pago', hint: 'Abona el viaje para continuar', color: '#d97706' },
@@ -290,26 +296,27 @@ export default function ClientTripDetail() {
 
             <div
               className="rounded-2xl shadow-xl p-6 flex flex-col items-center justify-center text-center bg-white/90"
-
             >
               <div className="flex items-center gap-2">
                 <CreditCard style={{ color: "#1264a3" }} size={22} />
                 <span className="font-montserrat font-semibold text-lg" style={{ color: "#1264a3" }}>
-                  Precio del traslado
+                  {isDrover ? 'Ganancia Estimada' : 'Precio del traslado'}
                 </span>
               </div>
               <div
                 className="font-montserrat font-bold text-xl md:text-3xl mt-2"
                 style={{ color: "#0A2B4B" }}
               >
-                €{Number(trip?.totalPrice ?? 0).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {isDrover
+                  ? `€${Number(driverFeeNumber || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                  : `€${Number(trip?.totalPrice ?? 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               </div>
               <div className="text-xs text-center font-montserrat" style={{ color: "#1264a3" }}>
-                Este es el precio total a abonar por el servicio.
+                {isDrover ? 'Compensación estimada por traslado.' : 'Este es el precio total a abonar por el servicio.'}
               </div>
 
               <div className="flex flex-col gap-1 mt-4 items-center">
-                {isPendingPayment && (
+                {isPendingPayment && !isDrover && (
                   <div className="mt-1 w-full text-left bg-[#e8f7ff]/60 rounded-xl p-4 md:p-5">
                     <div className="text-[#0A2B4B] text-xs font-montserrat font-semibold uppercase tracking-wide pb-2">
                       Datos para depósito/transferencia

@@ -33,6 +33,7 @@ import { forwardRef, Inject } from '@nestjs/common';
 import { User, UserRole, DroverEmploymentType } from '../user/entities/user.entity';
 import { CompensationService, parseKmFromDistance } from '../rates/compensation.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { RoutesService } from '../routes/routes.service';
 
 interface RescheduleRecord {
   previousDate: string | null;
@@ -65,6 +66,7 @@ export class TravelsService {
     private readonly gateway: TravelsGateway,
     private readonly notifications?: NotificationsService,
     private readonly compensation?: CompensationService,
+    private readonly routesService?: RoutesService,
   ) {}
 
   private readonly defaultRelations = [
@@ -187,6 +189,22 @@ export class TravelsService {
     } else {
       travel.status = TransferStatus.CREATED;
     }
+    // Calcular distancia/tiempo reales con Google Distance Matrix cuando haya coordenadas
+    try {
+      const o = travel.startAddress as any;
+      const d = travel.endAddress as any;
+      const oLat = Number(o?.lat), oLng = Number(o?.lng), dLat = Number(d?.lat), dLng = Number(d?.lng);
+      if (isFinite(oLat) && isFinite(oLng) && isFinite(dLat) && isFinite(dLng) && this.routesService) {
+        const res: any = await this.routesService.getDistance({ originLat: oLat, originLng: oLng, destinationLat: dLat, destinationLng: dLng });
+        if (res?.distance) {
+          travel.distanceTravel = String(res.distance); // p.ej. "31 km"
+        }
+        if (res?.duration) {
+          travel.timeTravel = String(res.duration); // p.ej. "39 min"
+        }
+      }
+    } catch {}
+
     // Intentar precomputar driverFee si ya hay drover asignado al crear (poco común)
     try {
       if (travel.droverId) {
