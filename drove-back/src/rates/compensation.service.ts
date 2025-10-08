@@ -60,6 +60,26 @@ export class CompensationService {
     };
   }
 
+  // Estimación por viaje para contratados: prorratea el salario base sobre el umbral mensual
+  // y agrega extra proporcional por km por encima del umbral si aplica.
+  calcContractedPerTrip(km: number) {
+    const kilometers = Math.max(0, Math.round(km));
+    const basePerKm = this.CONTRACTED_BASE / this.CONTRACTED_THRESHOLD_KM;
+    const basePortion = Math.min(kilometers, this.CONTRACTED_THRESHOLD_KM) * basePerKm;
+    const extraKm = Math.max(0, kilometers - this.CONTRACTED_THRESHOLD_KM);
+    const extraCompensation = extraKm * this.CONTRACTED_EXTRA_RATE;
+    const driverFee = Number((basePortion + extraCompensation).toFixed(2));
+    return {
+      type: 'CONTRACTED' as const,
+      kilometers,
+      basePerKm: Number(basePerKm.toFixed(4)),
+      thresholdKm: this.CONTRACTED_THRESHOLD_KM,
+      extraRate: this.CONTRACTED_EXTRA_RATE,
+      extraKm,
+      driverFee,
+    };
+  }
+
   async calcContractedMonthlyByDrover(droverId: string, monthISO: string) {
     const drover = await this.userRepo.findOne({ where: { id: droverId } });
     if (!drover) throw new Error('Drover not found');

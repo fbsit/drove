@@ -127,6 +127,13 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
   const pagoTarjeta = trip.payment_method === "card";
   const isCompleted = trip.status === "completado";
   const canLeaveReview = isCompleted && !trip.review;
+  const isPendingPayment = String(trip?.invoice?.status || trip?.status || '').toUpperCase() !== 'PAID';
+
+  const handleCopyIban = () => {
+    const iban = 'ES8300494612672916115882';
+    navigator.clipboard.writeText(iban);
+    toast({ title: 'Cuenta copiada', description: iban });
+  };
 
   return (
     <div
@@ -251,6 +258,22 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
               </DroveButton>
             </div>
           </div>
+          {isPendingPayment && (
+            <div className="mt-3 w-full text-left bg-[#e8f7ff]/60 rounded-xl p-4">
+              <div className="text-[#0A2B4B] text-[10px] font-montserrat font-semibold uppercase tracking-wide pb-2">
+                Datos para depósito/transferencia
+              </div>
+              <div className="text-[#0A2B4B] text-[11px] font-montserrat grid grid-cols-1 gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="truncate"><span className="font-semibold">Cuenta:</span> <span className="font-mono">ES8300494612672916115882</span></div>
+                  <button onClick={handleCopyIban} className="shrink-0 px-2 py-1 rounded-md bg-[#0A2B4B] text-white text-[10px] font-semibold">Copiar</button>
+                </div>
+                <div>DROVELAND INTERNATIONAL S.L.</div>
+                <div><span className="font-semibold">NIF:</span> B72713647</div>
+                <div>calle Eras 54 3ºD España</div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Bloque de Ruta del Traslado - rounded-xl aplicado */}

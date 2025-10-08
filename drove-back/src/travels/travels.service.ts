@@ -192,8 +192,11 @@ export class TravelsService {
       if (travel.droverId) {
         const drover = await this.userRepo.findOne({ where: { id: travel.droverId } });
         const km = parseKmFromDistance(travel.distanceTravel);
-        if (drover && String(drover.employmentType || '').toUpperCase() === 'FREELANCE' && typeof km === 'number' && km > 0) {
-          const preview = this.compensation?.calcFreelancePerTrip(km);
+        if (drover && typeof km === 'number' && km > 0 && this.compensation) {
+          const type = String(drover.employmentType || '').toUpperCase();
+          const preview = type === 'FREELANCE'
+            ? this.compensation.calcFreelancePerTrip(km)
+            : this.compensation.calcContractedPerTrip(km);
           travel.driverFee = preview?.driverFee ?? null;
           travel.driverFeeMeta = preview ? { ...preview } : null;
         } else {
@@ -449,12 +452,15 @@ export class TravelsService {
       // aceptación → asignar viaje
       travel.droverId = droverId;
       travel.status = TransferStatus.ASSIGNED;
-      // Calcular y persistir compensación si drover es freelance
+      // Calcular y persistir compensación (freelance o contratado)
       try {
         const drover = await manager.getRepository(User).findOne({ where: { id: droverId } });
         const km = parseKmFromDistance(travel.distanceTravel);
-        if (drover && drover.employmentType === DroverEmploymentType.FREELANCE && typeof km === 'number' && km > 0) {
-          const preview = this.compensation?.calcFreelancePerTrip(km);
+        if (drover && typeof km === 'number' && km > 0 && this.compensation) {
+          const type = String(drover.employmentType || '').toUpperCase();
+          const preview = type === 'FREELANCE'
+            ? this.compensation.calcFreelancePerTrip(km)
+            : this.compensation.calcContractedPerTrip(km);
           travel.driverFee = preview?.driverFee ?? null;
           travel.driverFeeMeta = preview ? { ...preview } : null;
         } else {
@@ -514,8 +520,11 @@ export class TravelsService {
         if (travel) {
           const drover = await this.userRepo.findOne({ where: { id: providedDroverId } });
           const km = parseKmFromDistance(travel.distanceTravel);
-          if (drover && drover.employmentType === DroverEmploymentType.FREELANCE && typeof km === 'number' && km > 0) {
-            const preview = this.compensation?.calcFreelancePerTrip(km);
+          if (drover && typeof km === 'number' && km > 0 && this.compensation) {
+            const type = String(drover.employmentType || '').toUpperCase();
+            const preview = type === 'FREELANCE'
+              ? this.compensation.calcFreelancePerTrip(km)
+              : this.compensation.calcContractedPerTrip(km);
             travel.driverFee = preview?.driverFee ?? null;
             travel.driverFeeMeta = preview ? { ...preview } : null;
           } else {
