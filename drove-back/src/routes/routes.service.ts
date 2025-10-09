@@ -61,6 +61,29 @@ export class RoutesService {
       return { distance: `${km} km`, duration, source: 'fallback' };
     };
 
+    const tryOsrm = async (
+      oLat: number,
+      oLng: number,
+      dLat: number,
+      dLng: number,
+    ) => {
+      try {
+        // OSRM espera lon,lat
+        const url = `https://router.project-osrm.org/route/v1/driving/${oLng},${oLat};${dLng},${dLat}?overview=false&alternatives=false&steps=false`;
+        const resp = await fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+        if (!resp.ok) return null;
+        const json = await resp.json();
+        const route = json?.routes?.[0];
+        if (!route || json?.code !== 'Ok') return null;
+        const km = Math.max(0, Math.round(Number(route.distance || 0) / 1000));
+        const mins = Math.max(0, Math.round(Number(route.duration || 0) / 60));
+        const duration = mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60} min` : `${mins} min`;
+        return { distance: `${km} km`, duration, source: 'osrm' };
+      } catch {
+        return null;
+      }
+    };
+
     try {
       const apiKey = this.configService.get<string>('GOOGLE_MAPS_API_KEY');
 
@@ -102,6 +125,9 @@ export class RoutesService {
           const duration = mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60} min` : `${mins} min`;
           return { distance: `${km} km`, duration, source: 'routes' };
         }
+        // Intentar OSRM
+        const osrm = await tryOsrm(originLat, originLng, destinationLat, destinationLng);
+        if (osrm) return osrm;
         return safeFallback(originLat, originLng, destinationLat, destinationLng);
       }
 
@@ -128,6 +154,9 @@ export class RoutesService {
           const duration = mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60} min` : `${mins} min`;
           return { distance: `${km} km`, duration, source: 'routes' };
         }
+        // Intentar OSRM
+        const osrm = await tryOsrm(originLat, originLng, destinationLat, destinationLng);
+        if (osrm) return osrm;
         return safeFallback(originLat, originLng, destinationLat, destinationLng);
       }
 
@@ -153,6 +182,9 @@ export class RoutesService {
           const duration2 = mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60} min` : `${mins} min`;
           return { distance: `${km} km`, duration: duration2, source: 'routes' };
         }
+        // Intentar OSRM
+        const osrm = await tryOsrm(originLat, originLng, destinationLat, destinationLng);
+        if (osrm) return osrm;
         return safeFallback(originLat, originLng, destinationLat, destinationLng);
       }
 
