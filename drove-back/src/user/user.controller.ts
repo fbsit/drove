@@ -73,11 +73,16 @@ export class UserController {
   }
 
   @Get('role/:role')
-  @ApiOperation({ summary: 'Listar usuarios por rol' })
+  @ApiOperation({ summary: 'Listar usuarios por rol (optimizado para asignación)' })
   @ApiParam({ name: 'role', enum: ['CLIENT', 'DROVER', 'ADMIN', 'TRAFFICBOSS'] })
-  findByRole(@Param('role') roleParam: string) {
+  async findByRole(@Param('role') roleParam: string, @Request() req) {
     const role = roleParam.toUpperCase();
-    return this.userService.findByRole(role);
+    const onlyAvailable = String(req?.query?.available || '').toLowerCase();
+    const list = (onlyAvailable === 'true' || onlyAvailable === '1')
+      ? await this.userService.findByRoleAndAvailability(role, true)
+      : await this.userService.findByRole(role);
+    // Sanitizar y enriquecer
+    return this.userService.mapUsersForAssignment(list);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -145,5 +150,17 @@ export class UserController {
     @Body('lng') lng: number,
   ) {
     return this.userService.updateCurrentPosition(req.user.id, lat, lng);
+  }
+
+  /* --- Disponibilidad de drover --- */
+  @UseGuards(JwtOrTestGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Actualizar disponibilidad (solo drover)' })
+  @Post('me/availability')
+  async setAvailability(
+    @Request() req,
+    @Body('isAvailable') isAvailable: boolean,
+  ) {
+    return this.userService.setAvailability(req.user.id, !!isAvailable);
   }
 }

@@ -29,8 +29,14 @@ export class SupportMessage {
   @Column()
   senderName: string;
 
+  @Column({ type: 'uuid', nullable: true })
+  senderUserId?: string | null;
+
   @CreateDateColumn({ type: 'timestamptz' })
   timestamp: Date;
+
+  @Column({ type: 'int', default: 0 })
+  seq: number; // secuencia incremental por ticket para delta-sync
 
   @Column('uuid')
   ticketId: string;

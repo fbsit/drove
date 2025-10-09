@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { UserType, RegistrationFormData } from "@/types/new-registration";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,8 +27,11 @@ const MobileRegistrationForm: React.FC<Props> = ({
   const [formData, setFormData] = useState<Partial<RegistrationFormData>>({});
   const [submitting, setSubmitting] = useState(false);
   const [externalErrors, setExternalErrors] = useState<Record<string, string>>({});
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const successTimeoutRef = useRef<number | null>(null);
 
-  const getSteps = () => {
+  const getSteps = useCallback(() => {
     if (!userType) return ["Tipo de cuenta"];
 
     if (userType === "client") {
@@ -47,9 +50,9 @@ const MobileRegistrationForm: React.FC<Props> = ({
       "Documentación",
       "Confirmación",
     ];
-  };
+  }, [userType]);
 
-  const steps = getSteps();
+  const steps = useMemo(() => getSteps(), [getSteps]);
   const totalSteps = steps.length;
 
   const handleUserTypeSelect = (type: UserType) => {
@@ -58,79 +61,23 @@ const MobileRegistrationForm: React.FC<Props> = ({
     setCurrentStep(1);
   };
 
-  const handleStepData = (stepData: Partial<RegistrationFormData>) => {
+  const handleStepData = useCallback((stepData: Partial<RegistrationFormData>) => {
     setFormData((prev) => ({ ...prev, ...stepData }));
-  };
+  }, []);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentStep < totalSteps - 1) {
       setCurrentStep((prev) => prev + 1);
     }
-  };
+  }, [currentStep, totalSteps]);
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (currentStep > 0) {
       setCurrentStep((prev) => prev - 1);
     }
-  };
+  }, [currentStep]);
 
-  const handleSubmit = async () => {
-    if (!formData.userType || !isFormComplete() || submitting) return;
-    setSubmitting(true);
-    try {
-      // Preparar payload para AuthService.signUp (mismo mapping que desktop)
-      const registrationData = {
-        email: formData.email!,
-        password: formData.password!,
-        userType: formData.userType,
-        contactInfo: {
-          fullName: formData.fullName || "",
-          phone: formData.phone || "",
-          documentId: formData.documentNumber || "",
-          documentType: formData.documentType || "DNI",
-          address: formData.address || "",
-          city: formData.city || "",
-          state: formData.province || "",
-          zip: formData.postalCode || "",
-          country: formData.country || "España",
-          // Para drover esperamos URLs en el formData (los pasos ya subieron los archivos)
-          licenseFront: formData.licenseFront as any,
-          licenseBack: formData.licenseBack as any,
-          selfie: formData.profilePhoto as any,
-          imageUpload2: formData.backgroundCheck as any,
-          pdfUpload: formData.backgroundCheck as any,
-          profileComplete: true,
-        },
-      };
-
-      await AuthService.signUp(registrationData as any);
-      await onComplete(formData as RegistrationFormData);
-    } catch (e: any) {
-      console.error("Error registrando usuario (mobile):", e);
-      const msg = e?.message || 'No se pudo completar el registro. Verifica tus datos.';
-      try {
-        const { toast } = await import('@/hooks/use-toast');
-        toast({ variant: 'destructive', title: 'Error en registro', description: msg });
-      } catch {}
-
-      // Mapeo de error → campos del paso fiscal para permitir corrección
-      const lower = String(msg).toLowerCase();
-      const nextErrors: Record<string, string> = {};
-      if (lower.includes('dni inválido') || lower.includes('nie inválido') || lower.includes('cif inválido')) {
-        nextErrors.documentNumber = msg;
-      }
-      setExternalErrors(nextErrors);
-
-      // Volver al paso "Datos fiscales" si hubo error en documento
-      if (nextErrors.documentNumber) {
-        setCurrentStep(userType === 'client' ? 2 : currentStep);
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const isFormComplete = () => {
+  const isFormComplete = useCallback(() => {
     const data = formData;
     if (!data.userType) return false;
 
@@ -157,11 +104,81 @@ const MobileRegistrationForm: React.FC<Props> = ({
     }
 
     return false;
-  };
+  }, [formData]);
 
-  const getStepProgress = () => {
+  const handleSubmit = useCallback(async () => {
+    if (!formData.userType || !isFormComplete() || submitting) return;
+    setSubmitting(true);
+    try {
+      // Preparar payload para AuthService.signUp (mismo mapping que desktop)
+      const registrationData = {
+        email: String(formData.email!).trim().toLowerCase(),
+        password: formData.password!,
+        userType: formData.userType,
+        contactInfo: {
+          fullName: formData.fullName || "",
+          companyName: (formData as any).companyName || "",
+          phone: formData.phone || "",
+          documentId: formData.documentNumber || "",
+          documentType: formData.documentType || "DNI",
+          address: formData.address || "",
+          city: formData.city || "",
+          state: formData.province || "",
+          zip: formData.postalCode || "",
+          country: formData.country || "España",
+          latitud: formData.lat != null ? String(formData.lat) : undefined,
+          longitud: formData.lng != null ? String(formData.lng) : undefined,
+          // Para drover esperamos URLs en el formData (los pasos ya subieron los archivos)
+          licenseFront: formData.licenseFront as any,
+          licenseBack: formData.licenseBack as any,
+          selfie: formData.profilePhoto as any,
+          imageUpload2: formData.backgroundCheck as any,
+          pdfUpload: formData.backgroundCheck as any,
+          profileComplete: true,
+        },
+      };
+
+      const res = await AuthService.signUp(registrationData as any);
+      if (res && (res.error || (typeof res.status === 'number' && res.status >= 400))) {
+        throw new Error(res?.message || 'Error en registro');
+      }
+      setSubmissionError(null);
+      setShowSuccess(true);
+      // Mostrar éxito por ~1.5s y luego continuar con onComplete
+      successTimeoutRef.current = window.setTimeout(() => {
+        onComplete(formData as RegistrationFormData);
+      }, 1500);
+    } catch (e: any) {
+      console.error("Error registrando usuario (mobile):", e);
+      const msg = e?.message || 'No se pudo completar el registro. Verifica tus datos.';
+      try {
+        const { toast } = await import('@/hooks/use-toast');
+        toast({ variant: 'destructive', title: 'Error en registro', description: msg });
+      } catch {}
+      setSubmissionError(msg);
+
+      // Mapeo de error → campos del paso correcto para permitir corrección
+      const lower = String(msg).toLowerCase();
+      const nextErrors: Record<string, string> = {};
+      if (lower.includes('dni inválido') || lower.includes('nie inválido') || lower.includes('cif inválido')) {
+        nextErrors.documentNumber = msg;
+      }
+      if (lower.includes('ya existe') || lower.includes('registrado')) {
+        nextErrors.email = msg;
+        setCurrentStep(1);
+      }
+      setExternalErrors(nextErrors);
+
+      // Volver al paso "Datos fiscales" si hubo error en documento
+      if (nextErrors.documentNumber) setCurrentStep(2);
+    } finally {
+      setSubmitting(false);
+    }
+  }, [formData, isFormComplete, submitting, onComplete]);
+
+  const getStepProgress = useCallback(() => {
     return Math.round((currentStep / (totalSteps - 1)) * 100);
-  };
+  }, [currentStep, totalSteps]);
 
   // Auto-enviar al llegar al último paso cuando todo está completo (alineado con desktop)
   useEffect(() => {
@@ -172,6 +189,25 @@ const MobileRegistrationForm: React.FC<Props> = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep, userType]);
+
+  // Al reingresar al último paso, resetear error y éxito para evitar UI obsoleta
+  useEffect(() => {
+    const isOnLast = currentStep === totalSteps - 1;
+    if (isOnLast) {
+      setSubmissionError(null);
+      setShowSuccess(false);
+    }
+  }, [currentStep, totalSteps]);
+
+  // Limpiar timeout de éxito al desmontar
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+        successTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   const renderCurrentStep = () => {
     if (currentStep === 0) {
@@ -204,9 +240,10 @@ const MobileRegistrationForm: React.FC<Props> = ({
           return (
             <RegistrationConfirmation
               onConfirm={handleSubmit}
-              isLoading={isLoading || submitting}
+              isLoading={!showSuccess && !submissionError}
               data={formData}
               onPrevious={handlePrevious}
+              errorMessage={submissionError}
             />
           );
         default:
@@ -246,9 +283,10 @@ const MobileRegistrationForm: React.FC<Props> = ({
           return (
             <RegistrationConfirmation
               onConfirm={handleSubmit}
-              isLoading={isLoading}
+              isLoading={!showSuccess && !submissionError}
               data={formData}
               onPrevious={handlePrevious}
+              errorMessage={submissionError}
             />
           );
         default:
@@ -260,7 +298,7 @@ const MobileRegistrationForm: React.FC<Props> = ({
   };
 
   return (
-    <div className="pt-36 min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] flex flex-col">
+    <div className="pt-40 min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] flex flex-col">
       {/* Header móvil fijo */}
       <div className="fixed top-0 left-0 right-0 bg-[#22142A] z-50 px-4 py-3">
         <div className="flex items-center justify-between">

@@ -2,6 +2,8 @@ import React from 'react';
 import { MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSupportChat } from '@/contexts/SupportChatContext';
+import { useSupportSocket } from '@/hooks/useSupportSocket';
+import { playMessageTone, resumeAudioIfNeeded } from '@/lib/sound';
 
 const DroverSupportChatFab = () => {
   const { openChat } = useSupportChat();
@@ -12,6 +14,33 @@ const DroverSupportChatFab = () => {
 
   // Consideramos autenticado si hay token y role válido
   const isAuthenticated = Boolean(token);
+  const [hasUnread, setHasUnread] = React.useState(false);
+
+  // Escuchar notificaciones globales de no leídos
+  useSupportSocket(
+    null,
+    () => {},
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    // onAdminMessage: cualquier mensaje nuevo del admin enciende el badge y suena
+    (payload: any) => {
+      if (String(payload?.sender || '').toLowerCase() === 'admin') {
+        setHasUnread(true);
+        resumeAudioIfNeeded();
+        playMessageTone();
+      }
+    },
+    // onUnread: marcar badge si es para el cliente/drover y suena
+    (p: any) => {
+      if (String(p?.side).toLowerCase() === 'client') {
+        setHasUnread(true);
+        resumeAudioIfNeeded();
+        playMessageTone();
+      }
+    }
+  );
 
   if (!isAuthenticated || (role !== 'client' && role !== 'drover')) {
     return null;
@@ -20,12 +49,17 @@ const DroverSupportChatFab = () => {
   return (
     <div className="fixed bottom-6 right-4 z-50 hidden md:block">
       <Button
-        onClick={openChat}
+        onClick={() => { setHasUnread(false); openChat(); }}
         size="lg"
         className="rounded-full w-14 h-14 bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] shadow-lg p-0"
         aria-label="Abrir chat de soporte"
       >
-        <MessageCircle className='!h-6 !w-6' />
+        <div className='relative'>
+          <MessageCircle className='!h-6 !w-6' />
+          {hasUnread && (
+            <span className='absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 border-2 border-[#6EF7FF]' />
+          )}
+        </div>
       </Button>
     </div>
   );

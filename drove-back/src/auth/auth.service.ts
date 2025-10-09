@@ -25,7 +25,7 @@ export class AuthService {
     email: string,
     password: string,
   ): Promise<Omit<User, 'password'>> {
-    const user = await this.userService.findByEmail(email);
+    const user = await this.userService.findByEmail(String(email).trim().toLowerCase());
     if (!user) {
       throw new UnauthorizedException('Credenciales inválidas');
     }

@@ -139,6 +139,7 @@ const PickupVerification: React.FC = () => {
     isLoading: isSubmitting,
     clearDraft,
   } = usePickupVerification(transferId!);
+  const [droverSignature, setDroverSignature] = useState<string>('');
 
   // URLs de las imágenes subidas estructuradas según DTOs
   const [exteriorImageUrls, setExteriorImageUrls] = useState<Record<string, string>>({});
@@ -306,10 +307,11 @@ const PickupVerification: React.FC = () => {
         trunk: interiorImageUrls['maletero'] || ''
       };
 
-      const data = {
+      const data: any = {
         exteriorPhotos,
         interiorPhotos,
         signature: signature,
+        droverSignature: droverSignature || undefined,
         comments: comments || '',
         verifiedAt: new Date().toISOString()
       };
@@ -326,6 +328,9 @@ const PickupVerification: React.FC = () => {
       clearDraft();
       // Invalidar y refetch del viaje para que la vista activa muestre estado actualizado
       try { (window as any).__queryClient?.invalidateQueries?.({ queryKey: ['active-trip', transferId] }); } catch {}
+      // Redirigir al detalle e iniciar viaje automáticamente
+      // Realizamos la actualización de estado a IN_PROGRESS (startTravel) sin bloquear la navegación
+      try { await TransferService.saveInitTravelVerification(transferId!); } catch {}
       navigate(`/traslados/activo/${transferId}`);
     } catch (error) {
       console.error('Error al enviar verificación:', error);
@@ -444,9 +449,13 @@ const PickupVerification: React.FC = () => {
       case STEPS.SIGNATURE_COMMENTS:
         return (
           <>
-            <label className="block text-white mb-2">Firma del cliente</label>
+            <label className="block text-white mb-2">Firma de la persona que entrega</label>
             <div className="bg-white rounded-lg p-4 mb-6">
               <SignatureCanvas onSignatureChange={(data) => setSignature(data)} />
+            </div>
+            <label className="block text-white mb-2">Firma del drover</label>
+            <div className="bg-white rounded-lg p-4 mb-6">
+              <SignatureCanvas onSignatureChange={(data) => setDroverSignature(data)} />
             </div>
             <label className="block text-white mb-2">Comentarios adicionales</label>
             <textarea

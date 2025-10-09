@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectGroup, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSupportManagement } from "@/hooks/admin/useSupportManagement";
+import { useSupportSocket } from "@/hooks/useSupportSocket";
+import { playMessageTone, resumeAudioIfNeeded } from "@/lib/sound";
+import SupportService from "@/services/supportService";
 import { useDebouncedValue } from "@/hooks/useDebounce";
 import { Input } from "@/components/ui/input";
 
@@ -29,17 +32,109 @@ const Support: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const filteredTickets = useMemo(() => tickets, [tickets]);
   const selected = useMemo(() => filteredTickets.find((t: any) => t.id === selectedId) || filteredTickets[0], [filteredTickets, selectedId]);
+  React.useEffect(() => { if (!selectedId && filteredTickets.length > 0) setSelectedId(filteredTickets[0].id); }, [filteredTickets.length]);
+  React.useEffect(() => { if (selected?.id) setUnreadByTicket(prev => ({ ...prev, [selected.id]: 0 })); }, [selected?.id]);
+  const [unreadByTicket, setUnreadByTicket] = useState<Record<string, number>>({});
+
+  // Mensajes del ticket seleccionado con delta-sync
+  const [selectedMessages, setSelectedMessages] = useState<any[]>([]);
+  const lastSeqRef = React.useRef<number>(0);
+  const listRef = React.useRef<HTMLDivElement>(null);
+  const isClosed = React.useMemo(() => {
+    const s = String(selected?.status || '').toLowerCase();
+    return s === 'closed' || s === 'cerrado' || s === 'resuelto' || s === 'resolved';
+  }, [selected?.status]);
+  React.useEffect(() => {
+    const msgs = (selected?.messages || []).slice().sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    setSelectedMessages(msgs);
+    lastSeqRef.current = Math.max(0, ...msgs.map((m: any) => m.seq || 0));
+  }, [selected?.id]);
+
+  // Auto-scroll al último mensaje
+  React.useEffect(() => {
+    if (listRef.current) {
+      listRef.current.scrollTop = listRef.current.scrollHeight;
+    }
+  }, [selectedMessages, selected?.id]);
+
+  const fetchDeltaAndMerge = React.useCallback(async () => {
+    if (!selected?.id) return;
+    try {
+      const res: any = await SupportService.getTicketMessagesDelta(selected.id, lastSeqRef.current);
+      const fresh = res?.messages || [];
+      if (fresh.length) {
+        const mapped = fresh.map((m: any) => ({
+          id: String(m.id), content: m.content, sender: String(m.sender).toLowerCase(), senderName: m.senderName, timestamp: m.timestamp, seq: m.seq,
+        }));
+        setSelectedMessages(prev => {
+          const byId = new Map<string, any>();
+          for (const m of [...prev, ...mapped]) byId.set(String(m.id), m);
+          return Array.from(byId.values()).sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        });
+        lastSeqRef.current = res?.lastSeq ?? lastSeqRef.current;
+      }
+    } catch {}
+    // marcar como leídos en backend para admin (opcional: ya se resetea en front, pero persistimos)
+    try { await (SupportService as any).getTicketMessagesDelta(selected.id, lastSeqRef.current); } catch {}
+  }, [selected?.id]);
+
+  // Escuchar socket para el ticket seleccionado
+  useSupportSocket(
+    selected?.id || null,
+    (incoming) => { console.log('[ADMIN] onMessage room'); fetchDeltaAndMerge(); /* No sonido si admin está en la conversación */ },
+    (status) => {
+      if (status === 'closed') {
+        console.log('[ADMIN] status closed');
+        fetchDeltaAndMerge();
+      }
+    },
+    () => { console.log('[ADMIN] closed event'); fetchDeltaAndMerge(); },
+    () => console.log('[ADMIN] socket connected'),
+    () => console.log('[ADMIN] socket disconnected'),
+    (payload: any) => {
+      if (!payload?.ticketId) return;
+      if (payload.ticketId === selected?.id) {
+        console.log('[ADMIN] onMessage all');
+        fetchDeltaAndMerge();
+        // No sonido: admin está viendo este ticket
+      }
+      // No incrementamos aquí para evitar doble conteo; usamos sólo support:unread
+    },
+    // onJoinedRoom
+    () => { fetchDeltaAndMerge(); },
+    // onUnread
+    (p: any) => {
+      if (!p?.ticketId) return;
+      // Sólo contar no leídos destinados al admin
+      if (String(p.side).toLowerCase() !== 'admin') return;
+      // Si no estamos viendo ese ticket, incrementa en 1 (evitando blowup en reconexiones)
+      if (selected?.id !== p.ticketId) {
+        setUnreadByTicket(prev => {
+          const current = prev[p.ticketId] || 0;
+          return { ...prev, [p.ticketId]: current + 1 };
+        });
+        resumeAudioIfNeeded();
+        playMessageTone();
+      }
+    }
+  );
 
   const handleUpdateStatus = (ticketId: string, status: string) => {
-    updateTicketStatus(ticketId, status);
+    (updateTicketStatus as any)({ ticketId, status });
   };
 
   const [replyText, setReplyText] = useState('');
+  const [isSending, setIsSending] = useState(false);
 
-  const submitInlineReply = () => {
-    if (!selected?.id || !replyText.trim()) return;
-    respondToTicket({ ticketId: selected.id, response: replyText.trim() } as any);
-    setReplyText('');
+  const submitInlineReply = async () => {
+    if (!selected?.id || !replyText.trim() || isSending) return;
+    try {
+      setIsSending(true);
+      await (respondToTicket as any)({ ticketId: selected.id, response: replyText.trim() });
+      setReplyText('');
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const getPriorityColor = (priority: string) => {
@@ -216,7 +311,12 @@ const Support: React.FC = () => {
                 className={`w-full text-left px-4 py-3 border-b border-white/10 hover:bg-white/10 transition ${selected?.id === t.id ? 'bg-white/10' : ''}`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="text-white font-semibold truncate">{t.clientName}</div>
+                  <div className="text-white font-semibold truncate">{t.clientName || t.clientEmail || 'Usuario'}</div>
+                  {!!unreadByTicket[t.id] && (
+                    <span className="min-w-[14px] h-[14px] inline-flex items-center justify-center px-1 text-[10px] rounded-full bg-red-500 text-white font-bold ml-2">
+                      {unreadByTicket[t.id]}
+                    </span>
+                  )}
                   <div className="flex items-center gap-2 ml-2">
                     <span className={`px-2 py-0.5 rounded text-[10px] ${getStatusColor(t.status)} text-white`}>{t.status}</span>
                     <span className={`text-[10px] ${getPriorityColor(t.priority)}`}>{t.priority}</span>
@@ -224,6 +324,11 @@ const Support: React.FC = () => {
                 </div>
                 <div className="text-white/50 text-xs truncate">{t.subject}</div>
                 <div className="mt-1 text-white/60 text-xs line-clamp-2">{t.message}</div>
+                {Array.isArray(t.messages) && t.messages.length > 0 && (
+                  <div className="mt-1 text-white/50 text-[11px] truncate">
+                    Último: {(t.messages[t.messages.length - 1].senderName) || t.clientName || t.clientEmail}
+                  </div>
+                )}
                 <div className="mt-2 flex items-center gap-2 text-white/40 text-xs">
                   <Clock size={12} /> {new Date(t.createdAt).toLocaleDateString()}
                 </div>
@@ -250,8 +355,8 @@ const Support: React.FC = () => {
               </CardHeader>
               <CardContent>
                 {/* Conversación completa */}
-                <div className="space-y-3 mb-4">
-                  {((selected.messages || []).length === 0) ? (
+                <div ref={listRef} className="space-y-3 mb-4 max-h-[56vh] overflow-y-auto pr-1">
+                  {(selectedMessages.length === 0) ? (
                     // Si el ticket no tiene historial en backend, mostramos el mensaje inicial del cliente
                     <div className="bg-white/5 text-white rounded-xl px-4 py-3 border border-white/10">
                       <div className="flex items-center justify-between text-white/80 text-xs mb-1">
@@ -261,10 +366,7 @@ const Support: React.FC = () => {
                       <div className="text-sm">{selected.message}</div>
                     </div>
                   ) : (
-                    (selected.messages || [])
-                      .slice()
-                      .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-                      .map((m: any) => {
+                    selectedMessages.map((m: any) => {
                         const isAdmin = String(m.sender).toLowerCase() === 'admin';
                         const bubble = isAdmin
                           ? 'bg-[#29485a] text-white border border-[#6EF7FF33]'
@@ -288,7 +390,7 @@ const Support: React.FC = () => {
                     <span>Creado: {new Date(selected.createdAt).toLocaleDateString()}</span>
                   </div>
                   <div className="flex gap-2">
-                    {selected.status !== 'resuelto' && (
+                    {!isClosed && (
                       <Button size="sm" onClick={() => handleUpdateStatus(selected.id, 'resuelto')} disabled={isUpdatingStatus} className="bg-green-600 hover:bg-green-700">
                         {isUpdatingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
                       </Button>
@@ -296,19 +398,23 @@ const Support: React.FC = () => {
                   </div>
                 </div>
                 {/* Responder inline */}
-                <div className="w-full flex flex-row items-center gap-2 mt-4">
-                  <Input
-                    className="rounded-2xl flex-1 text-base placeholder:text-white/60 bg-white/5 border border-white/10 focus:ring-2 focus:ring-[#6EF7FF] text-white"
-                    placeholder="Escribe tu respuesta..."
-                    maxLength={500}
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') submitInlineReply(); }}
-                  />
-                  <Button className="rounded-2xl bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold px-4 py-2" disabled={!replyText.trim() || isResponding} onClick={submitInlineReply}>
-                    {isResponding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  </Button>
-                </div>
+                {isClosed ? (
+                  <div className="mt-4 text-white/70 text-sm bg-white/10 border border-white/20 rounded-xl px-3 py-2">Este ticket está cerrado. No se pueden enviar mensajes.</div>
+                ) : (
+                  <div className="w-full flex flex-row items-center gap-2 mt-4">
+                    <Input
+                      className="rounded-2xl flex-1 text-base placeholder:text-white/60 bg-white/5 border border-white/10 focus:ring-2 focus:ring-[#6EF7FF] text-white"
+                      placeholder="Escribe tu respuesta..."
+                      maxLength={500}
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') submitInlineReply(); }}
+                    />
+                    <Button className="rounded-2xl bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-bold px-4 py-2" disabled={!replyText.trim() || isResponding || isSending} onClick={submitInlineReply}>
+                      {isResponding || isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ) : (

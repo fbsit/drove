@@ -5,7 +5,12 @@ import { UserCheck, Check, Clock, Car, CheckCheck } from "lucide-react";
 // Definición de los pasos y sus iconos mejorados para el servicio de traslado
 const STEPS = [
   {
-    key: "asignado",
+    key: "CREATED",
+    label: "Creado",
+    icon: Clock,
+  },
+  {
+    key: "ASIGNADO",
     label: "Asignado",
     icon: UserCheck, // Usuario con check - drover asignado
   },
@@ -15,7 +20,7 @@ const STEPS = [
     icon: Check, // Check simple - vehículo recogido
   },
   {
-    key: "en_progreso",
+    key: "IN_PROGRESS",
     label: "En traslado",
     icon: Clock, // Reloj - en camino
   },
@@ -33,19 +38,21 @@ const STEPS = [
 
 // Mapeo de estado API/UI a paso de la barra
 function getCurrentStep(status: string) {
-  switch (status?.toLowerCase()) {
-    case "asignado":
-      return 0;
-    case "picked_up":
-      return 1;
-    case "in_progress":
-      return 2;
-    case "request_finish":
-      return 3;
-    case "delivered":
-      return 4;
+  switch ((status || '').toLowerCase()) {
+    case "created":
     case "pendiente":
       return 0;
+    case "asignado":
+    case "assigned":
+      return 1;
+    case "picked_up":
+      return 2;
+    case "in_progress":
+      return 3;
+    case "request_finish":
+      return 4;
+    case "delivered":
+      return 5;
     case "cancelado":
       return 0;
     default:
@@ -56,7 +63,7 @@ function getCurrentStep(status: string) {
 // Función para obtener el label del estado actual
 export function getStatusLabel(status: string): string {
   const stepIndex = getCurrentStep(status);
-  return STEPS[stepIndex]?.label || "Asignado";
+  return STEPS[stepIndex]?.label || "Creado";
 }
 
 interface TransferStepsBarProps {
@@ -67,9 +74,9 @@ const TransferStepsBar: React.FC<TransferStepsBarProps> = ({ trip }) => {
   const currentStep = getCurrentStep(trip?.status);
   return (
     <div className="w-full flex flex-col items-center py-1 md:py-4 animate-fade-in">
-      <div className="w-full pb-10 relative">
-        {/* Vista móvil - Solo estado actual con icono */}
-        <div className="block md:hidden">
+      <div className="w-full md:pb-10 pb-0 relative">
+        {/* Vista móvil: oculto para evitar redundancia con el badge de estado */}
+        <div className="hidden md:hidden">
           <div className="flex flex-col items-center">
             {(() => {
               const step = STEPS[currentStep];

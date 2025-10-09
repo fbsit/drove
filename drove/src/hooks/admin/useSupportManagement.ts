@@ -30,6 +30,9 @@ export const useSupportManagement = (filters?: { search?: string; status?: strin
   /* ─────────── Mutación: actualizar estado ─────────── */
   const updateTicketStatus = useMutation({
     mutationFn: ({ ticketId, status }: { ticketId: string; status: string }) => {
+      if (!ticketId) {
+        throw new Error('Ticket no seleccionado');
+      }
       const dto: TicketStatusDTO = { status: status as any };
       return AdminService.updateTicketStatus(ticketId, dto);
     },
@@ -37,17 +40,20 @@ export const useSupportManagement = (filters?: { search?: string; status?: strin
       qc.invalidateQueries({ queryKey: ['admin-support-tickets'] });
       toast({ title: 'Estado actualizado', description: 'Ticket actualizado.' });
     },
-    onError: () =>
+    onError: (e: any) =>
       toast({
         variant: 'destructive',
         title: 'Error',
-       description: 'No se pudo actualizar el estado.',
+        description: e?.message || 'No se pudo actualizar el estado.',
       }),
   });
 
   /* ─────────── Mutación: responder ticket ─────────── */
   const respondToTicket = useMutation({
     mutationFn: ({ ticketId, response }: { ticketId: string; response: string }) => {
+      if (!ticketId) {
+        throw new Error('Ticket no seleccionado');
+      }
       const dto: TicketReplyDTO = { response };
       return AdminService.respondToTicket(ticketId, dto);
     },
@@ -55,11 +61,11 @@ export const useSupportManagement = (filters?: { search?: string; status?: strin
       qc.invalidateQueries({ queryKey: ['admin-support-tickets'] });
       toast({ title: 'Respuesta enviada', description: 'Respuesta registrada.' });
     },
-    onError: () =>
+    onError: (e: any) =>
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'No se pudo enviar la respuesta.',
+        description: e?.message || 'No se pudo enviar la respuesta.',
       }),
   });
 

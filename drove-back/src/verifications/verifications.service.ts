@@ -16,7 +16,8 @@ export class EmailVerificationService {
   ) {}
 
   async sendVerificationCode(email: string): Promise<boolean> {
-    const user = await this.userRepo.findOne({ where: { email } });
+    const normalized = String(email ?? '').trim().toLowerCase();
+    const user = await this.userRepo.findOne({ where: { email: normalized } });
     if (!user) return false;
 
     const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6 dígitos unificado
@@ -25,15 +26,16 @@ export class EmailVerificationService {
     await this.userRepo.save(user);
 
     const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
-    const verifyUrl = `${baseUrl.replace(/\/$/, '')}/verifyEmail?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`;
-    const name = user?.contactInfo?.fullName || email;
-    await this.resend.sendEmailVerificationEmail(email, name, verifyUrl);
+    const verifyUrl = `${baseUrl.replace(/\/$/, '')}/verifyEmail?email=${encodeURIComponent(normalized)}&code=${encodeURIComponent(code)}`;
+    const name = user?.contactInfo?.fullName || normalized;
+    await this.resend.sendEmailVerificationEmail(normalized, name, verifyUrl);
 
     return true;
   }
 
   async verifyCode(email: string, code: string): Promise<boolean> {
-    const user = await this.userRepo.findOne({ where: { email } });
+    const normalized = String(email ?? '').trim().toLowerCase();
+    const user = await this.userRepo.findOne({ where: { email: normalized } });
     if (!user || !user.verificationCode || !user.codeExpiresAt) return false;
 
     if (user.verificationCode !== code) return false;
@@ -55,7 +57,13 @@ export class EmailVerificationService {
       });
       const recipients = admins.map(a => a.email).filter(Boolean);
       if (recipients.length) {
-        const approvalUrl = `https://admin.drove.app/users`;
+        const adminBase = process.env.ADMIN_BASE_URL || 'https://admin.drove.app';
+        const base = adminBase.replace(/\/$/, '');
+        const role = String(user.role || '').toUpperCase();
+        // Enlace específico por tipo de usuario
+        const approvalUrl = role === 'DROVER'
+          ? `${base}/admin/drovers/${encodeURIComponent(user.id)}`
+          : `${base}/admin/clients/${encodeURIComponent(user.id)}`;
         await this.resend.sendNewUserPendingApprovalEmail(
           recipients,
           user.email,

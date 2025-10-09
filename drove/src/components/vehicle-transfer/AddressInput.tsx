@@ -22,9 +22,11 @@ export default function AddressInput({
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const acRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const onChangeRef = useRef(onChange);
 
   /* estado interno para el texto que escribe el usuario */
   const [text, setText] = useState(value.address);
+  const [placeSelected, setPlaceSelected] = useState(false);
 
   /* carga la API una sola vez */
   const { isLoaded } = useLoadScript({
@@ -32,11 +34,20 @@ export default function AddressInput({
     libraries: LIBRARIES,
   });
 
+  /* sincroniza texto si el valor externo cambia */
+  useEffect(() => {
+    setText(value.address);
+  }, [value.address]);
+
+  /* mantiene onChange estable vía ref para evitar recrear listeners */
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
   /* --------- emite datos completos al padre --------- */
   const emitPlaceData = useCallback(
     (place?: google.maps.places.PlaceResult | null) => {
       if (!place?.geometry?.location) return;
-      console.log("place", place);
       const lat = place.geometry.location.lat();
       const lng = place.geometry.location.lng();
       const address = place.formatted_address || "";
@@ -84,10 +95,11 @@ export default function AddressInput({
       }
 
       const payload = { address, city, state, country, zip, lat, lng };
-      onChange(payload as any);
+      onChangeRef.current(payload as any);
+      setPlaceSelected(true);
       setText(address); // sincroniza el input con la dirección formateada
     },
-    [onChange]
+    []
   );
 
   /* Autocomplete → place seleccionado */
@@ -97,31 +109,65 @@ export default function AddressInput({
 
   /* inicializa Autocomplete una vez */
   useEffect(() => {
-    if (!isLoaded || !inputRef.current) return;
+    if (!isLoaded || !inputRef.current || !(window as any)?.google?.maps?.places) return;
 
-    acRef.current = new window.google.maps.places.Autocomplete(
-      inputRef.current,
-      {
-        types: ["geocode"],
-        fields: ["formatted_address", "geometry", "address_components"],
-      }
-    );
-
-    acRef.current.addListener("place_changed", handlePlaceChanged);
+    // Evita recrear Autocomplete si ya existe para este input
+    if (!acRef.current) {
+      acRef.current = new window.google.maps.places.Autocomplete(
+        inputRef.current,
+        {
+          types: ["geocode"],
+          fields: ["formatted_address", "geometry", "address_components"],
+        }
+      );
+      acRef.current.addListener("place_changed", handlePlaceChanged);
+    }
 
     return () => {
-      if (acRef.current)
+      if (acRef.current) {
         window.google.maps.event.clearInstanceListeners(acRef.current);
+        // no eliminamos la instancia para mantener el listener estable mientras el input viva
+      }
     };
   }, [isLoaded, handlePlaceChanged]);
 
   /* input onChange SOLO actualiza el texto local */
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setText(e.target.value);
+    const typed = e.target.value || "";
+    // Permitir borrar completamente el campo
+    if (typed.trim() === "") {
+      setPlaceSelected(false);
+      onChangeRef.current({ address: "", city: "", lat: 0, lng: 0 } as any);
+      return;
+    }
+    // Fallback: sin Google Places, propaga el texto como dirección simple mientras escribe
+    if (!acRef.current) {
+      onChangeRef.current({ address: typed.trim(), city: value.city || "", lat: value.lat || 0, lng: value.lng || 0 } as any);
+    }
+  };
 
-    /* Si el usuario presiona Enter tras escribir una dirección completa
-       Google rellena el 'place' y podemos emitirlo */
-    emitPlaceData(acRef.current?.getPlace());
+  /* Tecla Enter/Tab: forzar emisión del place actual si existe */
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if ((e.key === 'Enter' || e.key === 'Tab') && acRef.current) {
+      // Google actualiza el place async; usa microtask
+      setTimeout(() => emitPlaceData(acRef.current?.getPlace()), 0);
+    }
+  };
+
+  /* Blur: si hay un place válido, emitirlo; si no, fallback a texto */
+  const handleBlur = () => {
+    const place = acRef.current?.getPlace();
+    if (place?.geometry?.location) {
+      emitPlaceData(place);
+      return;
+    }
+    if (!placeSelected) {
+      const typed = (text || "").trim();
+      if (typed) {
+        onChangeRef.current({ address: typed, city: value.city || "", lat: value.lat || 0, lng: value.lng || 0 } as any);
+      }
+    }
   };
 
   return (
@@ -130,6 +176,8 @@ export default function AddressInput({
       ref={inputRef}
       value={text}
       onChange={handleInputChange}
+      onKeyDown={handleKeyDown}
+      onBlur={handleBlur}
       placeholder={placeholder}
       className="bg-transparent border-gray-700 text-white placeholder:text-white"
     />

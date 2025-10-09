@@ -24,6 +24,7 @@ import GoogleMapComponent from "@/components/maps/GoogleMap";
 import { useToast } from "@/hooks/use-toast";
 import MobileFooterNav from "@/components/layout/MobileFooterNav";
 import ReviewModal from "@/components/client/ReviewModal";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Props interface para el componente móvil
 interface MobileClientTripDetailProps {
@@ -45,6 +46,7 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
   const [showMap, setShowMap] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const droverNameSafe = (
     trip?.drover?.full_name ||
@@ -93,6 +95,13 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
     const num = typeof p === 'string' ? parseFloat(p.replace(/[^0-9,.]/g, '').replace(',', '.')) : Number(p);
     return isNaN(num) ? 0 : num;
   })();
+  const role = String(user?.role || '').toLowerCase();
+  const isDrover = role === 'drover';
+  const driverFeeSafe = (() => {
+    const df = trip?.driverFee;
+    const num = typeof df === 'string' ? parseFloat(df.replace(/[^0-9,.]/g, '').replace(',', '.')) : Number(df);
+    return isNaN(num) ? 0 : num;
+  })();
 
   const handleCopyId = () => {
     navigator.clipboard.writeText(trip.id);
@@ -127,6 +136,13 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
   const pagoTarjeta = trip.payment_method === "card";
   const isCompleted = trip.status === "completado";
   const canLeaveReview = isCompleted && !trip.review;
+  const isPendingPayment = String(trip?.invoice?.status || trip?.status || '').toUpperCase() !== 'PAID';
+
+  const handleCopyIban = () => {
+    const iban = 'ES8300494612672916115882';
+    navigator.clipboard.writeText(iban);
+    toast({ title: 'Cuenta copiada', description: iban });
+  };
 
   return (
     <div
@@ -222,7 +238,7 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
           </div>
         </div>
 
-        {/* Bloque de Precio - rounded-xl aplicado */}
+        {/* Bloque de Precio/Ganancia - rounded-xl aplicado */}
         <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl p-6 shadow-lg border border-white/10">
           <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -230,16 +246,18 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
                 <CreditCard className="text-green-400" size={16} />
               </div>
               <div>
-                <span className="text-xs text-white/60 block">Precio total</span>
+                <span className="text-xs text-white/60 block">{isDrover ? 'Ganancia estimada' : 'Precio total'}</span>
                   <span className="font-montserrat font-bold text-lg text-white">
-                  €{priceTotalSafe.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  €{(isDrover ? driverFeeSafe : priceTotalSafe).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
             <div className="text-right">
-              <span className={`text-xs px-2 py-1 rounded-xl font-semibold ${pagoTarjeta ? "bg-green-500/20 text-green-300" : "bg-yellow-500/20 text-yellow-300"}`}>
-                {pagoTarjeta ? "Pagado" : "Pendiente"}
-              </span>
+              {!isDrover && (
+                <span className={`text-xs px-2 py-1 rounded-xl font-semibold ${pagoTarjeta ? "bg-green-500/20 text-green-300" : "bg-yellow-500/20 text-yellow-300"}`}>
+                  {pagoTarjeta ? "Pagado" : "Pendiente"}
+                </span>
+              )}
               <DroveButton
                 variant="default"
                 size="sm"
@@ -247,10 +265,26 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
                 onClick={handleFacturaDownload}
                 icon={<Download className="w-3 h-3" />}
               >
-                Factura
+                {isDrover ? 'Detalle' : 'Factura'}
               </DroveButton>
             </div>
           </div>
+          {isPendingPayment && !isDrover && (
+            <div className="mt-3 w-full text-left bg-[#e8f7ff]/60 rounded-xl p-4">
+              <div className="text-[#0A2B4B] text-[10px] font-montserrat font-semibold uppercase tracking-wide pb-2">
+                Datos para depósito/transferencia
+              </div>
+              <div className="text-[#0A2B4B] text-[11px] font-montserrat grid grid-cols-1 gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="truncate"><span className="font-semibold">Cuenta:</span> <span className="font-mono">ES8300494612672916115882</span></div>
+                  <button onClick={handleCopyIban} className="shrink-0 px-2 py-1 rounded-md bg-[#0A2B4B] text-white text-[10px] font-semibold">Copiar</button>
+                </div>
+                <div>DROVELAND INTERNATIONAL S.L.</div>
+                <div><span className="font-semibold">NIF:</span> B72713647</div>
+                <div>calle Eras 54 3ºD España</div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Bloque de Ruta del Traslado - rounded-xl aplicado */}

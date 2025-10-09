@@ -74,6 +74,7 @@ export class AdminService {
       email: user.email,
       status: user.status,
       role: user.role,
+      accountType: user.accountType,
       contactInfo: {
         fullName: user.contactInfo.fullName,
         phone: user.contactInfo.phone,
@@ -247,6 +248,32 @@ export class AdminService {
       invoice.issuedBy = null as any;
     }
     await this.invoiceRepo.save(invoice);
+    try {
+      // Notificar por correo a cliente y admin del cambio de estado
+      const travel = await this.transferRepo.findOne({ where: { id: invoice?.travel?.id || (invoice as any)?.travelId }, relations: this.defaultRelations });
+      const client = travel?.client;
+      const adminEmail = process.env.ADMIN_NOTIF_EMAIL || 'info@drove.es';
+      const updatedAt = new Date().toLocaleString('es-ES');
+      await this.resend.sendInvoiceStatusEmailClient({
+        email: client?.email || '',
+        name: client?.contactInfo?.fullName || client?.email || 'Cliente',
+        status: finalStatus,
+        invoiceNumber: invoice?.invoiceNumber || String(invoice?.id),
+        amount: invoice?.totalAmount as any,
+        invoiceUrl: (invoice as any)?.invoiceUrl,
+        travelId: travel?.id,
+        updatedAt,
+      });
+      await this.resend.sendInvoiceStatusEmailAdmin({
+        email: adminEmail,
+        status: finalStatus,
+        invoiceNumber: invoice?.invoiceNumber || String(invoice?.id),
+        amount: invoice?.totalAmount as any,
+        travelId: travel?.id,
+        updatedAt,
+        clientEmail: client?.email,
+      });
+    } catch {}
     return true;
   }
 
@@ -367,6 +394,34 @@ export class AdminService {
           userId: savedAfter.droverId,
         });
       }
+    } catch {}
+
+    return true;
+  }
+
+  /** Rechazar/Cancelar traslado (CREATED o ASSIGNED) con motivo */
+  async cancelTransfer(transferId: string, reason: string, adminId?: string): Promise<boolean> {
+    const travel = await this.transferRepo.findOne({ where: { id: transferId }, relations: this.defaultRelations });
+    if (!travel) throw new NotFoundException('Transfer not found');
+    const allowed = [TransferStatus.CREATED, TransferStatus.ASSIGNED, TransferStatus.PENDINGPAID];
+    if (!allowed.includes(travel.status as any)) {
+      throw new BadRequestException('Solo se puede rechazar un traslado creado o asignado');
+    }
+    travel.status = TransferStatus.CANCELLED;
+    (travel as any).reasonCancellation = reason || 'Rechazado por administración';
+    await this.transferRepo.save(travel);
+
+    // Notificar por correo al cliente
+    try {
+      const client = travel.client;
+      await this.resend.sendTransferCancelledEmail(
+        client?.email || '',
+        client?.contactInfo?.fullName || '',
+        new Date().toLocaleDateString('es-ES'),
+        travel?.startAddress?.city || '',
+        travel?.endAddress?.city || '',
+        (travel as any)?.reasonCancellation || 'No especificado',
+      );
     } catch {}
 
     return true;

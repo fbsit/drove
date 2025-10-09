@@ -4,6 +4,7 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import * as QrImage from 'qr-image';
 import fetch from 'node-fetch';
 import { PricingService } from './../rates/prices.service';
+import { CompensationService } from './../rates/compensation.service';
 import { User } from './../user/entities/user.entity';
 import { Travels } from './../travels/entities/travel.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -21,6 +22,7 @@ export class PdfService {
   constructor(
     private readonly configService: ConfigService,
     private readonly priceService: PricingService,
+    private readonly compensationService: CompensationService,
     private readonly routesService: RoutesService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
@@ -1399,12 +1401,34 @@ export class PdfService {
         ? `${Number(distanceKmRaw).toFixed(2)} Kilómetros`
         : '—';
       const rawTotalCliente = (detailRoute as any)?.priceResult?.Total_Cliente;
-      const totalWithVat =
+      let totalWithVat =
         rawTotalCliente != null && rawTotalCliente !== ''
           ? (typeof rawTotalCliente === 'number'
               ? `${rawTotalCliente} €`
               : (String(rawTotalCliente).includes('€') ? String(rawTotalCliente) : `${rawTotalCliente} €`))
           : (typeof (travel?.totalPrice) === 'number' ? `${(travel.totalPrice as number).toFixed(2)} €` : '—');
+
+      // Regla de visualización para el PDF del drover: autónomo ve su compensación; contratado no ve total por viaje.
+      try {
+        const isDroverPdf = detailInfo === 'chofer';
+        const droverEmpType = (chofer as any)?.employmentType || (travel?.drover as any)?.employmentType;
+        // Determinar KM para freelance
+        const kmNumber = Number((distanceKmRaw as any) || parseFloat(String(travel?.distanceTravel || '0')) || 0);
+        if (isDroverPdf && String(droverEmpType || '').toUpperCase() === 'FREELANCE') {
+          // Preferir compensación persistida si existe
+          const storedFee = (travel as any)?.driverFee;
+          if (typeof storedFee === 'number' && !isNaN(storedFee)) {
+            totalWithVat = `${Number(storedFee).toFixed(2)} € (compensación)`;
+          } else {
+            const preview = this.compensationService.calcFreelancePerTrip(kmNumber);
+            totalWithVat = `${preview.driverFee.toFixed(2)} € (compensación)`;
+          }
+        }
+        if (isDroverPdf && String(droverEmpType || '').toUpperCase() === 'CONTRACTED') {
+          // Ocultar importe por viaje para contratados
+          totalWithVat = '—';
+        }
+      } catch {}
       const detailTravelTabla = [
         ['Distancia', distanceFormatted],
         ['Total con I.V.A', totalWithVat],
@@ -1472,66 +1496,38 @@ export class PdfService {
         });
       });
       currentY = tableDetailTop - tableDetailHeight - 50;
-      if (travel.status === 'REQUEST_FINISH') {
-        const mapToEnd = await this.getMapImage(
-          travel.endAddress.lat,
-          travel.endAddress.lng,
-        );
-        const imgMapEnd = mapToEnd.split(',')[1];
-        const imgEndMapReady = await pdfDoc.embedPng(
-          Buffer.from(imgMapEnd, 'base64'),
-        );
-        const mapY = currentY - 280;
-        page.drawImage(imgEndMapReady, {
-          x: 50,
-          y: mapY,
-          width: 500,
-          height: 300,
-        });
-        currentY = mapY - 40; // margen razonable bajo el mapa
-      }
-      if (travel.status === 'FINISH') {
+      // Mostrar el mapa con la ruta capturada (polyline) cuando exista: aplica tanto para REQUEST_FINISH como para DELIVERED
+      const capturedPolyline = (travel as any)?.routePolyline && String((travel as any).routePolyline).trim() !== ''
+        ? String((travel as any).routePolyline)
+        : '';
+      if (capturedPolyline) {
         const mapWithRoute = await this.getMapImageWithRoute(
-          {
-            lat: travel.startAddress.lat,
-            lng: travel.startAddress.lng,
-          },
-          {
-            lat: travel.endAddress.lat,
-            lng: travel.endAddress.lng,
-          },
-          travel.finalRoutePolyline,
+          { lat: travel.startAddress.lat, lng: travel.startAddress.lng },
+          { lat: travel.endAddress.lat, lng: travel.endAddress.lng },
+          capturedPolyline,
         );
         const imgMapRoute = mapWithRoute.split(',')[1];
-        const imgRouteMapReady = await pdfDoc.embedPng(
-          Buffer.from(imgMapRoute, 'base64'),
-        );
+        const imgRouteMapReady = await pdfDoc.embedPng(Buffer.from(imgMapRoute, 'base64'));
         const mapY = currentY - 280;
-        page.drawImage(imgRouteMapReady, {
-          x: 50,
-          y: mapY,
-          width: 500,
-          height: 300,
-        });
-        currentY = mapY - 40; // margen razonable bajo el mapa
-      }
-      if (travel.status !== 'REQUEST_FINISH' && travel.status !== 'FINISH') {
-        const mapToStart = await this.getMapImage(
-          travel.startAddress.lat,
-          travel.startAddress.lng,
-        );
-        const imgMap = mapToStart.split(',')[1];
-        const imgMapReady = await pdfDoc.embedPng(
-          Buffer.from(imgMap, 'base64'),
-        );
-        const mapY = currentY - 280;
-        page.drawImage(imgMapReady, {
-          x: 50,
-          y: mapY,
-          width: 500,
-          height: 300,
-        });
-        currentY = mapY - 40; // margen razonable bajo el mapa
+        page.drawImage(imgRouteMapReady, { x: 50, y: mapY, width: 500, height: 300 });
+        currentY = mapY - 40;
+      } else {
+        // Fallbacks anteriores si aún no hay polyline capturado
+        if (travel.status === 'REQUEST_FINISH' || travel.status === 'DELIVERED') {
+          const mapToEnd = await this.getMapImage(travel.endAddress.lat, travel.endAddress.lng);
+          const imgMapEnd = mapToEnd.split(',')[1];
+          const imgEndMapReady = await pdfDoc.embedPng(Buffer.from(imgMapEnd, 'base64'));
+          const mapY = currentY - 280;
+          page.drawImage(imgEndMapReady, { x: 50, y: mapY, width: 500, height: 300 });
+          currentY = mapY - 40;
+        } else {
+          const mapToStart = await this.getMapImage(travel.startAddress.lat, travel.startAddress.lng);
+          const imgMap = mapToStart.split(',')[1];
+          const imgMapReady = await pdfDoc.embedPng(Buffer.from(imgMap, 'base64'));
+          const mapY = currentY - 280;
+          page.drawImage(imgMapReady, { x: 50, y: mapY, width: 500, height: 300 });
+          currentY = mapY - 40;
+        }
       }
 
       if (step === 4) {

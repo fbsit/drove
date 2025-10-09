@@ -114,8 +114,11 @@ export class AdminService {
   }
 
   // === GESTIÓN DE DROVERS ===
-  static async getDrovers(): Promise<any[]> {
-    return await ApiService.get('/users/role/drover');
+  static async getDrovers(available?: 'true' | 'false'): Promise<any[]> {
+    const qs = new URLSearchParams();
+    if (available === 'true' || available === 'false') qs.set('available', available);
+    const endpoint = qs.toString() ? `/users/role/drover?${qs.toString()}` : '/users/role/drover';
+    return await ApiService.get(endpoint);
   }
 
   static async approveDrover(droverId: string): Promise<void> {
@@ -124,6 +127,11 @@ export class AdminService {
 
   static async rejectDrover(droverId: string): Promise<void> {
     await ApiService.post(`/admin/drovers/${droverId}/reject`, {});
+  }
+
+  // Actualizar usuario (empleo del drover, etc.)
+  static async updateUser(userId: string, data: any): Promise<void> {
+    await ApiService.put(`/users/${userId}`, data);
   }
 
   // === GESTIÓN DE TRASLADOS ===
@@ -145,6 +153,10 @@ export class AdminService {
     await ApiService.put(`/admin/transfers/${transferId}/status`, { status });
   }
 
+  static async cancelTransfer(transferId: string, reason: string, adminId?: string): Promise<boolean> {
+    return await ApiService.post(`/admin/transfers/${transferId}/cancel`, { reason, adminId });
+  }
+
   // === MÉTRICAS Y REPORTES ===
   static async getBusinessMetrics(): Promise<any> {
     return await ApiService.get('/admin/metrics');
@@ -162,13 +174,35 @@ export class AdminService {
   }
 
   // === FACTURACIÓN ===
-  static async getAllInvoices(params?: { search?: string; status?: string; clientId?: string; from?: string; to?: string }): Promise<any[]> {
+  static async getAllInvoices(params?: {
+    search?: string;
+    status?: string;
+    clientId?: string;
+    clientName?: string;
+    transferStatus?: string;
+    droverId?: string;
+    droverName?: string;
+    from?: string;
+    to?: string;
+    method?: string;
+    onlyPending?: boolean;
+    page?: number;
+    limit?: number;
+  }): Promise<any[]> {
     const qs = new URLSearchParams();
     if (params?.search) qs.set('search', params.search);
     if (params?.status) qs.set('status', params.status);
     if (params?.clientId) qs.set('clientId', params.clientId);
+    if (params?.clientName) qs.set('clientName', params.clientName);
+    if (params?.transferStatus) qs.set('transferStatus', params.transferStatus);
+    if (params?.droverId) qs.set('droverId', params.droverId);
+    if (params?.droverName) qs.set('droverName', params.droverName);
     if (params?.from) qs.set('from', params.from);
     if (params?.to) qs.set('to', params.to);
+    if (params?.method) qs.set('method', params.method);
+    if (typeof params?.onlyPending === 'boolean') qs.set('onlyPending', String(params.onlyPending));
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
     const endpoint = qs.toString() ? `/invoices?${qs.toString()}` : '/invoices';
     return await ApiService.get(endpoint);
   }

@@ -61,6 +61,29 @@ export class RoutesService {
       return { distance: `${km} km`, duration, source: 'fallback' };
     };
 
+    const tryOsrm = async (
+      oLat: number,
+      oLng: number,
+      dLat: number,
+      dLng: number,
+    ) => {
+      try {
+        // OSRM espera lon,lat
+        const url = `https://router.project-osrm.org/route/v1/driving/${oLng},${oLat};${dLng},${dLat}?overview=false&alternatives=false&steps=false`;
+        const resp = await fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+        if (!resp.ok) return null;
+        const json = await resp.json();
+        const route = json?.routes?.[0];
+        if (!route || json?.code !== 'Ok') return null;
+        const km = Math.max(0, Math.round(Number(route.distance || 0) / 1000));
+        const mins = Math.max(0, Math.round(Number(route.duration || 0) / 60));
+        const duration = mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60} min` : `${mins} min`;
+        return { distance: `${km} km`, duration, source: 'osrm' };
+      } catch {
+        return null;
+      }
+    };
+
     try {
       const apiKey = this.configService.get<string>('GOOGLE_MAPS_API_KEY');
 
@@ -76,7 +99,7 @@ export class RoutesService {
 
       const origins = `${originLat},${originLng}`;
       const destinations = `${destinationLat},${destinationLng}`;
-      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origins}&destinations=${destinations}&units=metric&language=es&region=cl&key=${apiKey}`;
+      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origins}&destinations=${destinations}&units=metric&language=es&region=cl&mode=driving&key=${apiKey}`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -84,6 +107,27 @@ export class RoutesService {
       });
 
       if (!response.ok) {
+        // Intentar con Routes API como fallback mejorado antes de distancia geodésica
+        const routesAlt = await this.getRoutes({
+          origin: { location: { latLng: { latitude: originLat, longitude: originLng } } },
+          destination: { location: { latLng: { latitude: destinationLat, longitude: destinationLng } } },
+          travelMode: 'DRIVE',
+          routingPreference: 'TRAFFIC_AWARE_OPTIMAL',
+          computeAlternativeRoutes: false,
+          languageCode: 'es-CL',
+          units: 'METRIC',
+        });
+        const r = routesAlt?.routes?.[0];
+        if (r?.distanceMeters && r?.duration) {
+          const km = Math.max(0, Math.round(Number(r.distanceMeters) / 1000));
+          const secs = Number(String(r.duration).replace(/[^0-9]/g, '')) || 0;
+          const mins = Math.max(0, Math.round(secs / 60));
+          const duration = mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60} min` : `${mins} min`;
+          return { distance: `${km} km`, duration, source: 'routes' };
+        }
+        // Intentar OSRM
+        const osrm = await tryOsrm(originLat, originLng, destinationLat, destinationLng);
+        if (osrm) return osrm;
         return safeFallback(originLat, originLng, destinationLat, destinationLng);
       }
 
@@ -92,6 +136,27 @@ export class RoutesService {
       const element = json?.rows?.[0]?.elements?.[0];
 
       if (!element || element?.status === 'ZERO_RESULTS' || json?.status !== 'OK') {
+        // Intentar con Routes API como fallback mejorado
+        const routesAlt = await this.getRoutes({
+          origin: { location: { latLng: { latitude: originLat, longitude: originLng } } },
+          destination: { location: { latLng: { latitude: destinationLat, longitude: destinationLng } } },
+          travelMode: 'DRIVE',
+          routingPreference: 'TRAFFIC_AWARE_OPTIMAL',
+          computeAlternativeRoutes: false,
+          languageCode: 'es-CL',
+          units: 'METRIC',
+        });
+        const r = routesAlt?.routes?.[0];
+        if (r?.distanceMeters && r?.duration) {
+          const km = Math.max(0, Math.round(Number(r.distanceMeters) / 1000));
+          const secs = Number(String(r.duration).replace(/[^0-9]/g, '')) || 0;
+          const mins = Math.max(0, Math.round(secs / 60));
+          const duration = mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60} min` : `${mins} min`;
+          return { distance: `${km} km`, duration, source: 'routes' };
+        }
+        // Intentar OSRM
+        const osrm = await tryOsrm(originLat, originLng, destinationLat, destinationLng);
+        if (osrm) return osrm;
         return safeFallback(originLat, originLng, destinationLat, destinationLng);
       }
 
@@ -99,10 +164,31 @@ export class RoutesService {
       const duration = element?.duration?.text ?? '';
 
       if (!distance || !duration) {
+        // Intentar con Routes API como fallback mejorado
+        const routesAlt = await this.getRoutes({
+          origin: { location: { latLng: { latitude: originLat, longitude: originLng } } },
+          destination: { location: { latLng: { latitude: destinationLat, longitude: destinationLng } } },
+          travelMode: 'DRIVE',
+          routingPreference: 'TRAFFIC_AWARE_OPTIMAL',
+          computeAlternativeRoutes: false,
+          languageCode: 'es-CL',
+          units: 'METRIC',
+        });
+        const r = routesAlt?.routes?.[0];
+        if (r?.distanceMeters && r?.duration) {
+          const km = Math.max(0, Math.round(Number(r.distanceMeters) / 1000));
+          const secs = Number(String(r.duration).replace(/[^0-9]/g, '')) || 0;
+          const mins = Math.max(0, Math.round(secs / 60));
+          const duration2 = mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60} min` : `${mins} min`;
+          return { distance: `${km} km`, duration: duration2, source: 'routes' };
+        }
+        // Intentar OSRM
+        const osrm = await tryOsrm(originLat, originLng, destinationLat, destinationLng);
+        if (osrm) return osrm;
         return safeFallback(originLat, originLng, destinationLat, destinationLng);
       }
 
-      return { distance, duration };
+      return { distance, duration, source: 'distance_matrix' };
     } catch (error) {
       console.error('Error al obtener los datos de distancia:', error);
       const originLat = Number(params?.originLat);

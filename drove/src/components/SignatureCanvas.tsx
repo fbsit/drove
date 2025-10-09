@@ -22,6 +22,33 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
     if (!ctx) return;
     // Fondo transparente (por defecto) para incrustar la firma sin background en el PDF
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Mejora de estabilidad de trazo
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    // Ajustar tamaño del canvas al contenedor para mejor densidad
+    const resize = () => {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      const width = Math.max(320, Math.min(600, parent.clientWidth));
+      const height = 170;
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = Math.floor(width * ratio);
+      canvas.height = Math.floor(height * ratio);
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      const c = canvas.getContext('2d');
+      if (c) {
+        c.scale(ratio, ratio);
+        c.lineWidth = 2.5;
+        c.lineCap = 'round';
+        c.lineJoin = 'round';
+      }
+    };
+    resize();
+    const ro = new ResizeObserver(resize);
+    try { ro.observe(canvas.parentElement!); } catch {}
+    return () => { try { ro.disconnect(); } catch {} };
   }, []);
 
   /* ───────── handlers ───────── */
@@ -65,9 +92,7 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(x, y);
-    ctx.strokeStyle = '#111827'; // negro/gris oscuro para buen contraste
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#111827';
     ctx.stroke();
 
     setLastX(x);
@@ -97,8 +122,8 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
       <div className="relative">
         <canvas
           ref={canvasRef}
-          width={400}
-          height={150}
+          width={480}
+          height={170}
           data-testid="signature-canvas"
           onMouseDown={startDrawing}
           onMouseMove={draw}
@@ -107,31 +132,19 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
           onTouchStart={startDrawing}
           onTouchMove={draw}
           onTouchEnd={endDrawing}
-          className="border border-white/20 rounded-md cursor-crosshair w-full touch-none bg-white"
+          className="rounded-md cursor-crosshair w-full touch-none bg-transparent"
         />
-      </div>
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={clearCanvas}
-          className="text-sm"
-        >
-          Borrar firma
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            // fuerza emitir el valor actual (por si solo tocó y salió)
-            if (canvasRef.current) onSignatureChange(canvasRef.current.toDataURL());
-          }}
-          className="text-sm"
-        >
-          Guardar
-        </Button>
+        {/* Botón de limpiar como X en la esquina */}
+        {hasDrawn && (
+          <button
+            type="button"
+            onClick={clearCanvas}
+            aria-label="Borrar firma"
+            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-red-600 text-white flex items-center justify-center shadow hover:bg-red-700"
+          >
+            ×
+          </button>
+        )}
       </div>
     </div>
   );

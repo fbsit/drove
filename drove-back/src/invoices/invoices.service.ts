@@ -1,7 +1,7 @@
 // src/invoices/invoices.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, ILike } from 'typeorm';
 import { Invoice } from './entities/invoice.entity';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
@@ -25,27 +25,95 @@ export class InvoicesService {
     return this.invoiceRepo.save(invoice);
   }
 
-  /** Devuelve todas las facturas; une a nivel de servicio por travelId usando travelsRepo */
-  async findAll(): Promise<Invoice[]> {
-    const invoices = await this.invoiceRepo.find({ order: { invoiceDate: 'DESC' } });
+  /**
+   * Devuelve facturas con filtros opcionales y paginación. Une travel para enriquecer datos.
+   */
+  async findAll(params?: {
+    search?: string;
+    status?: string;
+    clientId?: string;
+    clientName?: string;
+    transferStatus?: string;
+    droverId?: string;
+    droverName?: string;
+    from?: string;
+    to?: string;
+    method?: string;
+    onlyPending?: boolean;
+    page?: number;
+    limit?: number;
+  }): Promise<Invoice[]> {
+    const page = Math.max(1, params?.page || 1);
+    const limit = Math.min(100, Math.max(1, params?.limit || 50));
+
+    const where: any = {};
+    if (params?.status) where.status = params.status as any;
+    if (params?.clientId) where.customerId = params.clientId;
+    if (params?.from || params?.to) {
+      // invoiceDate es DATE, aplicamos rango con Between manual via query builder por flexibilidad
+    }
+    if (params?.method) where.paymentMethod = params.method as any;
+    if (params?.onlyPending) where.status = where.status || 'SENT';
+
+    // Base: traemos página con orden
+    const [invoices, total] = await this.invoiceRepo.findAndCount({
+      where,
+      order: { invoiceDate: 'DESC', id: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
     if (!invoices?.length) return invoices;
     const ids = Array.from(new Set(invoices.map((i) => i.travelId).filter(Boolean)));
     if (ids.length === 0) return invoices;
-    const travels = await this.travelsRepo
+    let qb = this.travelsRepo
       .createQueryBuilder('t')
       .leftJoinAndSelect('t.client', 'client')
       .leftJoinAndSelect('t.drover', 'drover')
-      .where('t.id IN (:...ids)', { ids })
-      .getMany();
+      .where('t.id IN (:...ids)', { ids });
+
+    // Filtros avanzados en travel: clientName, droverName, transferStatus y search
+    if (params?.transferStatus) {
+      qb = qb.andWhere('LOWER(t.status) = LOWER(:tstatus)', { tstatus: params.transferStatus });
+    }
+    if (params?.clientName) {
+      qb = qb.andWhere('LOWER(client.contactInfo->>\'fullName\') = LOWER(:cname)', { cname: params.clientName });
+    }
+    if (params?.droverName) {
+      qb = qb.andWhere('LOWER(drover.contactInfo->>\'fullName\') = LOWER(:dname)', { dname: params.droverName });
+    }
+    if (params?.search) {
+      const term = `%${params.search.toLowerCase()}%`;
+      qb = qb.andWhere(
+        "LOWER(COALESCE(client.contactInfo->>'fullName','')) LIKE :term OR LOWER(COALESCE(drover.contactInfo->>'fullName','')) LIKE :term OR LOWER(COALESCE(t.startAddress,'')) LIKE :term OR LOWER(COALESCE(t.endAddress,'')) LIKE :term",
+        { term },
+      );
+    }
+    if (params?.from) {
+      qb = qb.andWhere('t.createdAt >= :from', { from: new Date(params.from) });
+    }
+    if (params?.to) {
+      const toDate = new Date(params.to);
+      toDate.setHours(23, 59, 59, 999);
+      qb = qb.andWhere('t.createdAt <= :to', { to: toDate });
+    }
+
+    const travels = await qb.getMany();
     const map = new Map<string, Travels>(travels.map((t) => [t.id, t]));
     // surface ADVANCE alias if stored via issuedBy sentinel
-    return invoices.map((inv) => {
+    let enriched = invoices.map((inv) => {
       const withTravel = { ...inv, travel: map.get(inv.travelId!) } as any;
       if (withTravel?.issuedBy === '__ADVANCE__' && String(withTravel.status).toUpperCase() === 'SENT') {
         withTravel.status = 'ADVANCE';
       }
       return withTravel;
     });
+
+    // Filtro onlyPending a nivel combinado (por si se cambió el where.status)
+    if (params?.onlyPending) {
+      enriched = enriched.filter((i: any) => String(i.status).toUpperCase() !== 'PAID');
+    }
+
+    return enriched;
   }
 
   /** Devuelve una factura por ID y resuelve travel por travelId */

@@ -26,12 +26,9 @@ export class CarDataService {
     return res?.data ?? [];
   }
 
-  static async decodeVin(vin: string, opts?: { verbose?: boolean; allTrims?: boolean }): Promise<any> {
-    const q = new URLSearchParams();
-    if (opts?.verbose) q.set('verbose', 'yes');
-    if (opts?.allTrims) q.set('all_trims', 'yes');
-    const suffix = q.toString() ? `?${q.toString()}` : '';
-    return ApiService.get<{ source: string; data: any }>(`/car-data/vin/${encodeURIComponent(vin)}${suffix}`);
+  // Deshabilitado: mantener firma para compatibilidad sin llamar al backend
+  static async decodeVin(_vin: string, _opts?: { verbose?: boolean; allTrims?: boolean }): Promise<any> {
+    return { disabled: true } as any;
   }
 }
 

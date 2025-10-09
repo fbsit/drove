@@ -9,6 +9,7 @@ export interface MapProps {
   onRouteCalculated?: (distance: string, duration: string) => void;
   isAddressesSelected?: boolean;
   onPolylineCalculated?: (polyline: string) => void;
+  droverMarkers?: Array<{ id: string; lat: number; lng: number; name?: string; address?: string }>;
 }
 
 export interface MapMarkerProps {

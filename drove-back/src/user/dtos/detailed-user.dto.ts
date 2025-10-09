@@ -16,6 +16,7 @@ export interface DetailedUser {
   email: string;
   status: string;
   role: string;
+  accountType?: string;
   contactInfo: {
     fullName: string;
     phone: string;

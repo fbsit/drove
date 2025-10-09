@@ -31,8 +31,10 @@ export interface User {
 export class AuthService {
   // === AUTENTICACIÓN ===
   static async signIn(credentials: AuthSignInRequest): Promise<AuthSignInResponse> {
-    console.log("lanzando con estas credenciales", credentials);
-    const response = await ApiService.post<AuthSignInResponse>('/auth/login', credentials);
+    const normalizedEmail = String(credentials.email ?? '').trim().toLowerCase();
+    const payload = { ...credentials, email: normalizedEmail } as AuthSignInRequest;
+    console.log("lanzando con estas credenciales", payload);
+    const response = await ApiService.post<AuthSignInResponse>('/auth/login', payload);
     console.log("response",response)
     if (response.access_token) {
       localStorage.setItem('auth_token', response.access_token);
@@ -45,7 +47,9 @@ export class AuthService {
   }
 
   static async signUp(userData: AuthSignUpRequest): Promise<AuthSignUpResponse> {
-    return await ApiService.post<AuthSignUpResponse>('/users', userData);
+    const normalizedEmail = String(userData.email ?? '').trim().toLowerCase();
+    const payload = { ...userData, email: normalizedEmail } as AuthSignUpRequest;
+    return await ApiService.post<AuthSignUpResponse>('/users', payload);
   }
 
   static async signOut(): Promise<void> {
@@ -75,7 +79,8 @@ export class AuthService {
 
   // === VERIFICACIONES ===
   static async sendVerificationCode(email: string): Promise<void> {
-    await ApiService.post('/verifications/email/send-code', { email });
+    const normalized = String(email ?? '').trim().toLowerCase();
+    await ApiService.post('/verifications/email/send-code', { email: normalized });
   }
 
   static async requestEmailValidation(email: string): Promise<void> {
@@ -83,8 +88,9 @@ export class AuthService {
   }
 
   static async verifyCode(email: string, code: string): Promise<boolean> {
+    const normalized = String(email ?? '').trim().toLowerCase();
     const response = await ApiService.post<{ verified: boolean }>('/verifications/email/check-code', {
-      email,
+      email: normalized,
       code
     });
     return response.verified;
@@ -95,7 +101,8 @@ export class AuthService {
   }
 
   static async forgotPassword(email: string): Promise<void> {
-    await ApiService.post('/users/forgot-password', { email });
+    const normalized = String(email ?? '').trim().toLowerCase();
+    await ApiService.post('/users/forgot-password', { email: normalized });
   }
 
   static async resetPassword(code: string, newPassword: string): Promise<void> {

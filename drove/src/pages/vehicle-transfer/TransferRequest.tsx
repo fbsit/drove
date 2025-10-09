@@ -48,15 +48,7 @@ const DesktopTransferRequest: React.FC = () => {
   const handleNext = async () => {
     const isValid = await validateStep(step);
     if (isValid) {
-      // Validate VIN only when moving past vehicle step
-      if (step === 1) {
-        const vin = form.getValues()?.vehicleDetails?.vin;
-        if (vin && vin.length === 17) {
-          try {
-            await CarDataService.decodeVin(vin);
-          } catch {}
-        }
-      }
+      // Se elimina validación de VIN contra backend para no bloquear el flujo
       nextStep();
     }
   };

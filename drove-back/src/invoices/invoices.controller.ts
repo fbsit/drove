@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
 import { InvoicesService } from './invoices.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
@@ -23,8 +23,36 @@ export class InvoicesController {
   @Get()
   @ApiOperation({ summary: 'Listar facturas' })
   @ApiOkResponse({ type: [Invoice] })
-  findAll() {
-    return this.invoicesService.findAll();
+  findAll(
+    @Query('search') search?: string,
+    @Query('status') status?: string,
+    @Query('clientId') clientId?: string,
+    @Query('clientName') clientName?: string,
+    @Query('transferStatus') transferStatus?: string,
+    @Query('droverId') droverId?: string,
+    @Query('droverName') droverName?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('method') method?: string,
+    @Query('onlyPending') onlyPending?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.invoicesService.findAll({
+      search,
+      status,
+      clientId,
+      clientName,
+      transferStatus,
+      droverId,
+      droverName,
+      from,
+      to,
+      method,
+      onlyPending: onlyPending === 'true' || onlyPending === '1',
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
+    });
   }
 
   @Get(':id')

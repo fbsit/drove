@@ -30,6 +30,7 @@ export const useDroversManagement = () => {
           role: drover.role,
           company_name: drover.company_name,
           avatar: drover?.contactInfo?.selfie || drover?.selfie || undefined,
+          employmentType: drover.employmentType || drover.employment_type || 'FREELANCE',
         }));
       } catch (error) {
         console.error('[DROVERS] ❌ Error al obtener drovers:', error);
@@ -97,5 +98,10 @@ export const useDroversManagement = () => {
     rejectDrover: (droverId: string) => rejectDroverMutation.mutate(droverId),
     isApproving: approveDroverMutation.isPending,
     isRejecting: rejectDroverMutation.isPending,
+    // helpers para empleo
+    setEmploymentType: async (droverId: string, employmentType: 'FREELANCE' | 'CONTRACTED') => {
+      await AdminService.updateUser(droverId, { employmentType });
+      queryClient.invalidateQueries({ queryKey: ['admin-drovers'] });
+    },
   };
 };

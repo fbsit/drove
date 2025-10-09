@@ -63,6 +63,9 @@ export class PickupVerificationDto {
   /** Firma en dataURL (base64) */
   @ApiProperty() @IsString() signature: string;
 
+  /** Firma del drover en dataURL (base64) */
+  @ApiPropertyOptional() @IsOptional() @IsString() droverSignature?: string;
+
   /** Comentarios opcionales */
   @ApiPropertyOptional() @IsOptional() @IsString() comments?: string;
 

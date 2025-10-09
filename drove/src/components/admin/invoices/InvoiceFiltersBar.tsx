@@ -28,6 +28,8 @@ interface InvoiceFiltersBarProps {
   setDateRange: (value: { from?: Date, to?: Date }) => void;
   clients: string[];
   drovers: string[];
+  onlyPending?: boolean;
+  setOnlyPending?: (v: boolean) => void;
 }
 
 const STATUS_OPTIONS = [
@@ -51,7 +53,9 @@ export default function InvoiceFiltersBar({
   filterClient, setFilterClient,
   filterDrover, setFilterDrover,
   dateRange, setDateRange,
-  clients, drovers
+  clients, drovers,
+  onlyPending = false,
+  setOnlyPending,
 }: InvoiceFiltersBarProps) {
   const rangeLabel = dateRange?.from && dateRange?.to
     ? `${format(dateRange.from, "dd/MM/yyyy", { locale: es })} - ${format(dateRange.to, "dd/MM/yyyy", { locale: es })}`
@@ -75,7 +79,12 @@ export default function InvoiceFiltersBar({
 
       {/* Checkbox línea */}
       <div className="flex items-center gap-2 text-white/80 text-sm mb-3">
-        <input type="checkbox" className="h-4 w-4 rounded border-white/20" />
+        <input
+          type="checkbox"
+          className="h-4 w-4 rounded border-white/20"
+          checked={!!onlyPending}
+          onChange={(e) => setOnlyPending?.(e.target.checked)}
+        />
         <span>Solo acciones pendientes</span>
       </div>
 
@@ -114,7 +123,7 @@ export default function InvoiceFiltersBar({
         {/* Cliente combobox */}
         <ClientComboBox value={filterClient} options={clients || []} onValueChange={setFilterClient} />
 
-        {/* Drover (placeholder) */}
+        {/* Drover */}
         <Select value={filterDrover} onValueChange={setFilterDrover}>
           <SelectTrigger className="h-10 rounded-2xl bg-[#1B1E28] text-white border-white/10 w-full md:w-[49%] xl:w-full justify-between">
             <div className="flex items-center gap-2"><span className="text-white/70">Todos los drovers</span></div>
@@ -123,6 +132,9 @@ export default function InvoiceFiltersBar({
           <SelectContent className="bg-[#22142A] text-white border-white/10 z-30">
             <SelectGroup>
               <SelectItem value="todos">Todos</SelectItem>
+              {drovers?.map((d) => (
+                <SelectItem key={d} value={d}>{d}</SelectItem>
+              ))}
             </SelectGroup>
           </SelectContent>
         </Select>

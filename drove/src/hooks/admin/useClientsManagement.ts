@@ -28,17 +28,22 @@ export const useClientsManagement = (params?: { type?: 'empresa' | 'persona' | '
             ? 'rechazado'
             : 'pendiente';
 
+          // Nuevo criterio: usar accountType si está presente
+          const accountType = (client?.accountType || client?.account_type || '').toString().toUpperCase();
+          const tipoByAccount = accountType === 'COMPANY' ? 'empresa' : accountType === 'PERSON' ? 'persona' : undefined;
+
           return {
             id: client.id,
             nombre: fullName,
             email: client.email,
-            tipo: client.company_name ? 'empresa' : 'persona',
+            tipo: tipoByAccount || (client.company_name ? 'empresa' : 'persona'),
             estado,
             fecha: client.created_at || client.createdAt || new Date().toISOString(),
             full_name: client.full_name,
             phone: client.phone,
             company_name: client.company_name,
             status: client.status,
+            accountType: client.accountType || client.account_type,
           } as Client & any;
         });
       } catch (error) {

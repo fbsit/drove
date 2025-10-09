@@ -106,6 +106,19 @@ export class ResendService {
     this.client = new Resend(apiKey);
   }
 
+  private localizeInvoiceStatus(status: string | undefined | null): string {
+    const key = String(status || '').toUpperCase();
+    const map: Record<string, string> = {
+      DRAFT: 'Borrador',
+      SENT: 'Emitida',
+      PAID: 'Pagada',
+      VOID: 'Anulada',
+      REJECTED: 'Rechazada',
+      ADVANCE: 'Anticipo',
+    };
+    return map[key] || (status || '');
+  }
+
   private loadTemplate(name: string): HandlebarsTemplateDelegate {
     if (this.compiledTemplates[name]) return this.compiledTemplates[name];
 
@@ -138,6 +151,56 @@ export class ResendService {
     const base = baseUrl.replace(/\/$/, '');
     const path = usePage === 'withdrawals' ? '/verificacion/recogida/' : '/verificacion/entrega/';
     return `${base}${path}${encodeURIComponent(id)}`;
+  }
+
+  /* ============== NUEVOS: Notificaciones de estado de factura ============== */
+  async sendInvoiceStatusEmailClient(payload: { email: string; name: string; status: string; invoiceNumber?: string; amount?: number; invoiceUrl?: string; travelId?: string; updatedAt?: string; }) {
+    if (!this.client) return false;
+    const statusEs = this.localizeInvoiceStatus(payload.status);
+    const subject = `Estado de tu factura: ${statusEs}`;
+    const html = `
+      <table cellspacing="0" cellpadding="0" width="100%">
+        <tr><td align="center">
+          <table width="600" cellspacing="0" cellpadding="20" style="background:#1a1122;border-radius:10px;color:#fff">
+            <tr><td align="center"><img width="160" alt="DROVE" src="https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null"></td></tr>
+            <tr><td>
+              <h2 style="color:#6EF7FF;margin:0 0 8px">Actualización de factura</h2>
+              <p>Hola ${payload.name || 'cliente'}, tu factura ha cambiado al estado <strong>${statusEs}</strong>.</p>
+              ${payload.invoiceNumber ? `<p>N° de factura: <strong>${payload.invoiceNumber}</strong></p>` : ''}
+              ${payload.amount != null ? `<p>Monto: €${Number(payload.amount || 0).toFixed(2)}</p>` : ''}
+              ${payload.travelId ? `<p>Traslado: ${payload.travelId}</p>` : ''}
+              ${payload.updatedAt ? `<p>Fecha: ${payload.updatedAt}</p>` : ''}
+              ${payload.invoiceUrl ? `<p><a href="${payload.invoiceUrl}" style="background:#6EF7FF;color:#22142A;padding:10px 16px;border-radius:8px;text-decoration:none">Ver factura</a></p>` : ''}
+            </td></tr>
+          </table>
+        </td></tr>
+      </table>`;
+    await this.client.emails.send({ from: 'contacto@drove.es', to: payload.email, subject, html });
+    return true;
+  }
+
+  async sendInvoiceStatusEmailAdmin(payload: { email?: string; status: string; invoiceNumber?: string; amount?: number; travelId?: string; updatedAt?: string; clientEmail?: string; }) {
+    if (!this.client) return false;
+    const admin = payload.email || process.env.ADMIN_NOTIF_EMAIL || 'info@drove.es';
+    const statusEs = this.localizeInvoiceStatus(payload.status);
+    const subject = `Factura ${statusEs}${payload.invoiceNumber ? ` #${payload.invoiceNumber}` : ''}`;
+    const html = `
+      <table cellspacing="0" cellpadding="0" width="100%">
+        <tr><td align="center">
+          <table width="600" cellspacing="0" cellpadding="20" style="background:#1a1122;border-radius:10px;color:#fff">
+            <tr><td>
+              <h2 style="color:#6EF7FF;margin:0 0 8px">Factura ${statusEs}</h2>
+              ${payload.invoiceNumber ? `<p><strong>N°:</strong> ${payload.invoiceNumber}</p>` : ''}
+              ${payload.travelId ? `<p><strong>Transfer:</strong> ${payload.travelId}</p>` : ''}
+              ${payload.amount != null ? `<p><strong>Monto:</strong> €${Number(payload.amount || 0).toFixed(2)}</p>` : ''}
+              ${payload.clientEmail ? `<p><strong>Cliente:</strong> ${payload.clientEmail}</p>` : ''}
+              ${payload.updatedAt ? `<p><strong>Fecha:</strong> ${payload.updatedAt}</p>` : ''}
+            </td></tr>
+          </table>
+        </td></tr>
+      </table>`;
+    await this.client.emails.send({ from: 'contacto@drove.es', to: admin, subject, html });
+    return true;
   }
 
   private buildQrUrl(usePage: 'withdrawals' | 'delivery', id: string): string {
@@ -392,7 +455,11 @@ export class ResendService {
         typeof pickupVerification?.signature === 'string'
           ? pickupVerification.signature
           : (travel?.signatureStartClient || ''),
-      driver_signature_url: '',
+      driver_signature_url:
+        // Si la firma viene como dataURL base64, la incrustamos tal cual; si viene como URL normal de bucket, también funciona en clientes de correo
+        typeof pickupVerification?.droverSignature === 'string'
+          ? pickupVerification.droverSignature
+          : '',
       doc_issue_date: new Date().toLocaleDateString('es-ES'),
       request_id: travel.id,
       vehicle_type: travel.typeVehicle,
@@ -453,7 +520,7 @@ export class ResendService {
     );
     return this.sendToMultipleSequential(recipients, {
       from: 'contacto@drove.es',
-      subject: 'DROVER se dirigue a su destino',
+      subject: 'Comprobante de inicio de transporte del vehículo',
       html,
       ...(attachments ? { attachments } : {}),
     });
@@ -542,7 +609,7 @@ export class ResendService {
     );
     return this.sendToMultipleSequential(recipients, {
       from: 'contacto@drove.es',
-      subject: 'DROVER se dirigue a su destino',
+      subject: '¡Vas camino al punto de destino!',
       html,
       ...(attachments ? { attachments } : {}),
     });

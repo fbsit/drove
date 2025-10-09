@@ -54,6 +54,27 @@ export class DroverService {
   static async updateCurrentPosition(lat: number, lng: number) {
     return ApiService.post('/users/me/current-position', { lat, lng });
   }
+
+  static async setAvailability(isAvailable: boolean) {
+    return ApiService.post('/users/me/availability', { isAvailable });
+  }
+
+  // === COMPENSACIONES ===
+  static async getFreelanceCompensationForKm(km: number) {
+    return ApiService.get(`/rates/compensation/freelance?km=${encodeURIComponent(String(km))}`);
+  }
+
+  static async getContractedMonthlyCompensation(droverId: string, monthISO: string) {
+    return ApiService.get(`/rates/compensation/contracted?droverId=${encodeURIComponent(droverId)}&month=${encodeURIComponent(monthISO)}`);
+  }
+
+  static async previewCompensation(opts: { droverId: string; km?: number; month?: string }) {
+    const params = new URLSearchParams();
+    params.set('droverId', opts.droverId);
+    if (typeof opts.km === 'number') params.set('km', String(opts.km));
+    if (opts.month) params.set('month', opts.month);
+    return ApiService.get(`/rates/compensation/preview?${params.toString()}`);
+  }
 }
 
 export default DroverService;

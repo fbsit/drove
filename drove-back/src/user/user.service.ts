@@ -6,8 +6,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere } from 'typeorm';
-import { User, UserAccountType } from './entities/user.entity';
+import { Repository, FindOptionsWhere, ILike } from 'typeorm';
+import { User, UserAccountType, DroverEmploymentType } from './entities/user.entity';
 import { CreateUserDto } from './dtos/createUser.dto';
 import { UpdateUserDto } from './dtos/updatedUser.dto';
 import * as bcrypt from 'bcrypt';
@@ -36,15 +36,16 @@ export class UserService {
    */
   async create(createUserDto: CreateUserDto): Promise<User> {
     const { email, password, userType, contactInfo } = createUserDto;
-    this.logger.log(`Create user attempt email=${email} type=${userType}`);
+    const normalizedEmail = String(email).trim().toLowerCase();
+    this.logger.log(`Create user attempt email=${normalizedEmail} type=${userType}`);
     this.logger.debug(`CreateUserDto.contactInfo=${JSON.stringify(contactInfo ?? {})}`);
 
     // Verificar duplicados
     const existing = await this.userRepo.findOneBy({
-      email,
+      email: normalizedEmail,
     } as unknown as FindOptionsWhere<User>);
     if (existing) {
-      throw new ConflictException(`El email ${email} ya está registrado.`);
+      throw new ConflictException(`El email ${normalizedEmail} ya está registrado.`);
     }
 
     try {
@@ -66,16 +67,19 @@ export class UserService {
         }
       }
 
-      const acctType = (ci.documentType === 'CIF' || isLikelyCompanyName(ci.fullName))
+      const acctType = (ci?.companyName && String(ci.companyName).trim().length > 0)
         ? UserAccountType.COMPANY
-        : UserAccountType.PERSON;
+        : (ci.documentType === 'CIF' || isLikelyCompanyName(ci.fullName) || isLikelyCompanyName(ci.companyName))
+          ? UserAccountType.COMPANY
+          : UserAccountType.PERSON;
 
       const user = this.userRepo.create({
-        email,
+        email: normalizedEmail,
         password: hashed,
         role,
         contactInfo: ci,
         accountType: acctType,
+        employmentType: role === 'DROVER' ? DroverEmploymentType.FREELANCE : null,
       });
       this.logger.debug(`Persisting user role=${user.role} accountType=${user.accountType}`);
       const created = await this.userRepo.save(user);
@@ -99,6 +103,10 @@ export class UserService {
       return created;
     } catch (error: any) {
       this.logger.error(`Create user failed: ${error?.message}`, error?.stack);
+      if (error?.response?.statusCode === 400 || error?.status === 400) {
+        // Repropaga errores 400 de validación para que el front reciba el mensaje específico
+        throw error;
+      }
       if (error.code === '23505') {
         throw new ConflictException(`El email ${email} ya existe.`);
       }
@@ -160,11 +168,14 @@ export class UserService {
    * Busca un usuario por email
    */
   async findByEmail(email: string): Promise<User> {
-    const user = await this.userRepo.findOneBy({
-      email,
-    } as unknown as FindOptionsWhere<User>);
+    const normalized = String(email ?? '').trim().toLowerCase();
+    let user = await this.userRepo.findOne({ where: { email: normalized } });
+    if (!user) {
+      // Fallback por si existen registros antiguos con mayúsculas
+      user = await this.userRepo.findOne({ where: { email: ILike(email) } });
+    }
     if (!user)
-      throw new NotFoundException(`Usuario con email ${email} no encontrado`);
+      throw new NotFoundException(`Usuario con email ${normalized} no encontrado`);
     return user;
   }
 
@@ -172,6 +183,66 @@ export class UserService {
 
   async findByRole(role: any): Promise<User[]> {
     return this.userRepo.find({ where: { role } });
+  }
+
+  async findByRoleAndAvailability(role: any, isAvailable: boolean): Promise<User[]> {
+    return this.userRepo.find({ where: { role, isAvailable } as any });
+  }
+
+  /**
+   * Mapea usuarios para la UI de asignación (sin contraseña) y con métricas.
+   * - Elimina `password`
+   * - Añade `completedTrips` (DELIVERED) y `rating` promedio desde reviews
+   */
+  async mapUsersForAssignment(users: User[]): Promise<any[]> {
+    if (!Array.isArray(users) || users.length === 0) return [];
+    const ids = users.map(u => u.id);
+    // Conteo de viajes completados por drover
+    const completedByDrover = await this.travelsRepo
+      .createQueryBuilder('t')
+      .select('t.droverId', 'droverId')
+      .addSelect('COUNT(*)', 'count')
+      .where('t.droverId IN (:...ids)', { ids })
+      .andWhere("t.status = 'DELIVERED'")
+      .groupBy('t.droverId')
+      .getRawMany<{ droverId: string; count: string }>();
+    const mapCompleted = new Map<string, number>(
+      completedByDrover.map(r => [r.droverId, Number(r.count || 0)])
+    );
+
+    // Promedio de rating: usamos reviews.service via query directa para evitar dependencias circulares
+    const reviewRows = await (this.userRepo.manager as any)
+      .query(
+        `SELECT "droverId" as id, AVG(rating) as avg, COUNT(*) as cnt
+         FROM reviews
+         WHERE "droverId" = ANY($1)
+         GROUP BY "droverId"`,
+        [ids],
+      );
+    const mapRating = new Map<string, { average: number; count: number }>(
+      reviewRows.map((r: any) => [r.id, { average: Number(r.avg || 0), count: Number(r.cnt || 0) }])
+    );
+
+    const now = Date.now();
+    const recentMs = (Number(process.env.DROVER_RECENT_LOCATION_MINUTES) || 10) * 60 * 1000;
+
+    return users.map((u) => {
+      const { password, ...rest } = u as any;
+      const completedTrips = mapCompleted.get(u.id) || 0;
+      const ratingInfo = mapRating.get(u.id) || { average: 0, count: 0 };
+      const lastPosAt: Date | null = (u as any)?.currentPositionUpdatedAt || null;
+      const ageMs = lastPosAt ? (now - new Date(lastPosAt).getTime()) : null;
+      const hasRecentLocation = typeof ageMs === 'number' ? ageMs <= recentMs : false;
+      return {
+        ...rest,
+        completedTrips,
+        rating: Number(ratingInfo.average?.toFixed?.(2) || 0),
+        ratingCount: ratingInfo.count,
+        lastPositionAt: lastPosAt || null,
+        locationAgeSec: typeof ageMs === 'number' ? Math.max(0, Math.round(ageMs / 1000)) : null,
+        hasRecentLocation,
+      };
+    });
   }
 
   /**
@@ -198,14 +269,21 @@ export class UserService {
       }
       user.contactInfo = ci;
       // recalcular accountType sin cambiar roles/permisos
-      user.accountType = (ci.documentType === 'CIF' || isLikelyCompanyName(ci.fullName))
+      user.accountType = (ci?.companyName && String(ci.companyName).trim().length > 0)
         ? UserAccountType.COMPANY
-        : UserAccountType.PERSON;
+        : (ci.documentType === 'CIF' || isLikelyCompanyName(ci.fullName) || isLikelyCompanyName(ci.companyName))
+          ? UserAccountType.COMPANY
+          : UserAccountType.PERSON;
     }
 
     // Asigna otros campos
     const { password, contactInfo, ...rest } = updateUserDto as any;
     Object.assign(user, rest);
+
+    // Si se está promoviendo a DROVER y no tenía employmentType, asignar default
+    if (user.role === 'DROVER' && !user.employmentType) {
+      user.employmentType = DroverEmploymentType.FREELANCE;
+    }
 
     const saved = await this.userRepo.save(user);
     this.logger.log(`User updated id=${id}`);
@@ -259,6 +337,14 @@ export class UserService {
     user.currentPositionUpdatedAt = new Date();
     await this.userRepo.save(user);
     return { ok: true };
+  }
+
+  async setAvailability(userId: string, isAvailable: boolean) {
+    const user = await this.findOne(userId);
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    user.isAvailable = !!isAvailable;
+    await this.userRepo.save(user);
+    return { ok: true, isAvailable: user.isAvailable };
   }
 
   /**

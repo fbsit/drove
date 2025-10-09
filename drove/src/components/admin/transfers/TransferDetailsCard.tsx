@@ -76,9 +76,10 @@ interface LocalTransferDetail {
 
 interface TransferDetailsCardProps {
   transfer: LocalTransferDetail;
+  droverMarkers?: Array<{ id: string; lat: number; lng: number; name?: string }>;
 }
 
-const TransferDetailsCard: React.FC<TransferDetailsCardProps> = ({ transfer: initialTransfer }) => {
+const TransferDetailsCard: React.FC<TransferDetailsCardProps> = ({ transfer: initialTransfer, droverMarkers = [] }) => {
   const [transfer, setTransfer] = useState(initialTransfer);
   const [isVehicleOpen, setIsVehicleOpen] = useState(false);
   const [isRouteOpen, setIsRouteOpen] = useState(true);
@@ -354,6 +355,7 @@ const TransferDetailsCard: React.FC<TransferDetailsCardProps> = ({ transfer: ini
                         address: getDestinationAddress()
                       }}
                       isAddressesSelected={Boolean(getOriginAddress()) && Boolean(getDestinationAddress())}
+                      droverMarkers={droverMarkers}
                     />
                   </div>
                 )}

@@ -16,6 +16,8 @@ import { useSupportChat } from '@/contexts/SupportChatContext';
 import { toast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatDateTimeEs } from '@/utils/datetime';
+import { AuthService } from '@/services/authService';
+import DroverService from '@/services/droverService';
 
 interface TripStep {
   id: string;
@@ -85,6 +87,38 @@ const ActiveTrip: React.FC = () => {
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });
+
+  const [employmentType, setEmploymentType] = useState<string>('FREELANCE');
+  const [freelanceFee, setFreelanceFee] = useState<number | null>(null);
+  useEffect(() => {
+    (async () => {
+      try {
+        const me: any = await AuthService.getCurrentUser();
+        const t = (me as any)?.employmentType || (me as any)?.user?.employmentType || 'FREELANCE';
+        setEmploymentType(String(t).toUpperCase());
+      } catch {
+        setEmploymentType('FREELANCE');
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!trip) return;
+        const kmRaw = (trip as any)?.distanceTravel;
+        const km = typeof kmRaw === 'number' ? kmRaw : parseFloat(String(kmRaw || '0').replace(/[^0-9.,]/g, '').replace(',', '.'));
+        if (employmentType === 'FREELANCE' && !isNaN(km)) {
+          const res: any = await DroverService.getFreelanceCompensationForKm(km);
+          setFreelanceFee(Number(res?.driverFee ?? 0));
+        } else {
+          setFreelanceFee(null);
+        }
+      } catch {
+        setFreelanceFee(null);
+      }
+    })();
+  }, [trip, employmentType]);
 
   // Asegurar datos frescos tras redirecciones (p. ej. después de recoger)
   useEffect(() => {
@@ -209,7 +243,7 @@ const ActiveTrip: React.FC = () => {
   const getStatusText = (status: string): string => {
     const statusTexts = {
       'PENDINGPAID': 'Pendiente de Pago',
-      'CREATED': 'Asignado',
+      'CREATED': 'Creado',
       'ASSIGNED': 'Drover Asignado',
       'PICKED_UP': 'Vehículo Recogido',
       'IN_PROGRESS': 'En Progreso',
@@ -340,7 +374,7 @@ const ActiveTrip: React.FC = () => {
 
   return (
     <div>
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-3 md:space-y-6">
         {/* Top bar */}
         <div className="flex items-center justify-between text-white/80 ">
           <button onClick={() => navigate(-1)} className="flex items-center gap-2 hover:text-white ">
@@ -359,12 +393,12 @@ const ActiveTrip: React.FC = () => {
         </div>
 
         {/* Steps moved above title */}
-        <div className="mt-2">
+        <div className="mt-1 md:mt-2">
           <TransferStepsBar trip={trip} />
         </div>
 
         {/* Title + meta */}
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between mt-0 md:mt-1">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-white text-left" style={{ fontFamily: 'Helvetica' }}>
               Traslado #{String(trip.id).slice(0, 8)}
@@ -405,16 +439,26 @@ const ActiveTrip: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Ganancia estimada */}
+          {/* Precio/Ganancia por rol */}
           <Card className="bg-gradient-to-br from-green-900/20 to-green-500/10 border-white/10 text-start">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-green-300" /> Ganancia Estimada
+                <DollarSign className="h-5 w-5 text-green-300" />
+                {String(user?.role || '').toLowerCase() === 'drover' ? 'Ganancia Estimada' : 'Precio del traslado'}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-green-300">€{Number(trip.totalPrice ?? 0).toFixed(2)}</div>
-              <div className="text-white/60 text-sm mt-2">Esta es tu ganancia neta estimada</div>
+              {String(user?.role || '').toLowerCase() === 'drover' ? (
+                <>
+                  <div className="text-3xl font-bold text-green-300">€{Number((trip?.driverFee ?? freelanceFee ?? 0)).toFixed(2)}</div>
+                  <div className="text-white/60 text-sm mt-2">Compensación estimada por traslado</div>
+                </>
+              ) : (
+                <>
+                  <div className="text-3xl font-bold text-green-300">€{Number(trip?.totalPrice ?? 0).toFixed(2)}</div>
+                  <div className="text-white/60 text-sm mt-2">Este es el precio total a abonar por el servicio</div>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -528,7 +572,12 @@ const ActiveTrip: React.FC = () => {
               <div className="mt-4 space-y-2 text-white">
                 <div className="font-semibold">{trip.personDelivery?.fullName || '—'}</div>
                 <div className="text-white/70 text-sm">DNI: {trip.personDelivery?.dni || '—'}</div>
-                <div className="flex items-center gap-2 text-white/80 text-sm"><Phone className="h-4 w-4 text-[#6EF7FF]" /> {trip.personDelivery?.phone || '—'}</div>
+                <div className="flex items-center gap-2 text-white/80 text-sm">
+                  <Phone className="h-4 w-4 text-[#6EF7FF]" />
+                  {trip.personDelivery?.phone ? (
+                    <a href={`tel:${String(trip.personDelivery.phone).replace(/\s+/g,'')}`} className="underline underline-offset-2 hover:text-white">{trip.personDelivery.phone}</a>
+                  ) : '—'}
+                </div>
                 <div className="flex items-center gap-2 text-white/80 text-sm"><Mail className="h-4 w-4 text-[#6EF7FF]" /> {trip.personDelivery?.email || '—'}</div>
               </div>
             </CardContent>
@@ -572,7 +621,12 @@ const ActiveTrip: React.FC = () => {
               <div className="mt-4 space-y-2 text-white">
                 <div className="font-semibold">{trip.personReceive?.fullName || '—'}</div>
                 <div className="text-white/70 text-sm">DNI: {trip.personReceive?.dni || '—'}</div>
-                <div className="flex items-center gap-2 text-white/80 text-sm"><Phone className="h-4 w-4 text-[#6EF7FF]" /> {trip.personReceive?.phone || '—'}</div>
+                <div className="flex items-center gap-2 text-white/80 text-sm">
+                  <Phone className="h-4 w-4 text-[#6EF7FF]" />
+                  {trip.personReceive?.phone ? (
+                    <a href={`tel:${String(trip.personReceive.phone).replace(/\s+/g,'')}`} className="underline underline-offset-2 hover:text-white">{trip.personReceive.phone}</a>
+                  ) : '—'}
+                </div>
                 <div className="flex items-center gap-2 text-white/80 text-sm"><Mail className="h-4 w-4 text-[#6EF7FF]" /> {trip.personReceive?.email || '—'}</div>
               </div>
             </CardContent>

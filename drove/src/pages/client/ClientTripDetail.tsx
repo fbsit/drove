@@ -17,6 +17,7 @@ import {
   Download,
   ArrowLeft,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import TransferStepsBar, { getStatusLabel } from "@/components/trips/TransferStepsBar";;
 import GoogleMapComponent from "@/components/maps/GoogleMap";
 import { useToast } from "@/hooks/use-toast";
@@ -64,6 +65,7 @@ export default function ClientTripDetail() {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
 
   useEffect(() => {
     handleGetTravel();
@@ -117,6 +119,12 @@ export default function ClientTripDetail() {
     document.body.removeChild(link);
   };
 
+  const handleCopyIban = () => {
+    const iban = 'ES8300494612672916115882';
+    navigator.clipboard.writeText(iban);
+    toast({ title: 'Cuenta copiada', description: iban });
+  };
+
   const handleReviewSubmitted = (review: { rating: number; comment: string }) => {
     // Crear reseña simple compatible con el tipo esperado
     setTrip(prev => ({
@@ -138,6 +146,12 @@ export default function ClientTripDetail() {
   const pagoTarjeta = trip?.payment_method === "card";
   const isCompleted = trip?.status === "completado";
   const canLeaveReview = isCompleted && !trip?.review;
+  // Mostrar datos bancarios mientras el pago no esté marcado como PAID
+  const isPendingPayment = String(trip?.invoice?.status || trip?.status || '').toUpperCase() !== 'PAID';
+  const role = String(user?.role || '').toLowerCase();
+  const isAdmin = role === 'admin' || role === 'traffic_manager' || role === 'trafficboss' || role === 'traffic_boss';
+  const isDrover = role === 'drover';
+  const driverFeeNumber = typeof trip?.driverFee === 'number' ? trip?.driverFee : Number(trip?.driverFee);
 
   const statusInfo = {
     PENDINGPAID: { label: 'Pendiente de pago', hint: 'Abona el viaje para continuar', color: '#d97706' },
@@ -282,28 +296,49 @@ export default function ClientTripDetail() {
 
             <div
               className="rounded-2xl shadow-xl p-6 flex flex-col items-center justify-center text-center bg-white/90"
-
             >
               <div className="flex items-center gap-2">
                 <CreditCard style={{ color: "#1264a3" }} size={22} />
                 <span className="font-montserrat font-semibold text-lg" style={{ color: "#1264a3" }}>
-                  Precio del traslado
+                  {isDrover ? 'Ganancia Estimada' : 'Precio del traslado'}
                 </span>
               </div>
               <div
                 className="font-montserrat font-bold text-xl md:text-3xl mt-2"
                 style={{ color: "#0A2B4B" }}
               >
-                €{Number(trip?.totalPrice ?? 0).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {isDrover
+                  ? `€${Number(driverFeeNumber || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                  : `€${Number(trip?.totalPrice ?? 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               </div>
               <div className="text-xs text-center font-montserrat" style={{ color: "#1264a3" }}>
-                Este es el precio total a abonar por el servicio.
+                {isDrover ? 'Compensación estimada por traslado.' : 'Este es el precio total a abonar por el servicio.'}
               </div>
 
               <div className="flex flex-col gap-1 mt-4 items-center">
-                <span className={`text-xs font-montserrat p-3 rounded-[100px] ${pagoTarjeta ? "text-green-200" : "text-red-400"}`}>
-                  Estado de pago: {trip.status === 'PAID' ? "Pagado" : "Pendiente de pago"}
-                </span>
+                {isPendingPayment && !isDrover && (
+                  <div className="mt-1 w-full text-left bg-[#e8f7ff]/60 rounded-xl p-4 md:p-5">
+                    <div className="text-[#0A2B4B] text-xs font-montserrat font-semibold uppercase tracking-wide pb-2">
+                      Datos para depósito/transferencia
+                    </div>
+                    <div className="text-[#0A2B4B] text-xs font-montserrat grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+                      {/* IBAN a lo ancho con botón copiar */}
+                      <div className="md:col-span-2 flex items-center justify-between gap-2">
+                        <div className="truncate"><span className="font-semibold">Cuenta:</span> <span className="font-mono">ES8300494612672916115882</span></div>
+                        <button onClick={handleCopyIban} className="shrink-0 px-3 py-1 rounded-lg bg-[#0A2B4B] text-white text-xs font-semibold hover:bg-[#0b335a] transition-colors">Copiar</button>
+                      </div>
+                      {/* Columna 1 */}
+                      <div className="space-y-1">
+                        <div>DROVELAND INTERNATIONAL S.L.</div>
+                        <div><span className="font-semibold">NIF:</span> B72713647</div>
+                      </div>
+                      {/* Columna 2 */}
+                      <div className="space-y-1">
+                        <div>calle Eras 54 3ºD España</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <button
                   className="mt-2 bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-montserrat font-bold rounded-2xl px-4 py-2 text-sm transition-colors shadow"
                   onClick={handleFacturaDownload}

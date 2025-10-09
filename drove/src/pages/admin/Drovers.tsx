@@ -70,10 +70,10 @@ const Drovers: React.FC = () => {
   } = useDroversManagement();
 
   // filtro combinado texto + estado
-  const filteredDrovers = drovers.filter((d) => {
+  const filteredDrovers = drovers.filter((d: any) => {
     const matchesSearch = contains(d, search);
     const matchesStatus = statusFilter === "todos" || d.status === statusFilter;
-    const inferredType: 'core' | 'flex' = d.company_name ? 'core' : 'flex';
+    const inferredType: 'core' | 'flex' = (String(d.employmentType || d.employment_type).toUpperCase() === 'CONTRACTED') ? 'core' : 'flex';
     const matchesType = typeFilter === 'todos' || inferredType === typeFilter;
     return matchesSearch && matchesStatus && matchesType;
   });

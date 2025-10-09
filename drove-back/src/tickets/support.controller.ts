@@ -8,6 +8,9 @@ import {
   Body,
   HttpCode,
   HttpStatus,
+  UseGuards,
+  Req,
+  Query,
 } from '@nestjs/common';
 import { SupportService } from './support.service';
 import { UpdateTicketStatusDTO } from './dto/update-ticket.status.dto';
@@ -20,6 +23,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { PublicContactDTO } from './dto/public-contact.dto';
+import { JwtOrTestGuard } from '../common/guards/jwt-or-test.guard';
+import { MyMessageDTO } from './dto/my-message.dto';
+import { ClientType } from './entity/support-ticket.entity';
 
 @ApiTags('Support')
 @Controller()
@@ -30,6 +36,14 @@ export class SupportController {
   @ApiOperation({ summary: 'Listar tickets de soporte' })
   getAll() {
     return this.supportService.findAll();
+  }
+
+  @Get('admin/support/tickets/:id/messages')
+  @ApiOperation({ summary: 'Delta de mensajes por ticket (admin)' })
+  @ApiParam({ name: 'id' })
+  getMessagesDeltaAdmin(@Param('id') id: string, @Query('afterSeq') afterSeq?: string) {
+    const n = Number(afterSeq ?? 0);
+    return this.supportService.getMessagesDelta(id, isNaN(n) ? 0 : n);
   }
 
   @Put('admin/support/tickets/:id/status')
@@ -64,5 +78,58 @@ export class SupportController {
   @HttpCode(HttpStatus.CREATED)
   createPublic(@Body() dto: PublicContactDTO) {
     return this.supportService.createPublic(dto);
+  }
+
+  // Autenticado: obtener mi ticket abierto o null
+  @UseGuards(JwtOrTestGuard)
+  @Get('support/my/open')
+  @ApiOperation({ summary: 'Obtener ticket abierto del usuario autenticado' })
+  getMyOpen(@Req() req) {
+    const role = String(req.user.role || '').toLowerCase() === 'drover' ? ClientType.DROVER : ClientType.CLIENT;
+    return this.supportService.getOrCreateUserOpenTicket(req.user.id, role, 'Soporte', { name: req.user?.full_name || req.user?.name, email: req.user?.email });
+  }
+
+  // Autenticado: listar mis tickets
+  @UseGuards(JwtOrTestGuard)
+  @Get('support/my')
+  @ApiOperation({ summary: 'Listar tickets del usuario autenticado' })
+  async myTickets(@Req() req) {
+    const all = await this.supportService.findAll();
+    return all.filter(t => t.ownerUserId === req.user.id);
+  }
+
+  // Autenticado: enviar mensaje a mi ticket abierto
+  @UseGuards(JwtOrTestGuard)
+  @Post('support/my/messages')
+  @ApiOperation({ summary: 'Enviar mensaje al ticket abierto' })
+  @ApiBody({ type: MyMessageDTO })
+  @HttpCode(HttpStatus.CREATED)
+  async myMessage(@Req() req, @Body() dto: MyMessageDTO) {
+    const role = String(req.user.role || '').toLowerCase() === 'drover' ? ClientType.DROVER : ClientType.CLIENT;
+    const ticket = await this.supportService.getOrCreateUserOpenTicket(req.user.id, role, 'Soporte', { name: req.user?.full_name || req.user?.name, email: req.user?.email });
+    const sender = role === ClientType.DROVER ? 'drover' : 'client';
+    return this.supportService.appendMessage(ticket.id, dto.content, sender as any, req.user.email || 'Usuario', req.user.id);
+  }
+
+  @UseGuards(JwtOrTestGuard)
+  @Get('support/my/messages')
+  @ApiOperation({ summary: 'Delta de mensajes de mi ticket abierto' })
+  async myMessagesDelta(@Req() req) {
+    const role = String(req.user.role || '').toLowerCase() === 'drover' ? ClientType.DROVER : ClientType.CLIENT;
+    const ticket = await this.supportService.getOrCreateUserOpenTicket(req.user.id, role);
+    const afterSeq = Number((req.query?.afterSeq as string) ?? 0);
+    // Marcar como leídos para el cliente
+    await this.supportService.markRead(ticket.id, 'client');
+    return this.supportService.getMessagesDelta(ticket.id, afterSeq);
+  }
+
+  // Autenticado: cerrar mi ticket
+  @UseGuards(JwtOrTestGuard)
+  @Put('support/my/close')
+  @ApiOperation({ summary: 'Cerrar mi ticket abierto' })
+  async myClose(@Req() req) {
+    const role = String(req.user.role || '').toLowerCase() === 'drover' ? ClientType.DROVER : ClientType.CLIENT;
+    const ticket = await this.supportService.getOrCreateUserOpenTicket(req.user.id, role);
+    return this.supportService.close(ticket.id);
   }
 }

@@ -133,6 +133,7 @@ const RealTimeTripMap: React.FC<Props> = ({
   const [pos, setPos] = useState<LatLng | null>(null);
   const [isNear, setNear] = useState(false);
   const watchId = useRef<number>();
+  const mapRef = useRef<google.maps.Map | null>(null);
 
   /* ────────── geolocalización continua ────────── */
   useEffect(() => {
@@ -158,7 +159,15 @@ const RealTimeTripMap: React.FC<Props> = ({
 
   /* ────────── proximidad al destino ────────── */
   useEffect(() => {
-    if (pos) setNear(haversineMeters(pos, destination) <= 100);
+    if (pos) {
+      setNear(haversineMeters(pos, destination) <= 100);
+      // Centrar mapa suavemente al drover cuando está en progreso
+      try {
+        if (tripStatus.toLowerCase() === 'in_progress' && mapRef.current) {
+          mapRef.current.panTo(pos as any);
+        }
+      } catch {}
+    }
   }, [pos, destination]);
 
   /* ────────── origen dinámico de la ruta ────────── */
@@ -185,6 +194,7 @@ const RealTimeTripMap: React.FC<Props> = ({
         center={dynamicOrigin}
         zoom={zoom}
         options={mapOptions}
+        onLoad={(map) => { mapRef.current = map; }}
       >
         {/* posición actual */}
         {pos && (

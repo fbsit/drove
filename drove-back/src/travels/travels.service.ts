@@ -30,8 +30,10 @@ import { TravelOffer, OfferStatus } from './entities/travel-offer.entity';
 import { TravelsGateway } from './travel.gateway';
 import { DataSource } from 'typeorm';
 import { forwardRef, Inject } from '@nestjs/common';
-import { User, UserRole } from '../user/entities/user.entity';
+import { User, UserRole, DroverEmploymentType } from '../user/entities/user.entity';
+import { CompensationService, parseKmFromDistance } from '../rates/compensation.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { RoutesService } from '../routes/routes.service';
 
 interface RescheduleRecord {
   previousDate: string | null;
@@ -63,6 +65,8 @@ export class TravelsService {
     @Inject(forwardRef(() => TravelsGateway))
     private readonly gateway: TravelsGateway,
     private readonly notifications?: NotificationsService,
+    private readonly compensation?: CompensationService,
+    private readonly routesService?: RoutesService,
   ) {}
 
   private readonly defaultRelations = [
@@ -185,6 +189,40 @@ export class TravelsService {
     } else {
       travel.status = TransferStatus.CREATED;
     }
+    // Calcular distancia/tiempo reales con Google Distance Matrix cuando haya coordenadas
+    try {
+      const o = travel.startAddress as any;
+      const d = travel.endAddress as any;
+      const oLat = Number(o?.lat), oLng = Number(o?.lng), dLat = Number(d?.lat), dLng = Number(d?.lng);
+      if (isFinite(oLat) && isFinite(oLng) && isFinite(dLat) && isFinite(dLng) && this.routesService) {
+        const res: any = await this.routesService.getDistance({ originLat: oLat, originLng: oLng, destinationLat: dLat, destinationLng: dLng });
+        if (res?.distance) {
+          travel.distanceTravel = String(res.distance); // p.ej. "31 km"
+        }
+        if (res?.duration) {
+          travel.timeTravel = String(res.duration); // p.ej. "39 min"
+        }
+      }
+    } catch {}
+
+    // Intentar precomputar driverFee si ya hay drover asignado al crear (poco común)
+    try {
+      if (travel.droverId) {
+        const drover = await this.userRepo.findOne({ where: { id: travel.droverId } });
+        const km = parseKmFromDistance(travel.distanceTravel);
+        if (drover && typeof km === 'number' && km > 0 && this.compensation) {
+          const type = String(drover.employmentType || '').toUpperCase();
+          const preview = type === 'FREELANCE'
+            ? this.compensation.calcFreelancePerTrip(km)
+            : this.compensation.calcContractedPerTrip(km);
+          travel.driverFee = preview?.driverFee ?? null;
+          travel.driverFeeMeta = preview ? { ...preview } : null;
+        } else {
+          travel.driverFee = null;
+          travel.driverFeeMeta = null;
+        }
+      }
+    } catch {}
     const savedTravel = await this.travelsRepo.save<Travels>(travel);
     const invoiceDto = this.makeInvoiceDto(savedTravel);
     const newInvoice = await this.invoiceService.create(invoiceDto);
@@ -432,6 +470,22 @@ export class TravelsService {
       // aceptación → asignar viaje
       travel.droverId = droverId;
       travel.status = TransferStatus.ASSIGNED;
+      // Calcular y persistir compensación (freelance o contratado)
+      try {
+        const drover = await manager.getRepository(User).findOne({ where: { id: droverId } });
+        const km = parseKmFromDistance(travel.distanceTravel);
+        if (drover && typeof km === 'number' && km > 0 && this.compensation) {
+          const type = String(drover.employmentType || '').toUpperCase();
+          const preview = type === 'FREELANCE'
+            ? this.compensation.calcFreelancePerTrip(km)
+            : this.compensation.calcContractedPerTrip(km);
+          travel.driverFee = preview?.driverFee ?? null;
+          travel.driverFeeMeta = preview ? { ...preview } : null;
+        } else {
+          travel.driverFee = null;
+          travel.driverFeeMeta = null;
+        }
+      } catch {}
       await travelRepo.save(travel);
 
       offer.status = OfferStatus.ACCEPTED;
@@ -472,10 +526,33 @@ export class TravelsService {
   async updateStatus(id: string, dto: UpdateTravelStatusDto): Promise<void> {
     // permitir opcionalmente droverId junto con status
     const update: Partial<Travels> = { status: dto.status } as any;
-    if ((dto as any).droverId) {
-      (update as any).droverId = (dto as any).droverId;
+    const providedDroverId = (dto as any).droverId as string | undefined;
+    if (providedDroverId) {
+      (update as any).droverId = providedDroverId;
     }
     await this.travelsRepo.update({ id }, update);
+    // Si se asignó drover mediante este endpoint, recalcular driverFee
+    try {
+      if (providedDroverId) {
+        const travel = await this.travelsRepo.findOne({ where: { id } });
+        if (travel) {
+          const drover = await this.userRepo.findOne({ where: { id: providedDroverId } });
+          const km = parseKmFromDistance(travel.distanceTravel);
+          if (drover && typeof km === 'number' && km > 0 && this.compensation) {
+            const type = String(drover.employmentType || '').toUpperCase();
+            const preview = type === 'FREELANCE'
+              ? this.compensation.calcFreelancePerTrip(km)
+              : this.compensation.calcContractedPerTrip(km);
+            travel.driverFee = preview?.driverFee ?? null;
+            travel.driverFeeMeta = preview ? { ...preview } : null;
+          } else {
+            travel.driverFee = null;
+            travel.driverFeeMeta = null;
+          }
+          await this.travelsRepo.save(travel);
+        }
+      }
+    } catch {}
     try {
       // notificación transversal por cambio de estado
       const travel = await this.travelsRepo.findOne({ where: { id } as FindOptionsWhere<Travels> });

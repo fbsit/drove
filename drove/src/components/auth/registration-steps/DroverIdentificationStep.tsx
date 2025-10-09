@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CreditCard, MapPin } from 'lucide-react';
 import { RegistrationFormData } from '@/types/new-registration';
+import AddressInput from '@/components/vehicle-transfer/AddressInput';
+import type { LatLngCity } from '@/types/lat-lng-city';
 
 interface Props {
   data: Partial<RegistrationFormData>;
@@ -19,6 +21,9 @@ const DroverIdentificationStep: React.FC<Props> = ({ data, onUpdate, onNext, onP
     documentType: (data as any).documentType || '',
     documentNumber: data.documentNumber || '',
     address: data.address || '',
+    city: (data as any).city || '',
+    lat: (data as any).lat || undefined,
+    lng: (data as any).lng || undefined,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -32,6 +37,11 @@ const DroverIdentificationStep: React.FC<Props> = ({ data, onUpdate, onNext, onP
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+
+  const handleAddressChange = (v: LatLngCity) => {
+    setFormData(prev => ({ ...prev, address: v.address, city: v.city, lat: v.lat, lng: v.lng }));
+    if (errors.address) setErrors(prev => ({ ...prev, address: '' }));
   };
 
   const validateForm = () => {
@@ -48,6 +58,9 @@ const DroverIdentificationStep: React.FC<Props> = ({ data, onUpdate, onNext, onP
     if (!formData.address.trim()) {
       newErrors.address = 'La dirección de residencia es obligatoria';
     }
+    if (formData.address && (formData.lat == null || formData.lng == null)) {
+      newErrors.address = 'Selecciona una dirección de Google válida (con lat/lng)';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -55,9 +68,20 @@ const DroverIdentificationStep: React.FC<Props> = ({ data, onUpdate, onNext, onP
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      onNext();
+    if (!validateForm()) return;
+    // Validación básica de formato DNI/NIE en el cliente (no reemplaza validación backend)
+    const type = String(formData.documentType || '').toUpperCase();
+    const num = String(formData.documentNumber || '').trim().toUpperCase();
+    let formatOk = true;
+    if (type === 'DNI') {
+      formatOk = /^[0-9]{8}[A-Z]$/.test(num);
+      if (!formatOk) setErrors(prev => ({ ...prev, documentNumber: 'DNI inválido. Formato: 8 dígitos + letra (p.ej. 12345678Z).' }));
+    } else if (type === 'NIE') {
+      formatOk = /^[XYZ][0-9]{7}[A-Z]$/.test(num);
+      if (!formatOk) setErrors(prev => ({ ...prev, documentNumber: 'NIE inválido. Formato: X/Y/Z + 7 dígitos + letra.' }));
     }
+    if (!formatOk) return;
+    onNext();
   };
 
   const getDocumentPlaceholder = () => {
@@ -129,21 +153,21 @@ const DroverIdentificationStep: React.FC<Props> = ({ data, onUpdate, onNext, onP
           )}
         </div>
 
-        {/* Dirección de Residencia */}
+        {/* Dirección de Residencia (Google Places) */}
         <div>
           <Label htmlFor="address" className="text-white/80 mb-2 block">
             Dirección de Residencia *
           </Label>
           <div className="relative">
             <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-5 h-5" />
-            <Input
-              id="address"
-              type="text"
-              placeholder="Calle, número, ciudad, código postal"
-              value={formData.address}
-              onChange={(e) => handleChange('address', e.target.value)}
-              className={`pl-12 bg-white/5 border-white/20 text-white ${errors.address ? 'border-red-500' : ''}`}
-            />
+            <div className="pl-10">
+              <AddressInput
+                id="address"
+                value={{ address: formData.address, city: formData.city || '', lat: Number(formData.lat || 0), lng: Number(formData.lng || 0) } as LatLngCity}
+                onChange={handleAddressChange}
+                placeholder="Calle, número, ciudad, código postal"
+              />
+            </div>
           </div>
           {errors.address && (
             <p className="text-red-400 text-sm mt-1">{errors.address}</p>

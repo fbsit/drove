@@ -1,10 +1,12 @@
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Send, User, UserCheck, Clock } from "lucide-react";
 import { SupportTicket, SupportMessage } from "@/types/support-ticket";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useSupportSocket } from "@/hooks/useSupportSocket";
+import SupportService from "@/services/supportService";
 
 interface SupportChatViewerProps {
   ticket: SupportTicket;
@@ -12,19 +14,162 @@ interface SupportChatViewerProps {
   onUpdateStatus: (ticketId: string, status: string) => void;
 }
 
-const SupportChatViewer: React.FC<SupportChatViewerProps> = ({ 
-  ticket, 
-  onSendMessage, 
-  onUpdateStatus 
+const SupportChatViewer: React.FC<SupportChatViewerProps> = ({
+  ticket,
+  onSendMessage,
+  onUpdateStatus,
 }) => {
   const [newMessage, setNewMessage] = useState("");
+  const [messages, setMessages] = useState<SupportMessage[]>([]);
+  const messagesRef = useRef<SupportMessage[]>([]);
+  const lastSeqRef = useRef<number>(0);
+  const isMergingRef = useRef<boolean>(false);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // Inicializa y ordena mensajes por timestamp cuando cambia el ticket
+  useEffect(() => {
+    const base = (ticket?.messages || []).slice().sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    setMessages(base);
+    messagesRef.current = base;
+    lastSeqRef.current = Math.max(0, ...((ticket?.messages || []) as any[]).map((m: any) => m.seq || 0));
+  }, [ticket?.id]);
 
   const handleSendMessage = () => {
     if (newMessage.trim()) {
+      const optimistic: SupportMessage = {
+        id: `tmp-${Date.now()}`,
+        content: newMessage,
+        sender: "admin" as any,
+        senderName: "Admin",
+        timestamp: new Date().toISOString(),
+        ticketId: ticket.id,
+      } as any;
+      setMessages(prev => {
+        const next = [...prev, optimistic].sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        messagesRef.current = next;
+        return next;
+      });
+      // Enviar por REST; socket del cliente recibirá el broadcast y el admin se reconciliará sin requerir refresh manual
       onSendMessage(ticket.id, newMessage);
       setNewMessage("");
     }
   };
+
+  const fetchDeltaAndMerge = async () => {
+    if (isMergingRef.current) return;
+    isMergingRef.current = true;
+    try {
+      console.debug('[ADMIN] fetch delta from seq', lastSeqRef.current);
+      const res = await SupportService.getTicketMessagesDelta(ticket.id, lastSeqRef.current);
+      const fresh = (res?.messages || []) as any[];
+      if (fresh.length) {
+        const nextSeq = res?.lastSeq ?? lastSeqRef.current;
+        const mapped = fresh.map((m: any) => ({
+          id: String(m.id), content: m.content, sender: String(m.sender).toLowerCase(), senderName: m.senderName, timestamp: m.timestamp, ticketId: ticket.id,
+        })) as any;
+        setMessages(prev => {
+          const byId = new Map<string, SupportMessage>();
+          for (const m of [...prev, ...mapped]) byId.set(String(m.id), m as any);
+          const merged = Array.from(byId.values()).sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+          messagesRef.current = merged;
+          return merged;
+        });
+        lastSeqRef.current = nextSeq;
+        console.debug('[ADMIN] delta merged, lastSeq', lastSeqRef.current);
+      }
+    } catch {}
+    isMergingRef.current = false;
+  };
+
+  // Scroll al final cuando llegan mensajes nuevos
+  useEffect(() => {
+    if (listRef.current) {
+      listRef.current.scrollTop = listRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  // Socket en tiempo real para el ticket actual
+  useSupportSocket(
+    ticket?.id || null,
+    (incoming) => {
+      // Mapear a SupportMessage shape
+      const msg: SupportMessage = {
+        id: incoming.id,
+        content: incoming.text,
+        sender: incoming.sender === 'soporte' ? 'admin' as any : 'client' as any,
+        senderName: incoming.sender === 'soporte' ? 'Admin' : 'Usuario',
+        timestamp: new Date().toISOString(),
+        ticketId: ticket.id,
+      } as any;
+      setMessages(prev => {
+        // Eliminar optimistas que coincidan en texto y admin/user
+        const filtered = prev.filter(m => !(String(m.id).startsWith('tmp-') && m.content === msg.content && m.sender === msg.sender));
+        // Evitar duplicados por id
+        if (filtered.some(m => String(m.id) === String(msg.id))) return filtered;
+        const next = [...filtered, msg].sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        messagesRef.current = next;
+        return next;
+      });
+      // Delta inmediato para asegurar consistencia con BD
+      fetchDeltaAndMerge();
+    },
+    // onStatus
+    (status) => {
+      if (status === 'closed') onUpdateStatus(ticket.id, 'cerrado');
+    },
+    // onClosed
+    () => onUpdateStatus(ticket.id, 'cerrado'),
+    // onConnected/onDisconnected (admin vista no necesita pausar polling aquí)
+    () => {},
+    () => {},
+    // onAdminMessage: recibir broadcast global y filtrar por ticketId
+    (payload: any) => {
+      if (!payload || payload.ticketId !== ticket.id) return;
+      const msg: SupportMessage = {
+        id: String(payload.id),
+        content: payload.content,
+        sender: String(payload.sender).toLowerCase() as any,
+        senderName: payload.senderName || (payload.sender === 'ADMIN' ? 'Admin' : 'Usuario'),
+        timestamp: payload.timestamp || new Date().toISOString(),
+        ticketId: ticket.id,
+      } as any;
+      setMessages(prev => {
+        if (prev.some(m => String(m.id) === String(msg.id))) return prev;
+        const next = [...prev, msg].sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        messagesRef.current = next;
+        return next;
+      });
+      fetchDeltaAndMerge();
+    }
+  );
+
+  // Polling de respaldo cada 3s para garantizar que el admin vea mensajes nuevos
+  useEffect(() => {
+    let mounted = true;
+    const fetchOnce = async () => {
+      try {
+        const res = await SupportService.getTicketMessagesDelta(ticket.id, lastSeqRef.current);
+        if (!mounted) return;
+        const fresh = (res?.messages || []) as any[];
+        if (fresh.length) {
+          const nextSeq = res?.lastSeq ?? lastSeqRef.current;
+          const mapped = fresh.map((m: any) => ({
+            id: String(m.id), content: m.content, sender: String(m.sender).toLowerCase(), senderName: m.senderName, timestamp: m.timestamp, ticketId: ticket.id,
+          })) as any;
+          const byId = new Map<string, SupportMessage>();
+          for (const m of [...messagesRef.current, ...mapped]) byId.set(String(m.id), m as any);
+          const merged = Array.from(byId.values()).sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+          setMessages(merged);
+          messagesRef.current = merged;
+          lastSeqRef.current = nextSeq;
+        }
+      } catch {}
+    };
+    const id = setInterval(fetchOnce, 3000);
+    fetchOnce();
+    return () => { mounted = false; clearInterval(id); };
+  }, [ticket.id]);
+
 
   const getSenderIcon = (sender: string) => {
     switch (sender) {
@@ -68,8 +213,8 @@ const SupportChatViewer: React.FC<SupportChatViewerProps> = ({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 p-4 overflow-y-auto space-y-4">
-        {ticket.messages.map((message: SupportMessage) => (
+      <div ref={listRef} className="flex-1 p-4 overflow-y-auto space-y-4 max-h-[60vh]">
+        {messages.map((message: SupportMessage) => (
           <div key={message.id} className={`p-3 rounded-xl ${getSenderBg(message.sender)}`}>
             <div className="flex items-center gap-2 mb-2">
               {getSenderIcon(message.sender)}
