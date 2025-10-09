@@ -32,10 +32,7 @@ const MobileTransferRequest = () => {
     const isValid = await validateStep(step);
     if (isValid) {
       if (step === 1) {
-        const vin = form.getValues()?.vehicleDetails?.vin;
-        if (vin && vin.length === 17) {
-          try { await CarDataService.decodeVin(vin); } catch {}
-        }
+        // Se elimina validación de VIN contra backend para no bloquear el flujo
       }
       nextStep();
     }

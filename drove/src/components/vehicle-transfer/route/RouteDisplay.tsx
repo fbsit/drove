@@ -24,6 +24,7 @@ export const RouteDisplay: React.FC<RouteDisplayProps> = ({
   const [duration, setDuration] = useState<string>('');
   const [price, setPrice] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
+  const [recalcBusy, setRecalcBusy] = useState<boolean>(false);
 
   useEffect(() => {
     if (originAddress.lat && originAddress.lng && destinationAddress.lat && destinationAddress.lng) {
@@ -109,6 +110,16 @@ export const RouteDisplay: React.FC<RouteDisplayProps> = ({
     }
   };
 
+  const handleRecalculate = async () => {
+    if (!originAddress?.lat || !originAddress?.lng || !destinationAddress?.lat || !destinationAddress?.lng) return;
+    setRecalcBusy(true);
+    try {
+      await calculateRoute();
+    } finally {
+      setRecalcBusy(false);
+    }
+  };
+
   if (loading) {
     return (
       <Card className="bg-white/10 border-white/20">
@@ -176,6 +187,16 @@ export const RouteDisplay: React.FC<RouteDisplayProps> = ({
 
         {/* Mapa de ruta bajo la información, sin tocar la lógica existente */}
         <div className="pt-4">
+          <div className="flex justify-end mb-2">
+            <button
+              type="button"
+              onClick={handleRecalculate}
+              disabled={recalcBusy}
+              className="px-3 py-1.5 rounded-xl bg-[#6EF7FF] text-[#22142A] text-xs font-bold hover:opacity-90 disabled:opacity-50"
+            >
+              {recalcBusy ? 'Recalculando…' : 'Recalcular distancia'}
+            </button>
+          </div>
           <GoogleMapComponent
             originAddress={originAddress as any}
             destinationAddress={destinationAddress as any}
