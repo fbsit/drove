@@ -76,7 +76,7 @@ export class RoutesService {
 
       const origins = `${originLat},${originLng}`;
       const destinations = `${destinationLat},${destinationLng}`;
-      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origins}&destinations=${destinations}&units=metric&language=es&region=cl&key=${apiKey}`;
+      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origins}&destinations=${destinations}&units=metric&language=es&region=cl&mode=driving&key=${apiKey}`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -84,6 +84,24 @@ export class RoutesService {
       });
 
       if (!response.ok) {
+        // Intentar con Routes API como fallback mejorado antes de distancia geodésica
+        const routesAlt = await this.getRoutes({
+          origin: { location: { latLng: { latitude: originLat, longitude: originLng } } },
+          destination: { location: { latLng: { latitude: destinationLat, longitude: destinationLng } } },
+          travelMode: 'DRIVE',
+          routingPreference: 'TRAFFIC_AWARE_OPTIMAL',
+          computeAlternativeRoutes: false,
+          languageCode: 'es-CL',
+          units: 'METRIC',
+        });
+        const r = routesAlt?.routes?.[0];
+        if (r?.distanceMeters && r?.duration) {
+          const km = Math.max(0, Math.round(Number(r.distanceMeters) / 1000));
+          const secs = Number(String(r.duration).replace(/[^0-9]/g, '')) || 0;
+          const mins = Math.max(0, Math.round(secs / 60));
+          const duration = mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60} min` : `${mins} min`;
+          return { distance: `${km} km`, duration, source: 'routes' };
+        }
         return safeFallback(originLat, originLng, destinationLat, destinationLng);
       }
 
@@ -92,6 +110,24 @@ export class RoutesService {
       const element = json?.rows?.[0]?.elements?.[0];
 
       if (!element || element?.status === 'ZERO_RESULTS' || json?.status !== 'OK') {
+        // Intentar con Routes API como fallback mejorado
+        const routesAlt = await this.getRoutes({
+          origin: { location: { latLng: { latitude: originLat, longitude: originLng } } },
+          destination: { location: { latLng: { latitude: destinationLat, longitude: destinationLng } } },
+          travelMode: 'DRIVE',
+          routingPreference: 'TRAFFIC_AWARE_OPTIMAL',
+          computeAlternativeRoutes: false,
+          languageCode: 'es-CL',
+          units: 'METRIC',
+        });
+        const r = routesAlt?.routes?.[0];
+        if (r?.distanceMeters && r?.duration) {
+          const km = Math.max(0, Math.round(Number(r.distanceMeters) / 1000));
+          const secs = Number(String(r.duration).replace(/[^0-9]/g, '')) || 0;
+          const mins = Math.max(0, Math.round(secs / 60));
+          const duration = mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60} min` : `${mins} min`;
+          return { distance: `${km} km`, duration, source: 'routes' };
+        }
         return safeFallback(originLat, originLng, destinationLat, destinationLng);
       }
 
@@ -99,10 +135,28 @@ export class RoutesService {
       const duration = element?.duration?.text ?? '';
 
       if (!distance || !duration) {
+        // Intentar con Routes API como fallback mejorado
+        const routesAlt = await this.getRoutes({
+          origin: { location: { latLng: { latitude: originLat, longitude: originLng } } },
+          destination: { location: { latLng: { latitude: destinationLat, longitude: destinationLng } } },
+          travelMode: 'DRIVE',
+          routingPreference: 'TRAFFIC_AWARE_OPTIMAL',
+          computeAlternativeRoutes: false,
+          languageCode: 'es-CL',
+          units: 'METRIC',
+        });
+        const r = routesAlt?.routes?.[0];
+        if (r?.distanceMeters && r?.duration) {
+          const km = Math.max(0, Math.round(Number(r.distanceMeters) / 1000));
+          const secs = Number(String(r.duration).replace(/[^0-9]/g, '')) || 0;
+          const mins = Math.max(0, Math.round(secs / 60));
+          const duration2 = mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60} min` : `${mins} min`;
+          return { distance: `${km} km`, duration: duration2, source: 'routes' };
+        }
         return safeFallback(originLat, originLng, destinationLat, destinationLng);
       }
 
-      return { distance, duration };
+      return { distance, duration, source: 'distance_matrix' };
     } catch (error) {
       console.error('Error al obtener los datos de distancia:', error);
       const originLat = Number(params?.originLat);
