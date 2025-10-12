@@ -1415,13 +1415,21 @@ export class PdfService {
         // Determinar KM para freelance
         const kmNumber = Number((distanceKmRaw as any) || parseFloat(String(travel?.distanceTravel || '0')) || 0);
         if (isDroverPdf && String(droverEmpType || '').toUpperCase() === 'FREELANCE') {
-          // Preferir compensación persistida si existe
+          // Preferir compensación persistida si existe (con IVA si está disponible)
           const storedFee = (travel as any)?.driverFee;
-          if (typeof storedFee === 'number' && !isNaN(storedFee)) {
-            totalWithVat = `${Number(storedFee).toFixed(2)} € (compensación)`;
+          const storedMeta = (travel as any)?.driverFeeMeta || {};
+          const storedWithVat = typeof storedMeta?.driverFeeWithVat === 'number' ? storedMeta.driverFeeWithVat : null;
+          if (typeof storedWithVat === 'number' && !isNaN(storedWithVat)) {
+            totalWithVat = `${Number(storedWithVat).toFixed(2)} € (compensación IVA incl.)`;
+          } else if (typeof storedFee === 'number' && !isNaN(storedFee)) {
+            const withVat = Number((Number(storedFee) * 1.21).toFixed(2));
+            totalWithVat = `${withVat.toFixed(2)} € (compensación IVA incl.)`;
           } else {
             const preview = this.compensationService.calcFreelancePerTrip(kmNumber);
-            totalWithVat = `${preview.driverFee.toFixed(2)} € (compensación)`;
+            const withVat = typeof (preview as any)?.driverFeeWithVat === 'number'
+              ? (preview as any).driverFeeWithVat
+              : Number((preview.driverFee * 1.21).toFixed(2));
+            totalWithVat = `${withVat.toFixed(2)} € (compensación IVA incl.)`;
           }
         }
         if (isDroverPdf && String(droverEmpType || '').toUpperCase() === 'CONTRACTED') {

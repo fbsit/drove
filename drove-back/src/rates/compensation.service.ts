@@ -52,11 +52,14 @@ export class CompensationService {
   calcFreelancePerTrip(km: number) {
     const rounded = Math.round(km);
     const row = FREELANCE_TABLE.find(r => rounded >= r.min && rounded <= r.max) || FREELANCE_TABLE[FREELANCE_TABLE.length - 1];
+    const driverFee = Number(row.driverFee.toFixed(2));
+    const driverFeeWithVat = Number((driverFee * 1.21).toFixed(2));
     return {
       type: 'FREELANCE' as const,
       kilometers: rounded,
       range: { min: row.min, max: row.max },
-      driverFee: Number(row.driverFee.toFixed(2)),
+      driverFee,
+      driverFeeWithVat,
     };
   }
 
@@ -69,6 +72,7 @@ export class CompensationService {
     const extraKm = Math.max(0, kilometers - this.CONTRACTED_THRESHOLD_KM);
     const extraCompensation = extraKm * this.CONTRACTED_EXTRA_RATE;
     const driverFee = Number((basePortion + extraCompensation).toFixed(2));
+    const driverFeeWithVat = Number((driverFee * 1.21).toFixed(2));
     return {
       type: 'CONTRACTED' as const,
       kilometers,
@@ -77,6 +81,7 @@ export class CompensationService {
       extraRate: this.CONTRACTED_EXTRA_RATE,
       extraKm,
       driverFee,
+      driverFeeWithVat,
     };
   }
 
@@ -99,6 +104,7 @@ export class CompensationService {
     const extraKm = Math.max(0, Math.round(totalKm) - this.CONTRACTED_THRESHOLD_KM);
     const extraComp = extraKm * this.CONTRACTED_EXTRA_RATE;
 
+    const total = Number((this.CONTRACTED_BASE + extraComp).toFixed(2));
     return {
       type: 'CONTRACTED' as const,
       month: monthISO,
@@ -108,7 +114,8 @@ export class CompensationService {
       extraKm,
       extraRate: this.CONTRACTED_EXTRA_RATE,
       extraCompensation: Number(extraComp.toFixed(2)),
-      total: Number((this.CONTRACTED_BASE + extraComp).toFixed(2)),
+      total,
+      totalWithVat: Number((total * 1.21).toFixed(2)),
     };
   }
 
