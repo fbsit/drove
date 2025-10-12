@@ -98,9 +98,14 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
   const role = String(user?.role || '').toLowerCase();
   const isDrover = role === 'drover';
   const driverFeeSafe = (() => {
+    // Preferir driverFeeMeta.driverFeeWithVat si existe; fallback a driverFee * 1.21; último recurso: driverFee
+    const meta = (trip as any)?.driverFeeMeta;
+    const withVat = typeof meta?.driverFeeWithVat === 'number' ? meta.driverFeeWithVat : null;
+    if (typeof withVat === 'number' && !isNaN(withVat)) return withVat;
     const df = trip?.driverFee;
     const num = typeof df === 'string' ? parseFloat(df.replace(/[^0-9,.]/g, '').replace(',', '.')) : Number(df);
-    return isNaN(num) ? 0 : num;
+    if (!isNaN(num)) return Number((num * 1.21).toFixed(2));
+    return 0;
   })();
 
   const handleCopyId = () => {

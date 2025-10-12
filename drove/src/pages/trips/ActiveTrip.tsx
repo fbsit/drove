@@ -450,8 +450,14 @@ const ActiveTrip: React.FC = () => {
             <CardContent>
               {String(user?.role || '').toLowerCase() === 'drover' ? (
                 <>
-                  <div className="text-3xl font-bold text-green-300">€{Number((trip?.driverFee ?? freelanceFee ?? 0)).toFixed(2)}</div>
-                  <div className="text-white/60 text-sm mt-2">Compensación estimada por traslado</div>
+                  <div className="text-3xl font-bold text-green-300">€{(() => {
+                    const meta: any = (trip as any)?.driverFeeMeta;
+                    const withVat = typeof meta?.driverFeeWithVat === 'number' ? meta.driverFeeWithVat : null;
+                    if (typeof withVat === 'number') return Number(withVat).toFixed(2);
+                    const base = Number((trip?.driverFee ?? freelanceFee ?? 0));
+                    return Number((isNaN(base) ? 0 : base * 1.21)).toFixed(2);
+                  })()}</div>
+                  <div className="text-white/60 text-sm mt-2">Compensación estimada IVA incl.</div>
                 </>
               ) : (
                 <>

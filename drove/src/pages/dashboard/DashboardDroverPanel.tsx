@@ -110,6 +110,7 @@ const DashboardDroverPanel: React.FC = () => {
     createdAt: t.createdAt || t.created_at || t.scheduledDate || t.pickup_details?.pickupDate || Date.now(),
     totalPrice: parseMoney(t.totalPrice ?? t.price ?? t.amount ?? 0),
     driverFee: parseMoney(t.driverFee ?? (t as any)?.fee ?? (t as any)?.compensation ?? 0),
+    driverFeeMeta: (t as any)?.driverFeeMeta || null,
     distanceTravel: t.distanceTravel ?? t.transfer_details?.distance ?? t.distance ?? '-',
   }));
   const [search, setSearch] = React.useState('');
@@ -217,8 +218,11 @@ const DashboardDroverPanel: React.FC = () => {
 
       {/* KPIs (solo dos contadores como en la imagen) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <KpiCard icon={DollarSign} label="Ganancia estimada" value={`€${(stats?.totalEarnings ?? 0).toLocaleString()}`} />
-        <KpiCard icon={Star} label="Promedio por Traslado" value={`€${(stats?.avgPerTrip ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`} />
+        <KpiCard icon={DollarSign} label="Ganancia estimada IVA incl." value={`€${(() => {
+          const base = Number(stats?.totalEarnings ?? 0);
+          return Number((base * 1.21)).toLocaleString(undefined, { minimumFractionDigits: 2 });
+        })()}`} />
+        <KpiCard icon={Star} label="Promedio por Traslado IVA incl." value={`€${Number((Number(stats?.avgPerTrip ?? 0) * 1.21)).toLocaleString(undefined, { minimumFractionDigits: 2 })}`} />
       </div>
 
       {/* Filtros */}
@@ -296,14 +300,17 @@ const DashboardDroverPanel: React.FC = () => {
                       { min: 1600, max: 1699, driverFee: 290 }, { min: 1700, max: 1799, driverFee: 300 },
                       { min: 1800, max: 1899, driverFee: 310 }, { min: 1900, max: 1999, driverFee: 320 },
                     ];
+                    const meta: any = t.driverFeeMeta;
+                    const withVat = typeof meta?.driverFeeWithVat === 'number' ? meta.driverFeeWithVat : null;
                     const fee = Number(t.driverFee || 0);
-                    const display = fee > 0
+                    const baseDisplay = fee > 0
                       ? fee
                       : (empType === 'FREELANCE' && km > 0
                           ? (freelanceTable.find(r => km >= r.min && km <= r.max) || freelanceTable[freelanceTable.length - 1]).driverFee
                           : 0);
+                    const displayWithVat = typeof withVat === 'number' ? Number(withVat) : Number((baseDisplay * 1.21).toFixed(2));
                     return (
-                      <div className="text-[#6EF7FF] text-lg font-bold flex-1 text-start">Ganancia: €{Number(display).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                      <div className="text-[#6EF7FF] text-lg font-bold flex-1 text-start">Ganancia: €{Number(displayWithVat).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                     );
                   })()}
                   <Link to={`/traslados/activo/${t.id}`} className="px-5 py-2 h-9 rounded-2xl bg-[#6EF7FF] text-[#22142A] text-sm hover:bg-[#22142A] hover:text-white transition-colors">Ver detalles</Link>
