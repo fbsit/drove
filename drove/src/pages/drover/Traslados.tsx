@@ -171,7 +171,13 @@ const DroverTraslados = () => {
                   <div className="text-sm text-white/60">Tipo: {transfer.typeVehicle || 'No especificado'}</div>
                   <div className="text-sm text-white/60">
                     {employmentType === 'FREELANCE' ? (
-                      <>Compensación: {typeof transfer.driverFee === 'number' ? `€${Number(transfer.driverFee).toFixed(2)}` : '—'}</>
+                      (() => {
+                        const meta: any = (transfer as any)?.driverFeeMeta;
+                        const withVat = typeof meta?.driverFeeWithVat === 'number' ? meta.driverFeeWithVat : null;
+                        const base = typeof transfer.driverFee === 'number' ? transfer.driverFee : Number(transfer.driverFee);
+                        const show = typeof withVat === 'number' ? Number(withVat) : (isNaN(base) ? 0 : Number((base * 1.21).toFixed(2)));
+                        return <>Compensación: €{show.toFixed(2)} IVA incl.</>;
+                      })()
                     ) : (
                       <>Compensación: —</>
                     )}

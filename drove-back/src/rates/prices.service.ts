@@ -3,17 +3,19 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 
-interface Range {
-  kmRange: string;
-  combustible: number;
+interface Band {
+  min: number;
+  max: number;
+  baseRate: number; // "TASA" de la hoja por tramo (sin IVA, sin combustible)
+  combustible: number; // coste de combustible por tramo (sin IVA)
 }
 
 export interface PriceResponse {
   kilometers: number;
   exactKilometers: string;
-  baseCost: string;
-  additionalKilometers: number;
-  additionalCost: string;
+  baseCost: string; // TASA por tramo
+  additionalKilometers: number; // se mantiene por compatibilidad (0 con modelo por tramos)
+  additionalCost: string; // 0 con modelo por tramos
   fuelCost: string;
   totalWithoutTax: string;
   tax: string;
@@ -22,25 +24,28 @@ export interface PriceResponse {
 
 @Injectable()
 export class PricingService {
-  // Rangos de kilómetros con su costo de combustible
-  private readonly ranges: Range[] = [
-    { kmRange: '0 A 99', combustible: 7.9 },
-    { kmRange: '100 A 199', combustible: 17.8 },
-    { kmRange: '200 A 299', combustible: 25.7 },
-    { kmRange: '300 A 399', combustible: 31.6 },
-    { kmRange: '400 A 499', combustible: 39.5 },
-    { kmRange: '500 A 599', combustible: 47.4 },
-    { kmRange: '600 A 699', combustible: 55.3 },
-    { kmRange: '700 A 799', combustible: 63.2 },
-    { kmRange: '800 A 899', combustible: 71.1 },
-    { kmRange: '900 A 999', combustible: 79.0 },
-    { kmRange: '1000 A 1099', combustible: 86.9 },
-    { kmRange: '1100 A 1199', combustible: 94.8 },
-    { kmRange: '1200 A 1299', combustible: 102.7 },
-    { kmRange: '1300 A 1399', combustible: 110.6 },
-    { kmRange: '1400 A 1499', combustible: 118.5 },
-    { kmRange: '1500 A 1599', combustible: 126.4 },
-    { kmRange: '1600 A 1699', combustible: 134.3 },
+  // Tramos de kilómetros con su TASA (baseRate) y combustible (según hoja)
+  private readonly bands: Band[] = [
+    { min: 0,    max: 99,   baseRate: 147.50, combustible: 9.00 },
+    { min: 100,  max: 199,  baseRate: 191.50, combustible: 17.80 },
+    { min: 200,  max: 299,  baseRate: 246.50, combustible: 25.70 },
+    { min: 300,  max: 399,  baseRate: 279.50, combustible: 31.60 },
+    { min: 400,  max: 499,  baseRate: 299.30, combustible: 39.50 },
+    { min: 500,  max: 599,  baseRate: 316.90, combustible: 47.40 },
+    { min: 600,  max: 699,  baseRate: 345.60, combustible: 55.30 },
+    { min: 700,  max: 799,  baseRate: 389.50, combustible: 63.20 },
+    { min: 800,  max: 899,  baseRate: 422.50, combustible: 71.10 },
+    { min: 900,  max: 999,  baseRate: 466.50, combustible: 79.00 },
+    { min: 1000, max: 1099, baseRate: 499.50, combustible: 86.90 },
+    { min: 1100, max: 1199, baseRate: 543.50, combustible: 94.80 },
+    { min: 1200, max: 1299, baseRate: 556.70, combustible: 102.70 },
+    { min: 1300, max: 1399, baseRate: 576.50, combustible: 110.60 },
+    { min: 1400, max: 1499, baseRate: 631.50, combustible: 118.50 },
+    { min: 1500, max: 1599, baseRate: 653.50, combustible: 126.40 },
+    { min: 1600, max: 1699, baseRate: 675.50, combustible: 134.30 },
+    { min: 1700, max: 1799, baseRate: 697.50, combustible: 142.20 },
+    { min: 1800, max: 1899, baseRate: 719.50, combustible: 150.10 },
+    { min: 1900, max: 1999, baseRate: 741.50, combustible: 158.00 },
   ];
 
   /**
@@ -81,50 +86,37 @@ export class PricingService {
     }
 
     const km = Math.round(kmExactos);
-    const costoBase = 184.2;
-    const costoPorKmExtra = 0.69;
 
-    const kmAdicional = km > 100 ? km - 100 : 0;
-    const costoAdicional = kmAdicional * costoPorKmExtra;
-
-    // Determinar costo de combustible según rangos
-    let costoCombustible: number | null = null;
-    for (const range of this.ranges) {
-      const [minStr, maxStr] = range.kmRange.split(' A ');
-      const min = parseInt(minStr, 10);
-      const max = parseInt(maxStr, 10);
-
-      if (km >= min && km <= max) {
-        costoCombustible = range.combustible;
-        break;
-      }
+    // Localizar el tramo; si excede, extrapolar linealmente desde el último tramo
+    let band = this.bands.find(b => km >= b.min && km <= b.max);
+    let baseRate = band?.baseRate ?? 0;
+    let combustible = band?.combustible ?? 0;
+    if (!band) {
+      const last = this.bands[this.bands.length - 1];
+      const prev = this.bands[this.bands.length - 2];
+      const lastWidth = (last.max - last.min) || 100;
+      const baseDiff = last.baseRate - prev.baseRate;
+      const fuelDiff = last.combustible - prev.combustible;
+      const stepsBeyond = Math.floor((km - last.max) / lastWidth) + 1;
+      baseRate = last.baseRate + stepsBeyond * baseDiff;
+      combustible = last.combustible + stepsBeyond * fuelDiff;
     }
 
-    // Si supera el último rango, estimar línea recta
-    if (costoCombustible === null) {
-      const last = this.ranges[this.ranges.length - 1];
-      const secondLast = this.ranges[this.ranges.length - 2];
-      const [_, lastMaxStr] = last.kmRange.split(' A ');
-      const lastMax = parseInt(lastMaxStr, 10);
+    // Modelo por tramos: no hay coste adicional por km
+    const kmAdicional = 0;
+    const costoAdicional = 0;
 
-      const diff = last.combustible - secondLast.combustible;
-      const incrementPerKm = diff / 100;
-      const extraKm = km - lastMax;
-
-      costoCombustible = last.combustible + extraKm * incrementPerKm;
-    }
-
-    const totalSinIVA = costoBase + costoAdicional + costoCombustible;
+    const totalSinIVA = baseRate + combustible;
     const tax = totalSinIVA * 0.21;
     const totalCliente = totalSinIVA + tax;
 
     return {
       kilometers: km,
       exactKilometers: kmExactos.toFixed(3),
-      baseCost: costoBase.toFixed(2),
+      baseCost: baseRate.toFixed(2),
       additionalKilometers: kmAdicional,
       additionalCost: costoAdicional.toFixed(2),
-      fuelCost: costoCombustible.toFixed(2),
+      fuelCost: combustible.toFixed(2),
       totalWithoutTax: totalSinIVA.toFixed(2),
       tax: tax.toFixed(2),
       total: totalCliente.toFixed(2),

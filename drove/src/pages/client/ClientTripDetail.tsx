@@ -151,7 +151,13 @@ export default function ClientTripDetail() {
   const role = String(user?.role || '').toLowerCase();
   const isAdmin = role === 'admin' || role === 'traffic_manager' || role === 'trafficboss' || role === 'traffic_boss';
   const isDrover = role === 'drover';
-  const driverFeeNumber = typeof trip?.driverFee === 'number' ? trip?.driverFee : Number(trip?.driverFee);
+  const driverFeeNumber = (() => {
+    const meta = (trip as any)?.driverFeeMeta;
+    if (meta && typeof meta.driverFeeWithVat === 'number') return Number(meta.driverFeeWithVat);
+    const df = typeof trip?.driverFee === 'number' ? trip?.driverFee : Number(trip?.driverFee);
+    if (!isNaN(df)) return Number((df * 1.21).toFixed(2));
+    return 0;
+  })();
 
   const statusInfo = {
     PENDINGPAID: { label: 'Pendiente de pago', hint: 'Abona el viaje para continuar', color: '#d97706' },
