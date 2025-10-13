@@ -100,41 +100,40 @@ const MobileTripActionBar: React.FC<MobileTripActionBarProps> = ({
     <>
       {/* Bottom Sheet (siempre montado; se anima con translateY) */}
       <div
-        className={`fixed left-0 right-0 bottom-0 z-50 w-full transform transition-transform duration-300 ease-out ${
-          isOpen ? 'translate-y-0' : 'translate-y-full'
-        }`}
+        className={`fixed left-0 right-0 bottom-0 z-50 w-full transform transition-transform duration-300 ease-out ${isOpen ? 'translate-y-0' : 'translate-y-full'
+          }`}
       >
         <div className="w-full bg-[#1b1323] border-t border-white/10 p-4 shadow-2xl">
           <div className="flex items-start justify-between">
-              <div className="flex items-center gap-2 text-white">
-                <AlertCircle className="text-orange-400" size={18} />
-                <span className="font-semibold">Verificaciones Pendientes</span>
-              </div>
-              <button onClick={() => setIsOpen(false)} className="text-white/50 hover:text-white">×</button>
+            <div className="flex items-center gap-2 text-white">
+              <AlertCircle className="text-orange-400" size={18} />
+              <span className="font-semibold">Verificaciones Pendientes</span>
             </div>
-            <div className="mt-3">
-              <div className="my-2 border-t border-white/10" />
-              <div className="space-y-3">
-                {pendingItems.map((item) => (
-                  <div key={item.key} className="rounded-2xl border border-orange-400/50 bg-[#2b1b23]/40 p-4">
-                    <div className="flex items-center gap-2 text-white">
-                      {item.icon}
-                      <div className="font-semibold">{item.title}</div>
-                    </div>
-                    {item.description && (
-                      <div className="mt-2 text-white/80 text-sm">{item.description}</div>
-                    )}
-                    {item.actionLabel && item.onAction && (
-                      <div className="mt-3">
-                        <Button onClick={item.onAction} variant="outline" className="rounded-2xl border-[#6EF7FF] text-[#6EF7FF] hover:bg-[#6EF7FF]/10 hover:text-[#6EF7FF] shadow-[0_0_12px_rgba(110,247,255,0.35)]">
-                          {item.actionLabel}
-                        </Button>
-                      </div>
-                    )}
+            <button onClick={() => setIsOpen(false)} className="text-white/50 hover:text-white">×</button>
+          </div>
+          <div className="mt-3">
+            <div className="my-2 border-t border-white/10" />
+            <div className="space-y-3">
+              {pendingItems.map((item) => (
+                <div key={item.key} className="rounded-2xl border border-orange-400/50 bg-[#2b1b23]/40 p-4 flex flex-col gap-3 items-center">
+                  <div className="flex items-center gap-2 text-white">
+                    {item.icon}
+                    <div className="font-semibold">{item.title}</div>
                   </div>
-                ))}
-              </div>
+                  {item.description && (
+                    <div className="mt-2 text-white/80 text-sm">{item.description}</div>
+                  )}
+                  {item.actionLabel && item.onAction && (
+                    <div className="mt-3">
+                      <Button onClick={item.onAction} variant="outline" className="rounded-2xl border-[#6EF7FF] text-[#6EF7FF] hover:bg-[#6EF7FF]/10 hover:text-[#6EF7FF] shadow-[0_0_12px_rgba(110,247,255,0.35)]">
+                        {item.actionLabel}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
+          </div>
         </div>
       </div>
 
