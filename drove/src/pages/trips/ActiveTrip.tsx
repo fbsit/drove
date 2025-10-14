@@ -18,6 +18,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { formatDateTimeEs } from '@/utils/datetime';
 import { AuthService } from '@/services/authService';
 import DroverService from '@/services/droverService';
+import { encode } from '@mapbox/polyline';
 
 interface TripStep {
   id: string;
@@ -194,15 +195,18 @@ const ActiveTrip: React.FC = () => {
     };
   }, [trip?.status]);
 
-  // Generar polyline string a partir de los puntos
+  // Generar polyline string codificado usando Google's polyline encoding
   const generatePolyline = (points: Array<{ lat: number; lng: number; timestamp: number }>): string => {
     if (points.length === 0) return '';
     // Downsample para limitar tamaño de payload
     const stride = Math.max(1, Math.ceil(points.length / MAX_POLYLINE_POINTS));
     const reduced = points.filter((_, idx) => idx % stride === 0);
-    return reduced
-      .map(point => `${point.lat.toFixed(6)},${point.lng.toFixed(6)}`)
-      .join(';');
+    
+    // Convertir a formato de coordenadas para encoding
+    const coordinates = reduced.map(point => [point.lat, point.lng]);
+    
+    // Usar Google's polyline encoding
+    return encode(coordinates);
   };
 
   useEffect(() => {

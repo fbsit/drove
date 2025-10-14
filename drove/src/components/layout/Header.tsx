@@ -190,9 +190,9 @@ const Header = () => {
     // Viajes / traslados
     if (entityType === 'TRAVEL' && entityId) {
       if (role === 'admin' || role === 'traffic_manager') {
-        // Para admin: sólo TRAVEL_CREATED va a asignación; el resto al detalle de viaje
+        // Para admin: sólo TRAVEL_CREATED va a asignación; el resto al detalle de viaje activo
         if (category === 'TRAVEL_CREATED') return `/admin/asignar/${entityId}`;
-        return `/ver-traslado/${entityId}`;
+        return `/traslados/activo/${entityId}`;
       }
       if (role === 'client') return `/cliente/traslados/${entityId}`;
       if (role === 'drover') return `/traslados/activo/${entityId}`;
