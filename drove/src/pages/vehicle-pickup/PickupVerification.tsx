@@ -166,7 +166,7 @@ const PickupVerification: React.FC = () => {
         const data = await TransferService.getTransferById(transferId);
         setTransfer(data);
 
-        // Regla: solo el drover asignado y ventana de 30 minutos
+        // Regla: solo el drover asignado y ventana de 24 horas
         const assignedDroverId = data?.droverId || data?.drover?.id;
         if (!user?.id || !assignedDroverId || String(user.id) !== String(assignedDroverId)) {
           setAccessBlocked(true);
@@ -182,19 +182,20 @@ const PickupVerification: React.FC = () => {
           if (!dt) { setIsLoading(false); return; }
 
           const now = new Date();
-          const minus30 = new Date(now.getTime() - 30 * 60 * 1000);
-          const plus30  = new Date(now.getTime() + 30 * 60 * 1000);
+          // Ventana de 24 horas antes y después de la hora programada
+          const minusWindow = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          const plusWindow  = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-          if (dt < minus30) {
+          if (dt < minusWindow) {
             setAccessBlocked(true);
-            setAccessWarning('La hora de recogida ya pasó. Contacta a soporte para reprogramar.');
-            toast.warning('La hora de recogida ya pasó.');
+            setAccessWarning('La hora de recogida ya pasó (ventana de 24 horas expirada). Contacta a soporte para reprogramar.');
+            toast.warning('La hora de recogida ya pasó (ventana 24h).');
             return;
           }
-          if (dt > plus30) {
+          if (dt > plusWindow) {
             setAccessBlocked(true);
-            setAccessWarning('Aún es muy temprano para iniciar la recogida. Vuelve dentro de 30 minutos.');
-            toast.warning('Aún es muy temprano para iniciar la recogida.');
+            setAccessWarning('Aún es muy temprano para iniciar la recogida. Solo se habilita dentro de las 24 horas previas a la hora programada.');
+            toast.warning('Aún es muy temprano para iniciar la recogida (ventana 24h).');
             return;
           }
         }

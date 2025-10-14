@@ -127,7 +127,7 @@ export class CreateTravelDto {
   @ApiProperty() @IsString() typeVehicle: string;
   @ApiProperty() @IsString() brandVehicle: string;
   @ApiProperty() @IsString() yearVehicle: string;
-  @ApiProperty() @IsString() patentVehicle: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() patentVehicle?: string;
   @ApiProperty() @IsString() modelVehicle: string;
   @ApiProperty() @IsString() paymentMethod: string;
   @ValidateNested()

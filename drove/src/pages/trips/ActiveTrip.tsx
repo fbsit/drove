@@ -62,6 +62,8 @@ const ActiveTrip: React.FC = () => {
   const [distanceToDestinationKm, setDistanceToDestinationKm] = useState<number | null>(null);
   const isMobile = useIsMobile();
   const { toggleChat } = useSupportChat();
+  const [navOverlay, setNavOverlay] = useState(false);
+  const [navDismissed, setNavDismissed] = useState(false);
 
   // (efecto para abrir mapa cuando esté en progreso se declara más abajo, tras obtener trip)
 
@@ -133,6 +135,19 @@ const ActiveTrip: React.FC = () => {
       setShowMap(true);
     }
   }, [trip?.status]);
+
+  // Check if current user is the assigned drover (declarado antes de efectos que lo usan)
+  const isAssignedDrover = user?.id === trip?.droverId;
+  const showDroverCard = Boolean(trip?.drover && !isAssignedDrover);
+  const droverSelfieUrl = (trip as any)?.drover?.contactInfo?.selfie || (trip as any)?.drover?.avatar || (trip as any)?.drover?.selfie || '';
+  const droverName = (trip as any)?.drover?.contactInfo?.fullName || (trip as any)?.drover?.full_name || '';
+
+  // Modo navegación a pantalla completa solo para el drover asignado cuando inicia el viaje
+  useEffect(() => {
+    if (isAssignedDrover && trip?.status === 'IN_PROGRESS' && !navDismissed) {
+      setNavOverlay(true);
+    }
+  }, [isAssignedDrover, trip?.status, navDismissed]);
 
   // Capturar ruta cuando el viaje está en progreso
   useEffect(() => {
@@ -267,12 +282,6 @@ const ActiveTrip: React.FC = () => {
       default: return 'bg-gray-500';
     }
   };
-
-  // Check if current user is the assigned drover
-  const isAssignedDrover = user?.id === trip?.droverId;
-  const showDroverCard = Boolean(trip?.drover && !isAssignedDrover);
-  const droverSelfieUrl = (trip as any)?.drover?.contactInfo?.selfie || (trip as any)?.drover?.avatar || (trip as any)?.drover?.selfie || '';
-  const droverName = (trip as any)?.drover?.contactInfo?.fullName || (trip as any)?.drover?.full_name || '';
 
   const handleIniciarViaje = async () => {
     if (trip.status === 'PICKED_UP') {
@@ -715,6 +724,28 @@ const ActiveTrip: React.FC = () => {
 
         {/* mapa al interior de la sección de ruta cuando showMap === true */}
       </div>
+      {navOverlay && isAssignedDrover && trip?.status === 'IN_PROGRESS' && (
+        <div className="fixed inset-0 z-50 bg-[#0B0F19]">
+          <div className="absolute top-3 left-3 z-10 flex gap-2">
+            <Button
+              variant="secondary"
+              className="rounded-2xl bg-white/10 text-white border-white/20 hover:bg-white/20"
+              onClick={() => { setNavOverlay(false); setNavDismissed(true); }}
+            >
+              Salir de navegación
+            </Button>
+          </div>
+          <div className="h-full w-full">
+            <RealTimeTripMap
+              origin={{ lat: trip.startAddress.lat, lng: trip.startAddress.lng }}
+              destination={{ lat: trip.endAddress.lat, lng: trip.endAddress.lng }}
+              tripStatus={trip.status}
+              height="100vh"
+              zoom={16}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

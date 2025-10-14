@@ -39,6 +39,11 @@ export class AuthService {
     if (response.access_token) {
       localStorage.setItem('auth_token', response.access_token);
       try {
+        if ((response as any).refresh_token) {
+          localStorage.setItem('refresh_token', (response as any).refresh_token);
+        }
+      } catch {}
+      try {
         localStorage.setItem('last_login_at', new Date().toISOString());
       } catch {}
     }
@@ -57,6 +62,7 @@ export class AuthService {
       await ApiService.post('/auth/sign-out', {});
     } finally {
       localStorage.removeItem('auth_token');
+      try { localStorage.removeItem('refresh_token'); } catch {}
     }
   }
 
@@ -153,6 +159,10 @@ export class AuthService {
   // === UTILIDADES ===
   static getStoredToken(): string | null {
     return localStorage.getItem('auth_token');
+  }
+
+  static getRefreshToken(): string | null {
+    try { return localStorage.getItem('refresh_token'); } catch { return null; }
   }
 
   static isAuthenticated(): boolean {
