@@ -103,6 +103,10 @@ export const PickupDetailsStep: React.FC<PickupDetailsStepProps> = ({
                   <div className="relative max-w-xs w-full">
                     <Input
                       type="date"
+                      min={new Date().toISOString().split("T")[0]}
+                      max={new Date(new Date().setFullYear(new Date().getFullYear() + 2))
+                        .toISOString()
+                        .split("T")[0]} // máximo: hoy + 2 años
                       onChange={(e) => field.onChange(e.target.value)}
                       className="new-date w-full pr-10 relative"
                     />

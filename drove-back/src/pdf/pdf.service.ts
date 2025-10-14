@@ -32,7 +32,8 @@ export class PdfService {
     const minioEndpoint =
       this.configService.get<string>('MINIO_ENDPOINT') ||
       this.configService.get<string>('S3_ENDPOINT');
-    const minioRegion = this.configService.get<string>('MINIO_REGION') || 'us-east-1';
+    const minioRegion =
+      this.configService.get<string>('MINIO_REGION') || 'us-east-1';
     const accessKeyId =
       this.configService.get<string>('MINIO_ACCESS_KEY') ||
       this.configService.get<string>('AWS_ACCESS_KEY_ID');
@@ -42,7 +43,9 @@ export class PdfService {
 
     this.s3client = new S3({
       region: minioRegion,
-      ...(minioEndpoint ? { endpoint: minioEndpoint, forcePathStyle: true } : {}),
+      ...(minioEndpoint
+        ? { endpoint: minioEndpoint, forcePathStyle: true }
+        : {}),
       credentials:
         accessKeyId && secretAccessKey
           ? { accessKeyId, secretAccessKey }
@@ -140,9 +143,10 @@ export class PdfService {
 
       // wix -> directo
       const wixMatch = src.match(/^wix:image:\/\/v1\/(.+?)\//);
-      const directUrl = wixMatch && wixMatch[1]
-        ? `https://static.wixstatic.com/media/${wixMatch[1]}`
-        : src;
+      const directUrl =
+        wixMatch && wixMatch[1]
+          ? `https://static.wixstatic.com/media/${wixMatch[1]}`
+          : src;
 
       const res = await fetch(directUrl);
       if (!res.ok) return null;
@@ -151,9 +155,14 @@ export class PdfService {
       const buf = Buffer.from(arr);
 
       // Prefer content-type, fallback to extension, fallback to magic bytes
-      const isPng = contentType.includes('png')
-        || directUrl.toLowerCase().endsWith('.png')
-        || (buf.length > 4 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47);
+      const isPng =
+        contentType.includes('png') ||
+        directUrl.toLowerCase().endsWith('.png') ||
+        (buf.length > 4 &&
+          buf[0] === 0x89 &&
+          buf[1] === 0x50 &&
+          buf[2] === 0x4e &&
+          buf[3] === 0x47);
       if (isPng) return await pdfDoc.embedPng(buf);
       return await pdfDoc.embedJpg(buf);
     } catch {
@@ -236,10 +245,10 @@ export class PdfService {
       const chofer = (travel as any).drover
         ? (travel as any).drover
         : (travel as any).droverId
-        ? await this.getUser((travel as any).droverId)
-        : (travel as any).idChofer
-        ? await this.getUser((travel as any).idChofer)
-        : null;
+          ? await this.getUser((travel as any).droverId)
+          : (travel as any).idChofer
+            ? await this.getUser((travel as any).idChofer)
+            : null;
 
       // Calcular el tiempo de uso y normalizarlo
       const timeUse =
@@ -279,10 +288,14 @@ export class PdfService {
           const imageId = wixImageUrlSelfie;
           let directImageUrl = imageId;
           // Si es dataURL (base64), incrustar directamente
-          const isDataUrl = typeof directImageUrl === 'string' && directImageUrl.startsWith('data:image/');
-          const imageFormat: any = (isDataUrl && directImageUrl.includes('image/png')) || (!isDataUrl && directImageUrl.includes('.png'))
-            ? 'png'
-            : 'jpg';
+          const isDataUrl =
+            typeof directImageUrl === 'string' &&
+            directImageUrl.startsWith('data:image/');
+          const imageFormat: any =
+            (isDataUrl && directImageUrl.includes('image/png')) ||
+            (!isDataUrl && directImageUrl.includes('.png'))
+              ? 'png'
+              : 'jpg';
           const imageBuffer = isDataUrl
             ? Buffer.from(directImageUrl.split(',')[1], 'base64')
             : Buffer.from(await (await fetch(directImageUrl)).arrayBuffer());
@@ -478,7 +491,9 @@ export class PdfService {
             ? travel.updatedAt
             : travel.travelDate;
       dateUse =
-        typeof dateUse === 'object' && (dateUse as any).$date ? (dateUse as any).$date : dateUse;
+        typeof dateUse === 'object' && (dateUse as any).$date
+          ? (dateUse as any).$date
+          : dateUse;
       // Fallback si la fecha es inválida o no viene informada
       let dateObj = new Date(dateUse || Date.now());
       if (isNaN(dateObj.getTime())) {
@@ -489,7 +504,12 @@ export class PdfService {
         month: '2-digit',
         year: 'numeric',
       });
-      const timeToDraw = normalizedTravelTime || dateObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      const timeToDraw =
+        normalizedTravelTime ||
+        dateObj.toLocaleTimeString('es-ES', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
       const textLabel =
         step === 3 || step === 4 ? 'Fecha de entrega:' : 'Fecha de recogida:';
       page.drawText(textLabel, {
@@ -1078,22 +1098,10 @@ export class PdfService {
         // Vistas exteriores (ExteriorPhotosDto)
         ['Parte frontal', exteriorPhotos.frontView || ''],
         ['Parte trasera', exteriorPhotos.rearView || ''],
-        [
-          'Lado izquierdo delantero',
-          exteriorPhotos.leftFront || '',
-        ],
-        [
-          'Lado izquierdo trasero',
-          exteriorPhotos.leftRear || '',
-        ],
-        [
-          'Lado derecho delantero',
-          exteriorPhotos.rightFront || '',
-        ],
-        [
-          'Lado derecho trasero',
-          exteriorPhotos.rightRear || '',
-        ],
+        ['Lado izquierdo delantero', exteriorPhotos.leftFront || ''],
+        ['Lado izquierdo trasero', exteriorPhotos.leftRear || ''],
+        ['Lado derecho delantero', exteriorPhotos.rightFront || ''],
+        ['Lado derecho trasero', exteriorPhotos.rightRear || ''],
 
         // Vistas interiores (InteriorPhotosDto)
         ['Cuadro de mando', interiorPhotos.dashboard || ''],
@@ -1107,22 +1115,10 @@ export class PdfService {
         // Vistas exteriores (ExteriorPhotosDto)
         ['Parte frontal', exteriorPhotos.frontView || ''],
         ['Parte trasera', exteriorPhotos.rearView || ''],
-        [
-          'Lado izquierdo delantero',
-          exteriorPhotos.leftFront || '',
-        ],
-        [
-          'Lado izquierdo trasero',
-          exteriorPhotos.leftRear || '',
-        ],
-        [
-          'Lado derecho delantero',
-          exteriorPhotos.rightFront || '',
-        ],
-        [
-          'Lado derecho trasero',
-          exteriorPhotos.rightRear || '',
-        ],
+        ['Lado izquierdo delantero', exteriorPhotos.leftFront || ''],
+        ['Lado izquierdo trasero', exteriorPhotos.leftRear || ''],
+        ['Lado derecho delantero', exteriorPhotos.rightFront || ''],
+        ['Lado derecho trasero', exteriorPhotos.rightRear || ''],
 
         // Vistas interiores (InteriorPhotosDto)
         ['Cuadro de mando', interiorPhotos.dashboard || ''],
@@ -1204,7 +1200,10 @@ export class PdfService {
                 color: rgb(0, 0, 0),
               });
               if (wixImageUrl && typeof wixImageUrl === 'string') {
-                const img = await this.embedImageFromSource(pdfDoc, wixImageUrl);
+                const img = await this.embedImageFromSource(
+                  pdfDoc,
+                  wixImageUrl,
+                );
                 if (img) {
                   page.drawImage(img, {
                     x: xPosition + 10,
@@ -1213,7 +1212,9 @@ export class PdfService {
                     height: imageHeight,
                   });
                 } else {
-                  console.warn(`No fue posible incrustar imagen para ${description}`);
+                  console.warn(
+                    `No fue posible incrustar imagen para ${description}`,
+                  );
                 }
               } else {
                 console.warn(`No hay imagen disponible para ${description}`);
@@ -1241,7 +1242,10 @@ export class PdfService {
       const tableAddressWidth = colAddressWidth * 2;
       const tableAddressHeight = rowAddressHeight * 6;
       const AddressTabla: [string, string][] = [
-        ['Dirección', (travel.startAddress as any)?.address || travel.startAddress.city],
+        [
+          'Dirección',
+          (travel.startAddress as any)?.address || travel.startAddress.city,
+        ],
         ['Ciudad', travel.startAddress.city],
       ];
       AddressTabla.forEach((fila, filaIndex) => {
@@ -1317,7 +1321,10 @@ export class PdfService {
       const tableAddressDeliveryWidth = colAddressDeliveryWidth * 2;
       const tableAddressDeliveryHeight = rowAddressDeliveryHeight * 6;
       const AddressDeliveryTabla: [string, string][] = [
-        ['Dirección', (travel.endAddress as any)?.address || travel.endAddress.city],
+        [
+          'Dirección',
+          (travel.endAddress as any)?.address || travel.endAddress.city,
+        ],
         ['Ciudad', travel.endAddress.city],
       ];
       AddressDeliveryTabla.forEach((fila, filaIndex) => {
@@ -1396,43 +1403,67 @@ export class PdfService {
       const colDetailWidth = 250;
       const tableDetailWidth = colDetailWidth * 2;
       const tableDetailHeight = rowDetailHeight * 2;
-      const distanceKmRaw = (detailRoute && (detailRoute as any).DistanceInKM) || travel?.distanceTravel || '';
+      const distanceKmRaw =
+        (detailRoute && (detailRoute as any).DistanceInKM) ||
+        travel?.distanceTravel ||
+        '';
       const distanceFormatted = distanceKmRaw
         ? `${Number(distanceKmRaw).toFixed(2)} Kilómetros`
         : '—';
       const rawTotalCliente = (detailRoute as any)?.priceResult?.Total_Cliente;
       let totalWithVat =
         rawTotalCliente != null && rawTotalCliente !== ''
-          ? (typeof rawTotalCliente === 'number'
-              ? `${rawTotalCliente} €`
-              : (String(rawTotalCliente).includes('€') ? String(rawTotalCliente) : `${rawTotalCliente} €`))
-          : (typeof (travel?.totalPrice) === 'number' ? `${(travel.totalPrice as number).toFixed(2)} €` : '—');
+          ? typeof rawTotalCliente === 'number'
+            ? `${rawTotalCliente} €`
+            : String(rawTotalCliente).includes('€')
+              ? String(rawTotalCliente)
+              : `${rawTotalCliente} €`
+          : typeof travel?.totalPrice === 'number'
+            ? `${(travel.totalPrice as number).toFixed(2)} €`
+            : '—';
 
       // Regla de visualización para el PDF del drover: autónomo ve su compensación; contratado no ve total por viaje.
       try {
         const isDroverPdf = detailInfo === 'chofer';
-        const droverEmpType = (chofer as any)?.employmentType || (travel?.drover as any)?.employmentType;
+        const droverEmpType =
+          (chofer as any)?.employmentType ||
+          (travel?.drover as any)?.employmentType;
         // Determinar KM para freelance
-        const kmNumber = Number((distanceKmRaw as any) || parseFloat(String(travel?.distanceTravel || '0')) || 0);
-        if (isDroverPdf && String(droverEmpType || '').toUpperCase() === 'FREELANCE') {
+        const kmNumber = Number(
+          (distanceKmRaw as any) ||
+            parseFloat(String(travel?.distanceTravel || '0')) ||
+            0,
+        );
+        if (
+          isDroverPdf &&
+          String(droverEmpType || '').toUpperCase() === 'FREELANCE'
+        ) {
           // Preferir compensación persistida si existe (con IVA si está disponible)
           const storedFee = (travel as any)?.driverFee;
           const storedMeta = (travel as any)?.driverFeeMeta || {};
-          const storedWithVat = typeof storedMeta?.driverFeeWithVat === 'number' ? storedMeta.driverFeeWithVat : null;
+          const storedWithVat =
+            typeof storedMeta?.driverFeeWithVat === 'number'
+              ? storedMeta.driverFeeWithVat
+              : null;
           if (typeof storedWithVat === 'number' && !isNaN(storedWithVat)) {
             totalWithVat = `${Number(storedWithVat).toFixed(2)} € compensación IVA incl.`;
           } else if (typeof storedFee === 'number' && !isNaN(storedFee)) {
             const withVat = Number((Number(storedFee) * 1.21).toFixed(2));
             totalWithVat = `${withVat.toFixed(2)} € compensación IVA incl.`;
           } else {
-            const preview = this.compensationService.calcFreelancePerTrip(kmNumber);
-            const withVat = typeof (preview as any)?.driverFeeWithVat === 'number'
-              ? (preview as any).driverFeeWithVat
-              : Number((preview.driverFee * 1.21).toFixed(2));
+            const preview =
+              this.compensationService.calcFreelancePerTrip(kmNumber);
+            const withVat =
+              typeof (preview as any)?.driverFeeWithVat === 'number'
+                ? (preview as any).driverFeeWithVat
+                : Number((preview.driverFee * 1.21).toFixed(2));
             totalWithVat = `${withVat.toFixed(2)} € compensación IVA incl.`;
           }
         }
-        if (isDroverPdf && String(droverEmpType || '').toUpperCase() === 'CONTRACTED') {
+        if (
+          isDroverPdf &&
+          String(droverEmpType || '').toUpperCase() === 'CONTRACTED'
+        ) {
           // Ocultar importe por viaje para contratados
           totalWithVat = '—';
         }
@@ -1505,9 +1536,11 @@ export class PdfService {
       });
       currentY = tableDetailTop - tableDetailHeight - 50;
       // Mostrar el mapa con la ruta capturada (polyline) cuando exista: aplica tanto para REQUEST_FINISH como para DELIVERED
-      const capturedPolyline = (travel as any)?.routePolyline && String((travel as any).routePolyline).trim() !== ''
-        ? String((travel as any).routePolyline)
-        : '';
+      const capturedPolyline =
+        (travel as any)?.routePolyline &&
+        String((travel as any).routePolyline).trim() !== ''
+          ? String((travel as any).routePolyline)
+          : '';
       if (capturedPolyline) {
         const mapWithRoute = await this.getMapImageWithRoute(
           { lat: travel.startAddress.lat, lng: travel.startAddress.lng },
@@ -1515,25 +1548,55 @@ export class PdfService {
           capturedPolyline,
         );
         const imgMapRoute = mapWithRoute.split(',')[1];
-        const imgRouteMapReady = await pdfDoc.embedPng(Buffer.from(imgMapRoute, 'base64'));
+        const imgRouteMapReady = await pdfDoc.embedPng(
+          Buffer.from(imgMapRoute, 'base64'),
+        );
         const mapY = currentY - 280;
-        page.drawImage(imgRouteMapReady, { x: 50, y: mapY, width: 500, height: 300 });
+        page.drawImage(imgRouteMapReady, {
+          x: 50,
+          y: mapY,
+          width: 500,
+          height: 300,
+        });
         currentY = mapY - 40;
       } else {
         // Fallbacks anteriores si aún no hay polyline capturado
-        if (travel.status === 'REQUEST_FINISH' || travel.status === 'DELIVERED') {
-          const mapToEnd = await this.getMapImage(travel.endAddress.lat, travel.endAddress.lng);
+        if (
+          travel.status === 'REQUEST_FINISH' ||
+          travel.status === 'DELIVERED'
+        ) {
+          const mapToEnd = await this.getMapImage(
+            travel.endAddress.lat,
+            travel.endAddress.lng,
+          );
           const imgMapEnd = mapToEnd.split(',')[1];
-          const imgEndMapReady = await pdfDoc.embedPng(Buffer.from(imgMapEnd, 'base64'));
+          const imgEndMapReady = await pdfDoc.embedPng(
+            Buffer.from(imgMapEnd, 'base64'),
+          );
           const mapY = currentY - 280;
-          page.drawImage(imgEndMapReady, { x: 50, y: mapY, width: 500, height: 300 });
+          page.drawImage(imgEndMapReady, {
+            x: 50,
+            y: mapY,
+            width: 500,
+            height: 300,
+          });
           currentY = mapY - 40;
         } else {
-          const mapToStart = await this.getMapImage(travel.startAddress.lat, travel.startAddress.lng);
+          const mapToStart = await this.getMapImage(
+            travel.startAddress.lat,
+            travel.startAddress.lng,
+          );
           const imgMap = mapToStart.split(',')[1];
-          const imgMapReady = await pdfDoc.embedPng(Buffer.from(imgMap, 'base64'));
+          const imgMapReady = await pdfDoc.embedPng(
+            Buffer.from(imgMap, 'base64'),
+          );
           const mapY = currentY - 280;
-          page.drawImage(imgMapReady, { x: 50, y: mapY, width: 500, height: 300 });
+          page.drawImage(imgMapReady, {
+            x: 50,
+            y: mapY,
+            width: 500,
+            height: 300,
+          });
           currentY = mapY - 40;
         }
       }
@@ -1563,18 +1626,50 @@ export class PdfService {
           currentY -= 180;
 
           // Helper: pinta marco + título + imagen escalada dentro de la celda
-          const drawDniCell = async (x: number, y: number, title: string, url: string) => {
+          const drawDniCell = async (
+            x: number,
+            y: number,
+            title: string,
+            url: string,
+          ) => {
             // Marco de la celda
-            page.drawRectangle({ x, y, width: cellWidthDNI, height: cellHeightDNI, borderWidth: 1, borderColor: rgb(0,0,0), color: rgb(1,1,1) });
+            page.drawRectangle({
+              x,
+              y,
+              width: cellWidthDNI,
+              height: cellHeightDNI,
+              borderWidth: 1,
+              borderColor: rgb(0, 0, 0),
+              color: rgb(1, 1, 1),
+            });
             // Título
             const titleY = y + cellHeightDNI - titleBoxHeightDNI;
-            page.drawLine({ start: { x, y: titleY + titleBoxHeightDNI }, end: { x: x + cellWidthDNI, y: titleY + titleBoxHeightDNI }, thickness: 1, color: rgb(0,0,0) });
+            page.drawLine({
+              start: { x, y: titleY + titleBoxHeightDNI },
+              end: { x: x + cellWidthDNI, y: titleY + titleBoxHeightDNI },
+              thickness: 1,
+              color: rgb(0, 0, 0),
+            });
             const textW = helveticaBoldFont.widthOfTextAtSize(title, fontSize);
-            page.drawText(title, { x: x + cellWidthDNI/2 - textW/2, y: titleY + titlePaddingDNI + 5, size: fontSize, font: helveticaBoldFont, color: rgb(0,0,0) });
-            page.drawLine({ start: { x, y: titleY }, end: { x: x + cellWidthDNI, y: titleY }, thickness: 1, color: rgb(0,0,0) });
+            page.drawText(title, {
+              x: x + cellWidthDNI / 2 - textW / 2,
+              y: titleY + titlePaddingDNI + 5,
+              size: fontSize,
+              font: helveticaBoldFont,
+              color: rgb(0, 0, 0),
+            });
+            page.drawLine({
+              start: { x, y: titleY },
+              end: { x: x + cellWidthDNI, y: titleY },
+              thickness: 1,
+              color: rgb(0, 0, 0),
+            });
 
             if (!url) return;
-            const embeddedImage: any = await this.embedImageFromSource(pdfDoc, url);
+            const embeddedImage: any = await this.embedImageFromSource(
+              pdfDoc,
+              url,
+            );
             if (!embeddedImage) return;
 
             // Área disponible para imagen (debajo del título)
@@ -1587,11 +1682,26 @@ export class PdfService {
             const targetH = Math.max(1, Math.floor(naturalH * scale));
             const imgX = x + (cellWidthDNI - targetW) / 2;
             const imgY = y + 10 + (maxH - targetH) / 2;
-            page.drawImage(embeddedImage, { x: imgX, y: imgY, width: targetW, height: targetH });
+            page.drawImage(embeddedImage, {
+              x: imgX,
+              y: imgY,
+              width: targetW,
+              height: targetH,
+            });
           };
 
-          await drawDniCell(paddingXDNI, currentY, 'Anverso DNI cliente', recipientIdentity.idFrontPhoto || '');
-          await drawDniCell(paddingXDNI + cellWidthDNI, currentY, 'Reverso DNI cliente', recipientIdentity.idBackPhoto || '');
+          await drawDniCell(
+            paddingXDNI,
+            currentY,
+            'Anverso DNI cliente',
+            recipientIdentity.idFrontPhoto || '',
+          );
+          await drawDniCell(
+            paddingXDNI + cellWidthDNI,
+            currentY,
+            'Reverso DNI cliente',
+            recipientIdentity.idBackPhoto || '',
+          );
 
           // Reducir espacio tras los DNI para acercar la selfie, sin solapar
           currentY -= cellHeightDNI + 10;
@@ -1607,7 +1717,7 @@ export class PdfService {
           const xPosSelfie = 50; // Centrado si la página es de 600px con márgenes de 50 a cada lado
 
           const ySelfie = currentY - cellHeightSelfie + 170; // subir 150px para evitar espacio en blanco
-          console.log("ySelfie", ySelfie);
+          console.log('ySelfie', ySelfie);
           page.drawRectangle({
             x: xPosSelfie,
             y: ySelfie,
@@ -1618,7 +1728,8 @@ export class PdfService {
             color: rgb(1, 1, 1),
           });
           const titleBoxHeightSelfie = titleHeight + titlePadding * 2;
-          const titleYPosSelfie = ySelfie + cellHeightSelfie - titleBoxHeightSelfie;
+          const titleYPosSelfie =
+            ySelfie + cellHeightSelfie - titleBoxHeightSelfie;
           page.drawLine({
             start: { x: xPosSelfie, y: titleYPosSelfie + titleBoxHeightSelfie },
             end: {
@@ -1648,7 +1759,10 @@ export class PdfService {
           // Cargar y dibujar la imagen de la selfie
           const wixImageUrlSelfie = selfieData[1];
           if (wixImageUrlSelfie) {
-            const embeddedImage = await this.embedImageFromSource(pdfDoc, wixImageUrlSelfie);
+            const embeddedImage = await this.embedImageFromSource(
+              pdfDoc,
+              wixImageUrlSelfie,
+            );
             if (embeddedImage) {
               // Calcular área disponible bajo el título para evitar solapamiento
               const maxW = cellWidthSelfie - 20;
@@ -1687,49 +1801,93 @@ export class PdfService {
           ? handoverDocuments?.client_signature
           : travel?.signatureStartClient;
         const clientPng =
-          typeof clientSignatureSource === 'string' && clientSignatureSource.includes(',')
+          typeof clientSignatureSource === 'string' &&
+          clientSignatureSource.includes(',')
             ? clientSignatureSource.split(',')[1]
             : null;
         if (clientPng) {
           const img = await pdfDoc.embedPng(Buffer.from(clientPng, 'base64'));
-          page.drawImage(img, { x: 60, y: ySign, width: signImageWidth, height: signImageHeight });
+          page.drawImage(img, {
+            x: 60,
+            y: ySign,
+            width: signImageWidth,
+            height: signImageHeight,
+          });
         }
 
         // Firma chofer
         if (addBothSignature) {
           const droverSignatureSource = handoverDocuments?.drover_signature;
           const droverPng =
-            typeof droverSignatureSource === 'string' && droverSignatureSource.includes(',')
+            typeof droverSignatureSource === 'string' &&
+            droverSignatureSource.includes(',')
               ? droverSignatureSource.split(',')[1]
               : null;
           if (droverPng) {
             const img = await pdfDoc.embedPng(Buffer.from(droverPng, 'base64'));
-            page.drawImage(img, { x: 350, y: ySign, width: signImageWidth, height: signImageHeight });
+            page.drawImage(img, {
+              x: 350,
+              y: ySign,
+              width: signImageWidth,
+              height: signImageHeight,
+            });
           }
         }
 
         // Marco del bloque de firmas (top/bottom + divisor central)
-        page.drawLine({ start: { x: 50, y: topLineY }, end: { x: 550, y: topLineY }, thickness: 2, color: rgb(0, 0, 0) });
+        page.drawLine({
+          start: { x: 50, y: topLineY },
+          end: { x: 550, y: topLineY },
+          thickness: 2,
+          color: rgb(0, 0, 0),
+        });
 
         const labelY = ySign - 18; // posición del texto de etiqueta
         const bottomLineY = labelY - 16; // reducir gap inferior
 
         // Etiquetas
-        page.drawText('Firma del cliente', { x: 100, y: labelY, size: 13, font: font, color: rgb(0,0,0) });
+        page.drawText('Firma del cliente', {
+          x: 100,
+          y: labelY,
+          size: 13,
+          font: font,
+          color: rgb(0, 0, 0),
+        });
         if (addBothSignature) {
-          page.drawText('Firma del chofer', { x: 390, y: labelY, size: 13, font: font, color: rgb(0,0,0) });
+          page.drawText('Firma del chofer', {
+            x: 390,
+            y: labelY,
+            size: 13,
+            font: font,
+            color: rgb(0, 0, 0),
+          });
         }
 
         // Línea superior inmediatamente sobre el texto de las firmas
         const captionTopLineY = labelY + 14;
-        page.drawLine({ start: { x: 50, y: captionTopLineY }, end: { x: 550, y: captionTopLineY }, thickness: 2, color: rgb(0, 0, 0) });
+        page.drawLine({
+          start: { x: 50, y: captionTopLineY },
+          end: { x: 550, y: captionTopLineY },
+          thickness: 2,
+          color: rgb(0, 0, 0),
+        });
 
         // Línea inferior
-        page.drawLine({ start: { x: 50, y: bottomLineY }, end: { x: 550, y: bottomLineY }, thickness: 2, color: rgb(0, 0, 0) });
+        page.drawLine({
+          start: { x: 50, y: bottomLineY },
+          end: { x: 550, y: bottomLineY },
+          thickness: 2,
+          color: rgb(0, 0, 0),
+        });
 
         // Divisor central
         if (addBothSignature) {
-          page.drawLine({ start: { x: 300, y: topLineY }, end: { x: 300, y: bottomLineY }, thickness: 3, color: rgb(0, 0, 0) });
+          page.drawLine({
+            start: { x: 300, y: topLineY },
+            end: { x: 300, y: bottomLineY },
+            thickness: 3,
+            color: rgb(0, 0, 0),
+          });
         }
 
         currentY = bottomLineY - 21; // bajar 15px extra para separar más el texto de la línea
@@ -1740,10 +1898,13 @@ export class PdfService {
           { x: 60, y: currentY, size: 12, font: font, color: rgb(0, 0, 0) },
         );
         currentY -= 15;
-        page.drawText(
-          'documento de confirmación emitido a través de DROVE®',
-          { x: 60, y: currentY, size: 12, font: font, color: rgb(0, 0, 0) },
-        );
+        page.drawText('documento de confirmación emitido a través de DROVE®', {
+          x: 60,
+          y: currentY,
+          size: 12,
+          font: font,
+          color: rgb(0, 0, 0),
+        });
         currentY -= 20;
 
         // 5) FECHA DE EMISIÓN DEL DOCUMENTO
@@ -1763,28 +1924,32 @@ export class PdfService {
 
         // 6) CERTIFICADO/ANEXO (opcional)
         if (addDniClient && handoverDocuments?.delivery_document) {
-          const embeddedImage = await this.embedImageFromSource(pdfDoc, handoverDocuments.delivery_document);
+          const embeddedImage = await this.embedImageFromSource(
+            pdfDoc,
+            handoverDocuments.delivery_document,
+          );
           if (embeddedImage) {
             const certHeight = 680;
             // Subir el certificado 200px
             const yCert = Math.max(50, currentY - certHeight - 300 + 270);
-            page.drawImage(embeddedImage, { x: 50, y: yCert, width: 500, height: certHeight });
+            page.drawImage(embeddedImage, {
+              x: 50,
+              y: yCert,
+              width: 500,
+              height: certHeight,
+            });
             currentY = yCert - 20;
           } else {
-            console.error('Error incrustando delivery_document: formato/URL no soportado');
+            console.error(
+              'Error incrustando delivery_document: formato/URL no soportado',
+            );
           }
         }
       } else {
         if (addDniClient) {
           const datosImagenesDNICliente: [string, string][] = [
-            [
-              'Anverso DNI cliente',
-              recipientIdentity.idFrontPhoto || '',
-            ],
-            [
-              'Reverso DNI cliente',
-              recipientIdentity.idBackPhoto || '',
-            ],
+            ['Anverso DNI cliente', recipientIdentity.idFrontPhoto || ''],
+            ['Reverso DNI cliente', recipientIdentity.idBackPhoto || ''],
           ];
           console.log('datosImagenesDNICliente', datosImagenesDNICliente);
           const imagesPerRowDNI = 2;
@@ -1799,7 +1964,7 @@ export class PdfService {
           currentY -= 500;
           for (let i = 0; i < datosImagenesDNICliente.length; i++) {
             const [description, wixImageUrl] = datosImagenesDNICliente[i];
-            console.log("agregando wixImageUrl", wixImageUrl);
+            console.log('agregando wixImageUrl', wixImageUrl);
             page.drawRectangle({
               x: xPositionDNI,
               y: currentY,
@@ -1842,7 +2007,10 @@ export class PdfService {
               color: rgb(0, 0, 0),
             });
             if (wixImageUrl) {
-              const embeddedImage = await this.embedImageFromSource(pdfDoc, wixImageUrl);
+              const embeddedImage = await this.embedImageFromSource(
+                pdfDoc,
+                wixImageUrl,
+              );
               if (embeddedImage) {
                 page.drawImage(embeddedImage, {
                   x: xPositionDNI + 10,
@@ -1975,7 +2143,7 @@ export class PdfService {
             { x: 60, y: currentY, size: 12, font: font, color: rgb(0, 0, 0) },
           );
           currentY -= 15;
-          page.drawText('por medio de DROVE@', {
+          page.drawText('por medio de DROVE®', {
             x: 60,
             y: currentY,
             size: 12,
@@ -2045,8 +2213,12 @@ export class PdfService {
           droverDetail?.contactInfo?.fullName ||
           droverDetail?.full_name ||
           droverDetail?.name ||
-          droverDetail?.contactInfo?.info?.extendedFields?.items?.['custom.fullname'] ||
-          droverDetail?.contactInfo?.info?.extendedFields?.items?.['contacts.displayByFirstName'] ||
+          droverDetail?.contactInfo?.info?.extendedFields?.items?.[
+            'custom.fullname'
+          ] ||
+          droverDetail?.contactInfo?.info?.extendedFields?.items?.[
+            'contacts.displayByFirstName'
+          ] ||
           droverDetail?.detailRegister?.name ||
           'Nombre Chofer';
         const phonesArray = droverDetail?.contactInfo?.phones;

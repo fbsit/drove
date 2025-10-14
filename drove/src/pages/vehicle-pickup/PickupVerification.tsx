@@ -3,21 +3,21 @@
    – Envía datos estructurados según PickupVerificationDto
 */
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate }      from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from '@/components/ui/card';
-import { Button }                      from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import {
   Check, ArrowLeft, ArrowRight, Camera, FileText, User, Loader, AlertTriangle,
 } from 'lucide-react';
-import { toast }                       from 'sonner';
-import { useAuth }                    from '@/contexts/AuthContext';
-import DashboardLayout                 from '@/components/layout/DashboardLayout';
-import { TransferService }             from '@/services/transferService';
-import { usePickupVerification }       from '@/hooks/usePickupVerification';
-import { StorageService }              from '@/services/storageService';
-import SignatureCanvas                 from '@/components/SignatureCanvas';
+import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import DashboardLayout from '@/components/layout/DashboardLayout';
+import { TransferService } from '@/services/transferService';
+import { usePickupVerification } from '@/hooks/usePickupVerification';
+import { StorageService } from '@/services/storageService';
+import SignatureCanvas from '@/components/SignatureCanvas';
 
 // Utilidad: comprimir imagen en el cliente antes de subir (reduce 70-85%)
 async function compressImage(file: File, maxWidth = 1600, quality = 0.75): Promise<File> {
@@ -47,19 +47,19 @@ async function compressImage(file: File, maxWidth = 1600, quality = 0.75): Promi
 }
 
 const STEPS = {
-  VEHICLE_EXTERIOR : 1,
-  VEHICLE_INTERIOR : 2,
+  VEHICLE_EXTERIOR: 1,
+  VEHICLE_INTERIOR: 2,
   SIGNATURE_COMMENTS: 3,
-  CONFIRMATION     : 4,
-  SUMMARY          : 5,
+  CONFIRMATION: 4,
+  SUMMARY: 5,
 } as const;
 
 const STEP_NAMES = {
-  [STEPS.VEHICLE_EXTERIOR] : 'Fotos Exterior',
-  [STEPS.VEHICLE_INTERIOR] : 'Fotos Interior',
+  [STEPS.VEHICLE_EXTERIOR]: 'Fotos Exterior',
+  [STEPS.VEHICLE_INTERIOR]: 'Fotos Interior',
   [STEPS.SIGNATURE_COMMENTS]: 'Firma y Comentarios',
-  [STEPS.CONFIRMATION]     : 'Confirmación',
-  [STEPS.SUMMARY]          : 'Resumen',
+  [STEPS.CONFIRMATION]: 'Confirmación',
+  [STEPS.SUMMARY]: 'Resumen',
 };
 
 // Mapeo de claves para exterior según ExteriorPhotosDto
@@ -83,12 +83,12 @@ const INTERIOR_KEYS = {
 } as const;
 
 const PickupVerification: React.FC = () => {
-  const { transferId }               = useParams<{ transferId: string }>();
-  const navigate                     = useNavigate();
-  const { user }                     = useAuth();
-  const [currentStep, setCurrentStep] = useState(STEPS.VEHICLE_EXTERIOR);
-  const [transfer, setTransfer]       = useState<any>(null);
-  const [isLoading, setIsLoading]     = useState(true);
+  const { transferId } = useParams<{ transferId: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [currentStep, setCurrentStep] = useState<number>(STEPS.VEHICLE_EXTERIOR);
+  const [transfer, setTransfer] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   // Loading por campo (permite subidas en paralelo)
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [accessWarning, setAccessWarning] = useState<string | null>(null);
@@ -153,7 +153,7 @@ const PickupVerification: React.FC = () => {
       const inte = localStorage.getItem(`pickup:${transferId}:interior`);
       if (ext) setExteriorImageUrls(JSON.parse(ext));
       if (inte) setInteriorImageUrls(JSON.parse(inte));
-    } catch {}
+    } catch { }
   }, [transferId]);
 
   /* ───────────────────────────────── fetch traslado ────────────────────────── */
@@ -215,28 +215,28 @@ const PickupVerification: React.FC = () => {
     if (!transferId) return;
     const id = fieldId(type, key);
     setUploading(prev => ({ ...prev, [id]: true }));
-    
+
     try {
       // Comprimir imagen antes de subir para acelerar en móviles
       const optimized = await compressImage(file, 1600, 0.75);
       // Subir imagen al storage - solo enviamos folderPath
       const folderPath = `travel/${transferId}/pickup/${type}`;
       const imageUrl = await StorageService.uploadImage(optimized, folderPath);
-      
+
       if (imageUrl) {
         console.log('URL de imagen recibida:', imageUrl);
-        
+
         // Guardar URL real devuelta por el servicio
         if (type === 'exterior') {
           setExteriorImageUrls(prev => {
             const next = { ...prev, [key]: imageUrl };
-            try { localStorage.setItem(`pickup:${transferId}:exterior`, JSON.stringify(next)); } catch {}
+            try { localStorage.setItem(`pickup:${transferId}:exterior`, JSON.stringify(next)); } catch { }
             return next;
           });
         } else {
           setInteriorImageUrls(prev => {
             const next = { ...prev, [key]: imageUrl };
-            try { localStorage.setItem(`pickup:${transferId}:interior`, JSON.stringify(next)); } catch {}
+            try { localStorage.setItem(`pickup:${transferId}:interior`, JSON.stringify(next)); } catch { }
             return next;
           });
         }
@@ -268,14 +268,14 @@ const PickupVerification: React.FC = () => {
       setExteriorImageUrls(prev => {
         const updated = { ...prev };
         delete updated[key];
-        try { localStorage.setItem(`pickup:${transferId}:exterior`, JSON.stringify(updated)); } catch {}
+        try { localStorage.setItem(`pickup:${transferId}:exterior`, JSON.stringify(updated)); } catch { }
         return updated;
       });
     } else {
       setInteriorImageUrls(prev => {
         const updated = { ...prev };
         delete updated[key];
-        try { localStorage.setItem(`pickup:${transferId}:interior`, JSON.stringify(updated)); } catch {}
+        try { localStorage.setItem(`pickup:${transferId}:interior`, JSON.stringify(updated)); } catch { }
         return updated;
       });
     }
@@ -283,7 +283,7 @@ const PickupVerification: React.FC = () => {
   };
 
   /* ─────────────────────────────── navegación ─────────────────────────────── */
-  const handleNext     = () => currentStep < STEPS.SUMMARY    && setCurrentStep(v => v + 1);
+  const handleNext = () => currentStep < STEPS.SUMMARY && setCurrentStep(v => v + 1);
   const handlePrevious = () => currentStep > STEPS.VEHICLE_EXTERIOR && setCurrentStep(v => v - 1);
 
   /* ─────────────────────────── envío de verificación ───────────────────────── */
@@ -325,13 +325,13 @@ const PickupVerification: React.FC = () => {
       try {
         localStorage.removeItem(`pickup:${transferId}:exterior`);
         localStorage.removeItem(`pickup:${transferId}:interior`);
-      } catch {}
+      } catch { }
       clearDraft();
       // Invalidar y refetch del viaje para que la vista activa muestre estado actualizado
-      try { (window as any).__queryClient?.invalidateQueries?.({ queryKey: ['active-trip', transferId] }); } catch {}
+      try { (window as any).__queryClient?.invalidateQueries?.({ queryKey: ['active-trip', transferId] }); } catch { }
       // Redirigir al detalle e iniciar viaje automáticamente
       // Realizamos la actualización de estado a IN_PROGRESS (startTravel) sin bloquear la navegación
-      try { await TransferService.saveInitTravelVerification(transferId!); } catch {}
+      try { await TransferService.saveInitTravelVerification(transferId!); } catch { }
       navigate(`/traslados/activo/${transferId}`);
     } catch (error) {
       console.error('Error al enviar verificación:', error);
@@ -342,18 +342,18 @@ const PickupVerification: React.FC = () => {
   /* ─────────────────────────────── render helpers ──────────────────────────── */
   const canProceed = () => {
     switch (currentStep) {
-      case STEPS.VEHICLE_EXTERIOR : return Object.keys(exteriorImageUrls).length >= 6;
-      case STEPS.VEHICLE_INTERIOR : return Object.keys(interiorImageUrls).length >= 6;
+      case STEPS.VEHICLE_EXTERIOR: return Object.keys(exteriorImageUrls).length >= 6;
+      case STEPS.VEHICLE_INTERIOR: return Object.keys(interiorImageUrls).length >= 6;
       case STEPS.SIGNATURE_COMMENTS: return !!signature.trim();
-      default                     : return true;
+      default: return true;
     }
   };
 
-  const getStepIcon = (s:number) =>
-    s === STEPS.SUMMARY           ? <Check  size={20}/>
-    : s === STEPS.CONFIRMATION    ? <User   size={20}/>
-    : s === STEPS.SIGNATURE_COMMENTS ? <FileText size={20}/>
-    : <Camera size={20}/>;
+  const getStepIcon = (s: number) =>
+    s === STEPS.SUMMARY ? <Check size={20} />
+      : s === STEPS.CONFIRMATION ? <User size={20} />
+        : s === STEPS.SIGNATURE_COMMENTS ? <FileText size={20} />
+          : <Camera size={20} />;
 
   const isUploadingAny = React.useMemo(() => Object.values(uploading).some(Boolean), [uploading]);
 
@@ -361,7 +361,7 @@ const PickupVerification: React.FC = () => {
     /* exterior / interior UI idénticos → helper */
     const renderGrid = (keys: string[], type: 'exterior' | 'interior', labels: Record<string, string>) => {
       const urls = type === 'exterior' ? exteriorImageUrls : interiorImageUrls;
-      
+
       return (
         <div className="grid grid-cols-2 gap-4">
           {keys.map(k => (
@@ -393,15 +393,15 @@ const PickupVerification: React.FC = () => {
                     {uploading[fieldId(type, k)] ? (
                       <Loader className="h-8 w-8 text-white/70 animate-spin" />
                     ) : (
-                      <Camera className="h-8 w-8 text-white/70"/>
+                      <Camera className="h-8 w-8 text-white/70" />
                     )}
                     <input type="file" accept="image/*" capture="environment" className="hidden"
                       disabled={!!uploading[fieldId(type, k)] || accessBlocked}
-                      onChange={e => handleImageChange(type, k, e)}/>
+                      onChange={e => handleImageChange(type, k, e)} />
                   </label>
                 )}
               </div>
-              
+
               {/* Debug info - mostrar URL */}
               {urls[k] && (
                 <div className="text-xs text-white/50 break-all">
@@ -427,7 +427,7 @@ const PickupVerification: React.FC = () => {
         return (
           <>
             <p className="text-white text-center">Toma 6 fotos del exterior del vehículo</p>
-            {renderGrid(['frontal','trasera','lateral_izq_front','lateral_izq_rear','lateral_der_front','lateral_der_rear'],'exterior', exteriorLabels)}
+            {renderGrid(['frontal', 'trasera', 'lateral_izq_front', 'lateral_izq_rear', 'lateral_der_front', 'lateral_der_rear'], 'exterior', exteriorLabels)}
           </>
         );
 
@@ -443,7 +443,7 @@ const PickupVerification: React.FC = () => {
         return (
           <>
             <p className="text-white text-center">Toma 6 fotos del interior del vehículo</p>
-            {renderGrid(['tablero','asiento_conductor','asiento_pasajero','asiento_trasero_izq','asiento_trasero_der','maletero'],'interior', interiorLabels)}
+            {renderGrid(['tablero', 'asiento_conductor', 'asiento_pasajero', 'asiento_trasero_izq', 'asiento_trasero_der', 'maletero'], 'interior', interiorLabels)}
           </>
         );
 
@@ -483,7 +483,7 @@ const PickupVerification: React.FC = () => {
       case STEPS.SUMMARY:
         return (
           <div className="text-center space-y-4">
-            <Check className="h-16 w-16 text-green-500 mx-auto"/>
+            <Check className="h-16 w-16 text-green-500 mx-auto" />
             <h3 className="text-white text-xl">Verificación completada</h3>
             <p className="text-white/70">La recogida del vehículo ha sido verificada exitosamente</p>
           </div>
@@ -496,7 +496,7 @@ const PickupVerification: React.FC = () => {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <Loader className="h-8 w-8 animate-spin text-[#6EF7FF]"/>
+          <Loader className="h-8 w-8 animate-spin text-[#6EF7FF]" />
         </div>
       </DashboardLayout>
     );
@@ -518,21 +518,21 @@ const PickupVerification: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6 text-left">
         {accessWarning && (
           <div className="flex items-center gap-3 p-3 rounded-lg border border-amber-400 bg-amber-500/15 text-amber-100">
             <AlertTriangle className="h-5 w-5" />
-            <div>
+            <div className='flex-1'>
               <div className="font-semibold">No puedes completar la verificación todavía</div>
               <div className="text-sm opacity-90">{accessWarning}</div>
               {scheduledPickupText && (
-                <div className="text-sm mt-1 opacity-90">Hora programada: {scheduledPickupText}</div>
+                <div className="text-sm mt-1 opacity-90">Fecha programada: {scheduledPickupText}</div>
               )}
             </div>
           </div>
         )}
         {/* encabezado */}
-        <div className="text-center mb-8">
+        <div className="text-left mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Verificación de Recogida</h1>
           <div className="text-white/70">
             <p>{transfer.vehicleDetails?.brand} {transfer.vehicleDetails?.model}</p>
@@ -542,7 +542,7 @@ const PickupVerification: React.FC = () => {
         </div>
 
         {/* pasos */}
-        <div className="flex justify-between items-center mb-8 overflow-x-auto">
+        <div className="flex lg:justify-between items-center mb-8 overflow-x-auto gap-4 flex-wrap">
           {Object.entries(STEP_NAMES).map(([step, name]) => {
             const s = Number(step);
             const active = s === currentStep;
@@ -551,8 +551,8 @@ const PickupVerification: React.FC = () => {
               <div key={step}
                 className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all
                   ${active ? 'bg-[#6EF7FF] text-[#22142A]'
-                           : complete ? 'bg-green-500 text-white'
-                                      : 'bg-white/10 text-white/70'}`}>
+                    : complete ? 'bg-green-500 text-white'
+                      : 'bg-white/10 text-white/70'}`}>
                 {getStepIcon(s)} <span className="text-sm font-medium">{name}</span>
               </div>
             );
@@ -561,47 +561,47 @@ const PickupVerification: React.FC = () => {
 
         {/* tarjeta principal */}
         {!accessBlocked && (
-        <Card className="border-white/20 bg-white/5 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-white text-center">
-              {STEP_NAMES[currentStep as keyof typeof STEP_NAMES]}
-            </CardTitle>
-          </CardHeader>
+          <Card className="border-white/20 bg-white/5 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-white text-center">
+                {STEP_NAMES[currentStep as keyof typeof STEP_NAMES]}
+              </CardTitle>
+            </CardHeader>
 
-          <CardContent className="space-y-6">
-            {renderStep()}
+            <CardContent className="space-y-6">
+              {renderStep()}
 
-            {/* controles */}
-            <div className="flex justify-between pt-6">
-              {currentStep !== STEPS.VEHICLE_EXTERIOR && currentStep !== STEPS.SUMMARY && (
-                <Button variant="outline" onClick={handlePrevious}
-                  className="border-white/20 text-white hover:bg-white/10">
-                  <ArrowLeft size={16} className="mr-2"/> Anterior
-                </Button>
-              )}
+              {/* controles */}
+              <div className="flex justify-between pt-6">
+                {currentStep !== STEPS.VEHICLE_EXTERIOR && currentStep !== STEPS.SUMMARY && (
+                  <Button variant="outline" onClick={handlePrevious}
+                    className="border-white/20 text-white hover:bg-white/10">
+                    <ArrowLeft size={16} className="mr-2" /> Anterior
+                  </Button>
+                )}
 
-              {currentStep === STEPS.SUMMARY ? (
-                <Button onClick={() => navigate('/drover/dashboard')}
-                  className="bg-green-500 hover:bg-green-600 text-white ml-auto">
-                  Volver al Dashboard
-                </Button>
-              ) : currentStep === STEPS.CONFIRMATION ? (
-                <Button onClick={handleSubmitVerification}
-                  disabled={isSubmitting || !canProceed() || accessBlocked || isUploadingAny}
-                  className="bg-green-500 hover:bg-green-600 text-white ml-auto">
-                  {isSubmitting
-                    ? (<><Loader className="mr-2 h-4 w-4 animate-spin"/>Enviando…</>)
-                    : 'Enviar Verificación'}
-                </Button>
-              ) : (
-                <Button onClick={handleNext} disabled={!canProceed() || accessBlocked || isUploadingAny}
-                  className="bg-[#6EF7FF] text-[#22142A] hover:bg-[#6EF7FF]/90 disabled:opacity-50 ml-auto">
-                  Siguiente <ArrowRight size={16} className="ml-2"/>
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                {currentStep === STEPS.SUMMARY ? (
+                  <Button onClick={() => navigate('/drover/dashboard')}
+                    className="bg-green-500 hover:bg-green-600 text-white ml-auto">
+                    Volver al Dashboard
+                  </Button>
+                ) : currentStep === STEPS.CONFIRMATION ? (
+                  <Button onClick={handleSubmitVerification}
+                    disabled={isSubmitting || !canProceed() || accessBlocked || isUploadingAny}
+                    className="bg-green-500 hover:bg-green-600 text-white ml-auto">
+                    {isSubmitting
+                      ? (<><Loader className="mr-2 h-4 w-4 animate-spin" />Enviando…</>)
+                      : 'Enviar Verificación'}
+                  </Button>
+                ) : (
+                  <Button onClick={handleNext} disabled={!canProceed() || accessBlocked || isUploadingAny}
+                    className="bg-[#6EF7FF] text-[#22142A] hover:bg-[#6EF7FF]/90 disabled:opacity-50 ml-auto">
+                    Siguiente <ArrowRight size={16} className="ml-2" />
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {accessBlocked && (
@@ -612,9 +612,9 @@ const PickupVerification: React.FC = () => {
             <CardContent>
               <div className="text-white/80 text-center">
                 {scheduledPickupText ? (
-                  <p>Hora programada de recogida: <span className="font-semibold text-white">{scheduledPickupText}</span></p>
+                  <p>Fecha programada de recogida: <span className="font-semibold text-white">{scheduledPickupText}</span></p>
                 ) : (
-                  <p>Consulta la hora programada en el detalle del traslado.</p>
+                  <p>Consulta la Fecha programada en el detalle del traslado.</p>
                 )}
               </div>
               <div className="mt-6 flex justify-center">
