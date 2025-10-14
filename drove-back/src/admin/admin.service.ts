@@ -3,13 +3,14 @@ import { Injectable, NotFoundException, BadRequestException, Logger } from '@nes
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, FindOptionsWhere } from 'typeorm';
 import { ResendService } from '../resend/resend.service';
-import { User, UserRole, UserStatus } from '../user/entities/user.entity';
+import { User, UserRole, UserStatus, DroverEmploymentType } from '../user/entities/user.entity';
 import { Payment, PaymentStatus } from '../payment/entities/payment.entity';
 import { Invoice, InvoiceStatus } from '../invoices/entities/invoice.entity';
 import { Travels } from '../travels/entities/travel.entity';
 import { TransferStatus } from '../travels/entities/travel.entity';
 import { DetailedUser, FavoriteRoute } from '../user/dtos/detailed-user.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { CompensationService } from '../rates/compensation.service';
 import { Review } from '../reviews/entity/review.entity';
 @Injectable()
 export class AdminService {
@@ -23,6 +24,7 @@ export class AdminService {
     private readonly invoiceRepo: Repository<Invoice>,
     @InjectRepository(Review)
     private readonly reviewRepo: Repository<Review>,
+    private readonly compensation: CompensationService,
     private readonly resend: ResendService,
     private readonly notifications?: NotificationsService,
   ) {}
@@ -77,6 +79,7 @@ export class AdminService {
       email: user.email,
       status: user.status,
       role: user.role,
+      employmentType: user.employmentType,
       accountType: user.accountType,
       contactInfo: {
         fullName: user.contactInfo.fullName,
@@ -107,10 +110,38 @@ export class AdminService {
       const assignedTrips = asDrover.length;
       const completedTrips = delivered.length;
 
-      // Ganancias para el drover: usar driverFee si está disponible; fallback 0
-      const totalEarnings = delivered.reduce((sum, t) => sum + (t.driverFee ?? 0), 0);
+      const typeStr = String(user.employmentType || DroverEmploymentType.FREELANCE).toUpperCase() as keyof typeof DroverEmploymentType;
 
-      const avgPerTrip = completedTrips > 0 ? totalEarnings / completedTrips : 0;
+      // Ganancias freelance: usar driverFee si está, fallback a cálculo por km
+      const calcFreelanceTotal = async () => {
+        const sums = await Promise.all(
+          delivered.map(async (t) => {
+            if (typeof t.driverFee === 'number') return t.driverFee;
+            try {
+              const km = (t as any)?.distanceTravel ? require('../rates/compensation.service').parseKmFromDistance((t as any).distanceTravel) : 0;
+              const preview = await this.compensation?.calcFreelancePerTrip(km);
+              return preview?.driverFee ?? 0;
+            } catch { return 0; }
+          })
+        );
+        return sums.reduce((a,b)=>a+b,0);
+      };
+
+      let totalEarnings = 0;
+      let avgPerTrip = 0;
+      let contractedMonthly: any = null;
+
+      if (typeStr === 'FREELANCE') {
+        totalEarnings = await calcFreelanceTotal();
+        avgPerTrip = completedTrips > 0 ? totalEarnings / completedTrips : 0;
+      } else {
+        // Contratado: estimación mensual del mes actual
+        const now = new Date();
+        const monthISO = `${now.getUTCFullYear()}-${String(now.getUTCMonth()+1).padStart(2,'0')}`;
+        try {
+          contractedMonthly = await this.compensation?.calcContractedMonthlyByDrover(userId, monthISO);
+        } catch {}
+      }
 
       // Promedio mensual: por número de meses con viajes entregados (evita dividir por meses sin actividad)
       const monthKeys = new Set(
@@ -154,6 +185,7 @@ export class AdminService {
       base.droverMetrics = {
         assignedTrips,
         completedTrips,
+        employmentType: typeStr,
         totalEarnings,
         avgPerTrip,
         monthsActive,
@@ -162,6 +194,7 @@ export class AdminService {
         ratingCount,
         avgTimePerTrip,
         avgTimePerTripMin,
+        contractedMonthly,
       };
     }
 
