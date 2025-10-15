@@ -29,6 +29,8 @@ export interface VehicleTransferFormData {
   
   transferDetails?: {
     totalPrice?: number;
+    totalWithoutTax?: number;
+    tax?: number;
     distance?: number;
     duration?: number;
     signature?: string;

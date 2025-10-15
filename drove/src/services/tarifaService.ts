@@ -37,10 +37,34 @@ export class TarifaService {
       throw error;
     }
   }
+
+  /**
+   * Obtiene el desglose completo desde /rates para poder mostrar precio sin IVA
+   */
+  static async getPriceBreakdown(distance: number): Promise<{
+    total: number;
+    totalWithoutTax: number;
+    tax: number;
+  }> {
+    const response = await ApiService.get<any>(`/rates?km=${distance}`);
+    const toNum = (v: any) => {
+      if (v === undefined || v === null) return 0;
+      const s = String(v).replace(',', '.');
+      const n = parseFloat(s);
+      return isNaN(n) ? 0 : n;
+    };
+
+    return {
+      total: toNum(response.total),
+      totalWithoutTax: toNum(response.totalWithoutTax),
+      tax: toNum(response.tax),
+    };
+  }
 }
 
 // Re-exports para compatibilidad
 export const calculateTarifa = TarifaService.calculateTarifa;
 export const getPriceByDistance = TarifaService.getPriceByDistance;
+export const getPriceBreakdown = TarifaService.getPriceBreakdown;
 
 export default TarifaService;

@@ -214,14 +214,17 @@ export const useVehicleTransferRequest = () => {
 
       // Regla: permitir fechas futuras; nunca permitir fechas/horas pasadas
       try {
-        const dateVal = new Date(pickupDetails.pickupDate as any);
+        // Construye fecha local segura para evitar desajustes por zona horaria/UTC
+        const rawDate: any = pickupDetails.pickupDate as any;
+        const dateStr = typeof rawDate === 'string' ? rawDate : new Date(rawDate).toISOString().slice(0, 10);
+        const [year, month, day] = dateStr.split('-').map((v: string) => Number(v));
         const [h = '00', m = '00'] = String(pickupDetails.pickupTime || '00:00').split(':');
-        dateVal.setHours(Number(h), Number(m), 0, 0);
+        const dateVal = new Date(year, (month || 1) - 1, day || 1, Number(h), Number(m), 0, 0);
 
         const now = new Date();
         
         // Fecha pasada (día anterior) o misma fecha con hora pasada
-        if (dateVal < now) {
+        if (dateVal.getTime() < now.getTime()) {
           toast({
             variant: 'destructive',
             title: 'Fecha inválida',
