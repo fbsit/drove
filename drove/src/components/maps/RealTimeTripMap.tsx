@@ -184,19 +184,19 @@ const RealTimeTripMap: React.FC<Props> = ({
           setHeading(targetHeading);
           // Follow-like camera: center, keep close zoom, tilt and orient by heading
           mapRef.current.panTo(pos as any);
-          try { mapRef.current.setZoom(Math.max(15, zoom)); } catch {}
-          try { (mapRef.current as any).setTilt?.(60); } catch {}
-          try { (mapRef.current as any).setHeading?.(targetHeading); } catch {}
+          try { mapRef.current.setZoom(Math.max(15, zoom)); } catch { }
+          try { (mapRef.current as any).setTilt?.(60); } catch { }
+          try { (mapRef.current as any).setHeading?.(targetHeading); } catch { }
         }
         lastPosRef.current = pos;
-      } catch {}
+      } catch { }
     }
   }, [pos, destination, tripStatus, zoom, heading]);
 
   /* ────────── origen dinámico de la ruta ────────── */
   const dynamicOrigin: LatLng =
     tripStatus.toLowerCase() === 'in_progress' && pos ? pos : origin;
-  console.log("destination",destination)
+  console.log("destination", destination)
   const containerStyle = useMemo(
     () => ({ width: '100%', height }),
     [height],
@@ -211,7 +211,7 @@ const RealTimeTripMap: React.FC<Props> = ({
   }
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-fit w-full">
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={dynamicOrigin}

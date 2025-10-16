@@ -184,7 +184,7 @@ const PickupVerification: React.FC = () => {
           const now = new Date();
           // Ventana de 24 horas antes y después de la hora programada
           const minusWindow = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-          const plusWindow  = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+          const plusWindow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
           if (dt < minusWindow) {
             setAccessBlocked(true);
@@ -363,10 +363,10 @@ const PickupVerification: React.FC = () => {
       const urls = type === 'exterior' ? exteriorImageUrls : interiorImageUrls;
 
       return (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-y-8 gap-x-4">
           {keys.map(k => (
-            <div key={k} className="space-y-2 flex flex-col justify-between">
-              <p className="text-white/80 text-sm">{labels[k]}</p>
+            <div key={k} className="space-y-2">
+              <p className="text-white/80 text-sm min-h-10">{labels[k]}</p>
               <div className="aspect-square bg-white/10 rounded-lg flex items-center justify-center">
                 {urls[k] ? (
                   <div className="relative w-full h-full">
@@ -556,7 +556,7 @@ const PickupVerification: React.FC = () => {
           ${active
                     ? 'bg-[#6EF7FF] text-[#22142A]'
                     : complete
-                      ? 'bg-green-500 text-white'
+                      ? 'bg-green-700 text-white'
                       : 'bg-white/10 text-white/70'
                   }`}
               >

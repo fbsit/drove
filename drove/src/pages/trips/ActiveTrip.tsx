@@ -201,10 +201,10 @@ const ActiveTrip: React.FC = () => {
     // Downsample para limitar tamaño de payload
     const stride = Math.max(1, Math.ceil(points.length / MAX_POLYLINE_POINTS));
     const reduced = points.filter((_, idx) => idx % stride === 0);
-    
+
     // Convertir a formato de coordenadas para encoding
     const coordinates = reduced.map(point => [point.lat, point.lng]);
-    
+
     // Usar Google's polyline encoding
     return encode(coordinates);
   };
@@ -411,8 +411,8 @@ const ActiveTrip: React.FC = () => {
         </div>
 
         {/* Title + meta */}
-        <div className="flex items-start justify-between mt-0 md:mt-1">
-          <div>
+        <div className="flex gap-4 items-start justify-between mt-0 md:mt-1">
+          <div className='flex-1'>
             <h1 className="text-3xl md:text-4xl font-bold text-white text-left" style={{ fontFamily: 'Helvetica' }}>
               Traslado #{String(trip.id).slice(0, 8)}
             </h1>
@@ -513,7 +513,7 @@ const ActiveTrip: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-5">
             {showMap && (
-              <div className="rounded-xl border border-white/10 bg-white/5 h-96 md:h-[28rem] lg:h-[32rem] overflow-hidden">
+              <div className="rounded-xl border border-white/10 bg-white/5 overflow-hidden">
                 <RealTimeTripMap
                   origin={{ lat: trip.startAddress.lat, lng: trip.startAddress.lng }}
                   destination={{ lat: trip.endAddress.lat, lng: trip.endAddress.lng }}
@@ -528,7 +528,7 @@ const ActiveTrip: React.FC = () => {
                   <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-400/10 border border-green-400/30 flex items-center justify-center">
                     <Navigation className="text-green-300" />
                   </div>
-                  <div>
+                  <div className='flex-1'>
                     <div className="text-white/60 text-sm">Origen</div>
                     <div className="text-white font-semibold">{trip.startAddress?.address || trip.startAddress?.city}</div>
                     <div className="text-white/40 text-xs">Punto de recogida</div>
@@ -538,7 +538,7 @@ const ActiveTrip: React.FC = () => {
                   <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-rose-500/20 to-pink-400/10 border border-rose-400/30 flex items-center justify-center">
                     <MapPin className="text-rose-300" />
                   </div>
-                  <div>
+                  <div className='flex-1'>
                     <div className="text-white/60 text-sm">Destino</div>
                     <div className="text-white font-semibold">{trip.endAddress?.address || trip.endAddress?.city}</div>
                     <div className="text-white/40 text-xs">Punto de entrega</div>
@@ -594,7 +594,7 @@ const ActiveTrip: React.FC = () => {
                 <div className="flex items-center gap-2 text-white/80 text-sm">
                   <Phone className="h-4 w-4 text-[#6EF7FF]" />
                   {trip.personDelivery?.phone ? (
-                    <a href={`tel:${String(trip.personDelivery.phone).replace(/\s+/g,'')}`} className="underline underline-offset-2 hover:text-white">{trip.personDelivery.phone}</a>
+                    <a href={`tel:${String(trip.personDelivery.phone).replace(/\s+/g, '')}`} className="underline underline-offset-2 hover:text-white">{trip.personDelivery.phone}</a>
                   ) : '—'}
                 </div>
                 <div className="flex items-center gap-2 text-white/80 text-sm"><Mail className="h-4 w-4 text-[#6EF7FF]" /> {trip.personDelivery?.email || '—'}</div>
@@ -643,7 +643,7 @@ const ActiveTrip: React.FC = () => {
                 <div className="flex items-center gap-2 text-white/80 text-sm">
                   <Phone className="h-4 w-4 text-[#6EF7FF]" />
                   {trip.personReceive?.phone ? (
-                    <a href={`tel:${String(trip.personReceive.phone).replace(/\s+/g,'')}`} className="underline underline-offset-2 hover:text-white">{trip.personReceive.phone}</a>
+                    <a href={`tel:${String(trip.personReceive.phone).replace(/\s+/g, '')}`} className="underline underline-offset-2 hover:text-white">{trip.personReceive.phone}</a>
                   ) : '—'}
                 </div>
                 <div className="flex items-center gap-2 text-white/80 text-sm"><Mail className="h-4 w-4 text-[#6EF7FF]" /> {trip.personReceive?.email || '—'}</div>
@@ -696,7 +696,7 @@ const ActiveTrip: React.FC = () => {
 
         {/* Botones flotantes solo desktop (abajo a la derecha) */}
         {!isMobile && isAssignedDrover && (
-          <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-4">
+          <div className="fixed bottom-24 right-6 z-40 flex flex-col items-end gap-4">
             {trip.status === 'PICKED_UP' && (
               <button
                 onClick={handleIniciarViaje}
@@ -716,13 +716,13 @@ const ActiveTrip: React.FC = () => {
                 Finalizar Traslado
               </button>
             )}
-            <button
+            {/* <button
               onClick={toggleChat}
               className="w-14 h-14 rounded-full bg-[#6EF7FF] text-[#22142A] shadow-[0_10px_25px_rgba(0,0,0,0.35)] flex items-center justify-center hover:bg-[#5beff6]"
               aria-label="Abrir chat de soporte"
             >
               <MessageCircle className="h-6 w-6" />
-            </button>
+            </button> */}
           </div>
         )}
 
