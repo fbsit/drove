@@ -102,7 +102,7 @@ export interface CreateTransferRequest {
     brand: string;
     model: string;
     year: string;
-    licensePlate: string;
+    licensePlate?: string; // opcional
     vin: string;
   };
 

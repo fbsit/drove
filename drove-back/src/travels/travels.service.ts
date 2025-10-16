@@ -76,6 +76,22 @@ export class TravelsService {
     'invoice',
   ];
 
+  /**
+   * Construye una Date local a partir de travelDate (YYYY-MM-DD) y travelTime (HH:mm)
+   */
+  private buildLocalDateTime(dateStr?: string | null, timeStr?: string | null): Date | null {
+    try {
+      if (!dateStr) return null;
+      const [y, m, d] = String(dateStr).split('-').map((v) => Number(v));
+      const [hh = 0, mm = 0] = String(timeStr || '00:00').split(':').map((v) => Number(v));
+      if (!isFinite(y) || !isFinite(m) || !isFinite(d)) return null;
+      const dt = new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, 0, 0);
+      return isNaN(dt.getTime()) ? null : dt;
+    } catch {
+      return null;
+    }
+  }
+
   private mapRawToDto(raw: any): CreateTravelDto {
     console.log('raw', raw);
     // mapeo de la persona que entrega
@@ -779,15 +795,30 @@ export class TravelsService {
     id: string,
     dto: PickupVerificationDto,
   ): Promise<void> {
+    // Validación de ventana horaria de 24 horas respecto a la hora programada
+    const travel = await this.travelsRepo.findOne({
+      where: { id } as FindOptionsWhere<Travels>,
+      relations: this.defaultRelations,
+    });
+    if (!travel) throw new NotFoundException(`Travel ${id} not found`);
+
+    const scheduled = this.buildLocalDateTime(travel.travelDate || null, travel.travelTime || null);
+    if (scheduled) {
+      const now = new Date();
+      const windowMs = 24 * 60 * 60 * 1000; // 24 horas
+      if (scheduled.getTime() < now.getTime() - windowMs) {
+        throw new BadRequestException('La hora de recogida ya pasó: ventana de 24 horas expirada.');
+      }
+      if (scheduled.getTime() > now.getTime() + windowMs) {
+        throw new BadRequestException('Aún es temprano para recoger: solo dentro de las 24 horas previas a la hora programada.');
+      }
+    }
+
     await this.travelsRepo.update(
       { id },
       { pickupVerification: dto, status: TransferStatus.PICKED_UP },
     );
     // Mandar correo 3 (cliente) y 4 (drover y JT)
-    const travel = await this.travelsRepo.findOne({
-      where: { id } as FindOptionsWhere<Travels>,
-      relations: this.defaultRelations,
-    });
     this.resend.sendConfirmationPickupEmailClient(travel);
     this.resend.sendConfirmationPickupEmailDJT(travel);
 

@@ -22,6 +22,7 @@ export const RouteDisplay: React.FC<RouteDisplayProps> = ({
 }) => {
   const [distance, setDistance] = useState<string>('');
   const [duration, setDuration] = useState<string>('');
+  // Precio mostrado en este paso: sin IVA
   const [price, setPrice] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
   const [recalcBusy, setRecalcBusy] = useState<boolean>(false);
@@ -93,14 +94,17 @@ export const RouteDisplay: React.FC<RouteDisplayProps> = ({
       setDistance(distanceStr);
       setDuration(durationStr);
 
-      const calculatedPrice = await TarifaService.getPriceByDistance(distanceKm);
-      setPrice(calculatedPrice);
+      // Obtenemos desglose para mostrar sin IVA aquí, pero guardamos total con IVA
+      const breakdown = await TarifaService.getPriceBreakdown(distanceKm);
+      setPrice(breakdown.totalWithoutTax);
 
       form.setValue('transferDetails', {
         ...form.getValues('transferDetails'),
         distance: distanceKm,
         duration: durationMinutes,
-        totalPrice: calculatedPrice
+        totalPrice: breakdown.total,
+        totalWithoutTax: breakdown.totalWithoutTax,
+        tax: breakdown.tax
       });
     } catch (error) {
       console.error('Error calculating route:', error);
@@ -178,7 +182,7 @@ export const RouteDisplay: React.FC<RouteDisplayProps> = ({
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Euro className="w-4 h-4 text-[#6EF7FF]" />
-                <span className="text-xs text-white/70">Precio</span>
+                <span className="text-xs text-white/70">Precio (sin IVA)</span>
               </div>
               <p className="text-white font-semibold">{price.toFixed(2)}€</p>
             </div>

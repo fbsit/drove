@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Param,
+  Put,
   Patch,
   Delete,
   HttpCode,
@@ -109,6 +110,20 @@ export class UserController {
   @ApiOkResponse({ type: User })
   @HttpCode(HttpStatus.OK)
   update(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ): Promise<User> {
+    return this.userService.update(id, updateUserDto);
+  }
+
+  // Alias con PUT para compatibilidad de clientes que usan PUT en lugar de PATCH
+  @Put(':id')
+  @ApiOperation({ summary: 'Actualizar usuario (PUT alias)' })
+  @ApiParam({ name: 'id', description: 'UUID del usuario' })
+  @ApiBody({ type: UpdateUserDto })
+  @ApiOkResponse({ type: User })
+  @HttpCode(HttpStatus.OK)
+  updatePut(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() updateUserDto: UpdateUserDto,
   ): Promise<User> {

@@ -69,6 +69,18 @@ const DroverProfile: React.FC = () => {
     const droverInfo = await userService.getUserForAdmin(id);
     console.log("droverInfo", droverInfo);
     setDrover(droverInfo);
+    try {
+      const metrics = droverInfo?.droverMetrics || droverInfo?.metrics || {};
+      setKpis({
+        totalEarnings: Number(metrics.totalEarnings ?? 0),
+        avgMonthly: Number(metrics.avgMonthlyEarnings ?? 0),
+        ratingAvg: Number(metrics.ratingAvg ?? 0),
+        ratingCount: Number(metrics.ratingCount ?? 0),
+        completedTrips: Number(metrics.completedTrips ?? 0),
+        avgTimePerTrip: String(metrics.avgTimePerTrip ?? 'N/A'),
+        medals: Number(metrics.medals ?? 0),
+      });
+    } catch {}
   };
 
   // Buscar el drover por id
@@ -76,7 +88,16 @@ const DroverProfile: React.FC = () => {
     handleGetUser();
   }, []);
 
-  const [drover, setDrover] = useState(null);
+  const [drover, setDrover] = useState<any>(null);
+  const [kpis, setKpis] = useState<any>({
+    totalEarnings: 0,
+    avgMonthly: 0,
+    ratingAvg: 0,
+    ratingCount: 0,
+    completedTrips: 0,
+    avgTimePerTrip: 'N/A',
+    medals: 0,
+  });
 
   if (!drover) {
     return (
@@ -223,7 +244,7 @@ const DroverProfile: React.FC = () => {
             <div className="text-white font-bold text-sm mb-1">
               Ganancias totales
             </div>
-            <div className="text-2xl font-bold text-white">€0</div>
+            <div className="text-2xl font-bold text-white">€{Number(kpis.totalEarnings || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
             <div className="text-white/70 text-xs mt-1">desde alta</div>
           </div>
           <div className="bg-white/10 rounded-2xl p-6 text-center backdrop-blur-sm">
@@ -233,8 +254,8 @@ const DroverProfile: React.FC = () => {
             <div className="text-white font-bold text-sm mb-1">
               Promedio mensual
             </div>
-            <div className="text-2xl font-bold text-white">€0</div>
-            <div className="text-white/70 text-xs mt-1">0 meses</div>
+            <div className="text-2xl font-bold text-white">€{Number(kpis.avgMonthly || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+            <div className="text-white/70 text-xs mt-1">promedio</div>
           </div>
           <div className="bg-white/10 rounded-2xl p-6 text-center backdrop-blur-sm">
             <div className="bg-white/90 p-3 rounded-2xl w-fit mx-auto mb-3">
@@ -243,15 +264,15 @@ const DroverProfile: React.FC = () => {
             <div className="text-white font-bold text-sm mb-1">
               Calificación
             </div>
-            <div className="text-2xl font-bold text-white">0</div>
-            <div className="text-white/70 text-xs mt-1">de 5 estrellas</div>
+            <div className="text-2xl font-bold text-white">{Number(kpis.ratingAvg || 0).toFixed(1)}</div>
+            <div className="text-white/70 text-xs mt-1">({Number(kpis.ratingCount || 0)} valoraciones)</div>
           </div>
           <div className="bg-white/10 rounded-2xl p-6 text-center backdrop-blur-sm">
             <div className="bg-white/90 p-3 rounded-2xl w-fit mx-auto mb-3">
               <Activity size={24} className="text-purple-600" />
             </div>
             <div className="text-white font-bold text-sm mb-1">Traslados</div>
-            <div className="text-2xl font-bold text-white">0</div>
+            <div className="text-2xl font-bold text-white">{Number(kpis.completedTrips || 0)}</div>
             <div className="text-white/70 text-xs mt-1">completados</div>
           </div>
           <div className="bg-white/10 rounded-2xl p-6 text-center backdrop-blur-sm">
@@ -261,7 +282,7 @@ const DroverProfile: React.FC = () => {
             <div className="text-white font-bold text-sm mb-1">
               Tiempo promedio
             </div>
-            <div className="text-2xl font-bold text-white">N/A</div>
+            <div className="text-2xl font-bold text-white">{kpis.avgTimePerTrip}</div>
             <div className="text-white/70 text-xs mt-1">por traslado</div>
           </div>
           <div className="bg-white/10 rounded-2xl p-6 text-center backdrop-blur-sm">
@@ -269,7 +290,7 @@ const DroverProfile: React.FC = () => {
               <Award size={24} className="text-orange-600" />
             </div>
             <div className="text-white font-bold text-sm mb-1">Medallas</div>
-            <div className="text-2xl font-bold text-white">0</div>
+            <div className="text-2xl font-bold text-white">{Number(kpis.medals || 0)}</div>
             <div className="text-white/70 text-xs mt-1">logros</div>
           </div>
         </div>

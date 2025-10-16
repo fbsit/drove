@@ -33,6 +33,19 @@ const haversineMeters = (a: LatLng, b: LatLng) => {
   return R * c;
 };
 
+// Bearing in degrees from point a to b (0..360, 0 = North)
+const computeBearing = (a: LatLng, b: LatLng) => {
+  const φ1 = (a.lat * Math.PI) / 180;
+  const φ2 = (b.lat * Math.PI) / 180;
+  const λ1 = (a.lng * Math.PI) / 180;
+  const λ2 = (b.lng * Math.PI) / 180;
+  const y = Math.sin(λ2 - λ1) * Math.cos(φ2);
+  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(λ2 - λ1);
+  const θ = Math.atan2(y, x);
+  const deg = (θ * 180) / Math.PI;
+  return (deg + 360) % 360;
+};
+
 const mapOptions: google.maps.MapOptions = {
   disableDefaultUI: true,
   zoomControl: true,
@@ -134,6 +147,8 @@ const RealTimeTripMap: React.FC<Props> = ({
   const [isNear, setNear] = useState(false);
   const watchId = useRef<number>();
   const mapRef = useRef<google.maps.Map | null>(null);
+  const lastPosRef = useRef<LatLng | null>(null);
+  const [heading, setHeading] = useState<number>(0);
 
   /* ────────── geolocalización continua ────────── */
   useEffect(() => {
@@ -161,14 +176,22 @@ const RealTimeTripMap: React.FC<Props> = ({
   useEffect(() => {
     if (pos) {
       setNear(haversineMeters(pos, destination) <= 100);
-      // Centrar mapa suavemente al drover cuando está en progreso
       try {
         if (tripStatus.toLowerCase() === 'in_progress' && mapRef.current) {
+          const last = lastPosRef.current;
+          const derivedHeading = last ? computeBearing(last, pos) : heading;
+          const targetHeading = Number.isFinite(derivedHeading) ? derivedHeading : heading;
+          setHeading(targetHeading);
+          // Follow-like camera: center, keep close zoom, tilt and orient by heading
           mapRef.current.panTo(pos as any);
+          try { mapRef.current.setZoom(Math.max(15, zoom)); } catch {}
+          try { (mapRef.current as any).setTilt?.(60); } catch {}
+          try { (mapRef.current as any).setHeading?.(targetHeading); } catch {}
         }
+        lastPosRef.current = pos;
       } catch {}
     }
-  }, [pos, destination]);
+  }, [pos, destination, tripStatus, zoom, heading]);
 
   /* ────────── origen dinámico de la ruta ────────── */
   const dynamicOrigin: LatLng =
@@ -201,13 +224,14 @@ const RealTimeTripMap: React.FC<Props> = ({
           <Marker
             position={pos}
             icon={{
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: 8,
+              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+              scale: 5,
               fillColor: '#6EF7FF',
               fillOpacity: 1,
-              strokeColor: '#ffffff',
-              strokeWeight: 2,
-            }}
+              strokeColor: '#0B0F19',
+              strokeWeight: 1.5,
+              rotation: heading,
+            } as google.maps.Symbol}
           />
         )}
 

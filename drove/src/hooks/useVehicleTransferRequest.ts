@@ -147,13 +147,9 @@ export const useVehicleTransferRequest = () => {
         !!vehicleDetails?.brand?.trim() &&
         !!vehicleDetails?.model?.trim() &&
         !!vehicleDetails?.year?.toString().trim() &&
-        !!vehicleDetails?.vin?.trim() &&
-        !!vehicleDetails?.licensePlate?.trim();
+        !!vehicleDetails?.vin?.trim(); // matrícula ya no es obligatoria
 
       if (!hasAllVehicleFields) {
-        if (!vehicleDetails?.licensePlate?.trim()) {
-          form.setError('vehicleDetails.licensePlate' as any, { type: 'required', message: 'La matrícula es obligatoria' });
-        }
         if (!vehicleDetails?.vin?.trim()) {
           form.setError('vehicleDetails.vin' as any, { type: 'required', message: 'El VIN es obligatorio' });
         }
@@ -161,17 +157,20 @@ export const useVehicleTransferRequest = () => {
       }
 
       // Validaciones estrictas
-      const licenseSanitized = (vehicleDetails.licensePlate || '')
-        .toUpperCase()
-        .replace(/\s|-/g, '');
-      const licenseRegex = /^(?:[0-9]{4}[A-Z]{3}|[A-Z]{3}[0-9]{4})$/; // 1234ABC o ABC1234
-      if (!licenseRegex.test(licenseSanitized)) {
-        form.setError('vehicleDetails.licensePlate' as any, {
-          type: 'validate',
-          message: 'Matrícula inválida. Formato 1234ABC o ABC1234',
-        });
-        toast({ variant: 'destructive', title: 'Matrícula inválida', description: 'Usa el formato 1234ABC o ABC1234.' });
-        return false;
+      // Validar matrícula solo si el usuario la introduce
+      if (vehicleDetails.licensePlate && vehicleDetails.licensePlate.trim().length > 0) {
+        const licenseSanitized = (vehicleDetails.licensePlate || '')
+          .toUpperCase()
+          .replace(/\s|-/g, '');
+        const licenseRegex = /^(?:[0-9]{4}[A-Z]{3}|[A-Z]{3}[0-9]{4})$/; // 1234ABC o ABC1234
+        if (!licenseRegex.test(licenseSanitized)) {
+          form.setError('vehicleDetails.licensePlate' as any, {
+            type: 'validate',
+            message: 'Matrícula inválida. Formato 1234ABC o ABC1234',
+          });
+          toast({ variant: 'destructive', title: 'Matrícula inválida', description: 'Usa el formato 1234ABC o ABC1234.' });
+          return false;
+        }
       }
 
       const vinSanitized = (vehicleDetails.vin || '')
@@ -215,14 +214,17 @@ export const useVehicleTransferRequest = () => {
 
       // Regla: permitir fechas futuras; nunca permitir fechas/horas pasadas
       try {
-        const dateVal = new Date(pickupDetails.pickupDate as any);
+        // Construye fecha local segura para evitar desajustes por zona horaria/UTC
+        const rawDate: any = pickupDetails.pickupDate as any;
+        const dateStr = typeof rawDate === 'string' ? rawDate : new Date(rawDate).toISOString().slice(0, 10);
+        const [year, month, day] = dateStr.split('-').map((v: string) => Number(v));
         const [h = '00', m = '00'] = String(pickupDetails.pickupTime || '00:00').split(':');
-        dateVal.setHours(Number(h), Number(m), 0, 0);
+        const dateVal = new Date(year, (month || 1) - 1, day || 1, Number(h), Number(m), 0, 0);
 
         const now = new Date();
         
         // Fecha pasada (día anterior) o misma fecha con hora pasada
-        if (dateVal < now) {
+        if (dateVal.getTime() < now.getTime()) {
           toast({
             variant: 'destructive',
             title: 'Fecha inválida',

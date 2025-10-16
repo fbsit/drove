@@ -91,13 +91,13 @@ const VehicleDetailsStep: React.FC<VehicleDetailsStepProps> = ({ form }) => {
 
       {vehicleDetails.model && (
         <div className="space-y-4 sm:space-y-6">
-          {/* Matrícula */}
+          {/* Matrícula (opcional) */}
           <FormField
             control={form.control}
             name="vehicleDetails.licensePlate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-white font-medium">Matrícula</FormLabel>
+                <FormLabel className="text-white font-medium">Matrícula (opcional)</FormLabel>
                 <FormControl>
                   <Input
                     placeholder="Ejemplo: 1234ABC o ABC1234"
@@ -109,7 +109,7 @@ const VehicleDetailsStep: React.FC<VehicleDetailsStepProps> = ({ form }) => {
                   />
                 </FormControl>
                 <FormDescription className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                  <span className="text-white/60 text-sm">Formato: 1234ABC o ABC1234</span>
+                  <span className="text-white/60 text-sm">Si aún no tiene, puedes dejarlo vacío. Formato: 1234ABC o ABC1234</span>
                   <span className={cn(
                     "text-sm",
                     (field.value?.length || 0) === 7 ? "text-green-500" : "text-white/60"

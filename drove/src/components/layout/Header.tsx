@@ -187,12 +187,25 @@ const Header = () => {
     const entityId = n?.entityId || n?.data?.entityId || n?.data?.travelId || n?.data?.id;
     const category = String(n?.category || '').toUpperCase();
 
+    // Debug logging
+    console.log('🔔 Resolving notification route:', {
+      role,
+      entityType,
+      entityId,
+      category,
+      notification: n
+    });
+
     // Viajes / traslados
     if (entityType === 'TRAVEL' && entityId) {
       if (role === 'admin' || role === 'traffic_manager') {
-        // Para admin: sólo TRAVEL_CREATED va a asignación; el resto al detalle de viaje
-        if (category === 'TRAVEL_CREATED') return `/admin/asignar/${entityId}`;
-        return `/ver-traslado/${entityId}`;
+        // Para admin: sólo TRAVEL_CREATED va a asignación; el resto al detalle de viaje activo
+        if (category === 'TRAVEL_CREATED') {
+          console.log('🔔 Redirecting to assignment:', `/admin/asignar/${entityId}`);
+          return `/admin/asignar/${entityId}`;
+        }
+        console.log('🔔 Redirecting to active trip:', `/traslados/activo/${entityId}`);
+        return `/traslados/activo/${entityId}`;
       }
       if (role === 'client') return `/cliente/traslados/${entityId}`;
       if (role === 'drover') return `/traslados/activo/${entityId}`;

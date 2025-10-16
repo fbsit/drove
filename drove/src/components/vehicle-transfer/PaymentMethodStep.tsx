@@ -6,6 +6,7 @@ import { VehicleTransferRequest } from "@/types/vehicle-transfer-request";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { CreditCard, Banknote, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import SignatureSection from './signature/SignatureSection';
 
@@ -64,12 +65,34 @@ const PaymentMethodStep: React.FC<PaymentMethodStepProps> = ({ form }) => {
       <div className="mt-6">
         <Card className="bg-white/10 border-white/10">
           <CardContent className="p-4">
-            <div className="flex justify-between">
-              <span className="text-white">Total a pagar:</span>
-              <span className="text-[#6EF7FF] font-bold text-lg">
-                {form.watch("transferDetails.totalPrice")} €
-              </span>
-            </div>
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="price-breakdown" className="border-white/10">
+                <AccordionTrigger className="text-white hover:no-underline">
+                  <div className="flex justify-between w-full pr-4">
+                    <span>Total a pagar</span>
+                    <span className="text-[#6EF7FF] font-bold text-lg">
+                      {form.watch("transferDetails.totalPrice")} €
+                    </span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between text-white/80">
+                      <span>Neto (sin IVA)</span>
+                      <span>{form.watch("transferDetails.totalWithoutTax") ?? 0} €</span>
+                    </div>
+                    <div className="flex justify-between text-white/80">
+                      <span>IVA</span>
+                      <span>{form.watch("transferDetails.tax") ?? 0} €</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t border-white/10">
+                      <span className="text-white font-medium">Total</span>
+                      <span className="text-[#6EF7FF] font-bold">{form.watch("transferDetails.totalPrice")} €</span>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </CardContent>
         </Card>
       </div>

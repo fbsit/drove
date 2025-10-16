@@ -3,13 +3,15 @@ import { Injectable, NotFoundException, BadRequestException, Logger } from '@nes
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, FindOptionsWhere } from 'typeorm';
 import { ResendService } from '../resend/resend.service';
-import { User, UserRole, UserStatus } from '../user/entities/user.entity';
+import { User, UserRole, UserStatus, DroverEmploymentType } from '../user/entities/user.entity';
 import { Payment, PaymentStatus } from '../payment/entities/payment.entity';
 import { Invoice, InvoiceStatus } from '../invoices/entities/invoice.entity';
 import { Travels } from '../travels/entities/travel.entity';
 import { TransferStatus } from '../travels/entities/travel.entity';
 import { DetailedUser, FavoriteRoute } from '../user/dtos/detailed-user.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { CompensationService } from '../rates/compensation.service';
+import { Review } from '../reviews/entity/review.entity';
 @Injectable()
 export class AdminService {
   constructor(
@@ -20,6 +22,9 @@ export class AdminService {
     private readonly paymentRepo: Repository<Payment>,
     @InjectRepository(Invoice)
     private readonly invoiceRepo: Repository<Invoice>,
+    @InjectRepository(Review)
+    private readonly reviewRepo: Repository<Review>,
+    private readonly compensation: CompensationService,
     private readonly resend: ResendService,
     private readonly notifications?: NotificationsService,
   ) {}
@@ -37,7 +42,7 @@ export class AdminService {
     return this.userRepo.find();
   }
 
-  async getDetailedUserProfile(userId: string): Promise<DetailedUser> {
+  async getDetailedUserProfile(userId: string): Promise<any> {
     const user = await this.userRepo.findOne({
       where: { id: userId },
       relations: ['travelsAsClient'],
@@ -68,12 +73,13 @@ export class AdminService {
       vehicleMap.set(type, (vehicleMap.get(type) ?? 0) + 1);
     });
 
-    // ➍ build response
-    return {
+    // ➍ build response base (como cliente)
+    const base: any = {
       id: user.id,
       email: user.email,
       status: user.status,
       role: user.role,
+      employmentType: user.employmentType,
       accountType: user.accountType,
       contactInfo: {
         fullName: user.contactInfo.fullName,
@@ -94,6 +100,105 @@ export class AdminService {
         count,
       })),
     };
+
+    // ➎ Si el usuario es DROVER, adjuntar métricas específicas
+    if (user.role === UserRole.DROVER) {
+      // Cargar traslados donde actúa como drover
+      const asDrover = await this.transferRepo.find({ where: { droverId: userId } });
+      const delivered = asDrover.filter(t => t.status === TransferStatus.DELIVERED);
+
+      const assignedTrips = asDrover.length;
+      const completedTrips = delivered.length;
+
+      const typeStr = String(user.employmentType || DroverEmploymentType.FREELANCE).toUpperCase() as keyof typeof DroverEmploymentType;
+
+      // Ganancias freelance: usar driverFee si está, fallback a cálculo por km
+      const calcFreelanceTotal = async () => {
+        const sums = await Promise.all(
+          delivered.map(async (t) => {
+            if (typeof t.driverFee === 'number') return t.driverFee;
+            try {
+              const km = (t as any)?.distanceTravel ? require('../rates/compensation.service').parseKmFromDistance((t as any).distanceTravel) : 0;
+              const preview = await this.compensation?.calcFreelancePerTrip(km);
+              return preview?.driverFee ?? 0;
+            } catch { return 0; }
+          })
+        );
+        return sums.reduce((a,b)=>a+b,0);
+      };
+
+      let totalEarnings = 0;
+      let avgPerTrip = 0;
+      let contractedMonthly: any = null;
+
+      if (typeStr === 'FREELANCE') {
+        totalEarnings = await calcFreelanceTotal();
+        avgPerTrip = completedTrips > 0 ? totalEarnings / completedTrips : 0;
+      } else {
+        // Contratado: estimación mensual del mes actual
+        const now = new Date();
+        const monthISO = `${now.getUTCFullYear()}-${String(now.getUTCMonth()+1).padStart(2,'0')}`;
+        try {
+          contractedMonthly = await this.compensation?.calcContractedMonthlyByDrover(userId, monthISO);
+        } catch {}
+      }
+
+      // Promedio mensual: por número de meses con viajes entregados (evita dividir por meses sin actividad)
+      const monthKeys = new Set(
+        delivered
+          .map(t => (t.updatedAt || t.createdAt))
+          .filter(Boolean)
+          .map(d => {
+            const dt = new Date(d as any);
+            return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
+          }),
+      );
+      const monthsActive = Math.max(1, monthKeys.size);
+      const avgMonthlyEarnings = totalEarnings / monthsActive;
+
+      // Promedio de tiempo por traslado (minutos), usando timeTravel si está, sino (updatedAt - startedAt)
+      const toMinutes = (ms: number) => Math.max(0, Math.round(ms / 60000));
+      const parseTimeTravel = (s?: string) => {
+        if (!s) return null;
+        // formatos posibles: "HH:mm" ó "Xh Ym"
+        const hm = s.match(/^(\d{1,2}):(\d{2})$/);
+        if (hm) return Number(hm[1]) * 60 + Number(hm[2]);
+        const hxmy = s.match(/(\d+)h\s*(\d+)m/i);
+        if (hxmy) return Number(hxmy[1]) * 60 + Number(hxmy[2]);
+        return null;
+      };
+      const durationsMin = delivered.map(t => {
+        const parsed = parseTimeTravel((t as any).timeTravel);
+        if (parsed != null) return parsed;
+        if (t.startedAt && t.updatedAt) return toMinutes(new Date(t.updatedAt).getTime() - new Date(t.startedAt).getTime());
+        return null;
+      }).filter((v): v is number => typeof v === 'number');
+      const avgTimePerTripMin = durationsMin.length ? Math.round(durationsMin.reduce((a,b)=>a+b,0) / durationsMin.length) : 0;
+      const avgTimePerTrip = avgTimePerTripMin > 0
+        ? `${Math.floor(avgTimePerTripMin / 60)}h ${avgTimePerTripMin % 60}m`
+        : 'N/A';
+
+      // Calificación promedio y cantidad
+      const [reviews, ratingCount] = await this.reviewRepo.findAndCount({ where: { droverId: userId } });
+      const ratingAvg = ratingCount > 0 ? reviews.reduce((s, r) => s + (r.rating || 0), 0) / ratingCount : 0;
+
+      base.droverMetrics = {
+        assignedTrips,
+        completedTrips,
+        employmentType: typeStr,
+        totalEarnings,
+        avgPerTrip,
+        monthsActive,
+        avgMonthlyEarnings,
+        ratingAvg,
+        ratingCount,
+        avgTimePerTrip,
+        avgTimePerTripMin,
+        contractedMonthly,
+      };
+    }
+
+    return base;
   }
 
   async approveUser(id: string): Promise<{ success: boolean }> {
