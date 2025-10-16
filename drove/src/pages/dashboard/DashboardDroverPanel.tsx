@@ -177,7 +177,7 @@ const DashboardDroverPanel: React.FC = () => {
         } catch { }
       });
       // Activar tracking interval persistente
-      try { localStorage.setItem('drover_tracking_active', '1'); } catch {}
+      try { localStorage.setItem('drover_tracking_active', '1'); } catch { }
       if (intervalRef.current == null) {
         intervalRef.current = window.setInterval(() => {
           if ('geolocation' in navigator) {
@@ -189,7 +189,7 @@ const DashboardDroverPanel: React.FC = () => {
       }
     } else {
       // Desactivar interval si no está disponible
-      try { localStorage.setItem('drover_tracking_active', '0'); } catch {}
+      try { localStorage.setItem('drover_tracking_active', '0'); } catch { }
       if (intervalRef.current != null) { window.clearInterval(intervalRef.current); intervalRef.current = null; }
     }
   };
@@ -217,7 +217,7 @@ const DashboardDroverPanel: React.FC = () => {
       </div>
 
       {/* KPIs (solo dos contadores como en la imagen) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-start">
         <KpiCard icon={DollarSign} label="Ganancia estimada IVA incl." value={`€${(() => {
           const base = Number(stats?.totalEarnings ?? 0);
           return Number((base * 1.21)).toLocaleString(undefined, { minimumFractionDigits: 2 });
@@ -228,7 +228,7 @@ const DashboardDroverPanel: React.FC = () => {
       {/* Filtros */}
       <Card className="bg-[#251934] border border-white/10 rounded-2xl">
         <CardHeader className="p-6">
-          <CardTitle className="text-white">Filtros</CardTitle>
+          <CardTitle className="text-white text-start">Filtros</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3 p-6 pt-0">
           <input
@@ -306,8 +306,8 @@ const DashboardDroverPanel: React.FC = () => {
                     const baseDisplay = fee > 0
                       ? fee
                       : (empType === 'FREELANCE' && km > 0
-                          ? (freelanceTable.find(r => km >= r.min && km <= r.max) || freelanceTable[freelanceTable.length - 1]).driverFee
-                          : 0);
+                        ? (freelanceTable.find(r => km >= r.min && km <= r.max) || freelanceTable[freelanceTable.length - 1]).driverFee
+                        : 0);
                     const displayWithVat = typeof withVat === 'number' ? Number(withVat) : Number((baseDisplay * 1.21).toFixed(2));
                     return (
                       <div className="text-[#6EF7FF] text-lg font-bold flex-1 text-start">Ganancia: €{Number(displayWithVat).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>

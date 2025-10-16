@@ -9,7 +9,7 @@ import { optimizeImageForUpload } from '@/lib/image';
 
 const REQUIRED_EXTERIOR = {
   frontView: 'Vista frontal',
-  rearView: 'Vista trasera', 
+  rearView: 'Vista trasera',
   leftFront: 'Lateral izquierdo (delantero)',
   leftRear: 'Lateral izquierdo (trasero)',
   rightFront: 'Lateral derecho (delantero)',
@@ -56,12 +56,12 @@ const VehicleExteriorPhotosStep: React.FC<Props> = ({
 
   const handleImageUpload = async (key: ExteriorKey, file: File) => {
     setUploading(prev => ({ ...prev, [key]: true }));
-    
+
     try {
       const optimized = await optimizeImageForUpload(file, 1600, 0.75);
       const folderPath = `travel/${transferId}/delivery/exterior`;
       const imageUrl = await StorageService.uploadImage(optimized, folderPath);
-      
+
       if (imageUrl) {
         // Evitar condiciones de carrera usando actualizador funcional
         setImageUrls(prev => {
@@ -76,7 +76,7 @@ const VehicleExteriorPhotosStep: React.FC<Props> = ({
           }
           return next;
         });
-        
+
         toast.success('Imagen subida correctamente');
       } else {
         throw new Error('Error al subir la imagen');
@@ -99,17 +99,17 @@ const VehicleExteriorPhotosStep: React.FC<Props> = ({
     const newUrls = { ...imageUrls };
     delete newUrls[key];
     setImageUrls(newUrls);
-    
+
     const allKeys = Object.keys(REQUIRED_EXTERIOR) as ExteriorKey[];
     const isComplete = allKeys.every(k => newUrls[k]);
     onImagesChanged(!isComplete);
-    
+
     if (isComplete) {
       onImagesReady(newUrls);
     } else {
       onImagesReady({});
     }
-    
+
     toast.success('Imagen eliminada');
   };
 
@@ -120,10 +120,10 @@ const VehicleExteriorPhotosStep: React.FC<Props> = ({
       </p>
 
       <Card className="bg-white/10 border-white/20 p-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-8">
           {(Object.keys(REQUIRED_EXTERIOR) as ExteriorKey[]).map(key => (
             <div key={key} className="space-y-2">
-              <p className="text-white/80 text-sm">{REQUIRED_EXTERIOR[key]}</p>
+              <p className="text-white/80 text-sm min-h-10">{REQUIRED_EXTERIOR[key]}</p>
               <div className="aspect-square bg-white/10 rounded-lg flex items-center justify-center">
                 {imageUrls[key] ? (
                   <div className="relative w-full h-full">

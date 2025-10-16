@@ -78,80 +78,92 @@ const VehicleDetailsStep: React.FC<VehicleDetailsStepProps> = ({ form }) => {
         )}
       />
 
-
       <YearSelector form={form} />
 
-      {vehicleDetails.year && (
-        <BrandSelector form={form} />
-      )}
 
-      {vehicleDetails.brand && (
-        <ModelSelector form={form} />
-      )}
+      <div className='flex w-full gap-6 items-end'>
+        {vehicleDetails.year && (
+          <div className='w-full'>
+            <BrandSelector form={form} />
+          </div>
+        )}
+
+        {vehicleDetails.brand && (
+          <div className='w-full'>
+            <ModelSelector form={form} />
+          </div>
+        )}
+      </div>
+
+
 
       {vehicleDetails.model && (
-        <div className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col lg:flex-row w-full items-start gap-6">
           {/* Matrícula (opcional) */}
-          <FormField
-            control={form.control}
-            name="vehicleDetails.licensePlate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-white font-medium">Matrícula (opcional)</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Ejemplo: 1234ABC o ABC1234"
-                    {...field}
-                    value={field.value || ''}
-                    onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                    maxLength={7}
-                    className="w-full max-w-full"
-                  />
-                </FormControl>
-                <FormDescription className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                  <span className="text-white/60 text-sm">Si aún no tiene, puedes dejarlo vacío. Formato: 1234ABC o ABC1234</span>
-                  <span className={cn(
-                    "text-sm",
-                    (field.value?.length || 0) === 7 ? "text-green-500" : "text-white/60"
-                  )}>
-                    {(field.value?.length || 0)}/7 caracteres
-                  </span>
-                </FormDescription>
-                <FormMessage className="text-red-400" />
-              </FormItem>
-            )}
-          />
+          <div className='w-full'>
+            <FormField
+              control={form.control}
+              name="vehicleDetails.licensePlate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-white font-medium">Matrícula (opcional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Ejemplo: 1234ABC o ABC1234"
+                      {...field}
+                      value={field.value || ''}
+                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                      maxLength={7}
+                      className="w-full max-w-full"
+                    />
+                  </FormControl>
+                  <FormDescription className="flex flex-col sm:flex-row sm:justify-between gap-1 text-start">
+                    <span className="text-white/60 text-sm flex-1">Si aún no tiene, puedes dejarlo vacío.<br></br> Formato: 1234ABC o ABC1234</span>
+                    <span className={cn(
+                      "text-sm",
+                      (field.value?.length || 0) === 7 ? "text-green-500" : "text-white/60"
+                    )}>
+                      {(field.value?.length || 0)}/7 caracteres
+                    </span>
+                  </FormDescription>
+                  <FormMessage className="text-red-400" />
+                </FormItem>
+              )}
+            />
+          </div>
 
           {/* VIN */}
-          <FormField
-            control={form.control}
-            name="vehicleDetails.vin"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-white font-medium">Nº de bastidor (VIN)</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="17 caracteres alfanuméricos"
-                    {...field}
-                    value={field.value || ''}
-                    onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                    maxLength={17}
-                    className="w-full max-w-full"
-                  />
-                </FormControl>
-                <FormDescription className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                  <span className="text-white/60 text-sm">Sin caracteres I, O, Q</span>
-                  <span className={cn(
-                    "text-sm",
-                    (field.value?.length || 0) === 17 ? "text-green-500" : "text-white/60"
-                  )}>
-                    {(field.value?.length || 0)}/17 caracteres
-                  </span>
-                </FormDescription>
-                <FormMessage className="text-red-400" />
-              </FormItem>
-            )}
-          />
+          <div className='w-full'>
+            <FormField
+              control={form.control}
+              name="vehicleDetails.vin"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-white font-medium">Nº de bastidor (VIN)</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="17 caracteres alfanuméricos"
+                      {...field}
+                      value={field.value || ''}
+                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                      maxLength={17}
+                      className="w-full max-w-full"
+                    />
+                  </FormControl>
+                  <FormDescription className="flex flex-col sm:flex-row sm:justify-between gap-1 text-left">
+                    <span className="text-white/60 text-sm flex-1">Sin caracteres I, O, Q</span>
+                    <span className={cn(
+                      "text-sm",
+                      (field.value?.length || 0) === 17 ? "text-green-500" : "text-white/60"
+                    )}>
+                      {(field.value?.length || 0)}/17 caracteres
+                    </span>
+                  </FormDescription>
+                  <FormMessage className="text-red-400" />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
       )}
     </div>

@@ -20,7 +20,7 @@ const ModelSelector = ({ form }: ModelSelectorProps) => {
   const brand = form.watch("vehicleDetails.brand");
   const year = form.watch("vehicleDetails.year");
   const currentValue = form.watch("vehicleDetails.model");
-  
+
   const [models, setModels] = React.useState<CarModelDto[]>([]);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ const ModelSelector = ({ form }: ModelSelectorProps) => {
     return () => { isMounted = false; };
   }, [brand, year]);
 
-  const normalizeText = (text: string) => 
+  const normalizeText = (text: string) =>
     text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
   return (
@@ -59,7 +59,7 @@ const ModelSelector = ({ form }: ModelSelectorProps) => {
               </PopoverTrigger>
               <PopoverContent className="w-full max-w-[calc(100vw-2rem)] sm:w-auto p-0" align="start">
                 <Command>
-                  <CommandInput 
+                  <CommandInput
                     placeholder="Buscar modelo..."
                     value={field.value}
                     onValueChange={(search) => {

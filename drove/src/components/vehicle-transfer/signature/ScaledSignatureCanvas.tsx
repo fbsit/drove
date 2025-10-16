@@ -186,7 +186,7 @@ const ScaledSignatureCanvas: React.FC<ScaledSignatureCanvasProps> = ({
 
   return (
     <FormControl>
-      <div className="space-y-2">
+      <div className="space-y-2 ">
         <div ref={containerRef} className="w-full">
           <canvas
             ref={canvasRef}
@@ -197,7 +197,7 @@ const ScaledSignatureCanvas: React.FC<ScaledSignatureCanvasProps> = ({
             onTouchStart={startDrawing}
             onTouchMove={draw}
             onTouchEnd={endDrawing}
-            className="border border-white/20 rounded-md cursor-crosshair touch-none bg-white"
+            className="border border-white/20 rounded-md cursor-crosshair touch-none bg-white max-h-60"
           />
         </div>
         <Button
