@@ -364,7 +364,7 @@ const PickupVerification: React.FC = () => {
       return (
         <div className="grid grid-cols-2 gap-4">
           {keys.map(k => (
-            <div key={k} className="space-y-2">
+            <div key={k} className="space-y-2 flex flex-col justify-between">
               <p className="text-white/80 text-sm">{labels[k]}</p>
               <div className="aspect-square bg-white/10 rounded-lg flex items-center justify-center">
                 {urls[k] ? (
@@ -542,21 +542,43 @@ const PickupVerification: React.FC = () => {
 
         {/* pasos */}
         <div className="flex lg:justify-between items-center mb-8 overflow-x-auto gap-4 flex-wrap">
-          {Object.entries(STEP_NAMES).map(([step, name]) => {
+          {Object.entries(STEP_NAMES).map(([step, name], index) => {
             const s = Number(step);
             const active = s === currentStep;
             const complete = s < currentStep;
+            const stepNumber = index + 1;
+
             return (
-              <div key={step}
+              <div
+                key={step}
                 className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all
-                  ${active ? 'bg-[#6EF7FF] text-[#22142A]'
-                    : complete ? 'bg-green-500 text-white'
-                      : 'bg-white/10 text-white/70'}`}>
-                {getStepIcon(s)} <span className="text-sm font-medium">{name}</span>
+          ${active
+                    ? 'bg-[#6EF7FF] text-[#22142A]'
+                    : complete
+                      ? 'bg-green-500 text-white'
+                      : 'bg-white/10 text-white/70'
+                  }`}
+              >
+                {/* Número del paso en un circulito */}
+                <div
+                  className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold
+            ${active
+                      ? 'bg-[#22142A] text-[#6EF7FF]'
+                      : complete
+                        ? 'bg-white text-green-600'
+                        : 'bg-white/20 text-white/80'
+                    }`}
+                >
+                  {stepNumber}
+                </div>
+
+                {getStepIcon(s)}
+                <span className="text-sm font-medium whitespace-nowrap">{name}</span>
               </div>
             );
           })}
         </div>
+
 
         {/* tarjeta principal */}
         {!accessBlocked && (
