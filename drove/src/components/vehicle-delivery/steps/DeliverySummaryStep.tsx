@@ -119,9 +119,15 @@ const DeliverySummaryStep: React.FC<DeliverySummaryStepProps> = ({ transfer }) =
         />
       </div>
 
-      {/* Precio total */}
+      {/* Beneficio del drover (mostrar solo fee sin IVA) */}
       <div className="text-center text-white/50 text-sm">
-        <p>Precio total: {transferDetails.totalPrice} €</p>
+        {(() => {
+          const fee = typeof (transfer as any)?.driverFee === 'number' ? (transfer as any).driverFee : undefined;
+          if (typeof fee === 'number') {
+            return <p>Beneficio del drover (estimado, sin IVA): €{Number(fee).toFixed(2)}</p>;
+          }
+          return null;
+        })()}
       </div>
     </div>
   )

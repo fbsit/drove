@@ -101,6 +101,9 @@ export const useDeliveryVerification = (transferId: string) => {
         const adapted: VehicleTransferDB = {
           id: data.id,
           created_at: data.created_at ?? data.createdAt ?? '',
+          // Mapear compensación si viene del backend
+          driverFee: (data as any)?.driverFee ?? undefined,
+          driverFeeMeta: (data as any)?.driverFeeMeta ?? undefined,
           vehicleDetails: {
             type: mapVehicleType(data.typeVehicle) ?? 'coche',
             brand: data.brandVehicle ?? '',
