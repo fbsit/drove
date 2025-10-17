@@ -8,11 +8,13 @@ import { PreferencesController } from './userPreference.controller';
 import { UserService } from './user.service';
 import { PreferenceService } from './userPreference.service';
 import { Travels } from '../travels/entities/travel.entity';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     // registra ambos repositorios
     TypeOrmModule.forFeature([User, UserPreferences, Travels]),
+    NotificationsModule,
   ],
   controllers: [UserController, PreferencesController],
   providers: [UserService, PreferenceService],

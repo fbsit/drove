@@ -15,6 +15,7 @@ import { mapRawUserTypeToRole } from './../helpers/UserRole';
 import { TransferStatus } from '../travels/entities/travel.entity';
 import { Travels } from '../travels/entities/travel.entity';
 import { ResendService } from '../resend/resend.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { BadRequestException } from '@nestjs/common';
 import { classifyId, normalizeId, validateDni, validateNie, isLikelyCompanyName } from './utils/spanish-id';
 
@@ -29,6 +30,7 @@ export class UserService {
     @InjectRepository(Travels)
     private readonly travelsRepo: Repository<Travels>,
     private readonly resend: ResendService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /**
@@ -100,6 +102,23 @@ export class UserService {
       }
 
       this.logger.log(`User created id=${created.id}`);
+
+      // Notificación de nuevo usuario para admins
+      try {
+        await this.notifications.create({
+          title: 'Nuevo registro',
+          message: `${created?.contactInfo?.fullName || created.email} se ha registrado como ${String(role).toUpperCase()}`,
+          read: false,
+          roleTarget: 'ADMIN',
+          category: 'NEW_USER',
+          entityType: 'USER',
+          entityId: created.id,
+          data: {
+            userRole: role,
+            email: created.email,
+          },
+        } as any);
+      } catch {}
       return created;
     } catch (error: any) {
       this.logger.error(`Create user failed: ${error?.message}`, error?.stack);

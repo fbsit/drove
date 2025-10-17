@@ -23,10 +23,7 @@ export class DroverService {
   }
 
   static async getMyTrips(): Promise<any[]> {
-    // No existe en backend; se podría derivar a /travels/drover/:id
-    const userId = localStorage.getItem('auth_user_id');
-    if (!userId) return [];
-    return await ApiService.get(`/travels/drover/${userId}`);
+    return await ApiService.get(`/travels/me`);
   }
 
   static async acceptTrip(tripId: string): Promise<any> {

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Req, UseGuards, ForbiddenException, Request } from '@nestjs/common';
 import { TravelsService } from './travels.service';
 import {
   CreateTravelDto,
@@ -20,9 +20,12 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
+import { JwtOrTestGuard } from '../common/guards/jwt-or-test.guard';
 
 @ApiTags('Travels')
 @Controller('travels')
+@UseGuards(JwtOrTestGuard)
+@ApiBearerAuth()
 export class TravelsController {
   constructor(private readonly service: TravelsService) {}
 
@@ -79,11 +82,23 @@ export class TravelsController {
     return this.service.findByClient(clientId);
   }
 
+  @Get('me')
+  @ApiOperation({ summary: 'Listar mis traslados (drover autenticado)' })
+  @ApiOkResponse({ type: [Travels] })
+  findMine(@Request() req): Promise<Travels[]> {
+    return this.service.findByDrover(req.user.id);
+  }
+
   @Get('drover/:droverId')
   @ApiOperation({ summary: 'Listar traslados por drover' })
   @ApiParam({ name: 'droverId' })
   @ApiOkResponse({ type: [Travels] })
-  findByDrover(@Param('droverId') droverId: string): Promise<Travels[]> {
+  findByDrover(@Param('droverId') droverId: string, @Request() req): Promise<Travels[]> {
+    const role = String(req?.user?.role || '').toUpperCase();
+    const isAdmin = role === 'ADMIN' || role === 'TRAFFICBOSS';
+    if (!isAdmin && req.user.id !== droverId) {
+      throw new ForbiddenException('No puedes ver viajes de otros drovers');
+    }
     return this.service.findByDrover(droverId);
   }
 
