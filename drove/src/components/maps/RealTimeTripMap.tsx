@@ -150,8 +150,17 @@ const RealTimeTripMap: React.FC<Props> = ({
   const lastPosRef = useRef<LatLng | null>(null);
   const [heading, setHeading] = useState<number>(0);
 
-  /* ────────── geolocalización continua ────────── */
+  /* ────────── geolocalización continua (solo en IN_PROGRESS) ────────── */
   useEffect(() => {
+    // Solo activar seguimiento cuando el viaje está en progreso
+    if (tripStatus !== 'IN_PROGRESS') {
+      if (watchId.current) {
+        try { navigator.geolocation.clearWatch(watchId.current); } catch {}
+      }
+      setPos(null);
+      return;
+    }
+
     if (!navigator.geolocation) {
       toast({ variant: 'destructive', title: 'GPS no disponible' });
       return;
@@ -169,8 +178,12 @@ const RealTimeTripMap: React.FC<Props> = ({
       { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 },
     );
 
-    return () => watchId.current && navigator.geolocation.clearWatch(watchId.current);
-  }, [toast]);
+    return () => {
+      if (watchId.current) {
+        try { navigator.geolocation.clearWatch(watchId.current); } catch {}
+      }
+    };
+  }, [toast, tripStatus]);
 
   /* ────────── proximidad al destino ────────── */
   useEffect(() => {
@@ -220,7 +233,7 @@ const RealTimeTripMap: React.FC<Props> = ({
         onLoad={(map) => { mapRef.current = map; }}
       >
         {/* posición actual */}
-        {pos && (
+        {tripStatus === 'IN_PROGRESS' && pos && (
           <Marker
             position={pos}
             icon={{
