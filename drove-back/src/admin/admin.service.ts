@@ -91,6 +91,11 @@ export class AdminService {
         country: user.contactInfo.country || '',
         zipCode: user.contactInfo.zip || '',
         selfie: user.contactInfo.selfie || undefined,
+        // Documentación de drover (si aplica)
+        licenseFront: (user.contactInfo as any)?.licenseFront || undefined,
+        licenseBack: (user.contactInfo as any)?.licenseBack || undefined,
+        imageUpload2: (user.contactInfo as any)?.imageUpload2 || undefined,
+        pdfUpload: (user.contactInfo as any)?.pdfUpload || undefined,
       },
       totalSpent,
       tripsCount: travels.length,
