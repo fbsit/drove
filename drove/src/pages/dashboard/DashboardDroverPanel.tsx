@@ -283,7 +283,7 @@ const DashboardDroverPanel: React.FC = () => {
                   </div>
 
                 </div>
-                {/* Pie con ganancia a la izquierda y botón a la derecha */}
+                {/* Pie: para contratados mostrar KM; para freelance mostrar ganancia */}
                 <div className="flex justify-between items-center gap-4">
                   {(() => {
                     const empType = String(user?.employmentType || '').toUpperCase();
@@ -309,6 +309,16 @@ const DashboardDroverPanel: React.FC = () => {
                         ? (freelanceTable.find(r => km >= r.min && km <= r.max) || freelanceTable[freelanceTable.length - 1]).driverFee
                         : 0);
                     const displayWithVat = typeof withVat === 'number' ? Number(withVat) : Number((baseDisplay * 1.21).toFixed(2));
+
+                    if (empType === 'CONTRACTED') {
+                      const distanceDisplay = typeof t.distanceTravel === 'string' && t.distanceTravel.trim()
+                        ? t.distanceTravel
+                        : `${km} km`;
+                      return (
+                        <div className="text-[#6EF7FF] text-lg font-bold flex-1 text-start">Kilómetros: {distanceDisplay}</div>
+                      );
+                    }
+
                     return (
                       <div className="text-[#6EF7FF] text-lg font-bold flex-1 text-start">Ganancia: €{Number(displayWithVat).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                     );

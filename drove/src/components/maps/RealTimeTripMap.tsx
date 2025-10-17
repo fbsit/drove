@@ -259,10 +259,9 @@ const RealTimeTripMap: React.FC<Props> = ({
           }}
         />
 
-        {/* ruta */}
+        {/* ruta (estable para evitar recomputar en cada tick de GPS) */}
         <MapDirections
-          key={`${dynamicOrigin.lat}-${dynamicOrigin.lng}`} // fuerza re-render al cambiar
-          origin={dynamicOrigin}
+          origin={origin}
           destination={destination}
           travelMode="DRIVING"
         />
