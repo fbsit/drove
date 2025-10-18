@@ -70,20 +70,20 @@ export class AuthService {
       role: user.role,
     };
 
-    // Firmar con expiración explícita (1 día por defecto o JWT_EXPIRES_IN)
+    // Firmar con expiración muy larga (por defecto 365 días si no se define env)
     const access_token = this.jwtService.sign(payload, {
-      expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+      expiresIn: process.env.JWT_EXPIRES_IN || '365d',
     });
 
-    // Emitir refresh token de larga duración (por defecto 30 días)
+    // Emitir refresh token de muy larga duración (por defecto 10 años)
     const refresh_token = this.jwtService.sign(payload, {
-      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
+      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '3650d',
     });
 
     return {
       access_token,
       refresh_token,
-      expiresIn: process.env.JWT_EXPIRES_IN || '604800',
+      expiresIn: process.env.JWT_EXPIRES_IN || '31536000',
       user: {
         id: user.id,
         name: fullName,
@@ -117,10 +117,10 @@ export class AuthService {
       };
 
       const newAccessToken = this.jwtService.sign(payload, {
-        expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+        expiresIn: process.env.JWT_EXPIRES_IN || '365d',
       });
       const newRefreshToken = this.jwtService.sign(payload, {
-        expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
+        expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '3650d',
       });
       return { access_token: newAccessToken, refresh_token: newRefreshToken };
     } catch (err) {
