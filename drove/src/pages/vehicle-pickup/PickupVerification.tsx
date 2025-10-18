@@ -132,14 +132,15 @@ const PickupVerification: React.FC = () => {
 
   const {
     signature,
+    droverSignature,
     comments,
     setSignature,
+    setDroverSignature,
     setComments,
     submitVerification,
     isLoading: isSubmitting,
     clearDraft,
   } = usePickupVerification(transferId!);
-  const [droverSignature, setDroverSignature] = useState<string>('');
 
   // URLs de las imágenes subidas estructuradas según DTOs
   const [exteriorImageUrls, setExteriorImageUrls] = useState<Record<string, string>>({});

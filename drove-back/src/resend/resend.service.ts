@@ -7,6 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Travels } from './../travels/entities/travel.entity';
 import { PdfService } from '../pdf/pdf.service';
+import { CompensationService } from '../rates/compensation.service';
 import fetch from 'node-fetch';
 
 export interface ResendSendEmailPayload {
@@ -92,7 +93,7 @@ export class ResendService {
   private sendQueue: Promise<any> = Promise.resolve();
   private sendTimestamps: number[] = [];
 
-  constructor(private readonly config: ConfigService, private readonly pdfService: PdfService) {
+  constructor(private readonly config: ConfigService, private readonly pdfService: PdfService, private readonly compensation: CompensationService) {
     const apiKey = 're_dikLWbNB_2tg41mPRK8UCuUcybKSwEiw1';
 
     if (!apiKey) {
@@ -267,6 +268,26 @@ export class ResendService {
     const pickup = travel.startAddress;
     const delivery = travel.endAddress;
 
+    const kmValue = (() => {
+      const raw = (travel as any)?.distanceTravel;
+      if (typeof raw === 'number') return raw;
+      try {
+        const s = String(raw || '').replace(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '').replace(/\s+/g, '');
+        const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+        const n = parseFloat(withDot);
+        return isNaN(n) ? 0 : n;
+      } catch { return 0; }
+    })();
+    const driverBenefit = (() => {
+      const stored = (travel as any)?.driverFee;
+      if (typeof stored === 'number' && !isNaN(stored)) return stored;
+      try {
+        const emp = String(travel?.drover?.employmentType || '').toUpperCase();
+        if (emp === 'CONTRACTED') return this.compensation.calcContractedPerTrip(kmValue).driverFee;
+        return this.compensation.calcFreelancePerTrip(kmValue).driverFee;
+      } catch { return 0; }
+    })();
+
     const payload: Payload = {
       to: client.email,
       subject: 'Traslado asignado a un Drover',
@@ -362,7 +383,7 @@ export class ResendService {
     const delivery = travel.endAddress;
 
     const holder = travel.personDelivery || {};
-    const payload: Payload = {
+    const payload: Payload & { driver_benefit?: string } = {
       to: client.email,
       subject: 'Traslado asignado a un Drover',
       preheader: 'Tu vehículo pronto será recogido.',
@@ -474,7 +495,7 @@ export class ResendService {
         })()
       : droverSigRaw || '';
 
-    const payload: Payload = {
+    const payload: Payload & { driver_benefit?: string } = {
       to: client.email,
       subject: 'Traslado asignado a un Drover',
       preheader: 'Tu vehículo pronto será recogido.',
@@ -520,7 +541,7 @@ export class ResendService {
           return isNaN(n) ? 0 : n;
         } catch { return 0; }
       })(), // e.g. 200
-      total_with_tax: `$${travel.totalPrice.toLocaleString('es-CL')}`, // e.g. '$337,47'
+      total_with_tax: `$${travel.totalPrice.toLocaleString('es-CL')}`, // retained but not used in drover template
       issue_date: new Date().toLocaleDateString('es-ES'),
     };
 
@@ -572,7 +593,27 @@ export class ResendService {
     const delivery = travel.endAddress;
     const receiver = travel.personReceive || {};
 
-    const payload: Payload = {
+    const kmValue2 = (() => {
+      const raw = (travel as any)?.distanceTravel;
+      if (typeof raw === 'number') return raw;
+      try {
+        const s = String(raw || '').replace(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '').replace(/\s+/g, '');
+        const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+        const n = parseFloat(withDot);
+        return isNaN(n) ? 0 : n;
+      } catch { return 0; }
+    })();
+    const driverBenefit2 = (() => {
+      const stored = (travel as any)?.driverFee;
+      if (typeof stored === 'number' && !isNaN(stored)) return stored;
+      try {
+        const emp = String(travel?.drover?.employmentType || '').toUpperCase();
+        if (emp === 'CONTRACTED') return this.compensation.calcContractedPerTrip(kmValue2).driverFee;
+        return this.compensation.calcFreelancePerTrip(kmValue2).driverFee;
+      } catch { return 0; }
+    })();
+
+    const payload: Payload & { driver_benefit?: string } = {
       to: client.email,
       subject: 'Traslado asignado a un Drover',
       preheader: 'Tu vehículo pronto será recogido.',
@@ -608,17 +649,9 @@ export class ResendService {
         region: delivery.region,
         country: delivery.country,
       },
-      distance: (() => {
-        const raw = (travel as any)?.distanceTravel;
-        if (typeof raw === 'number') return raw;
-        try {
-          const s = String(raw || '').replace(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '').replace(/\s+/g, '');
-          const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
-          const n = parseFloat(withDot);
-          return isNaN(n) ? 0 : n;
-        } catch { return 0; }
-      })(), // e.g. 200
-      total_with_tax: `$${travel.totalPrice.toLocaleString('es-CL')}`, // e.g. '$337,47'
+      distance: kmValue2, // e.g. 200
+      driver_benefit: `${driverBenefit2.toFixed(2)} €`,
+      total_with_tax: `$${travel.totalPrice.toLocaleString('es-CL')}`, // retained but not used in drover template
       issue_date: new Date().toLocaleDateString('es-ES'),
     };
 
@@ -669,6 +702,26 @@ export class ResendService {
     const pickup = travel.startAddress;
     const delivery = travel.endAddress;
     const deliveryVerification = travel?.deliveryVerification || {};
+
+    const kmValue3 = (() => {
+      const raw = (travel as any)?.distanceTravel;
+      if (typeof raw === 'number') return raw;
+      try {
+        const s = String(raw || '').replace(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '').replace(/\s+/g, '');
+        const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+        const n = parseFloat(withDot);
+        return isNaN(n) ? 0 : n;
+      } catch { return 0; }
+    })();
+    const driverBenefit3 = (() => {
+      const stored = (travel as any)?.driverFee;
+      if (typeof stored === 'number' && !isNaN(stored)) return stored;
+      try {
+        const emp = String(travel?.drover?.employmentType || '').toUpperCase();
+        if (emp === 'CONTRACTED') return this.compensation.calcContractedPerTrip(kmValue3).driverFee;
+        return this.compensation.calcFreelancePerTrip(kmValue3).driverFee;
+      } catch { return 0; }
+    })();
 
     const payload: Payload = {
       to: client.email,
@@ -955,8 +1008,18 @@ export class ResendService {
         region: delivery.region,
         country: delivery.country,
       },
-      distance: Number(travel.distanceTravel), // e.g. 200
-      total_with_tax: `$${travel.totalPrice.toLocaleString('es-CL')}`, // e.g. '$337,47'
+      distance: (() => {
+        const raw = (travel as any)?.distanceTravel;
+        if (typeof raw === 'number') return raw;
+        try {
+          const s = String(raw || '').replace(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '').replace(/\s+/g, '');
+          const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+          const n = parseFloat(withDot);
+          return isNaN(n) ? 0 : n;
+        } catch { return 0; }
+      })(), // e.g. 200
+      // driver benefit injected via template only for drover template
+      total_with_tax: `$${travel.totalPrice.toLocaleString('es-CL')}`, // retained but not used in drover template
       issue_date: new Date().toLocaleDateString('es-ES'),
     };
 

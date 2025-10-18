@@ -1447,7 +1447,7 @@ export class PdfService {
         // Determinar KM parseado de forma robusta
         const kmNumber = Number(distanceKmNum || 0);
         if (isDroverPdf) {
-          amountLabel = 'Beneficio (sin IVA)';
+          amountLabel = 'Beneficio';
           const role = String(droverEmpType || '').toUpperCase();
           const storedFee = (travel as any)?.driverFee;
           if (typeof storedFee === 'number' && !isNaN(storedFee)) {
@@ -1469,7 +1469,7 @@ export class PdfService {
       } catch {}
       const isPickupStep = step === 2;
       const isDrover = isPickupStep ? (detailInfo === 'reception') : (detailInfo === 'chofer');
-      const amountLabelFinal = isDrover ? 'Beneficio (sin IVA)' : 'Total con I.V.A';
+      const amountLabelFinal = isDrover ? 'Beneficio' : 'Total con I.V.A';
       const detailTravelTabla = [
         ['Distancia', distanceFormatted],
         [amountLabelFinal, totalWithVat],

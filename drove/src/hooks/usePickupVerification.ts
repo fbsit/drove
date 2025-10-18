@@ -4,6 +4,7 @@ import { VehicleTransferService } from '@/services/vehicleTransferService';
 
 export const usePickupVerification = (transferId?: string) => {
   const [signature, setSignature] = useState('');
+  const [droverSignature, setDroverSignature] = useState('');
   const [comments, setComments] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -13,8 +14,10 @@ export const usePickupVerification = (transferId?: string) => {
     if (!transferId) return;
     try {
       const sig = localStorage.getItem(`pickup:${transferId}:signature`);
+      const dSig = localStorage.getItem(`pickup:${transferId}:droverSignature`);
       const com = localStorage.getItem(`pickup:${transferId}:comments`);
       if (sig) setSignature(sig);
+      if (dSig) setDroverSignature(dSig);
       if (com) setComments(com);
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -25,6 +28,11 @@ export const usePickupVerification = (transferId?: string) => {
     if (!transferId) return;
     try { localStorage.setItem(`pickup:${transferId}:signature`, signature || ''); } catch {}
   }, [signature, transferId]);
+
+  useEffect(() => {
+    if (!transferId) return;
+    try { localStorage.setItem(`pickup:${transferId}:droverSignature`, droverSignature || ''); } catch {}
+  }, [droverSignature, transferId]);
 
   useEffect(() => {
     if (!transferId) return;
@@ -40,7 +48,7 @@ export const usePickupVerification = (transferId?: string) => {
     try {
       const result = await VehicleTransferService.savePickupVerification(
         transferId,
-        data
+        { ...data, droverSignature }
       );
       console.log('Verificación guardada:', result);
       return true;
@@ -57,16 +65,19 @@ export const usePickupVerification = (transferId?: string) => {
     if (!transferId) return;
     try {
       localStorage.removeItem(`pickup:${transferId}:signature`);
+      localStorage.removeItem(`pickup:${transferId}:droverSignature`);
       localStorage.removeItem(`pickup:${transferId}:comments`);
     } catch {}
   };
 
   return {
     signature,
+    droverSignature,
     comments,
     isLoading,
     error,
     setSignature,
+    setDroverSignature,
     setComments,
     submitVerification,
     clearDraft,
