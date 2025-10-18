@@ -1495,25 +1495,18 @@ export class PdfService {
           const selectedFont = colIndex === 0 ? helveticaBoldFont : font;
           const xUse = colIndex === 0 ? x : x - 100;
           if (fila[0] === 'Total con I.V.A' && colIndex === 1) {
-            if (chofer?.detailRegister?.typeUser === 'Chofer') {
-              page.drawText(celda, {
-                x: xUse,
-                y,
-                size: fontSize,
-                font: selectedFont,
-                color: rgb(0, 0, 0),
-              });
-            } else {
-              page.drawText('', {
-                x: xUse,
-                y,
-                size: fontSize,
-                font: selectedFont,
-                color: rgb(0, 0, 0),
-              });
-            }
+            // Mostrar el total con IVA para cliente/admin; ocultarlo para drover
+            const isDrover = detailInfo === 'chofer';
+            const text = isDrover ? '' : String(celda);
+            page.drawText(text, {
+              x: xUse,
+              y,
+              size: fontSize,
+              font: selectedFont,
+              color: rgb(0, 0, 0),
+            });
           } else {
-            page.drawText(celda, {
+            page.drawText(String(celda), {
               x: xUse,
               y,
               size: fontSize,
