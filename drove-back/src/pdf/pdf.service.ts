@@ -4,7 +4,7 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import * as QrImage from 'qr-image';
 import fetch from 'node-fetch';
 import { PricingService } from './../rates/prices.service';
-import { CompensationService } from './../rates/compensation.service';
+import { CompensationService, parseKmFromDistance } from './../rates/compensation.service';
 import { User } from './../user/entities/user.entity';
 import { Travels } from './../travels/entities/travel.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -1407,8 +1407,11 @@ export class PdfService {
         (detailRoute && (detailRoute as any).DistanceInKM) ||
         travel?.distanceTravel ||
         '';
-      const distanceFormatted = distanceKmRaw
-        ? `${Number(distanceKmRaw).toFixed(2)} Kilómetros`
+      const distanceKmNum = typeof distanceKmRaw === 'number'
+        ? distanceKmRaw
+        : parseKmFromDistance(String(distanceKmRaw || ''));
+      const distanceFormatted = distanceKmNum > 0
+        ? `${Number(distanceKmNum).toFixed(2)} Kilómetros`
         : '—';
       const rawTotalCliente = (detailRoute as any)?.priceResult?.Total_Cliente;
       let totalWithVat =
@@ -1422,55 +1425,41 @@ export class PdfService {
             ? `${(travel.totalPrice as number).toFixed(2)} €`
             : '—';
 
-      // Regla de visualización para el PDF del drover: autónomo ve su compensación; contratado no ve total por viaje.
+      // Regla de visualización: cliente ve total con IVA; drover siempre ve beneficio SIN IVA.
       try {
         const isDroverPdf = detailInfo === 'chofer';
+        let amountLabel = 'Total con I.V.A';
         const droverEmpType =
           (chofer as any)?.employmentType ||
           (travel?.drover as any)?.employmentType;
-        // Determinar KM para freelance
-        const kmNumber = Number(
-          (distanceKmRaw as any) ||
-            parseFloat(String(travel?.distanceTravel || '0')) ||
-            0,
-        );
-        if (
-          isDroverPdf &&
-          String(droverEmpType || '').toUpperCase() === 'FREELANCE'
-        ) {
-          // Preferir compensación persistida si existe (con IVA si está disponible)
+        // Determinar KM parseado de forma robusta
+        const kmNumber = Number(distanceKmNum || 0);
+        if (isDroverPdf) {
+          amountLabel = 'Beneficio (sin IVA)';
+          const role = String(droverEmpType || '').toUpperCase();
           const storedFee = (travel as any)?.driverFee;
-          const storedMeta = (travel as any)?.driverFeeMeta || {};
-          const storedWithVat =
-            typeof storedMeta?.driverFeeWithVat === 'number'
-              ? storedMeta.driverFeeWithVat
-              : null;
-          if (typeof storedWithVat === 'number' && !isNaN(storedWithVat)) {
-            totalWithVat = `${Number(storedWithVat).toFixed(2)} € compensación IVA incl.`;
-          } else if (typeof storedFee === 'number' && !isNaN(storedFee)) {
-            const withVat = Number((Number(storedFee) * 1.21).toFixed(2));
-            totalWithVat = `${withVat.toFixed(2)} € compensación IVA incl.`;
+          if (typeof storedFee === 'number' && !isNaN(storedFee)) {
+            totalWithVat = `${Number(storedFee).toFixed(2)} €`;
+          } else if (role === 'FREELANCE') {
+            const preview = this.compensationService.calcFreelancePerTrip(kmNumber);
+            totalWithVat = `${Number(preview.driverFee).toFixed(2)} €`;
+          } else if (role === 'CONTRACTED') {
+            const preview = this.compensationService.calcContractedPerTrip(kmNumber);
+            totalWithVat = `${Number(preview.driverFee).toFixed(2)} €`;
           } else {
-            const preview =
-              this.compensationService.calcFreelancePerTrip(kmNumber);
-            const withVat =
-              typeof (preview as any)?.driverFeeWithVat === 'number'
-                ? (preview as any).driverFeeWithVat
-                : Number((preview.driverFee * 1.21).toFixed(2));
-            totalWithVat = `${withVat.toFixed(2)} € compensación IVA incl.`;
+            totalWithVat = '—';
           }
         }
-        if (
-          isDroverPdf &&
-          String(droverEmpType || '').toUpperCase() === 'CONTRACTED'
-        ) {
-          // Ocultar importe por viaje para contratados
-          totalWithVat = '—';
+        // Sobrescribir etiqueta en la tabla si es drover
+        if (isDroverPdf) {
+          // Reasignamos más abajo usando amountLabel
         }
       } catch {}
+      const isDrover = detailInfo === 'chofer';
+      const amountLabelFinal = isDrover ? 'Beneficio (sin IVA)' : 'Total con I.V.A';
       const detailTravelTabla = [
         ['Distancia', distanceFormatted],
-        ['Total con I.V.A', totalWithVat],
+        [amountLabelFinal, totalWithVat],
       ];
       detailTravelTabla.forEach((fila, filaIndex) => {
         const x = tableDetailLeft;
