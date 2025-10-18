@@ -52,7 +52,9 @@ export class CompensationService {
   calcFreelancePerTrip(km: number) {
     const rounded = Math.round(km);
     const row = FREELANCE_TABLE.find(r => rounded >= r.min && rounded <= r.max) || FREELANCE_TABLE[FREELANCE_TABLE.length - 1];
-    const driverFee = Number(row.driverFee.toFixed(2));
+    // Nueva política: a la tabla base se le suman +10€ en todos los tramos
+    const basePlusSurcharge = row.driverFee + 10;
+    const driverFee = Number(basePlusSurcharge.toFixed(2));
     const driverFeeWithVat = Number((driverFee * 1.21).toFixed(2));
     return {
       type: 'FREELANCE' as const,

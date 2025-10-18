@@ -47,10 +47,14 @@ const computeBearing = (a: LatLng, b: LatLng) => {
 };
 
 const mapOptions: google.maps.MapOptions = {
-  disableDefaultUI: true,
+  // Habilitar zoom y gestos para navegación manual
+  disableDefaultUI: false,
   zoomControl: true,
-  scrollwheel: false,
-  gestureHandling: 'cooperative',
+  streetViewControl: false,
+  mapTypeControl: false,
+  fullscreenControl: false,
+  scrollwheel: true,
+  gestureHandling: 'greedy',
   clickableIcons: false,
   styles: [{ elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
   { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
@@ -149,6 +153,7 @@ const RealTimeTripMap: React.FC<Props> = ({
   const mapRef = useRef<google.maps.Map | null>(null);
   const lastPosRef = useRef<LatLng | null>(null);
   const [heading, setHeading] = useState<number>(0);
+  const [follow, setFollow] = useState<boolean>(true);
 
   /* ────────── geolocalización continua (solo en IN_PROGRESS) ────────── */
   useEffect(() => {
@@ -190,7 +195,7 @@ const RealTimeTripMap: React.FC<Props> = ({
     if (pos) {
       setNear(haversineMeters(pos, destination) <= 100);
       try {
-        if (tripStatus.toLowerCase() === 'in_progress' && mapRef.current) {
+        if (tripStatus.toLowerCase() === 'in_progress' && mapRef.current && follow) {
           const last = lastPosRef.current;
           const derivedHeading = last ? computeBearing(last, pos) : heading;
           const targetHeading = Number.isFinite(derivedHeading) ? derivedHeading : heading;
@@ -204,7 +209,7 @@ const RealTimeTripMap: React.FC<Props> = ({
         lastPosRef.current = pos;
       } catch { }
     }
-  }, [pos, destination, tripStatus, zoom, heading]);
+  }, [pos, destination, tripStatus, zoom, heading, follow]);
 
   /* ────────── origen dinámico de la ruta ────────── */
   const dynamicOrigin: LatLng =
@@ -272,6 +277,49 @@ const RealTimeTripMap: React.FC<Props> = ({
           🚘 Estás a &lt; 100 m del destino
         </div>
       )}
+
+      {/* Controles de navegación */}
+      <div className="absolute left-3 top-3 flex flex-col gap-2 z-10">
+        <button
+          onClick={() => {
+            if (mapRef.current) {
+              const z = mapRef.current.getZoom() || 14;
+              try { mapRef.current.setZoom(Math.min(z + 1, 21)); } catch {}
+            }
+          }}
+          className="px-2 py-1 rounded bg-white/90 text-black text-sm shadow"
+        >
+          +
+        </button>
+        <button
+          onClick={() => {
+            if (mapRef.current) {
+              const z = mapRef.current.getZoom() || 14;
+              try { mapRef.current.setZoom(Math.max(z - 1, 3)); } catch {}
+            }
+          }}
+          className="px-2 py-1 rounded bg-white/90 text-black text-sm shadow"
+        >
+          −
+        </button>
+        <button
+          onClick={() => {
+            if (pos && mapRef.current) {
+              mapRef.current.panTo(pos as any);
+              try { mapRef.current.setZoom(Math.max(15, zoom)); } catch {}
+            }
+          }}
+          className="px-2 py-1 rounded bg-white/90 text-black text-xs shadow"
+        >
+          Centrar
+        </button>
+        <button
+          onClick={() => setFollow((v) => !v)}
+          className={`px-2 py-1 rounded text-xs shadow ${follow ? 'bg-emerald-500 text-white' : 'bg-white/90 text-black'}`}
+        >
+          {follow ? 'Seguir: ON' : 'Seguir: OFF'}
+        </button>
+      </div>
     </div>
   );
 };

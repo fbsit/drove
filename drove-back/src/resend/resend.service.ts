@@ -456,6 +456,23 @@ export class ResendService {
     const pickup = travel.startAddress;
     const delivery = travel.endAddress;
     const pickupVerification = travel?.pickupVerification || {};
+    // Normalizar firmas: materializar dataURL a URL pública si corresponde
+    const clientSigRaw = typeof pickupVerification?.signature === 'string' ? pickupVerification.signature : (travel?.signatureStartClient || '');
+    const droverSigRaw = typeof pickupVerification?.droverSignature === 'string' ? pickupVerification.droverSignature : '';
+    const clientSignatureUrl = clientSigRaw?.startsWith('data:')
+      ? await (async () => {
+          const mod = await import('../storage/storage.service');
+          const svc = new (mod as any).StorageService(undefined as any, undefined as any, undefined as any, undefined as any);
+          return await (svc as any).uploadBase64Image(clientSigRaw, `travel/${travel.id}/signatures`);
+        })()
+      : clientSigRaw || '';
+    const droverSignatureUrl = droverSigRaw?.startsWith('data:')
+      ? await (async () => {
+          const mod = await import('../storage/storage.service');
+          const svc = new (mod as any).StorageService(undefined as any, undefined as any, undefined as any, undefined as any);
+          return await (svc as any).uploadBase64Image(droverSigRaw, `travel/${travel.id}/signatures`);
+        })()
+      : droverSigRaw || '';
 
     const payload: Payload = {
       to: client.email,
@@ -469,15 +486,8 @@ export class ResendService {
       pickup_time: travel.travelTime,
       client_name: client.contactInfo.fullName,
       client_phone: client?.contactInfo?.phone || '',
-      holder_signature_url:
-        typeof pickupVerification?.signature === 'string'
-          ? pickupVerification.signature
-          : (travel?.signatureStartClient || ''),
-      driver_signature_url:
-        // Si la firma viene como dataURL base64, la incrustamos tal cual; si viene como URL normal de bucket, también funciona en clientes de correo
-        typeof pickupVerification?.droverSignature === 'string'
-          ? pickupVerification.droverSignature
-          : '',
+      holder_signature_url: clientSignatureUrl,
+      driver_signature_url: droverSignatureUrl,
       doc_issue_date: new Date().toLocaleDateString('es-ES'),
       request_id: travel.id,
       vehicle_type: travel.typeVehicle,
@@ -762,6 +772,22 @@ export class ResendService {
     const delivery = travel.endAddress;
     const receiver = travel.personReceive || {};
     const handover = travel?.deliveryVerification?.handoverDocuments || {};
+    const clientSigRaw = typeof handover?.client_signature === 'string' ? handover.client_signature : '';
+    const droverSigRaw = typeof handover?.drover_signature === 'string' ? handover.drover_signature : '';
+    const clientSignatureUrl = clientSigRaw?.startsWith('data:')
+      ? await (async () => {
+          const mod = await import('../storage/storage.service');
+          const svc = new (mod as any).StorageService(undefined as any, undefined as any, undefined as any, undefined as any);
+          return await (svc as any).uploadBase64Image(clientSigRaw, `travel/${travel.id}/signatures`);
+        })()
+      : clientSigRaw || '';
+    const droverSignatureUrl = droverSigRaw?.startsWith('data:')
+      ? await (async () => {
+          const mod = await import('../storage/storage.service');
+          const svc = new (mod as any).StorageService(undefined as any, undefined as any, undefined as any, undefined as any);
+          return await (svc as any).uploadBase64Image(droverSigRaw, `travel/${travel.id}/signatures`);
+        })()
+      : droverSigRaw || '';
 
     const payload: Payload = {
       to: client.email,
@@ -782,8 +808,8 @@ export class ResendService {
       client_name: client.contactInfo.fullName,
       receiver_name: receiver?.fullName || '',
       receiver_nif: receiver?.dni || '',
-      client_signature_url: typeof handover?.client_signature === 'string' ? handover.client_signature : '',
-      driver_signature_url: typeof handover?.drover_signature === 'string' ? handover.drover_signature : '',
+      client_signature_url: clientSignatureUrl,
+      driver_signature_url: droverSignatureUrl,
       doc_issue_date: new Date().toLocaleDateString('es-ES'),
       request_id: travel.id,
       vehicle_type: travel.typeVehicle,
@@ -869,6 +895,22 @@ export class ResendService {
     const delivery = travel.endAddress;
     const receiver = travel.personReceive || {};
     const handover = travel?.deliveryVerification?.handoverDocuments || {};
+    const clientSigRaw = typeof handover?.client_signature === 'string' ? handover.client_signature : '';
+    const droverSigRaw = typeof handover?.drover_signature === 'string' ? handover.drover_signature : '';
+    const clientSignatureUrl = clientSigRaw?.startsWith('data:')
+      ? await (async () => {
+          const mod = await import('../storage/storage.service');
+          const svc = new (mod as any).StorageService(undefined as any, undefined as any, undefined as any, undefined as any);
+          return await (svc as any).uploadBase64Image(clientSigRaw, `travel/${travel.id}/signatures`);
+        })()
+      : clientSigRaw || '';
+    const droverSignatureUrl = droverSigRaw?.startsWith('data:')
+      ? await (async () => {
+          const mod = await import('../storage/storage.service');
+          const svc = new (mod as any).StorageService(undefined as any, undefined as any, undefined as any, undefined as any);
+          return await (svc as any).uploadBase64Image(droverSigRaw, `travel/${travel.id}/signatures`);
+        })()
+      : droverSigRaw || '';
 
     const payload: Payload = {
       to: client.email,
@@ -889,8 +931,8 @@ export class ResendService {
       client_name: client.contactInfo.fullName,
       receiver_name: receiver?.fullName || '',
       receiver_nif: receiver?.dni || '',
-      client_signature_url: typeof handover?.client_signature === 'string' ? handover.client_signature : '',
-      driver_signature_url: typeof handover?.drover_signature === 'string' ? handover.drover_signature : '',
+      client_signature_url: clientSignatureUrl,
+      driver_signature_url: droverSignatureUrl,
       doc_issue_date: new Date().toLocaleDateString('es-ES'),
       request_id: travel.id,
       vehicle_type: travel.typeVehicle,
