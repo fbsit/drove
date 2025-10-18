@@ -69,7 +69,7 @@ const PaymentMethodStep: React.FC<PaymentMethodStepProps> = ({ form }) => {
               <AccordionItem value="price-breakdown" className="border-white/10">
                 <AccordionTrigger className="text-white hover:no-underline">
                   <div className="flex justify-between w-full pr-4">
-                    <span>Total a pagar</span>
+                    <span>Total a pagar (IVA incluido)</span>
                     <span className="text-[#6EF7FF] font-bold text-lg">
                       {form.watch("transferDetails.totalPrice")} €
                     </span>

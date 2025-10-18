@@ -195,10 +195,14 @@ export class TravelsService {
       exp: number;
     },
   ): Promise<Travels & { url?: string | null }> {
+    const clientId = (user as any)?.sub || (user as any)?.id;
     const payload = {
       ...dto,
-      clientId: user.sub,
+      clientId,
     };
+    if (!payload.clientId) {
+      throw new BadRequestException('Usuario no autenticado: clientId ausente');
+    }
     const travel = this.travelsRepo.create(this.mapRawToDto(payload));
     if (travel.paymentMethod === 'card') {
       travel.status = TransferStatus.PENDINGPAID;
