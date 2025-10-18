@@ -1414,16 +1414,24 @@ export class PdfService {
         ? `${Number(distanceKmNum).toFixed(2)} Kilómetros`
         : '—';
       const rawTotalCliente = (detailRoute as any)?.priceResult?.Total_Cliente;
-      let totalWithVat =
-        rawTotalCliente != null && rawTotalCliente !== ''
-          ? typeof rawTotalCliente === 'number'
-            ? `${rawTotalCliente} €`
-            : String(rawTotalCliente).includes('€')
-              ? String(rawTotalCliente)
-              : `${rawTotalCliente} €`
-          : typeof travel?.totalPrice === 'number'
-            ? `${(travel.totalPrice as number).toFixed(2)} €`
-            : '—';
+      let totalWithVat = '—';
+      if (rawTotalCliente != null && rawTotalCliente !== '') {
+        if (typeof rawTotalCliente === 'number') {
+          totalWithVat = `${rawTotalCliente.toFixed(2)} €`;
+        } else {
+          const s = String(rawTotalCliente);
+          totalWithVat = s.includes('€') ? s : `${s} €`;
+        }
+      } else if (typeof travel?.totalPrice === 'number' && !isNaN(travel.totalPrice)) {
+        totalWithVat = `${(travel.totalPrice as number).toFixed(2)} €`;
+      } else {
+        // Fallback: calcular total con IVA a partir de la distancia
+        try {
+          const kmForPrice = Number(distanceKmNum || 0);
+          const preview = this.priceService.getPrice(kmForPrice);
+          totalWithVat = `${Number(preview.total).toFixed(2)} €`;
+        } catch {}
+      }
 
       // Regla de visualización: cliente ve total con IVA; drover siempre ve beneficio SIN IVA.
       try {
@@ -1500,8 +1508,7 @@ export class PdfService {
           const selectedFont = colIndex === 0 ? helveticaBoldFont : font;
           const xUse = colIndex === 0 ? x : x - 100;
           if (fila[0] === 'Total con I.V.A' && colIndex === 1) {
-            // Mostrar el total con IVA para cliente/admin; ocultarlo para drover
-            const isDrover = detailInfo === 'chofer';
+            // Mostrar el total con IVA para cliente/admin; ocultarlo para drover (step-aware)
             const text = isDrover ? '' : String(celda);
             page.drawText(text, {
               x: xUse,
