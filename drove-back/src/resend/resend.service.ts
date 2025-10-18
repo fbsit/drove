@@ -698,7 +698,16 @@ export class ResendService {
         region: delivery.region,
         country: delivery.country,
       },
-      distance: Number(travel.distanceTravel), // e.g. 200
+      distance: (() => {
+        const raw = (travel as any)?.distanceTravel;
+        if (typeof raw === 'number') return raw;
+        try {
+          const s = String(raw || '').replace(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '').replace(/\s+/g, '');
+          const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+          const n = parseFloat(withDot);
+          return isNaN(n) ? 0 : n;
+        } catch { return 0; }
+      })(), // e.g. 200
       total_with_tax: `$${travel.totalPrice.toLocaleString('es-CL')}`, // e.g. '$337,47'
       issue_date: new Date().toLocaleDateString('es-ES'),
     };
@@ -797,7 +806,16 @@ export class ResendService {
         region: delivery.region,
         country: delivery.country,
       },
-      distance: Number(travel.distanceTravel), // e.g. 200
+      distance: (() => {
+        const raw = (travel as any)?.distanceTravel;
+        if (typeof raw === 'number') return raw;
+        try {
+          const s = String(raw || '').replace(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '').replace(/\s+/g, '');
+          const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+          const n = parseFloat(withDot);
+          return isNaN(n) ? 0 : n;
+        } catch { return 0; }
+      })(), // e.g. 200
       total_with_tax: `$${travel.totalPrice.toLocaleString('es-CL')}`, // e.g. '$337,47'
       issue_date: new Date().toLocaleDateString('es-ES'),
     };
@@ -816,7 +834,7 @@ export class ResendService {
         true,
         true,
         true,
-        'chofer',
+        'delivery',
         4,
       );
       if (pdfUrl) {
@@ -914,7 +932,7 @@ export class ResendService {
         true,
         true,
         true,
-        'reception',
+        'chofer',
         4,
       );
       if (pdfUrl) {
