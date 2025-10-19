@@ -271,7 +271,6 @@ const RealTimeTripMap: React.FC<Props> = ({
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={tripStatus === 'IN_PROGRESS' && pos ? (pos as any) : (originRef.current as any)}
-        zoom={zoom}
         options={mapOptions}
         onLoad={(map) => {
           mapRef.current = map;
@@ -282,6 +281,8 @@ const RealTimeTripMap: React.FC<Props> = ({
           if (tripStatus.toLowerCase() === 'in_progress' && lastPosRef.current) {
             try { map.panTo(lastPosRef.current as any); } catch {}
           }
+          // Fijar zoom inicial sin controlarlo externamente para que no se reinicie
+          try { map.setZoom(zoom); } catch {}
         }}
       >
         {/* posición actual */}
@@ -375,7 +376,7 @@ const RealTimeTripMap: React.FC<Props> = ({
           }}
           className={`px-2 py-1 rounded text-xs shadow ${follow ? 'bg-red-600 text-white' : 'bg-white/90 text-black'}`}
         >
-          {follow ? 'Salir navegación' : 'Navegación: OFF'}
+          {follow ? 'Seguimiento: ON' : 'Seguimiento: OFF'}
         </button>
       </div>
     </div>
