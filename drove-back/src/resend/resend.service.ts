@@ -288,7 +288,7 @@ export class ResendService {
       } catch { return 0; }
     })();
 
-    const payload: Payload = {
+    const payload: Payload & { driver_benefit?: string } = {
       to: client.email,
       subject: 'Traslado asignado a un Drover',
       preheader: 'Tu vehículo pronto será recogido.',
@@ -977,7 +977,28 @@ export class ResendService {
         })()
       : droverSigRaw || '';
 
-    const payload: Payload = {
+    // benefit computation (unique names to avoid redeclare)
+    const kmValueDelivery = (() => {
+      const raw = (travel as any)?.distanceTravel;
+      if (typeof raw === 'number') return raw;
+      try {
+        const s = String(raw || '').replace(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '').replace(/\s+/g, '');
+        const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+        const n = parseFloat(withDot);
+        return isNaN(n) ? 0 : n;
+      } catch { return 0; }
+    })();
+    const driverBenefitDelivery = (() => {
+      const stored = (travel as any)?.driverFee;
+      if (typeof stored === 'number' && !isNaN(stored)) return stored;
+      try {
+        const emp = String(travel?.drover?.employmentType || '').toUpperCase();
+        if (emp === 'CONTRACTED') return this.compensation.calcContractedPerTrip(kmValueDelivery).driverFee;
+        return this.compensation.calcFreelancePerTrip(kmValueDelivery).driverFee;
+      } catch { return 0; }
+    })();
+
+    const payload: Payload & { driver_benefit?: string } = {
       to: client.email,
       subject: 'Felicidades entregaste el vehículo',
       preheader: 'Tu vehículo pronto será recogido.',
@@ -1030,8 +1051,8 @@ export class ResendService {
           return isNaN(n) ? 0 : n;
         } catch { return 0; }
       })(), // e.g. 200
-      // driver benefit injected via template only for drover template
-      total_with_tax: `$${travel.totalPrice.toLocaleString('es-CL')}`, // retained but not used in drover template
+      driver_benefit: `${driverBenefitDelivery.toFixed(2)} €`,
+      total_with_tax: `$${travel.totalPrice.toLocaleString('es-CL')}`,
       issue_date: new Date().toLocaleDateString('es-ES'),
     };
 
@@ -1146,7 +1167,7 @@ export class ResendService {
     });
   }
   /**
-   * Envía el correo de activación de un nuevo “Jefe de Tráfico”.
+   * Envía el correo de activación de un nuevo "Jefe de Tráfico".
    * Usa el sistema de plantillas existente (`loadTemplate`).
    *
    * Nombre de la plantilla:  trafficManagerActivated
@@ -1223,7 +1244,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el e-mail de “Cuenta aprobada” (usuario estándar).
+   * Envía el e-mail de "Cuenta aprobada" (usuario estándar).
    *
    * Plantilla:  accountApproved
    * Variables que la plantilla recibe:
@@ -1255,7 +1276,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo de “Cuenta no aprobada”.
+   * Envía el correo de "Cuenta no aprobada".
    *
    * Plantilla:  accountRejected
    * Variables que la plantilla recibe:
@@ -1285,7 +1306,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo de “Factura disponible” tras el pago de un traslado.
+   * Envía el correo de "Factura disponible" tras el pago de un traslado.
    *
    * Plantilla:  invoiceAvailable
    * Variables que la plantilla recibe:
@@ -1324,7 +1345,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo de “Nuevo DROVER asignado”.
+   * Envía el correo de "Nuevo DROVER asignado".
    *
    * Plantilla:  driverAssigned
    * Variables que la plantilla recibe:
@@ -1372,7 +1393,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo de “Nueva reseña recibida” al DROVER.
+   * Envía el correo de "Nueva reseña recibida" al DROVER.
    *
    * Plantilla:  reviewReceived
    * Variables que la plantilla recibe:
@@ -1420,7 +1441,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo “Solicitud de traslado registrada” al cliente.
+   * Envía el correo "Solicitud de traslado registrada" al cliente.
    *
    * Plantilla:  transferRequestCreated
    * Variables que la plantilla recibe:
@@ -1494,7 +1515,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo de “Pago recibido”.
+   * Envía el correo de "Pago recibido".
    *
    * Plantilla:  paymentReceived
    * Variables que la plantilla recibe:
@@ -1536,7 +1557,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo “Solicitud de evaluación” al cliente
+   * Envía el correo "Solicitud de evaluación" al cliente
    * después de que su traslado fue completado.
    *
    * Plantilla:  reviewRequest
@@ -1588,7 +1609,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo “Recordatorio de traslado” al drover.
+   * Envía el correo "Recordatorio de traslado" al drover.
    *
    * Plantilla:  transferReminder
    * Variables que la plantilla recibe:
@@ -1630,7 +1651,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo de “Restablecer contraseña”.
+   * Envía el correo de "Restablecer contraseña".
    *
    * Plantilla:  passwordReset
    * Variables que la plantilla recibe:
@@ -1661,7 +1682,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo “Traslado reprogramado”.
+   * Envía el correo "Traslado reprogramado".
    *
    * Plantilla:  transferRescheduled
    * Variables que la plantilla recibe:
@@ -1706,7 +1727,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo “Pago recibido – Pendiente de facturación” al equipo admin.
+   * Envía el correo "Pago recibido – Pendiente de facturación" al equipo admin.
    *
    * Plantilla:  transferPendingInvoice
    * Variables que la plantilla recibe:
@@ -1751,7 +1772,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo “Traslado listo para ser asignado” al equipo de operaciones.
+   * Envía el correo "Traslado listo para ser asignado" al equipo de operaciones.
    *
    * Plantilla:  transferReadyToAssign
    * Variables que la plantilla recibe:
@@ -1796,7 +1817,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo “Traslado cancelado”.
+   * Envía el correo "Traslado cancelado".
    *
    * Plantilla:  transferCancelled
    * Variables que la plantilla recibe:
@@ -1835,7 +1856,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo “Traslado pendiente de facturación”.
+   * Envía el correo "Traslado pendiente de facturación".
    * Se usa cuando el pago por transferencia fue confirmado,
    * pero aún falta registrar la factura.
    *
@@ -1882,7 +1903,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo “Verifica tu correo electrónico”.
+   * Envía el correo "Verifica tu correo electrónico".
    *
    * Plantilla:  emailVerification
    * Variables que la plantilla recibe:

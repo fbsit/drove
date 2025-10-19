@@ -1439,7 +1439,15 @@ export class PdfService {
         // detailInfo='chofer' al cliente y 'reception' al drover.
         // Ajustamos la determinación del rol a esa convención.
         const isPickupStep = step === 2;
-        const isDroverPdf = isPickupStep ? (detailInfo === 'reception') : (detailInfo === 'chofer');
+
+        const isArrivalStep = step === 3;
+        const isDeliveryStep = step === 4;
+        // Regla final: step 3 es vista cliente (Total con IVA) sin importar detailInfo
+        const isDroverPdf = isArrivalStep
+          ? false
+          : (isPickupStep || isDeliveryStep)
+            ? (detailInfo === 'reception')
+            : (detailInfo === 'chofer');
         let amountLabel = 'Total con I.V.A';
         const droverEmpType =
           (chofer as any)?.employmentType ||
@@ -1468,7 +1476,13 @@ export class PdfService {
         }
       } catch {}
       const isPickupStep = step === 2;
-      const isDrover = isPickupStep ? (detailInfo === 'reception') : (detailInfo === 'chofer');
+      const isArrivalStep = step === 3;
+      const isDeliveryStep = step === 4;
+      const isDrover = isArrivalStep
+        ? false
+        : (isPickupStep || isDeliveryStep)
+          ? (detailInfo === 'reception')
+          : (detailInfo === 'chofer');
       const amountLabelFinal = isDrover ? 'Beneficio' : 'Total con I.V.A';
       const detailTravelTabla = [
         ['Distancia', distanceFormatted],

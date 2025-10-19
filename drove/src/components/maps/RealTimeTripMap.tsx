@@ -156,6 +156,8 @@ const RealTimeTripMap: React.FC<Props> = ({
   const [follow, setFollow] = useState<boolean>(true);
   const originRef = useRef<LatLng>(origin); // centro inicial estable para evitar recargas
   const lastPanAtRef = useRef<number>(0);
+  const [routeOrigin, setRouteOrigin] = useState<LatLng>(origin);
+  const lastRouteUpdateRef = useRef<number>(0);
 
   /* ────────── geolocalización continua (solo en IN_PROGRESS) ────────── */
   useEffect(() => {
@@ -204,7 +206,7 @@ const RealTimeTripMap: React.FC<Props> = ({
           setHeading(targetHeading);
           // Throttle paneos para evitar loops/recalculos visuales
           const now = Date.now();
-          if (now - (lastPanAtRef.current || 0) > 500) {
+          if (now - (lastPanAtRef.current || 0) > 2000) {
             mapRef.current.panTo(pos as any);
             lastPanAtRef.current = now;
           }
@@ -223,6 +225,18 @@ const RealTimeTripMap: React.FC<Props> = ({
     () => ({ width: '100%', height }),
     [height],
   );
+
+  /* ────────── actualizar origen de la ruta desde posición del drover ────────── */
+  useEffect(() => {
+    if (tripStatus.toLowerCase() !== 'in_progress' || !pos) return;
+    const now = Date.now();
+    const moved = routeOrigin ? haversineMeters(routeOrigin, pos) : Infinity;
+    const longEnough = now - (lastRouteUpdateRef.current || 0) > 10000; // 10s
+    if (moved > 25 && longEnough) { // actualizar si movió >25m y pasó el tiempo
+      setRouteOrigin(pos);
+      lastRouteUpdateRef.current = now;
+    }
+  }, [pos, tripStatus, routeOrigin]);
 
   if (!isReady) {
     return (
@@ -270,7 +284,7 @@ const RealTimeTripMap: React.FC<Props> = ({
 
         {/* ruta (estable para evitar recomputar en cada tick de GPS) */}
         <MapDirections
-          origin={origin}
+          origin={routeOrigin}
           destination={destination}
           travelMode="DRIVING"
         />
@@ -318,28 +332,19 @@ const RealTimeTripMap: React.FC<Props> = ({
           Centrar
         </button>
         <button
-          onClick={() => setFollow((v) => !v)}
-          className={`px-2 py-1 rounded text-xs shadow ${follow ? 'bg-emerald-500 text-white' : 'bg-white/90 text-black'}`}
-        >
-          {follow ? 'Seguir: ON' : 'Seguir: OFF'}
-        </button>
-      </div>
-
-      {/* Botón para salir del modo navegación (siempre visible por encima del mapa) */}
-      <div className="absolute right-3 bottom-3 z-50 pointer-events-auto">
-        <button
           onClick={() => {
-            setFollow(false);
-            try {
-              if (mapRef.current) {
-                (mapRef.current as any).setTilt?.(0);
-                (mapRef.current as any).setHeading?.(0);
+            setFollow((v) => {
+              const next = !v;
+              if (!next && mapRef.current) {
+                try { (mapRef.current as any).setTilt?.(0); } catch {}
+                try { (mapRef.current as any).setHeading?.(0); } catch {}
               }
-            } catch {}
+              return next;
+            });
           }}
-          className={`px-3 py-2 rounded-md text-sm font-medium shadow-lg ${follow ? 'bg-red-600 text-white' : 'bg-white/90 text-black'}`}
+          className={`px-2 py-1 rounded text-xs shadow ${follow ? 'bg-red-600 text-white' : 'bg-white/90 text-black'}`}
         >
-          {follow ? 'Salir de navegación' : 'Navegación: OFF'}
+          {follow ? 'Salir navegación' : 'Navegación: OFF'}
         </button>
       </div>
     </div>
