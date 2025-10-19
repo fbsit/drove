@@ -52,8 +52,8 @@ const GoogleMapComponent = ({
 }: MapProps) => {
   const { isReady, error, isApiBlocked } = useGoogleMapsInit();
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [userZoom, setUserZoom] = useState<number | null>(null);
-  const [userCenter, setUserCenter] = useState<google.maps.LatLngLiteral | null>(null);
+  const userZoomRef = useRef<number | null>(null);
+  const userCenterRef = useRef<google.maps.LatLngLiteral | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const isMapInitialized = useRef(false);
@@ -106,11 +106,11 @@ const GoogleMapComponent = ({
     // Suscribirse a eventos de interacción del usuario para recordar zoom/centro
     map.addListener('zoom_changed', () => {
       const z = map.getZoom();
-      if (typeof z === 'number') setUserZoom(z);
+      if (typeof z === 'number') userZoomRef.current = z;
     });
     map.addListener('center_changed', () => {
       const c = map.getCenter?.();
-      if (c) setUserCenter({ lat: c.lat(), lng: c.lng() });
+      if (c) userCenterRef.current = { lat: c.lat(), lng: c.lng() };
     });
   }, []);
 
@@ -148,10 +148,10 @@ const GoogleMapComponent = ({
     bounds.extend(new google.maps.LatLng(markers.origin.lat, markers.origin.lng));
     bounds.extend(new google.maps.LatLng(markers.destination.lat, markers.destination.lng));
     // Si el usuario ya ajustó zoom/centro, preservarlos
-    if (userCenter) m.setCenter(userCenter);
-    if (typeof userZoom === 'number') m.setZoom(userZoom);
+    if (userCenterRef.current) m.setCenter(userCenterRef.current);
+    if (typeof userZoomRef.current === 'number') m.setZoom(userZoomRef.current as number);
     else m.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
-  }, [markers, userCenter, userZoom]);
+  }, [markers]);
 
   // Usar useEffect para sincronizar datos con el mapa en lugar de recrear componentes
   useEffect(() => {
@@ -215,8 +215,8 @@ const GoogleMapComponent = ({
       <div className="w-full h-[300px] rounded-lg overflow-hidden relative" ref={mapContainerRef}>
         <ReactGoogleMap
           mapContainerStyle={{ width: '100%', height: '100%' }}
-          center={userCenter || defaultCenter}
-          zoom={typeof userZoom === 'number' ? userZoom : 13}
+          center={defaultCenter}
+          zoom={13}
           onLoad={onLoad}
           onUnmount={onUnmount}
           options={mapOptions}
