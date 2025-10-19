@@ -18,16 +18,25 @@ const DeliverySummaryStep: React.FC<DeliverySummaryStepProps> = ({ transfer }) =
   const vehicleDetails = transfer.vehicleDetails;
   const pickupDetails = transfer.pickupDetails;
   const transferDetails = transfer.transferDetails;
-  const senderDetails = transfer.senderDetails;
-  const receiverDetails = transfer.receiverDetails;
+  // Preferir datos del viaje cuando vengan en el objeto
+  const startAddress: any = (transfer as any)?.startAddress || null;
+  const endAddress: any = (transfer as any)?.endAddress || null;
+  const senderDetails = (transfer as any)?.client?.contactInfo?.fullName ? {
+    fullName: (transfer as any)?.client?.contactInfo?.fullName,
+    email: (transfer as any)?.client?.email,
+  } : transfer.senderDetails;
+  const receiverDetails = (transfer as any)?.personReceive?.fullName ? {
+    fullName: (transfer as any)?.personReceive?.fullName,
+    email: (transfer as any)?.personReceive?.email,
+  } : transfer.receiverDetails;
 
   // GoogleMap espera objetos { address: string, city: string, lat: number | null, lng: number | null }
-  const originCityStr = pickupDetails.originAddress || (
+  const originCityStr = (startAddress?.address || startAddress?.city) || pickupDetails.originAddress || (
     typeof pickupDetails.originLat === 'number' && typeof pickupDetails.originLng === 'number'
       ? `${pickupDetails.originLat}, ${pickupDetails.originLng}`
       : 'Origen'
   );
-  const destCityStr = pickupDetails.destinationAddress || (
+  const destCityStr = (endAddress?.address || endAddress?.city) || pickupDetails.destinationAddress || (
     typeof pickupDetails.destinationLat === 'number' && typeof pickupDetails.destinationLng === 'number'
       ? `${pickupDetails.destinationLat}, ${pickupDetails.destinationLng}`
       : 'Destino'
@@ -37,17 +46,17 @@ const DeliverySummaryStep: React.FC<DeliverySummaryStepProps> = ({ transfer }) =
     city: originCityStr,
     // Pasar null si no hay coordenadas para evitar (0,0)
     // @ts-ignore
-    lat: typeof pickupDetails.originLat === 'number' ? pickupDetails.originLat : null,
+    lat: typeof startAddress?.lat === 'number' ? startAddress.lat : (typeof pickupDetails.originLat === 'number' ? pickupDetails.originLat : null),
     // @ts-ignore
-    lng: typeof pickupDetails.originLng === 'number' ? pickupDetails.originLng : null,
+    lng: typeof startAddress?.lng === 'number' ? startAddress.lng : (typeof pickupDetails.originLng === 'number' ? pickupDetails.originLng : null),
   };
   const destAddr: LatLngCity = {
-    address: pickupDetails.destinationAddress || destCityStr,
+    address: destCityStr,
     city: destCityStr,
     // @ts-ignore
-    lat: typeof pickupDetails.destinationLat === 'number' ? pickupDetails.destinationLat : null,
+    lat: typeof endAddress?.lat === 'number' ? endAddress.lat : (typeof pickupDetails.destinationLat === 'number' ? pickupDetails.destinationLat : null),
     // @ts-ignore
-    lng: typeof pickupDetails.destinationLng === 'number' ? pickupDetails.destinationLng : null,
+    lng: typeof endAddress?.lng === 'number' ? endAddress.lng : (typeof pickupDetails.destinationLng === 'number' ? pickupDetails.destinationLng : null),
   };
 
   const capturedPolyline: string = String((transfer as any)?.routePolyline || '').trim();

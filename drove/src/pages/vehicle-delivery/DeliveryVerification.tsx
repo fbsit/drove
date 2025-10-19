@@ -64,6 +64,15 @@ const adaptTransferForDisplay = (raw: any): VehicleTransferDB => ({
   timeTravel: (raw as any)?.timeTravel || '',
   // @ts-ignore
   routePolyline: (raw as any)?.routePolyline || '',
+  // Passthrough de datos reales del viaje para el resumen
+  // @ts-ignore
+  startAddress: (raw as any)?.startAddress || null,
+  // @ts-ignore
+  endAddress: (raw as any)?.endAddress || null,
+  // @ts-ignore
+  client: (raw as any)?.client || null,
+  // @ts-ignore
+  personReceive: (raw as any)?.personReceive || null,
   paymentMethod: 'card',
 });
 
