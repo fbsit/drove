@@ -46,6 +46,8 @@ export class AuthService {
       try {
         localStorage.setItem('last_login_at', new Date().toISOString());
       } catch {}
+      // Programar refresh proactivo del token
+      try { (ApiService as any).scheduleProactiveRefresh?.(); } catch {}
     }
 
     return response;

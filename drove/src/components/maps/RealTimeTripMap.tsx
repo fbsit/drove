@@ -154,6 +154,8 @@ const RealTimeTripMap: React.FC<Props> = ({
   const lastPosRef = useRef<LatLng | null>(null);
   const [heading, setHeading] = useState<number>(0);
   const [follow, setFollow] = useState<boolean>(true);
+  const originRef = useRef<LatLng>(origin); // centro inicial estable para evitar recargas
+  const lastPanAtRef = useRef<number>(0);
 
   /* ────────── geolocalización continua (solo en IN_PROGRESS) ────────── */
   useEffect(() => {
@@ -200,8 +202,12 @@ const RealTimeTripMap: React.FC<Props> = ({
           const derivedHeading = last ? computeBearing(last, pos) : heading;
           const targetHeading = Number.isFinite(derivedHeading) ? derivedHeading : heading;
           setHeading(targetHeading);
-          // Follow-like camera: center, keep close zoom, tilt and orient by heading
-          mapRef.current.panTo(pos as any);
+          // Throttle paneos para evitar loops/recalculos visuales
+          const now = Date.now();
+          if (now - (lastPanAtRef.current || 0) > 500) {
+            mapRef.current.panTo(pos as any);
+            lastPanAtRef.current = now;
+          }
           try { mapRef.current.setZoom(Math.max(15, zoom)); } catch { }
           try { (mapRef.current as any).setTilt?.(60); } catch { }
           try { (mapRef.current as any).setHeading?.(targetHeading); } catch { }
@@ -211,10 +217,8 @@ const RealTimeTripMap: React.FC<Props> = ({
     }
   }, [pos, destination, tripStatus, zoom, heading, follow]);
 
-  /* ────────── origen dinámico de la ruta ────────── */
-  const dynamicOrigin: LatLng =
-    tripStatus.toLowerCase() === 'in_progress' && pos ? pos : origin;
-  console.log("destination", destination)
+  // Mantener el centro del mapa estable para evitar re-montajes del mapa/direcciones
+  // El seguimiento se hace con panTo dentro del efecto, no con center prop dinámico
   const containerStyle = useMemo(
     () => ({ width: '100%', height }),
     [height],
@@ -232,7 +236,7 @@ const RealTimeTripMap: React.FC<Props> = ({
     <div className="relative h-fit w-full">
       <GoogleMap
         mapContainerStyle={containerStyle}
-        center={dynamicOrigin}
+        center={originRef.current}
         zoom={zoom}
         options={mapOptions}
         onLoad={(map) => { mapRef.current = map; }}
@@ -279,7 +283,7 @@ const RealTimeTripMap: React.FC<Props> = ({
       )}
 
       {/* Controles de navegación */}
-      <div className="absolute left-3 top-3 flex flex-col gap-2 z-10">
+      <div className="absolute left-3 top-3 flex flex-col gap-2 z-50 pointer-events-auto">
         <button
           onClick={() => {
             if (mapRef.current) {
@@ -318,6 +322,24 @@ const RealTimeTripMap: React.FC<Props> = ({
           className={`px-2 py-1 rounded text-xs shadow ${follow ? 'bg-emerald-500 text-white' : 'bg-white/90 text-black'}`}
         >
           {follow ? 'Seguir: ON' : 'Seguir: OFF'}
+        </button>
+      </div>
+
+      {/* Botón para salir del modo navegación (siempre visible por encima del mapa) */}
+      <div className="absolute right-3 bottom-3 z-50 pointer-events-auto">
+        <button
+          onClick={() => {
+            setFollow(false);
+            try {
+              if (mapRef.current) {
+                (mapRef.current as any).setTilt?.(0);
+                (mapRef.current as any).setHeading?.(0);
+              }
+            } catch {}
+          }}
+          className={`px-3 py-2 rounded-md text-sm font-medium shadow-lg ${follow ? 'bg-red-600 text-white' : 'bg-white/90 text-black'}`}
+        >
+          {follow ? 'Salir de navegación' : 'Navegación: OFF'}
         </button>
       </div>
     </div>
