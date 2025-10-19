@@ -288,26 +288,12 @@ const DashboardDroverPanel: React.FC = () => {
                   {(() => {
                     const empType = String(user?.employmentType || '').toUpperCase();
                     const km = (() => { const n = parseFloat(String(t.distanceTravel || '').replace(/[^0-9,.-]/g, '').replace(',', '.')); return isNaN(n) ? 0 : Math.round(n); })();
-                    const freelanceTable: Array<{ min: number; max: number; driverFee: number }> = [
-                      { min: 0, max: 99, driverFee: 50 }, { min: 100, max: 199, driverFee: 70 },
-                      { min: 200, max: 299, driverFee: 95 }, { min: 300, max: 399, driverFee: 110 },
-                      { min: 400, max: 499, driverFee: 119 }, { min: 500, max: 599, driverFee: 127 },
-                      { min: 600, max: 699, driverFee: 145 }, { min: 700, max: 799, driverFee: 160 },
-                      { min: 800, max: 899, driverFee: 175 }, { min: 900, max: 999, driverFee: 195 },
-                      { min: 1000, max: 1099, driverFee: 210 }, { min: 1100, max: 1199, driverFee: 230 },
-                      { min: 1200, max: 1299, driverFee: 236 }, { min: 1300, max: 1399, driverFee: 245 },
-                      { min: 1400, max: 1499, driverFee: 270 }, { min: 1500, max: 1599, driverFee: 280 },
-                      { min: 1600, max: 1699, driverFee: 290 }, { min: 1700, max: 1799, driverFee: 300 },
-                      { min: 1800, max: 1899, driverFee: 310 }, { min: 1900, max: 1999, driverFee: 320 },
-                    ];
+                    // El backend ahora persiste driverFee y driverFeeMeta con la tabla actualizada (+10€)
+                    // Por lo tanto, priorizamos esos valores; si no existen, dejamos 0 en lugar de recalcular con una tabla obsoleta
                     const meta: any = t.driverFeeMeta;
                     const withVat = typeof meta?.driverFeeWithVat === 'number' ? meta.driverFeeWithVat : null;
                     const fee = Number(t.driverFee || 0);
-                    const baseDisplay = fee > 0
-                      ? fee
-                      : (empType === 'FREELANCE' && km > 0
-                        ? (freelanceTable.find(r => km >= r.min && km <= r.max) || freelanceTable[freelanceTable.length - 1]).driverFee
-                        : 0);
+                    const baseDisplay = fee > 0 ? fee : 0;
                     const displayWithVat = typeof withVat === 'number' ? Number(withVat) : Number((baseDisplay * 1.21).toFixed(2));
 
                     if (empType === 'CONTRACTED') {

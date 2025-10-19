@@ -466,11 +466,11 @@ const ActiveTrip: React.FC = () => {
                   <div className="text-3xl font-bold text-green-300">€{(() => {
                     const meta: any = (trip as any)?.driverFeeMeta;
                     const withVat = typeof meta?.driverFeeWithVat === 'number' ? meta.driverFeeWithVat : null;
+                    const base = Number(trip?.driverFee || 0);
                     if (typeof withVat === 'number') return Number(withVat).toFixed(2);
-                    const base = Number((trip?.driverFee ?? freelanceFee ?? 0));
                     return Number((isNaN(base) ? 0 : base * 1.21)).toFixed(2);
                   })()}</div>
-                  <div className="text-white/60 text-sm mt-2">Compensación estimada IVA incl.</div>
+                  <div className="text-white/60 text-sm mt-2">Compensación estimada (IVA incl.).</div>
                 </>
               ) : (
                 <>
