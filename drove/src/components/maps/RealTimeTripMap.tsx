@@ -154,7 +154,7 @@ const RealTimeTripMap: React.FC<Props> = ({
   const lastPosRef = useRef<LatLng | null>(null);
   const [heading, setHeading] = useState<number>(0);
   const [follow, setFollow] = useState<boolean>(true);
-  const originRef = useRef<LatLng>(origin); // centro inicial estable para vista inicial
+  const originRef = useRef<LatLng>(origin); // centro inicial solo para vista pre-inicio
   const lastPanAtRef = useRef<number>(0);
   const userInteractingAtRef = useRef<number>(0);
   const [routeOrigin, setRouteOrigin] = useState<LatLng>(origin);
@@ -183,7 +183,13 @@ const RealTimeTripMap: React.FC<Props> = ({
     );
 
     watchId.current = navigator.geolocation.watchPosition(
-      ({ coords }) => setPos({ lat: coords.latitude, lng: coords.longitude }),
+      ({ coords }) => {
+        const next = { lat: coords.latitude, lng: coords.longitude };
+        // Filtro de movimiento mínimo: ignorar cambios < 5 m
+        const last = lastPosRef.current;
+        if (last && haversineMeters(last, next) < 5) return;
+        setPos(next);
+      },
       () => { },
       { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 },
     );
@@ -205,11 +211,16 @@ const RealTimeTripMap: React.FC<Props> = ({
         if (tripStatus.toLowerCase() === 'in_progress' && mapRef.current && follow && !interactedRecently) {
           const last = lastPosRef.current;
           const derivedHeading = last ? computeBearing(last, pos) : heading;
-          const targetHeading = Number.isFinite(derivedHeading) ? derivedHeading : heading;
+          const targetHeadingRaw = Number.isFinite(derivedHeading) ? derivedHeading : heading;
+          // Interpolar heading: 80% del anterior + 20% del nuevo
+          const targetHeading = 0.8 * heading + 0.2 * targetHeadingRaw;
           setHeading(targetHeading);
-          // Throttle paneos para evitar loops/recalculos visuales
+          // Throttle paneos + solo si estamos lejos del centro (>100m) para evitar loop visual
           const now = Date.now();
-          if (now - (lastPanAtRef.current || 0) > 2000) {
+          const center = mapRef.current.getCenter?.();
+          const centerLatLng: LatLng | null = center ? { lat: center.lat(), lng: center.lng() } : null;
+          const farFromCenter = centerLatLng ? (haversineMeters(centerLatLng, pos) > 100) : true;
+          if (farFromCenter && now - (lastPanAtRef.current || 0) > 2000) {
             mapRef.current.panTo(pos as any);
             lastPanAtRef.current = now;
           }
@@ -235,6 +246,12 @@ const RealTimeTripMap: React.FC<Props> = ({
     const now = Date.now();
     const moved = haversineMeters(routeOrigin, pos);
     const longEnough = now - (lastRouteUpdateRef.current || 0) > 30000; // 30s
+    // Inicialmente, fijar la ruta al drover inmediatamente
+    if (!routeOrigin || (routeOrigin.lat === origin.lat && routeOrigin.lng === origin.lng)) {
+      setRouteOrigin(pos);
+      lastRouteUpdateRef.current = now;
+      return;
+    }
     if (moved > 150 && longEnough) {
       setRouteOrigin(pos);
       lastRouteUpdateRef.current = now;
@@ -253,7 +270,7 @@ const RealTimeTripMap: React.FC<Props> = ({
     <div className="relative h-fit w-full">
       <GoogleMap
         mapContainerStyle={containerStyle}
-        center={originRef.current}
+        center={tripStatus === 'IN_PROGRESS' && pos ? (pos as any) : (originRef.current as any)}
         zoom={zoom}
         options={mapOptions}
         onLoad={(map) => {
@@ -261,6 +278,10 @@ const RealTimeTripMap: React.FC<Props> = ({
           // Detectar interacción manual para pausar el auto-follow un par de segundos
           map.addListener('dragstart', () => { userInteractingAtRef.current = Date.now(); });
           map.addListener('zoom_changed', () => { userInteractingAtRef.current = Date.now(); });
+          // Si ya estamos en IN_PROGRESS y tenemos posición, centrar en el drover una sola vez
+          if (tripStatus.toLowerCase() === 'in_progress' && lastPosRef.current) {
+            try { map.panTo(lastPosRef.current as any); } catch {}
+          }
         }}
       >
         {/* posición actual */}
