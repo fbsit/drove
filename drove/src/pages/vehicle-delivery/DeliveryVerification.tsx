@@ -28,14 +28,14 @@ const adaptTransferForDisplay = (raw: any): VehicleTransferDB => ({
     vin: raw.vehicleDetails?.vin || raw.vin || '',
   },
   pickupDetails: {
-    originAddress: raw.startAddress?.address || raw.startAddress?.city || raw.originAddress || '',
-    destinationAddress: raw.endAddress?.address || raw.endAddress?.city || raw.destinationAddress || '',
-    originLat: raw.startAddress?.lat || 0,
-    originLng: raw.startAddress?.lng || 0,
-    destinationLat: raw.endAddress?.lat || 0,
-    destinationLng: raw.endAddress?.lng || 0,
-    pickupDate: raw.travelDate || raw.pickupDate || '',
-    pickupTime: raw.travelTime || raw.pickupTime || '',
+    originAddress: raw.pickupDetails?.originAddress || raw.startAddress?.address || raw.startAddress?.city || '',
+    destinationAddress: raw.pickupDetails?.destinationAddress || raw.endAddress?.address || raw.endAddress?.city || '',
+    originLat: (raw.startAddress?.lat ?? raw.pickupDetails?.originLat ?? 0),
+    originLng: (raw.startAddress?.lng ?? raw.pickupDetails?.originLng ?? 0),
+    destinationLat: (raw.endAddress?.lat ?? raw.pickupDetails?.destinationLat ?? 0),
+    destinationLng: (raw.endAddress?.lng ?? raw.pickupDetails?.destinationLng ?? 0),
+    pickupDate: raw.travelDate || raw.pickupDetails?.pickupDate || '',
+    pickupTime: raw.travelTime || raw.pickupDetails?.pickupTime || '',
   },
   senderDetails: {
     name: raw.personDelivery?.fullName || raw.senderDetails?.fullName || raw.senderName || '',
@@ -53,8 +53,8 @@ const adaptTransferForDisplay = (raw: any): VehicleTransferDB => ({
   },
   transferDetails: {
     totalPrice: Number(raw.transferDetails?.totalPrice || raw.price || 0),
-    distance: Number((raw as any)?.distanceTravel ? String((raw as any).distanceTravel).replace(/[^0-9.,-]/g, '').replace(',', '.') : (raw.transferDetails?.distance || raw.distance || 0)),
-    duration: Number((raw as any)?.timeTravel ? String((raw as any).timeTravel).replace(/[^0-9.,-]/g, '').replace(',', '.') : (raw.transferDetails?.duration || raw.duration || 0)),
+    distance: Number(((raw as any)?.distanceTravel ?? raw.transferDetails?.distance ?? raw.distance ?? '0').toString().replace(/[^0-9.,-]/g, '').replace(',', '.')),
+    duration: Number(((raw as any)?.timeTravel ?? raw.transferDetails?.duration ?? raw.duration ?? '0').toString().replace(/[^0-9.,-]/g, '').replace(',', '.')),
     signature: raw.transferDetails?.signature || '',
   },
   // Campos adicionales usados en el resumen
@@ -105,6 +105,21 @@ const DeliveryVerification = () => {
   } = useDeliveryVerification(transferId!);
 
   const transfer = rawTransfer ? adaptTransferForDisplay(rawTransfer) : undefined;
+
+  // Debug: log datos crudos y mapeados para diagnosticar por qué no aparecen en UI
+  React.useEffect(() => {
+    try {
+      console.log('[DELIVERY] rawTransfer', rawTransfer);
+      console.log('[DELIVERY] mapped transfer', transfer);
+      if (transfer) {
+        console.log('[DELIVERY] startAddress', (transfer as any)?.startAddress);
+        console.log('[DELIVERY] endAddress', (transfer as any)?.endAddress);
+        console.log('[DELIVERY] distanceTravel/timeTravel', (transfer as any)?.distanceTravel, (transfer as any)?.timeTravel);
+        console.log('[DELIVERY] routePolyline length', String((transfer as any)?.routePolyline || '').length);
+        console.log('[DELIVERY] client/personReceive', (transfer as any)?.client, (transfer as any)?.personReceive);
+      }
+    } catch {}
+  }, [rawTransfer, transfer]);
 
   if (isLoading) {
     return (

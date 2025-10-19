@@ -79,15 +79,35 @@ const DeliverySummaryStep: React.FC<DeliverySummaryStepProps> = ({ transfer }) =
     return coordinates;
   };
 
+  const isValidCoord = (v: any) => typeof v === 'number' && isFinite(v) && v !== 0;
+  const parseNumber = (v: any): number | null => {
+    if (typeof v === 'number' && isFinite(v)) return v;
+    const s = String(v ?? '').trim();
+    if (!s) return null;
+    const norm = s.replace(/[^0-9.,-]/g, '').replace(',', '.');
+    const n = parseFloat(norm);
+    return isFinite(n) ? n : null;
+  };
+
   // Preferir distancia/tiempo reales del drover si existen; fallback a transferDetails
   const distanceDisplay = (() => {
-    const d = (transfer as any)?.distanceTravel || transferDetails.distance;
-    return d ? String(d) : '—';
+    const fromTop = parseNumber((transfer as any)?.distanceTravel);
+    const d = (fromTop != null && fromTop > 0) ? fromTop : parseNumber(transferDetails.distance);
+    return d != null && isFinite(d) && d > 0 ? String(d) : '—';
   })();
   const durationDisplay = (() => {
-    const t = (transfer as any)?.timeTravel || transferDetails.duration;
-    return t ? String(t) : '—';
+    const fromTop = parseNumber((transfer as any)?.timeTravel);
+    const t = (fromTop != null && fromTop > 0) ? fromTop : parseNumber(transferDetails.duration);
+    return t != null && isFinite(t) && t > 0 ? String(t) : '—';
   })();
+
+  try {
+    console.log('[DELIVERY_SUMMARY] start/end', startAddress, endAddress);
+    console.log('[DELIVERY_SUMMARY] origin/dest city', originCityStr, destCityStr);
+    console.log('[DELIVERY_SUMMARY] distance/time', distanceDisplay, durationDisplay);
+    console.log('[DELIVERY_SUMMARY] polyline len', capturedPolyline.length);
+    console.log('[DELIVERY_SUMMARY] sender/receiver', senderDetails, receiverDetails);
+  } catch {}
 
   return (
     <div className="space-y-6">
@@ -170,7 +190,7 @@ const DeliverySummaryStep: React.FC<DeliverySummaryStepProps> = ({ transfer }) =
         {hasCapturedRoute ? (
           <MapBase
             mapContainerStyle={{ width: '100%', height: '200px' }}
-            center={{ lat: (originAddr.lat ?? 0), lng: (originAddr.lng ?? 0) }}
+            center={{ lat: isValidCoord(originAddr.lat) ? (originAddr.lat as number) : 40.4168, lng: isValidCoord(originAddr.lng) ? (originAddr.lng as number) : -3.7038 }}
             zoom={8}
             options={{ disableDefaultUI: true }}
             onLoad={(m) => {
