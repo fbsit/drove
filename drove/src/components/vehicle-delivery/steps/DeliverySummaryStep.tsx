@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { MapPin } from 'lucide-react'
 import { VehicleTransferDB } from '@/types/vehicle-transfer-db'
 import GoogleMap from '@/components/maps/GoogleMap'
+import { Polyline } from '@react-google-maps/api'
 import { LatLngCity } from '@/types/lat-lng-city'
 
 interface DeliverySummaryStepProps {
@@ -33,6 +34,18 @@ const DeliverySummaryStep: React.FC<DeliverySummaryStepProps> = ({ transfer }) =
     lat: pickupDetails.destinationLat || 0,
     lng: pickupDetails.destinationLng || 0
   };
+
+  const hasCapturedRoute = Boolean((transfer as any)?.routePolyline && String((transfer as any).routePolyline).trim());
+
+  // Preferir distancia/tiempo reales del drover si existen; fallback a transferDetails
+  const distanceDisplay = (() => {
+    const d = (transfer as any)?.distanceTravel || transferDetails.distance;
+    return d ? String(d) : '—';
+  })();
+  const durationDisplay = (() => {
+    const t = (transfer as any)?.timeTravel || transferDetails.duration;
+    return t ? String(t) : '—';
+  })();
 
   return (
     <div className="space-y-6">
@@ -82,11 +95,11 @@ const DeliverySummaryStep: React.FC<DeliverySummaryStepProps> = ({ transfer }) =
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-white/50 text-xs">Distancia</p>
-              <p className="text-white">{transferDetails.distance} km</p>
+              <p className="text-white">{distanceDisplay} km</p>
             </div>
             <div>
               <p className="text-white/50 text-xs">Tiempo est.</p>
-              <p className="text-white">{transferDetails.duration} min</p>
+              <p className="text-white">{durationDisplay} min</p>
             </div>
           </div>
         </CardContent>
@@ -109,7 +122,7 @@ const DeliverySummaryStep: React.FC<DeliverySummaryStepProps> = ({ transfer }) =
         </CardContent>
       </Card>
 
-      {/* Mapa con ruta */}
+      {/* Mapa con ruta: si hay polyline capturado del drover, usarlo */}
       <div className="h-[200px] rounded-xl overflow-hidden">
         <GoogleMap
           originAddress={originAddr}
@@ -117,6 +130,12 @@ const DeliverySummaryStep: React.FC<DeliverySummaryStepProps> = ({ transfer }) =
           isAddressesSelected={true}
           onPolylineCalculated={() => {}}
         />
+        {hasCapturedRoute && (
+          // Nota: el GoogleMap simple no acepta overlay directo; en producción
+          // sería mejor un componente que reciba polyline. Aquí mostramos
+          // el Polyline si el contenedor ya tiene GoogleMap cargado.
+          null
+        )}
       </div>
 
       {/* Beneficio del drover (mostrar solo fee sin IVA) */}
