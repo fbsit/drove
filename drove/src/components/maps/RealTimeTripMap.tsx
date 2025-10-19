@@ -158,6 +158,7 @@ const RealTimeTripMap: React.FC<Props> = ({
   const lastPanAtRef = useRef<number>(0);
   const [routeOrigin, setRouteOrigin] = useState<LatLng>(origin);
   const lastRouteUpdateRef = useRef<number>(0);
+  const userInteractingAtRef = useRef<number>(0);
 
   /* ────────── geolocalización continua (solo en IN_PROGRESS) ────────── */
   useEffect(() => {
@@ -199,7 +200,9 @@ const RealTimeTripMap: React.FC<Props> = ({
     if (pos) {
       setNear(haversineMeters(pos, destination) <= 100);
       try {
-        if (tripStatus.toLowerCase() === 'in_progress' && mapRef.current && follow) {
+        // Esperar 1.5s tras interacción manual antes de retomar auto-follow
+        const interactedRecently = Date.now() - (userInteractingAtRef.current || 0) < 1500;
+        if (tripStatus.toLowerCase() === 'in_progress' && mapRef.current && follow && !interactedRecently) {
           const last = lastPosRef.current;
           const derivedHeading = last ? computeBearing(last, pos) : heading;
           const targetHeading = Number.isFinite(derivedHeading) ? derivedHeading : heading;
@@ -253,7 +256,12 @@ const RealTimeTripMap: React.FC<Props> = ({
         center={originRef.current}
         zoom={zoom}
         options={mapOptions}
-        onLoad={(map) => { mapRef.current = map; }}
+        onLoad={(map) => {
+          mapRef.current = map;
+          // Detectar interacción manual para pausar el auto-follow un par de segundos
+          map.addListener('dragstart', () => { userInteractingAtRef.current = Date.now(); });
+          map.addListener('zoom_changed', () => { userInteractingAtRef.current = Date.now(); });
+        }}
       >
         {/* posición actual */}
         {tripStatus === 'IN_PROGRESS' && pos && (
@@ -323,6 +331,8 @@ const RealTimeTripMap: React.FC<Props> = ({
         <button
           onClick={() => {
             if (pos && mapRef.current) {
+              userInteractingAtRef.current = 0; // reanudar inmediatamente
+              setFollow(true);
               mapRef.current.panTo(pos as any);
               try { mapRef.current.setZoom(Math.max(15, zoom)); } catch {}
             }
