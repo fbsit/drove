@@ -15,6 +15,7 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
   const [lastX, setLastX] = useState(0);
   const [lastY, setLastY] = useState(0);
   const [hasDrawn, setHasDrawn] = useState(false);
+  const lastDataUrlRef = useRef<string>('');
 
   /* ───────── init ───────── */
   useEffect(() => {
@@ -45,6 +46,26 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
         c.lineWidth = 2.5;
         c.lineCap = 'round';
         c.lineJoin = 'round';
+        // Redibujar la última firma si existe para evitar "reinicios" visuales
+        const url = String(lastDataUrlRef.current || '').trim();
+        if (url) {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            try {
+              c.clearRect(0, 0, canvas.width, canvas.height);
+              const cssW = width; // ya estamos en espacio CSS por el scale(ratio, ratio)
+              const cssH = height;
+              const scale = Math.min(cssW / img.width, cssH / img.height);
+              const drawW = img.width * scale;
+              const drawH = img.height * scale;
+              const offX = (cssW - drawW) / 2;
+              const offY = (cssH - drawH) / 2;
+              c.drawImage(img, offX, offY, drawW, drawH);
+            } catch {}
+          };
+          img.src = url;
+        }
       }
     };
     resize();
@@ -90,6 +111,7 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
       ctx.restore();
 
       setHasDrawn(true);
+      lastDataUrlRef.current = url;
     };
     img.onerror = () => {
       // Si falla, no rompemos el lienzo
@@ -148,7 +170,9 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
   const endDrawing = () => {
     if (isDrawing && canvasRef.current) {
       setIsDrawing(false);
-      onSignatureChange(canvasRef.current.toDataURL());
+      const dataUrl = canvasRef.current.toDataURL();
+      lastDataUrlRef.current = dataUrl;
+      onSignatureChange(dataUrl);
     }
   };
 
@@ -160,6 +184,7 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     setHasDrawn(false);
+    lastDataUrlRef.current = '';
     onSignatureChange('');
   };
 
