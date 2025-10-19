@@ -101,6 +101,12 @@ const DeliverySummaryStep: React.FC<DeliverySummaryStepProps> = ({ transfer }) =
     return t != null && isFinite(t) && t > 0 ? String(t) : '—';
   })();
 
+  // Fallbacks extra robustos para mobile (evitar falsy/undefined)
+  const senderName  = senderDetails?.fullName || (transfer as any)?.client?.contactInfo?.fullName || '-';
+  const senderEmail = senderDetails?.email    || (transfer as any)?.client?.email                   || '-';
+  const recvName    = receiverDetails?.fullName || (transfer as any)?.personReceive?.fullName || '-';
+  const recvEmail   = receiverDetails?.email    || (transfer as any)?.personReceive?.email    || '-';
+
   try {
     console.log('[DELIVERY_SUMMARY] start/end', startAddress, endAddress);
     console.log('[DELIVERY_SUMMARY] origin/dest city', originCityStr, destCityStr);
