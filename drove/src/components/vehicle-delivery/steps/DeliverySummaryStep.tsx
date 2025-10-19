@@ -5,7 +5,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { MapPin } from 'lucide-react'
 import { VehicleTransferDB } from '@/types/vehicle-transfer-db'
 import GoogleMap from '@/components/maps/GoogleMap'
-import ReactGoogleMap from '@/components/maps/GoogleMap'
 import { GoogleMap as MapBase, Polyline } from '@react-google-maps/api'
 import { LatLngCity } from '@/types/lat-lng-city'
 
@@ -23,21 +22,53 @@ const DeliverySummaryStep: React.FC<DeliverySummaryStepProps> = ({ transfer }) =
   const receiverDetails = transfer.receiverDetails;
 
   // GoogleMap espera objetos { address: string, city: string, lat: number | null, lng: number | null }
+  const originCityStr = pickupDetails.originAddress || (
+    typeof pickupDetails.originLat === 'number' && typeof pickupDetails.originLng === 'number'
+      ? `${pickupDetails.originLat}, ${pickupDetails.originLng}`
+      : 'Origen'
+  );
+  const destCityStr = pickupDetails.destinationAddress || (
+    typeof pickupDetails.destinationLat === 'number' && typeof pickupDetails.destinationLng === 'number'
+      ? `${pickupDetails.destinationLat}, ${pickupDetails.destinationLng}`
+      : 'Destino'
+  );
   const originAddr: LatLngCity = { 
-    address: pickupDetails.originAddress || '',
-    city: pickupDetails.originAddress || '',
-    lat: pickupDetails.originLat || 0,
-    lng: pickupDetails.originLng || 0
+    address: pickupDetails.originAddress || originCityStr,
+    city: originCityStr,
+    // Pasar null si no hay coordenadas para evitar (0,0)
+    // @ts-ignore
+    lat: typeof pickupDetails.originLat === 'number' ? pickupDetails.originLat : null,
+    // @ts-ignore
+    lng: typeof pickupDetails.originLng === 'number' ? pickupDetails.originLng : null,
   };
   const destAddr: LatLngCity = {
-    address: pickupDetails.destinationAddress || '',
-    city: pickupDetails.destinationAddress || '',
-    lat: pickupDetails.destinationLat || 0,
-    lng: pickupDetails.destinationLng || 0
+    address: pickupDetails.destinationAddress || destCityStr,
+    city: destCityStr,
+    // @ts-ignore
+    lat: typeof pickupDetails.destinationLat === 'number' ? pickupDetails.destinationLat : null,
+    // @ts-ignore
+    lng: typeof pickupDetails.destinationLng === 'number' ? pickupDetails.destinationLng : null,
   };
 
   const capturedPolyline: string = String((transfer as any)?.routePolyline || '').trim();
   const hasCapturedRoute = capturedPolyline.length > 0;
+
+  // Decoder ligero para polyline (Google encoding)
+  const decodePolyline = (str: string): Array<{ lat: number; lng: number }> => {
+    let index = 0, lat = 0, lng = 0, coordinates: Array<{ lat: number; lng: number }> = [];
+    while (index < str.length) {
+      let b, shift = 0, result = 0;
+      do { b = str.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+      const dlat = (result & 1) ? ~(result >> 1) : (result >> 1);
+      lat += dlat;
+      shift = 0; result = 0;
+      do { b = str.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+      const dlng = (result & 1) ? ~(result >> 1) : (result >> 1);
+      lng += dlng;
+      coordinates.push({ lat: lat / 1e5, lng: lng / 1e5 });
+    }
+    return coordinates;
+  };
 
   // Preferir distancia/tiempo reales del drover si existen; fallback a transferDetails
   const distanceDisplay = (() => {
@@ -88,11 +119,11 @@ const DeliverySummaryStep: React.FC<DeliverySummaryStepProps> = ({ transfer }) =
           <h3 className="text-white font-bold">Datos del traslado</h3>
           <div>
             <p className="text-white/50 text-xs">Origen</p>
-            <p className="text-white">{pickupDetails.originAddress}</p>
+            <p className="text-white">{originCityStr}</p>
           </div>
           <div>
             <p className="text-white/50 text-xs">Destino</p>
-            <p className="text-white">{pickupDetails.destinationAddress}</p>
+            <p className="text-white">{destCityStr}</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -130,15 +161,24 @@ const DeliverySummaryStep: React.FC<DeliverySummaryStepProps> = ({ transfer }) =
         {hasCapturedRoute ? (
           <MapBase
             mapContainerStyle={{ width: '100%', height: '200px' }}
-            center={{ lat: originAddr.lat || 0, lng: originAddr.lng || 0 }}
+            center={{ lat: (originAddr.lat ?? 0), lng: (originAddr.lng ?? 0) }}
             zoom={8}
             options={{ disableDefaultUI: true }}
+            onLoad={(m) => {
+              try {
+                const path = decodePolyline(capturedPolyline).map(p => ({ lat: p.lat, lng: p.lng }));
+                if (path.length) {
+                  const bounds = new google.maps.LatLngBounds();
+                  path.forEach(pt => bounds.extend(new google.maps.LatLng(pt.lat, pt.lng)));
+                  m.fitBounds(bounds, 40);
+                }
+              } catch {}
+            }}
           >
-            {/* Decodificar polyline no es estrictamente necesario para Google Static Maps,
-                pero aquí usamos Polyline con paths decodificados si fuera necesario.
-                Como simplificación, y dado que el polyline está en formato encoded,
-                preferiríamos un helper para decode; por ahora el backend/PDF lo muestra.
-                Si deseas, puedo traer un decoder liviano. */}
+            <Polyline
+              path={decodePolyline(capturedPolyline)}
+              options={{ strokeColor: '#6EF7FF', strokeOpacity: 0.9, strokeWeight: 4 }}
+            />
           </MapBase>
         ) : (
           <GoogleMap
