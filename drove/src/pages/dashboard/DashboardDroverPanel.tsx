@@ -71,6 +71,48 @@ const DashboardDroverPanel: React.FC = () => {
     enabled: !!user?.id,
   });
 
+  // Precalcular compensación faltante usando la misma tabla del backend (endpoint preview)
+  const [compPreviewByTripId, setCompPreviewByTripId] = React.useState<Record<string, any>>({});
+
+  const parseKmFromDistance = React.useCallback((raw: any): number => {
+    if (typeof raw === 'number') return raw;
+    try {
+      const s = String(raw || '').replace(/[^0-9,.,-]/g, '').replace(/\s+/g, '');
+      const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+      const n = parseFloat(withDot);
+      return isNaN(n) ? 0 : Math.round(n);
+    } catch { return 0; }
+  }, []);
+
+  React.useEffect(() => {
+    const run = async () => {
+      const empType = String((user as any)?.employmentType || '').toUpperCase();
+      if (empType === 'CONTRACTED') return; // contratados muestran KM, no beneficio
+      const id = user?.id;
+      if (!id) return;
+      const tasks: Array<Promise<void>> = [];
+      (Array.isArray(droverTrips) ? droverTrips : []).forEach((t: any) => {
+        const tripId = t.id || t._id;
+        const fee = Number(t?.driverFee || 0);
+        const hasMeta = typeof (t?.driverFeeMeta?.driverFeeWithVat) === 'number';
+        if (fee > 0 || hasMeta || compPreviewByTripId[tripId]) return;
+        const km = parseKmFromDistance(t?.distanceTravel || t?.transfer_details?.distance || t?.distance);
+        if (!km || km <= 0) return;
+        tasks.push((async () => {
+          try {
+            const preview: any = await DroverService.previewCompensation({ droverId: id, km });
+            if (preview && typeof (preview as any).driverFee === 'number') {
+              setCompPreviewByTripId(prev => ({ ...prev, [tripId]: { driverFee: Number((preview as any).driverFee || 0), driverFeeWithVat: Number((preview as any).driverFeeWithVat || (Number((preview as any).driverFee || 0) * 1.21)) } }));
+            }
+          } catch { }
+        })());
+      });
+      if (tasks.length) await Promise.allSettled(tasks);
+    };
+    run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [droverTrips, user?.id]);
+
   // Normalizar campos para la UI
   const readAddr = (obj: any, paths: string[]): string => {
     for (const p of paths) {
@@ -297,10 +339,12 @@ const DashboardDroverPanel: React.FC = () => {
                     // El backend ahora persiste driverFee y driverFeeMeta con la tabla actualizada (+10€)
                     // Por lo tanto, priorizamos esos valores; si no existen, dejamos 0 en lugar de recalcular con una tabla obsoleta
                     const meta: any = t.driverFeeMeta;
-                    const withVat = typeof meta?.driverFeeWithVat === 'number' ? meta.driverFeeWithVat : null;
+                    const withVat = typeof meta?.driverFeeWithVat === 'number' ? Number(meta.driverFeeWithVat) : null;
                     const fee = Number(t.driverFee || 0);
-                    const baseDisplay = fee > 0 ? fee : 0;
-                    const displayWithVat = typeof withVat === 'number' ? Number(withVat) : Number((baseDisplay * 1.21).toFixed(2));
+                    const preview = compPreviewByTripId[t.id || t._id];
+                    const displayWithVat = typeof withVat === 'number'
+                      ? withVat
+                      : preview?.driverFeeWithVat ?? (fee > 0 ? Number((fee * 1.21).toFixed(2)) : 0);
 
                     if (empType === 'CONTRACTED') {
                       const distanceDisplay = typeof t.distanceTravel === 'string' && t.distanceTravel.trim()
@@ -312,7 +356,7 @@ const DashboardDroverPanel: React.FC = () => {
                     }
 
                     return (
-                      <div className="text-[#6EF7FF] text-lg font-bold flex-1 text-start">Ganancia: €{Number(displayWithVat).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                      <div className="text-[#6EF7FF] text-lg font-bold flex-1 text-start">Ganancia: €{Number(displayWithVat || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                     );
                   })()}
                   <Link to={`/traslados/activo/${t.id}`} className="px-5 py-2 h-9 rounded-2xl bg-[#6EF7FF] text-[#22142A] text-sm hover:bg-[#22142A] hover:text-white transition-colors">Ver detalles</Link>

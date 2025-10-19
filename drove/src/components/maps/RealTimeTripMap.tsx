@@ -156,8 +156,6 @@ const RealTimeTripMap: React.FC<Props> = ({
   const [follow, setFollow] = useState<boolean>(true);
   const originRef = useRef<LatLng>(origin); // centro inicial estable para evitar recargas
   const lastPanAtRef = useRef<number>(0);
-  const [routeOrigin, setRouteOrigin] = useState<LatLng>(origin);
-  const lastRouteUpdateRef = useRef<number>(0);
   const userInteractingAtRef = useRef<number>(0);
 
   /* ────────── geolocalización continua (solo en IN_PROGRESS) ────────── */
@@ -213,7 +211,6 @@ const RealTimeTripMap: React.FC<Props> = ({
             mapRef.current.panTo(pos as any);
             lastPanAtRef.current = now;
           }
-          try { mapRef.current.setZoom(Math.max(15, zoom)); } catch { }
           try { (mapRef.current as any).setTilt?.(60); } catch { }
           try { (mapRef.current as any).setHeading?.(targetHeading); } catch { }
         }
@@ -229,17 +226,7 @@ const RealTimeTripMap: React.FC<Props> = ({
     [height],
   );
 
-  /* ────────── actualizar origen de la ruta desde posición del drover ────────── */
-  useEffect(() => {
-    if (tripStatus.toLowerCase() !== 'in_progress' || !pos) return;
-    const now = Date.now();
-    const moved = routeOrigin ? haversineMeters(routeOrigin, pos) : Infinity;
-    const longEnough = now - (lastRouteUpdateRef.current || 0) > 10000; // 10s
-    if (moved > 25 && longEnough) { // actualizar si movió >25m y pasó el tiempo
-      setRouteOrigin(pos);
-      lastRouteUpdateRef.current = now;
-    }
-  }, [pos, tripStatus, routeOrigin]);
+  // Mantener la ruta estática (desde origen planificado hasta destino) para evitar parpadeos.
 
   if (!isReady) {
     return (
@@ -292,7 +279,7 @@ const RealTimeTripMap: React.FC<Props> = ({
 
         {/* ruta (estable para evitar recomputar en cada tick de GPS) */}
         <MapDirections
-          origin={routeOrigin}
+          origin={originRef.current}
           destination={destination}
           travelMode="DRIVING"
         />

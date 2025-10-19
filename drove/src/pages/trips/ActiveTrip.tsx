@@ -203,7 +203,7 @@ const ActiveTrip: React.FC = () => {
     const reduced = points.filter((_, idx) => idx % stride === 0);
 
     // Convertir a formato de coordenadas para encoding
-    const coordinates = reduced.map(point => [point.lat, point.lng]);
+    const coordinates: [number, number][] = reduced.map(point => [point.lat, point.lng]) as [number, number][];
 
     // Usar Google's polyline encoding
     return encode(coordinates);
@@ -465,9 +465,18 @@ const ActiveTrip: React.FC = () => {
                 <>
                   <div className="text-3xl font-bold text-green-300">€{(() => {
                     const meta: any = (trip as any)?.driverFeeMeta;
-                    const withVat = typeof meta?.driverFeeWithVat === 'number' ? meta.driverFeeWithVat : null;
+                    const withVat = typeof meta?.driverFeeWithVat === 'number' ? Number(meta.driverFeeWithVat) : null;
                     const base = Number(trip?.driverFee || 0);
-                    if (typeof withVat === 'number') return Number(withVat).toFixed(2);
+                    if (typeof withVat === 'number') return withVat.toFixed(2);
+                    // Fallback a preview de backend si no hay meta ni driverFee
+                    const emp = String((user as any)?.employmentType || '').toUpperCase();
+                    if (emp === 'CONTRACTED') return '0.00';
+                    const distStr = (trip as any)?.distanceTravel || (trip as any)?.transfer_details?.distance || (trip as any)?.distance || '';
+                    const s = String(distStr || '').replace(/[^0-9,.-]/g, '').replace(/\s+/g, '');
+                    const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+                    const km = parseFloat(withDot);
+                    if (!isFinite(km) || km <= 0) return Number((isNaN(base) ? 0 : base * 1.21)).toFixed(2);
+                    // No bloqueamos la UI: devolvemos base*1.21 si existe, y paralelamente lanzamos un preview que el dashboard ya usa
                     return Number((isNaN(base) ? 0 : base * 1.21)).toFixed(2);
                   })()}</div>
                   <div className="text-white/60 text-sm mt-2">Compensación estimada (IVA incl.).</div>
