@@ -1443,11 +1443,17 @@ export class PdfService {
         const isArrivalStep = step === 3;
         const isDeliveryStep = step === 4;
         // Regla final: step 3 es vista cliente (Total con IVA) sin importar detailInfo
+        // Mapeo por paso:
+        //  - step 2 (recogida): drover => 'reception'
+        //  - step 3 (arrived): siempre cliente (no drover)
+        //  - step 4 (entrega final): drover => 'chofer'
         const isDroverPdf = isArrivalStep
           ? false
-          : (isPickupStep || isDeliveryStep)
+          : isPickupStep
             ? (detailInfo === 'reception')
-            : (detailInfo === 'chofer');
+            : isDeliveryStep
+              ? (detailInfo === 'chofer')
+              : (detailInfo === 'chofer');
         let amountLabel = 'Total con I.V.A';
         const droverEmpType =
           (chofer as any)?.employmentType ||
@@ -1480,9 +1486,11 @@ export class PdfService {
       const isDeliveryStep = step === 4;
       const isDrover = isArrivalStep
         ? false
-        : (isPickupStep || isDeliveryStep)
+        : isPickupStep
           ? (detailInfo === 'reception')
-          : (detailInfo === 'chofer');
+          : isDeliveryStep
+            ? (detailInfo === 'chofer')
+            : (detailInfo === 'chofer');
       const amountLabelFinal = isDrover ? 'Beneficio' : 'Total con I.V.A';
       const detailTravelTabla = [
         ['Distancia', distanceFormatted],
