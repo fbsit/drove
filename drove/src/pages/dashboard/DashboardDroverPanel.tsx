@@ -33,16 +33,13 @@ const DashboardDroverPanel: React.FC = () => {
   const UPDATE_MINUTES = 3; // intervalo de envío en minutos (optimizable)
 
   /* ------------------ fetch datos reales ------------------ */
-  const { data: dashboard, isLoading } = useQuery({
+  const { data: dashboard, isLoading } = useQuery<{
+    metrics?: { assignedTrips: number; completedTrips: number; totalEarnings: number; avgPerTrip?: number; rating?: number; ratingCount?: number };
+    [k: string]: any;
+  }>({
     queryKey: ['drover-dashboard', user?.id],
     queryFn: () => DroverService.getDroverDashboard(),
     enabled: !!user?.id,
-    onError: () =>
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'No se pudo cargar tu panel.',
-      }),
   });
 
   console.log("dashboard", dashboard)
@@ -52,6 +49,15 @@ const DashboardDroverPanel: React.FC = () => {
     completedTrips: 0,
     totalEarnings: 0,
   };
+
+  // Fallback: si el backend no envía avgPerTrip, calcularlo desde totalEarnings/completedTrips
+  const derivedAvgPerTrip = (() => {
+    const completed = Number(stats?.completedTrips ?? 0);
+    const earnings = Number(stats?.totalEarnings ?? 0);
+    if (!completed || completed <= 0) return 0;
+    const avg = earnings / completed;
+    return Number.isFinite(avg) ? avg : 0;
+  })();
 
 
   console.log("valor stats", stats)
@@ -222,7 +228,7 @@ const DashboardDroverPanel: React.FC = () => {
           const base = Number(stats?.totalEarnings ?? 0);
           return Number((base * 1.21)).toLocaleString(undefined, { minimumFractionDigits: 2 });
         })()}`} />
-        <KpiCard icon={Star} label="Promedio por Traslado IVA incl." value={`€${Number((Number(stats?.avgPerTrip ?? 0) * 1.21)).toLocaleString(undefined, { minimumFractionDigits: 2 })}`} />
+        <KpiCard icon={Star} label="Promedio por Traslado IVA incl." value={`€${Number(((Number(stats?.avgPerTrip ?? derivedAvgPerTrip)) * 1.21)).toLocaleString(undefined, { minimumFractionDigits: 2 })}`} />
       </div>
 
       {/* Filtros */}
@@ -286,7 +292,7 @@ const DashboardDroverPanel: React.FC = () => {
                 {/* Pie: para contratados mostrar KM; para freelance mostrar ganancia */}
                 <div className="flex justify-between items-center gap-4">
                   {(() => {
-                    const empType = String(user?.employmentType || '').toUpperCase();
+                    const empType = String((user as any)?.employmentType || '').toUpperCase();
                     const km = (() => { const n = parseFloat(String(t.distanceTravel || '').replace(/[^0-9,.-]/g, '').replace(',', '.')); return isNaN(n) ? 0 : Math.round(n); })();
                     // El backend ahora persiste driverFee y driverFeeMeta con la tabla actualizada (+10€)
                     // Por lo tanto, priorizamos esos valores; si no existen, dejamos 0 en lugar de recalcular con una tabla obsoleta

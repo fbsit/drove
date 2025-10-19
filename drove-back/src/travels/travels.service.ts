@@ -822,9 +822,10 @@ export class TravelsService {
       { id },
       { pickupVerification: dto, status: TransferStatus.PICKED_UP },
     );
-    // Mandar correo 3 (cliente) y 4 (drover y JT)
-    this.resend.sendConfirmationPickupEmailClient(travel);
-    this.resend.sendConfirmationPickupEmailDJT(travel);
+    // Mandar correo 3 (cliente) y 4 (drover y JT) con travel actualizado (incluye firmas)
+    const updatedTravel = { ...travel, pickupVerification: dto } as any;
+    this.resend.sendConfirmationPickupEmailClient(updatedTravel);
+    this.resend.sendConfirmationPickupEmailDJT(updatedTravel);
 
     // Notificaciones: vehículo recogido
     try {

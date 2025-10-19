@@ -42,6 +42,14 @@ export const usePickupVerification = (transferId?: string) => {
   const submitVerification = async (data: any): Promise<boolean> => {
     if (!transferId) throw new Error('Transfer ID is required');
 
+    // Validaciones obligatorias
+    if (!signature || typeof signature !== 'string' || !signature.startsWith('data:')) {
+      throw new Error('Falta la firma de la persona que entrega.');
+    }
+    if (!droverSignature || typeof droverSignature !== 'string' || !droverSignature.startsWith('data:')) {
+      throw new Error('Falta la firma del drover.');
+    }
+
     setIsLoading(true);
     setError(null);
 
