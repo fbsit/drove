@@ -775,7 +775,7 @@ const ActiveTrip: React.FC = () => {
       </div>
       {navOverlay && isAssignedDrover && trip?.status === 'IN_PROGRESS' && (
         <div className="fixed inset-0 z-50 bg-[#0B0F19]">
-          <div className="absolute top-3 left-3 z-10 flex gap-2">
+          <div className={`absolute z-10 flex gap-2 ${isMobile ? 'bottom-4 left-4' : 'top-3 left-3'}`}>
             <Button
               variant="secondary"
               className="rounded-2xl bg-white/10 text-white border-white/20 hover:bg-white/20"
