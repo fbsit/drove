@@ -339,12 +339,12 @@ const DashboardDroverPanel: React.FC = () => {
                     // El backend ahora persiste driverFee y driverFeeMeta con la tabla actualizada (+10€)
                     // Por lo tanto, priorizamos esos valores; si no existen, dejamos 0 en lugar de recalcular con una tabla obsoleta
                     const meta: any = t.driverFeeMeta;
-                    const withVat = typeof meta?.driverFeeWithVat === 'number' ? Number(meta.driverFeeWithVat) : null;
+                    const feeMeta = typeof meta?.driverFee === 'number' ? Number(meta.driverFee) : null;
                     const fee = Number(t.driverFee || 0);
                     const preview = compPreviewByTripId[t.id || t._id];
-                    const displayWithVat = typeof withVat === 'number'
-                      ? withVat
-                      : preview?.driverFeeWithVat ?? (fee > 0 ? Number((fee * 1.21).toFixed(2)) : 0);
+                    const displayFee = (preview?.driverFee != null)
+                      ? Number(preview.driverFee)
+                      : (feeMeta != null ? feeMeta : (fee > 0 ? fee : 0));
 
                     if (empType === 'CONTRACTED') {
                       const distanceDisplay = typeof t.distanceTravel === 'string' && t.distanceTravel.trim()
@@ -356,7 +356,7 @@ const DashboardDroverPanel: React.FC = () => {
                     }
 
                     return (
-                      <div className="text-[#6EF7FF] text-lg font-bold flex-1 text-start">Ganancia: €{Number(displayWithVat || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                      <div className="text-[#6EF7FF] text-lg font-bold flex-1 text-start">Ganancia: €{Number(displayFee || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                     );
                   })()}
                   <Link to={`/traslados/activo/${t.id}`} className="px-5 py-2 h-9 rounded-2xl bg-[#6EF7FF] text-[#22142A] text-sm hover:bg-[#22142A] hover:text-white transition-colors">Ver detalles</Link>

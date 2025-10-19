@@ -65,6 +65,7 @@ const ActiveTrip: React.FC = () => {
   const { toggleChat } = useSupportChat();
   const [navOverlay, setNavOverlay] = useState(false);
   const [navDismissed, setNavDismissed] = useState(false);
+  const [benefitPreview, setBenefitPreview] = useState<number | null>(null);
 
   // (efecto para abrir mapa cuando esté en progreso se declara más abajo, tras obtener trip)
 
@@ -243,6 +244,35 @@ const ActiveTrip: React.FC = () => {
       }
     };
   }, [trip?.endAddress, trip?.status]);
+
+  // Calcular beneficio (drover freelance) usando la MISMA tabla del backend
+  useEffect(() => {
+    if (!trip || !user) return;
+    const role = String(user.role || '').toUpperCase();
+    if (role !== 'DROVER') return;
+    const emp = String((user as any)?.employmentType || employmentType || '').toUpperCase();
+    if (emp === 'CONTRACTED') { setBenefitPreview(null); return; }
+    // Parsear km de la distancia del viaje
+    const distAny: any = (trip as any)?.distanceTravel || (trip as any)?.transfer_details?.distance || (trip as any)?.distance || '';
+    const s = String(distAny || '').replace(/[^0-9,.-]/g, '').replace(/\s+/g, '');
+    const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+    const km = parseFloat(withDot);
+    if (!isFinite(km) || km <= 0) { setBenefitPreview(null); return; }
+    const droverId = (user as any)?.id;
+    if (!droverId) return;
+    (async () => {
+      try {
+        const prev: any = await DroverService.previewCompensation({ droverId, km });
+        // Usar SIEMPRE el monto sin IVA para el drover
+        const feeNoVat = typeof prev?.driverFee === 'number'
+          ? Number(prev.driverFee)
+          : (typeof prev?.driverFeeWithVat === 'number' ? Number((Number(prev.driverFeeWithVat) / 1.21).toFixed(2)) : null);
+        setBenefitPreview(feeNoVat ?? null);
+      } catch {
+        setBenefitPreview(null);
+      }
+    })();
+  }, [trip, user, employmentType]);
 
   const getNextStatus = (currentStatus: string): string | null => {
     console.log("currentStatus", currentStatus);
@@ -463,23 +493,29 @@ const ActiveTrip: React.FC = () => {
             <CardContent>
               {String(user?.role || '').toLowerCase() === 'drover' ? (
                 <>
-                  <div className="text-3xl font-bold text-green-300">€{(() => {
+                  {(() => {
+                    const emp = String((user as any)?.employmentType || employmentType || '').toUpperCase();
+                    if (emp === 'CONTRACTED') {
+                      return (
+                        <>
+                          <div className="text-3xl font-bold text-green-300">{trip.distanceTravel || '—'}</div>
+                          <div className="text-white/60 text-sm mt-2">Kilómetros del viaje</div>
+                        </>
+                      );
+                    }
                     const meta: any = (trip as any)?.driverFeeMeta;
-                    const withVat = typeof meta?.driverFeeWithVat === 'number' ? Number(meta.driverFeeWithVat) : null;
+                    const feeMetaNoVat = typeof meta?.driverFee === 'number' ? Number(meta.driverFee) : null;
                     const base = Number(trip?.driverFee || 0);
-                    if (typeof withVat === 'number') return withVat.toFixed(2);
-                    // Fallback a preview de backend si no hay meta ni driverFee
-                    const emp = String((user as any)?.employmentType || '').toUpperCase();
-                    if (emp === 'CONTRACTED') return '0.00';
-                    const distStr = (trip as any)?.distanceTravel || (trip as any)?.transfer_details?.distance || (trip as any)?.distance || '';
-                    const s = String(distStr || '').replace(/[^0-9,.-]/g, '').replace(/\s+/g, '');
-                    const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
-                    const km = parseFloat(withDot);
-                    if (!isFinite(km) || km <= 0) return Number((isNaN(base) ? 0 : base * 1.21)).toFixed(2);
-                    // No bloqueamos la UI: devolvemos base*1.21 si existe, y paralelamente lanzamos un preview que el dashboard ya usa
-                    return Number((isNaN(base) ? 0 : base * 1.21)).toFixed(2);
-                  })()}</div>
-                  <div className="text-white/60 text-sm mt-2">Compensación estimada (IVA incl.).</div>
+                    const display = (benefitPreview != null)
+                      ? Number(benefitPreview)
+                      : (feeMetaNoVat != null ? feeMetaNoVat : (isNaN(base) ? 0 : base));
+                    return (
+                      <>
+                        <div className="text-3xl font-bold text-green-300">€{Number(display).toFixed(2)}</div>
+                        <div className="text-white/60 text-sm mt-2">Compensación estimada (sin IVA).</div>
+                      </>
+                    );
+                  })()}
                 </>
               ) : (
                 <>
