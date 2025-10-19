@@ -56,6 +56,8 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
       }
       const c = canvas.getContext('2d');
       if (c) {
+        // Resetear transform antes de aplicar el DPR para evitar acumulación de escalas (zoom)
+        try { (c as any).setTransform?.(1, 0, 0, 1, 0, 0); } catch {}
         c.scale(ratio, ratio);
         c.lineWidth = 2.5;
         c.lineCap = 'round';
@@ -117,9 +119,10 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
       // Limpiar y dibujar la imagen escalada dentro del canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const ratio = window.devicePixelRatio || 1;
-      // El canvas internamente está escalado por ratio, usamos tamaño CSS para mantener proporción
-      const cssWidth = parseFloat(canvas.style.width || String(canvas.width / ratio));
-      const cssHeight = parseFloat(canvas.style.height || String(canvas.height / ratio));
+      // El canvas internamente está escalado por ratio; usamos tamaño visual (bounding rect)
+      const rect = canvas.getBoundingClientRect();
+      const cssWidth = rect.width || (canvas.width / ratio);
+      const cssHeight = rect.height || (canvas.height / ratio);
       const scaleX = (canvas.width / ratio) / img.width;
       const scaleY = (canvas.height / ratio) / img.height;
       const scale = Math.min(scaleX, scaleY);
@@ -130,6 +133,7 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
 
       // Ajustar transform para espacio en CSS coords
       ctx.save();
+      try { (ctx as any).setTransform?.(1, 0, 0, 1, 0, 0); } catch {}
       ctx.scale(ratio, ratio);
       ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
       ctx.restore();
@@ -160,8 +164,9 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
         : e;
 
     const rect = canvas.getBoundingClientRect();
-    setLastX(clientX - rect.left);
-    setLastY(clientY - rect.top);
+    const ratio = window.devicePixelRatio || 1;
+    setLastX((clientX - rect.left) * (canvas.width / (rect.width * ratio)));
+    setLastY((clientY - rect.top) * (canvas.height / (rect.height * ratio)));
 
     if (!hasDrawn) setHasDrawn(true);
   };
@@ -180,8 +185,9 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
       'touches' in e ? e.touches[0] : e;
 
     const rect = canvas.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
+    const ratio = window.devicePixelRatio || 1;
+    const x = (clientX - rect.left) * (canvas.width / (rect.width * ratio));
+    const y = (clientY - rect.top) * (canvas.height / (rect.height * ratio));
 
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
