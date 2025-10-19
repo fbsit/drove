@@ -16,6 +16,8 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
   const [lastY, setLastY] = useState(0);
   const [hasDrawn, setHasDrawn] = useState(false);
   const lastDataUrlRef = useRef<string>('');
+  const lastSizeRef = useRef<{ wPx: number; hPx: number }>({ wPx: 0, hPx: 0 });
+  const resizeTimerRef = useRef<number | null>(null);
 
   /* ───────── init ───────── */
   useEffect(() => {
@@ -30,16 +32,28 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     // Ajustar tamaño del canvas al contenedor para mejor densidad
-    const resize = () => {
+    const doResize = () => {
       const parent = canvas.parentElement;
       if (!parent) return;
       const width = Math.max(320, Math.min(600, parent.clientWidth));
       const height = 170;
       const ratio = window.devicePixelRatio || 1;
-      canvas.width = Math.floor(width * ratio);
-      canvas.height = Math.floor(height * ratio);
-      canvas.style.width = width + 'px';
-      canvas.style.height = height + 'px';
+      const desiredW = Math.floor(width * ratio);
+      const desiredH = Math.floor(height * ratio);
+
+      // Evitar reset si el tamaño no cambió (cambiar dimensiones borra el lienzo)
+      if (canvas.width !== desiredW || canvas.height !== desiredH) {
+        // Snapshot del trazo actual para rehidratar tras el resize
+        try {
+          const snapshot = (hasDrawn || isDrawing) ? canvas.toDataURL() : lastDataUrlRef.current;
+          if (snapshot) lastDataUrlRef.current = snapshot;
+        } catch {}
+
+        canvas.width = desiredW;
+        canvas.height = desiredH;
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+      }
       const c = canvas.getContext('2d');
       if (c) {
         c.scale(ratio, ratio);
@@ -67,9 +81,19 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
           img.src = url;
         }
       }
+      lastSizeRef.current = { wPx: desiredW, hPx: desiredH };
     };
-    resize();
-    const ro = new ResizeObserver(resize);
+    const resize = () => {
+      if (resizeTimerRef.current) {
+        clearTimeout(resizeTimerRef.current);
+        resizeTimerRef.current = null;
+      }
+      // Debounce 120ms para evitar clears mientras se dibuja
+      resizeTimerRef.current = window.setTimeout(() => doResize(), 120);
+    };
+
+    doResize();
+    const ro = new ResizeObserver(() => resize());
     try { ro.observe(canvas.parentElement!); } catch {}
     return () => { try { ro.disconnect(); } catch {} };
   }, []);
@@ -125,6 +149,8 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
   ) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    // Si hay una firma previa y va a empezar a dibujar, la persistimos como background implícito (ya está en lastDataUrlRef)
+    if (!hasDrawn && lastDataUrlRef.current) setHasDrawn(true);
 
     setIsDrawing(true);
 

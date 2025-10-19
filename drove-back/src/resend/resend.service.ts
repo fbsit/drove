@@ -383,6 +383,26 @@ export class ResendService {
     const delivery = travel.endAddress;
 
     const holder = travel.personDelivery || {};
+    const kmValue = (() => {
+      const raw = (travel as any)?.distanceTravel;
+      if (typeof raw === 'number') return raw;
+      try {
+        const s = String(raw || '').replace(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '').replace(/\s+/g, '');
+        const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+        const n = parseFloat(withDot);
+        return isNaN(n) ? 0 : n;
+      } catch { return 0; }
+    })();
+    const driverBenefit = (() => {
+      const stored = (travel as any)?.driverFee;
+      if (typeof stored === 'number' && !isNaN(stored)) return stored;
+      try {
+        const emp = String(travel?.drover?.employmentType || '').toUpperCase();
+        if (emp === 'CONTRACTED') return this.compensation.calcContractedPerTrip(kmValue).driverFee;
+        return this.compensation.calcFreelancePerTrip(kmValue).driverFee;
+      } catch { return 0; }
+    })();
+
     const payload: Payload & { driver_benefit?: string } = {
       to: client.email,
       subject: 'Traslado asignado a un Drover',
@@ -417,17 +437,9 @@ export class ResendService {
         region: delivery.region,
         country: delivery.country,
       },
-      distance: (() => {
-        const raw = (travel as any)?.distanceTravel;
-        if (typeof raw === 'number') return raw;
-        try {
-          const s = String(raw || '').replace(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '').replace(/\s+/g, '');
-          const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
-          const n = parseFloat(withDot);
-          return isNaN(n) ? 0 : n;
-        } catch { return 0; }
-      })(), // e.g. 200
-      total_with_tax: `$${(travel?.totalPrice ?? 0).toLocaleString('es-CL')}`, // e.g. '$337,47'
+      distance: kmValue, // e.g. 200
+      driver_benefit: `${driverBenefit.toFixed(2)} €`,
+      total_with_tax: `$${(travel?.totalPrice ?? 0).toLocaleString('es-CL')}`, // retained for client templates
       issue_date: new Date().toLocaleDateString('es-ES'),
     };
     const html = template(payload);
