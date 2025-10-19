@@ -453,11 +453,11 @@ const PickupVerification: React.FC = () => {
           <>
             <label className="block text-white mb-2">Firma de la persona que entrega</label>
             <div className="bg-white rounded-lg p-4 mb-6">
-              <SignatureCanvas onSignatureChange={(data) => setSignature(data)} />
+              <SignatureCanvas value={signature} onSignatureChange={(data) => setSignature(data)} />
             </div>
             <label className="block text-white mb-2">Firma del drover</label>
             <div className="bg-white rounded-lg p-4 mb-6">
-              <SignatureCanvas onSignatureChange={(data) => setDroverSignature(data)} />
+              <SignatureCanvas value={droverSignature} onSignatureChange={(data) => setDroverSignature(data)} />
             </div>
             <label className="block text-white mb-2">Comentarios adicionales</label>
             <textarea

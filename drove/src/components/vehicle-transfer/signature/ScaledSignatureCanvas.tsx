@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 
 interface ScaledSignatureCanvasProps {
   onSignatureChange: (signature: string) => void;
+  value?: string; // dataURL/URL para hidratar
   width?: number;
   height?: number;
 }
 
 const ScaledSignatureCanvas: React.FC<ScaledSignatureCanvasProps> = ({
   onSignatureChange,
+  value,
   width = 400,
   height = 150
 }) => {
@@ -69,6 +71,34 @@ const ScaledSignatureCanvas: React.FC<ScaledSignatureCanvasProps> = ({
       window.removeEventListener('resize', handleResize);
     };
   }, [width, height]);
+
+  // Hidratar desde value si existe
+  useEffect(() => {
+    const url = String(value || '').trim();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    if (!url) return;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const dpr = window.devicePixelRatio || 1;
+      const targetW = width * dpr;
+      const targetH = height * dpr;
+      const scale = Math.min(targetW / img.width, targetH / img.height);
+      const drawW = img.width * scale;
+      const drawH = img.height * scale;
+      const offX = (targetW - drawW) / 2;
+      const offY = (targetH - drawH) / 2;
+      ctx.drawImage(img, offX, offY, drawW, drawH);
+      setHasDrawn(true);
+    };
+    img.onerror = () => {};
+    img.src = url;
+  }, [value, width, height]);
 
   // Convertir coordenadas del evento a coordenadas del canvas
   const getCanvasCoordinates = (clientX: number, clientY: number) => {

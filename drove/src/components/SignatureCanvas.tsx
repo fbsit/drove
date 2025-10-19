@@ -3,10 +3,12 @@ import { Button } from '@/components/ui/button';
 
 interface SignatureCanvasProps {
   onSignatureChange: (signature: string) => void;
+  value?: string; // dataURL o URL previa para hidratar la firma
 }
 
 const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
   onSignatureChange,
+  value,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -50,6 +52,50 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
     try { ro.observe(canvas.parentElement!); } catch {}
     return () => { try { ro.disconnect(); } catch {} };
   }, []);
+
+  // Hidratar visualmente desde value cuando exista o cambie
+  useEffect(() => {
+    const url = String(value || '').trim();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    if (!url) {
+      // Si no hay valor, limpiar pero no tocar hasDrawn (permite mostrar el botón si ya dibujó)
+      return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      // Limpiar y dibujar la imagen escalada dentro del canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const ratio = window.devicePixelRatio || 1;
+      // El canvas internamente está escalado por ratio, usamos tamaño CSS para mantener proporción
+      const cssWidth = parseFloat(canvas.style.width || String(canvas.width / ratio));
+      const cssHeight = parseFloat(canvas.style.height || String(canvas.height / ratio));
+      const scaleX = (canvas.width / ratio) / img.width;
+      const scaleY = (canvas.height / ratio) / img.height;
+      const scale = Math.min(scaleX, scaleY);
+      const drawW = img.width * scale;
+      const drawH = img.height * scale;
+      const offsetX = ((canvas.width / ratio) - drawW) / 2;
+      const offsetY = ((canvas.height / ratio) - drawH) / 2;
+
+      // Ajustar transform para espacio en CSS coords
+      ctx.save();
+      ctx.scale(ratio, ratio);
+      ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+      ctx.restore();
+
+      setHasDrawn(true);
+    };
+    img.onerror = () => {
+      // Si falla, no rompemos el lienzo
+    };
+    img.src = url;
+  }, [value]);
 
   /* ───────── handlers ───────── */
   const startDrawing = (
