@@ -14,7 +14,7 @@ import DeliveryConfirmationStep from '@/components/vehicle-delivery/steps/Delive
 import { useDeliveryVerification } from '@/hooks/useDeliveryVerification';
 import { VehicleTransferDB } from '@/types/vehicle-transfer-db';
 
-// Adaptador simplificado para el componente
+// Adaptador simplificado para el componente (mapea nombres reales del backend)
 const adaptTransferForDisplay = (raw: any): VehicleTransferDB => ({
   id: raw.id,
   created_at: raw.created_at || raw.createdAt || '',
@@ -28,35 +28,42 @@ const adaptTransferForDisplay = (raw: any): VehicleTransferDB => ({
     vin: raw.vehicleDetails?.vin || raw.vin || '',
   },
   pickupDetails: {
-    originAddress: raw.pickupDetails?.originAddress || raw.originAddress || '',
-    destinationAddress: raw.pickupDetails?.destinationAddress || raw.destinationAddress || '',
-    originLat: raw.pickupDetails?.originLat || 0,
-    originLng: raw.pickupDetails?.originLng || 0,
-    destinationLat: raw.pickupDetails?.destinationLat || 0,
-    destinationLng: raw.pickupDetails?.destinationLng || 0,
-    pickupDate: raw.pickupDetails?.pickupDate || raw.pickupDate || '',
-    pickupTime: raw.pickupDetails?.pickupTime || raw.pickupTime || '',
+    originAddress: raw.startAddress?.address || raw.startAddress?.city || raw.originAddress || '',
+    destinationAddress: raw.endAddress?.address || raw.endAddress?.city || raw.destinationAddress || '',
+    originLat: raw.startAddress?.lat || 0,
+    originLng: raw.startAddress?.lng || 0,
+    destinationLat: raw.endAddress?.lat || 0,
+    destinationLng: raw.endAddress?.lng || 0,
+    pickupDate: raw.travelDate || raw.pickupDate || '',
+    pickupTime: raw.travelTime || raw.pickupTime || '',
   },
   senderDetails: {
-    name: raw.senderDetails?.fullName || raw.senderName || '',
-    fullName: raw.senderDetails?.fullName || raw.senderName || '',
-    email: raw.senderDetails?.email || raw.senderEmail || '',
-    phone: raw.senderDetails?.phone || raw.senderPhone || '',
-    dni: raw.senderDetails?.dni || raw.senderDni || '',
+    name: raw.personDelivery?.fullName || raw.senderDetails?.fullName || raw.senderName || '',
+    fullName: raw.personDelivery?.fullName || raw.senderDetails?.fullName || raw.senderName || '',
+    email: raw.personDelivery?.email || raw.senderDetails?.email || raw.senderEmail || '',
+    phone: raw.personDelivery?.phone || raw.senderDetails?.phone || raw.senderPhone || '',
+    dni: raw.personDelivery?.dni || raw.senderDetails?.dni || raw.senderDni || '',
   },
   receiverDetails: {
-    name: raw.receiverDetails?.fullName || raw.receiverName || '',
-    fullName: raw.receiverDetails?.fullName || raw.receiverName || '',
-    email: raw.receiverDetails?.email || raw.receiverEmail || '',
-    phone: raw.receiverDetails?.phone || raw.receiverPhone || '',
-    dni: raw.receiverDetails?.dni || raw.receiverDni || '',
+    name: raw.personReceive?.fullName || raw.receiverDetails?.fullName || raw.receiverName || '',
+    fullName: raw.personReceive?.fullName || raw.receiverDetails?.fullName || raw.receiverName || '',
+    email: raw.personReceive?.email || raw.receiverDetails?.email || raw.receiverEmail || '',
+    phone: raw.personReceive?.phone || raw.receiverDetails?.phone || raw.receiverPhone || '',
+    dni: raw.personReceive?.dni || raw.receiverDetails?.dni || raw.receiverDni || '',
   },
   transferDetails: {
     totalPrice: Number(raw.transferDetails?.totalPrice || raw.price || 0),
-    distance: Number(raw.transferDetails?.distance || raw.distance || 0),
-    duration: Number(raw.transferDetails?.duration || raw.duration || 0),
+    distance: Number((raw as any)?.distanceTravel ? String((raw as any).distanceTravel).replace(/[^0-9.,-]/g, '').replace(',', '.') : (raw.transferDetails?.distance || raw.distance || 0)),
+    duration: Number((raw as any)?.timeTravel ? String((raw as any).timeTravel).replace(/[^0-9.,-]/g, '').replace(',', '.') : (raw.transferDetails?.duration || raw.duration || 0)),
     signature: raw.transferDetails?.signature || '',
   },
+  // Campos adicionales usados en el resumen
+  // @ts-ignore
+  distanceTravel: (raw as any)?.distanceTravel || '',
+  // @ts-ignore
+  timeTravel: (raw as any)?.timeTravel || '',
+  // @ts-ignore
+  routePolyline: (raw as any)?.routePolyline || '',
   paymentMethod: 'card',
 });
 

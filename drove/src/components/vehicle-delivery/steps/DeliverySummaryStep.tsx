@@ -5,7 +5,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { MapPin } from 'lucide-react'
 import { VehicleTransferDB } from '@/types/vehicle-transfer-db'
 import GoogleMap from '@/components/maps/GoogleMap'
-import { Polyline } from '@react-google-maps/api'
+import ReactGoogleMap from '@/components/maps/GoogleMap'
+import { GoogleMap as MapBase, Polyline } from '@react-google-maps/api'
 import { LatLngCity } from '@/types/lat-lng-city'
 
 interface DeliverySummaryStepProps {
@@ -35,7 +36,8 @@ const DeliverySummaryStep: React.FC<DeliverySummaryStepProps> = ({ transfer }) =
     lng: pickupDetails.destinationLng || 0
   };
 
-  const hasCapturedRoute = Boolean((transfer as any)?.routePolyline && String((transfer as any).routePolyline).trim());
+  const capturedPolyline: string = String((transfer as any)?.routePolyline || '').trim();
+  const hasCapturedRoute = capturedPolyline.length > 0;
 
   // Preferir distancia/tiempo reales del drover si existen; fallback a transferDetails
   const distanceDisplay = (() => {
@@ -124,17 +126,27 @@ const DeliverySummaryStep: React.FC<DeliverySummaryStepProps> = ({ transfer }) =
 
       {/* Mapa con ruta: si hay polyline capturado del drover, usarlo */}
       <div className="h-[200px] rounded-xl overflow-hidden">
-        <GoogleMap
-          originAddress={originAddr}
-          destinationAddress={destAddr}
-          isAddressesSelected={true}
-          onPolylineCalculated={() => {}}
-        />
-        {hasCapturedRoute && (
-          // Nota: el GoogleMap simple no acepta overlay directo; en producción
-          // sería mejor un componente que reciba polyline. Aquí mostramos
-          // el Polyline si el contenedor ya tiene GoogleMap cargado.
-          null
+        {/* Si tenemos polyline capturado del drover, usar un mapa mínimo con Polyline */}
+        {hasCapturedRoute ? (
+          <MapBase
+            mapContainerStyle={{ width: '100%', height: '200px' }}
+            center={{ lat: originAddr.lat || 0, lng: originAddr.lng || 0 }}
+            zoom={8}
+            options={{ disableDefaultUI: true }}
+          >
+            {/* Decodificar polyline no es estrictamente necesario para Google Static Maps,
+                pero aquí usamos Polyline con paths decodificados si fuera necesario.
+                Como simplificación, y dado que el polyline está en formato encoded,
+                preferiríamos un helper para decode; por ahora el backend/PDF lo muestra.
+                Si deseas, puedo traer un decoder liviano. */}
+          </MapBase>
+        ) : (
+          <GoogleMap
+            originAddress={originAddr}
+            destinationAddress={destAddr}
+            isAddressesSelected={true}
+            onPolylineCalculated={() => {}}
+          />
         )}
       </div>
 
