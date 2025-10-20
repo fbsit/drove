@@ -117,6 +117,18 @@ export class AdminService {
 
       const typeStr = String(user.employmentType || DroverEmploymentType.FREELANCE).toUpperCase() as keyof typeof DroverEmploymentType;
 
+      // Meses con actividad (DELIVERED) para promedios contractados
+      const monthKeys = new Set(
+        delivered
+          .map(t => (t.updatedAt || t.createdAt))
+          .filter(Boolean)
+          .map(d => {
+            const dt = new Date(d as any);
+            return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
+          }),
+      );
+      const monthsActive = Math.max(1, monthKeys.size);
+
       // Ganancias freelance: usar driverFee si está, fallback a cálculo por km
       const calcFreelanceTotal = async () => {
         const sums = await Promise.all(
@@ -140,25 +152,32 @@ export class AdminService {
         totalEarnings = await calcFreelanceTotal();
         avgPerTrip = completedTrips > 0 ? totalEarnings / completedTrips : 0;
       } else {
-        // Contratado: estimación mensual del mes actual
-        const now = new Date();
-        const monthISO = `${now.getUTCFullYear()}-${String(now.getUTCMonth()+1).padStart(2,'0')}`;
-        try {
-          contractedMonthly = await this.compensation?.calcContractedMonthlyByDrover(userId, monthISO);
-        } catch {}
+        // Contratado: sumar compensación mensual por cada mes con actividad; si no hay, usar el mes actual
+        const months = Array.from(monthKeys);
+        if (months.length === 0) {
+          const now = new Date();
+          const monthISO = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+          try {
+            contractedMonthly = await this.compensation?.calcContractedMonthlyByDrover(userId, monthISO);
+            totalEarnings = Number(contractedMonthly?.total || 0);
+          } catch {}
+        } else {
+          const monthlyResults = await Promise.all(
+            months.map(async (m) => {
+              try {
+                return await this.compensation?.calcContractedMonthlyByDrover(userId, m);
+              } catch {
+                return null;
+              }
+            })
+          );
+          const validResults = monthlyResults.filter((r): r is NonNullable<typeof r> => Boolean(r));
+          totalEarnings = validResults.reduce((sum, m: any) => sum + Number(m.total || 0), 0);
+          contractedMonthly = validResults.slice(-1)[0] || null;
+        }
       }
 
-      // Promedio mensual: por número de meses con viajes entregados (evita dividir por meses sin actividad)
-      const monthKeys = new Set(
-        delivered
-          .map(t => (t.updatedAt || t.createdAt))
-          .filter(Boolean)
-          .map(d => {
-            const dt = new Date(d as any);
-            return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
-          }),
-      );
-      const monthsActive = Math.max(1, monthKeys.size);
+      // Promedio mensual sobre meses con actividad
       const avgMonthlyEarnings = totalEarnings / monthsActive;
 
       // Promedio de tiempo por traslado (minutos), usando timeTravel si está, sino (updatedAt - startedAt)
