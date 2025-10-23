@@ -316,7 +316,8 @@ export class TravelsService {
 
     // Enviar correo a administrador informando de nuevo traslado
     try {
-      const adminEmail = process.env.ADMIN_NOTIF_EMAIL || 'info@drove.es';
+      // Compatibilidad con ambas variables de entorno posibles
+      const adminEmail = process.env.ADMIN_NOTIFICATIONS_EMAIL || process.env.ADMIN_NOTIF_EMAIL || 'info@drove.es';
       await this.resend.sendTransferCreatedAdminEmail(
         adminEmail,
         userDetails?.contactInfo?.fullName || 'Cliente',
@@ -346,6 +347,24 @@ export class TravelsService {
         },
       });
       notif;
+    } catch {}
+
+    // Notificación para cliente: confirmación de solicitud registrada
+    try {
+      await this.notifications?.create({
+        title: 'Solicitud de traslado registrada',
+        message: `Hemos recibido tu solicitud ${travelInfo.id}`,
+        roleTarget: UserRole.CLIENT,
+        category: 'TRAVEL_CREATED',
+        entityType: 'TRAVEL',
+        entityId: travelInfo.id,
+        read: false,
+        userId: user.sub,
+        data: {
+          startCity: travel.startAddress?.city,
+          endCity: travel.endAddress?.city,
+        },
+      });
     } catch {}
     return { ...travelInfo, url: checkoutUrl };
   }
