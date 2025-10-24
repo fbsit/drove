@@ -111,19 +111,19 @@ export class InvoicesService {
       qb = qb.andWhere('t.status = :tstatus', { tstatus });
     }
     if (params?.clientName) {
-      qb = qb.andWhere('LOWER(client.contactInfo->>\'fullName\') = LOWER(:cname)', { cname: params.clientName });
+      qb = qb.andWhere('LOWER(client."contactInfo"->>\'fullName\') = LOWER(:cname)', { cname: params.clientName });
     }
     if (params?.droverName) {
-      qb = qb.andWhere('LOWER(drover.contactInfo->>\'fullName\') = LOWER(:dname)', { dname: params.droverName });
+      qb = qb.andWhere('LOWER(drover."contactInfo"->>\'fullName\') = LOWER(:dname)', { dname: params.droverName });
     }
     if (params?.search) {
       const term = `%${params.search.toLowerCase()}%`;
       qb = qb.andWhere(
         `(
-          LOWER(COALESCE(client.contactInfo->>'fullName','')) LIKE :term OR
-          LOWER(COALESCE(drover.contactInfo->>'fullName','')) LIKE :term OR
-          LOWER(COALESCE((t.startAddress->>'city')::text,'')) LIKE :term OR
-          LOWER(COALESCE((t.endAddress->>'city')::text,'')) LIKE :term
+          LOWER(COALESCE(client."contactInfo"->>'fullName','')) LIKE :term OR
+          LOWER(COALESCE(drover."contactInfo"->>'fullName','')) LIKE :term OR
+          LOWER(COALESCE((t."startAddress"->>'city')::text,'')) LIKE :term OR
+          LOWER(COALESCE((t."endAddress"->>'city')::text,'')) LIKE :term
         )`,
         { term },
       );
