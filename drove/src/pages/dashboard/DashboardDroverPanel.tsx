@@ -50,13 +50,30 @@ const DashboardDroverPanel: React.FC = () => {
     totalEarnings: 0,
   };
 
-  // Fallback: si el backend no envía avgPerTrip, calcularlo desde totalEarnings/completedTrips
+  // Fallback: si el backend no envía avgPerTrip, calcularlo desde el beneficio por viaje
+  // basado en driverFee/driverFeeMeta o preview
+  const completedTripsCount = (droverTrips as any[]).filter((t: any) => {
+    const s = String(t.status || t.transferStatus || t.state || '').toUpperCase();
+    return s === 'DELIVERED';
+  }).length;
+
   const derivedAvgPerTrip = (() => {
-    const completed = Number(stats?.completedTrips ?? 0);
-    const earnings = Number(stats?.totalEarnings ?? 0);
-    if (!completed || completed <= 0) return 0;
-    const avg = earnings / completed;
-    return Number.isFinite(avg) ? avg : 0;
+    let sum = 0;
+    let cnt = 0;
+    (droverTrips as any[]).forEach((t: any) => {
+      const s = String(t.status || t.transferStatus || t.state || '').toUpperCase();
+      if (s !== 'DELIVERED') return;
+      const meta = (t as any)?.driverFeeMeta;
+      const feeMeta = typeof meta?.driverFee === 'number' ? Number(meta.driverFee) : null;
+      const fee = typeof t?.driverFee === 'number' ? Number(t.driverFee) : null;
+      const prev = compPreviewByTripId[t.id || t._id]?.driverFee;
+      const benefit = (prev != null) ? Number(prev) : (feeMeta != null ? feeMeta : (fee != null ? fee : null));
+      if (typeof benefit === 'number' && isFinite(benefit)) {
+        sum += benefit; cnt += 1;
+      }
+    });
+    if (!cnt && completedTripsCount) return 0;
+    return cnt ? (sum / cnt) : 0;
   })();
 
 
@@ -266,11 +283,8 @@ const DashboardDroverPanel: React.FC = () => {
 
       {/* KPIs (solo dos contadores como en la imagen) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-start">
-        <KpiCard icon={DollarSign} label="Ganancia estimada IVA incl." value={`€${(() => {
-          const base = Number(stats?.totalEarnings ?? 0);
-          return Number((base * 1.21)).toLocaleString(undefined, { minimumFractionDigits: 2 });
-        })()}`} />
-        <KpiCard icon={Star} label="Promedio por Traslado IVA incl." value={`€${Number(((Number(stats?.avgPerTrip ?? derivedAvgPerTrip)) * 1.21)).toLocaleString(undefined, { minimumFractionDigits: 2 })}`} />
+        <KpiCard icon={DollarSign} label="Ganancia estimada" value={`€${Number(stats?.totalEarnings ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`} />
+        <KpiCard icon={Star} label="Promedio por Traslado" value={`€${Number(stats?.avgPerTrip ?? derivedAvgPerTrip).toLocaleString(undefined, { minimumFractionDigits: 2 })}`} />
       </div>
 
       {/* Filtros */}

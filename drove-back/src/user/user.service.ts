@@ -18,6 +18,7 @@ import { ResendService } from '../resend/resend.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { BadRequestException } from '@nestjs/common';
 import { classifyId, normalizeId, validateDni, validateNie, isLikelyCompanyName } from './utils/spanish-id';
+import { CompensationService, parseKmFromDistance } from '../rates/compensation.service';
 
 import { randomBytes } from 'crypto';
 
@@ -31,6 +32,7 @@ export class UserService {
     private readonly travelsRepo: Repository<Travels>,
     private readonly resend: ResendService,
     private readonly notifications: NotificationsService,
+    private readonly compensation: CompensationService,
   ) {}
 
   /**
@@ -153,13 +155,31 @@ export class UserService {
 
     const assignedTrips = travels.length;
 
-    const completedTrips = travels.filter(
-      (trip) => trip.status === TransferStatus.DELIVERED,
-    ).length;
+    const delivered = travels.filter((t) => t.status === TransferStatus.DELIVERED);
+    const completedTrips = delivered.length;
 
-    const totalEarnings = travels
-      .filter((trip) => trip.status === TransferStatus.DELIVERED)
-      .reduce((sum, trip) => sum + (trip.totalPrice || 0), 0);
+    // Calcular beneficio real del drover por viaje (driverFee); si falta, aproximar con la tabla
+    const isFreelance = String(user.employmentType || '').toUpperCase() === DroverEmploymentType.FREELANCE;
+    let benefitSum = 0;
+    for (const t of delivered) {
+      const stored = typeof (t as any)?.driverFee === 'number' ? Number((t as any).driverFee) : null;
+      if (stored != null && !isNaN(stored)) {
+        benefitSum += stored;
+        continue;
+      }
+      try {
+        const km = parseKmFromDistance((t as any)?.distanceTravel);
+        if (typeof km === 'number' && km > 0 && this.compensation) {
+          const preview = isFreelance
+            ? this.compensation.calcFreelancePerTrip(km)
+            : this.compensation.calcContractedPerTrip(km);
+          benefitSum += Number(preview?.driverFee || 0);
+        }
+      } catch {}
+    }
+
+    const totalEarnings = benefitSum;
+    const avgPerTrip = completedTrips > 0 ? totalEarnings / completedTrips : 0;
 
     return {
       user,
@@ -167,6 +187,7 @@ export class UserService {
         assignedTrips,
         completedTrips,
         totalEarnings,
+        avgPerTrip,
       },
     };
   }
