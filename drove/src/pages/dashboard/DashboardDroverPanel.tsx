@@ -50,31 +50,7 @@ const DashboardDroverPanel: React.FC = () => {
     totalEarnings: 0,
   };
 
-  // Fallback: si el backend no envía avgPerTrip, calcularlo desde el beneficio por viaje
-  // basado en driverFee/driverFeeMeta o preview
-  const completedTripsCount = (droverTrips as any[]).filter((t: any) => {
-    const s = String(t.status || t.transferStatus || t.state || '').toUpperCase();
-    return s === 'DELIVERED';
-  }).length;
-
-  const derivedAvgPerTrip = (() => {
-    let sum = 0;
-    let cnt = 0;
-    (droverTrips as any[]).forEach((t: any) => {
-      const s = String(t.status || t.transferStatus || t.state || '').toUpperCase();
-      if (s !== 'DELIVERED') return;
-      const meta = (t as any)?.driverFeeMeta;
-      const feeMeta = typeof meta?.driverFee === 'number' ? Number(meta.driverFee) : null;
-      const fee = typeof t?.driverFee === 'number' ? Number(t.driverFee) : null;
-      const prev = compPreviewByTripId[t.id || t._id]?.driverFee;
-      const benefit = (prev != null) ? Number(prev) : (feeMeta != null ? feeMeta : (fee != null ? fee : null));
-      if (typeof benefit === 'number' && isFinite(benefit)) {
-        sum += benefit; cnt += 1;
-      }
-    });
-    if (!cnt && completedTripsCount) return 0;
-    return cnt ? (sum / cnt) : 0;
-  })();
+  // NOTE: derivedAvgPerTrip se calcula más abajo, después de declarar droverTrips y compPreviewByTripId
 
 
   console.log("valor stats", stats)
@@ -129,6 +105,32 @@ const DashboardDroverPanel: React.FC = () => {
     run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [droverTrips, user?.id]);
+
+  // Fallback: si el backend no envía avgPerTrip, calcularlo desde el beneficio por viaje
+  // basado en driverFee/driverFeeMeta o preview (ahora que ya existen droverTrips y compPreviewByTripId)
+  const completedTripsCount = (droverTrips as any[]).filter((t: any) => {
+    const s = String(t.status || t.transferStatus || t.state || '').toUpperCase();
+    return s === 'DELIVERED';
+  }).length;
+
+  const derivedAvgPerTrip = (() => {
+    let sum = 0;
+    let cnt = 0;
+    (droverTrips as any[]).forEach((t: any) => {
+      const s = String(t.status || t.transferStatus || t.state || '').toUpperCase();
+      if (s !== 'DELIVERED') return;
+      const meta = (t as any)?.driverFeeMeta;
+      const feeMeta = typeof meta?.driverFee === 'number' ? Number(meta.driverFee) : null;
+      const fee = typeof t?.driverFee === 'number' ? Number(t.driverFee) : null;
+      const prev = compPreviewByTripId[t.id || t._id]?.driverFee;
+      const benefit = (prev != null) ? Number(prev) : (feeMeta != null ? feeMeta : (fee != null ? fee : null));
+      if (typeof benefit === 'number' && isFinite(benefit)) {
+        sum += benefit; cnt += 1;
+      }
+    });
+    if (!cnt && completedTripsCount) return 0;
+    return cnt ? (sum / cnt) : 0;
+  })();
 
   // Normalizar campos para la UI
   const readAddr = (obj: any, paths: string[]): string => {

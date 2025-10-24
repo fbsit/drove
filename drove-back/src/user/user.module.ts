@@ -9,12 +9,14 @@ import { UserService } from './user.service';
 import { PreferenceService } from './userPreference.service';
 import { Travels } from '../travels/entities/travel.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { PricesModule } from '../rates/prices.module';
 
 @Module({
   imports: [
     // registra ambos repositorios
     TypeOrmModule.forFeature([User, UserPreferences, Travels]),
     NotificationsModule,
+    PricesModule, // para inyectar CompensationService (exportado por PricesModule)
   ],
   controllers: [UserController, PreferencesController],
   providers: [UserService, PreferenceService],
