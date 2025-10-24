@@ -412,6 +412,7 @@ export class AdminService {
     status?: string;
     startDate?: string;
     endDate?: string;
+    search?: string;
   }) {
     const where: any = {};
     if (filters?.status) {
@@ -422,12 +423,35 @@ export class AdminService {
       where.createdAt = Between(filters.startDate, filters.endDate);
     }
 
-    const transfers = await this.transferRepo.find({
-      where,
-      order: { createdAt: 'DESC' },
-      relations: this.defaultRelations, // <-- trae payments, client y drover
-    });
+    // Búsqueda básica: cliente (nombre/email), origen/destino (ciudad), id, vehículo (matrícula/marca/modelo)
+    const qb = this.transferRepo
+      .createQueryBuilder('t')
+      .leftJoinAndSelect('t.client', 'client')
+      .leftJoinAndSelect('t.drover', 'drover')
+      .orderBy('t.createdAt', 'DESC');
 
+    if (where.status) qb.andWhere('t.status = :status', { status: where.status });
+    if (where.createdAt) qb.andWhere('t.createdAt BETWEEN :from AND :to', { from: (where.createdAt as any).lower, to: (where.createdAt as any).upper });
+
+    const term = String(filters?.search || '').trim();
+    if (term) {
+      const like = `%${term.toLowerCase()}%`;
+      qb.andWhere(
+        `(
+          LOWER(t.id::text) LIKE :like OR
+          LOWER(COALESCE(client.email,'')) LIKE :like OR
+          LOWER(COALESCE((client.contactInfo->>'fullName')::text,'')) LIKE :like OR
+          LOWER(COALESCE((t.startAddress->>'city')::text,'')) LIKE :like OR
+          LOWER(COALESCE((t.endAddress->>'city')::text,'')) LIKE :like OR
+          LOWER(COALESCE(t.patentVehicle,'')) LIKE :like OR
+          LOWER(COALESCE(t.brandVehicle,'')) LIKE :like OR
+          LOWER(COALESCE(t.modelVehicle,'')) LIKE :like
+        )`,
+        { like },
+      );
+    }
+
+    const transfers = await qb.getMany();
     return { transfers };
   }
 

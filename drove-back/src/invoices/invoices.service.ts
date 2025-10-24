@@ -47,7 +47,28 @@ export class InvoicesService {
     const limit = Math.min(100, Math.max(1, params?.limit || 50));
 
     const where: any = {};
-    if (params?.status) where.status = params.status as any;
+    // Normalizar estado (acepta español e inglés). 'ADVANCE' no siempre existe en el enum → filtrar luego
+    let normalizedForWhere: string | undefined;
+    if (params?.status) {
+      const normalized = String(params.status || '').toUpperCase();
+      const map: Record<string, string> = {
+        EMITIDA: 'SENT',
+        ANTICIPO: 'ADVANCE',
+        PAGADA: 'PAID',
+        PAID: 'PAID',
+        SENT: 'SENT',
+        DRAFT: 'DRAFT',
+        BORRADOR: 'DRAFT',
+        VOID: 'VOID',
+        VOIDED: 'VOID',
+        REJECTED: 'REJECTED',
+        RECHAZADA: 'REJECTED',
+        ANULADA: 'VOID',
+      };
+      const finalStatus = map[normalized] ?? normalized;
+      if (finalStatus !== 'ADVANCE') normalizedForWhere = finalStatus;
+    }
+    if (normalizedForWhere) where.status = normalizedForWhere as any;
     if (params?.clientId) where.customerId = params.clientId;
     if (params?.from || params?.to) {
       // invoiceDate es DATE, aplicamos rango con Between manual via query builder por flexibilidad
@@ -107,6 +128,13 @@ export class InvoicesService {
       }
       return withTravel;
     });
+
+    // Si el filtro solicitado fue 'ADVANCE', aplicar ahora sobre el enriquecido
+    if (params?.status && String(params.status).toUpperCase() === 'ANTICIPO') {
+      enriched = enriched.filter((i: any) => String(i.status).toUpperCase() === 'ADVANCE');
+    } else if (params?.status && String(params.status).toUpperCase() === 'ADVANCE') {
+      enriched = enriched.filter((i: any) => String(i.status).toUpperCase() === 'ADVANCE');
+    }
 
     // Filtro onlyPending a nivel combinado (por si se cambió el where.status)
     if (params?.onlyPending) {

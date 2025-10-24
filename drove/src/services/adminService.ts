@@ -139,8 +139,15 @@ export class AdminService {
     const qs = new URLSearchParams();
     if (params?.search) qs.set('search', params.search);
     if (params?.status) qs.set('status', params.status);
-    if (params?.from) qs.set('from', params.from);
-    if (params?.to) qs.set('to', params.to);
+    // Backend espera startDate/endDate; para compatibilidad añade ambos
+    if (params?.from) {
+      qs.set('startDate', params.from);
+      qs.set('from', params.from);
+    }
+    if (params?.to) {
+      qs.set('endDate', params.to);
+      qs.set('to', params.to);
+    }
     const endpoint = qs.toString() ? `/admin/transfers?${qs.toString()}` : '/admin/transfers';
     return await ApiService.get(endpoint);
   }
