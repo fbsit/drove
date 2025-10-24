@@ -134,10 +134,14 @@ class ApiService {
 
       /* auth aún caducado o sin permisos */
       if (resp.status === 401) {
-        try {
-          const { dispatchUnauthorized } = await import('@/lib/authBus');
-          dispatchUnauthorized();
-        } catch {}
+        const isLoginEndpoint = url.endsWith('/auth/login');
+        // En flujo de login inválido, no disparamos el logout global; dejamos que la vista maneje el error
+        if (!isLoginEndpoint) {
+          try {
+            const { dispatchUnauthorized } = await import('@/lib/authBus');
+            dispatchUnauthorized();
+          } catch {}
+        }
         let msg = 'Unauthorized';
         try { msg = (await resp.json()).message ?? msg; } catch {}
         const err: any = new Error(msg);

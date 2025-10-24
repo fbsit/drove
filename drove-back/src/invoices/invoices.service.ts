@@ -94,7 +94,21 @@ export class InvoicesService {
 
     // Filtros avanzados en travel: clientName, droverName, transferStatus y search
     if (params?.transferStatus) {
-      qb = qb.andWhere('LOWER(t.status) = LOWER(:tstatus)', { tstatus: params.transferStatus });
+      const raw = String(params.transferStatus || '').toLowerCase();
+      const map: Record<string, string> = {
+        pendiente: 'CREATED',
+        en_proceso: 'IN_PROGRESS',
+        completado: 'DELIVERED',
+        cancelado: 'CANCELLED',
+        assigned: 'ASSIGNED',
+        created: 'CREATED',
+        in_progress: 'IN_PROGRESS',
+        delivered: 'DELIVERED',
+        cancelled: 'CANCELLED',
+      };
+      const tstatus = (map[raw] ?? params.transferStatus).toUpperCase();
+      // Compare directly against enum = avoid LOWER() on enum type
+      qb = qb.andWhere('t.status = :tstatus', { tstatus });
     }
     if (params?.clientName) {
       qb = qb.andWhere('LOWER(client.contactInfo->>\'fullName\') = LOWER(:cname)', { cname: params.clientName });
@@ -105,7 +119,12 @@ export class InvoicesService {
     if (params?.search) {
       const term = `%${params.search.toLowerCase()}%`;
       qb = qb.andWhere(
-        "LOWER(COALESCE(client.contactInfo->>'fullName','')) LIKE :term OR LOWER(COALESCE(drover.contactInfo->>'fullName','')) LIKE :term OR LOWER(COALESCE(t.startAddress,'')) LIKE :term OR LOWER(COALESCE(t.endAddress,'')) LIKE :term",
+        `(
+          LOWER(COALESCE(client.contactInfo->>'fullName','')) LIKE :term OR
+          LOWER(COALESCE(drover.contactInfo->>'fullName','')) LIKE :term OR
+          LOWER(COALESCE((t.startAddress->>'city')::text,'')) LIKE :term OR
+          LOWER(COALESCE((t.endAddress->>'city')::text,'')) LIKE :term
+        )`,
         { term },
       );
     }
