@@ -43,20 +43,16 @@ export class CarDataService {
     const cached = this.getCache<any>(cacheKey);
     if (cached) return { source: 'cache', data: cached };
 
-    // try db seed first
+    // Solo usar datos locales de la base de datos
     const makes = await this.makeRepo.find();
     if (makes.length > 0) {
       this.setCache(cacheKey, makes);
       return { source: 'db', data: makes };
     }
 
-    const api = await this.carapi.getMakes(year);
-    const names: string[] = (api?.data ?? api ?? []).map((m: any) => m.name || m.make || m);
-    const entities = await this.makeRepo.save(
-      names.map((name) => this.makeRepo.create({ name })),
-    );
-    this.setCache(cacheKey, entities);
-    return { source: 'remote', data: entities };
+    // Si no hay datos en la base de datos, devolver array vacío
+    this.logger.warn(`No se encontraron marcas en la base de datos para el año ${year ?? 'cualquiera'}`);
+    return { source: 'db', data: [] };
   }
 
   async getModels(makeName: string, year?: number) {
@@ -73,14 +69,9 @@ export class CarDataService {
       }
     }
 
-    const api = await this.carapi.getModels(makeName, year);
-    const names: string[] = (api?.data ?? api ?? []).map((m: any) => m.name || m.model || m);
-    const makeEntity = make || (await this.makeRepo.save(this.makeRepo.create({ name: makeName })));
-    const entities = await this.modelRepo.save(
-      names.map((name) => this.modelRepo.create({ name, make: makeEntity })),
-    );
-    this.setCache(cacheKey, entities);
-    return { source: 'remote', data: entities };
+    // Si no hay datos en la base de datos, devolver array vacío
+    this.logger.warn(`No se encontraron modelos para la marca ${makeName} en la base de datos para el año ${year ?? 'cualquiera'}`);
+    return { source: 'db', data: [] };
   }
 
   async getTrims(makeName: string, modelName: string, year?: number, all = false) {
@@ -100,20 +91,9 @@ export class CarDataService {
       }
     }
 
-    const api = await this.carapi.getTrims(makeName, modelName, year, all);
-    const list: Array<{ name: string; year?: number; specs?: any }> = (api?.data ?? api ?? []).map((t: any) => ({
-      name: t.name || t.trim || t,
-      year: t.year || year || null,
-      specs: t.specs || t,
-    }));
-    const makeEntity = make || (await this.makeRepo.save(this.makeRepo.create({ name: makeName })));
-    const modelEntity =
-      model || (await this.modelRepo.save(this.modelRepo.create({ name: modelName, make: makeEntity })));
-    const entities = await this.trimRepo.save(
-      list.map((t) => this.trimRepo.create({ name: t.name, year: t.year ?? new Date().getFullYear(), model: modelEntity, specs: t.specs })),
-    );
-    this.setCache(cacheKey, entities);
-    return { source: 'remote', data: entities };
+    // Si no hay datos en la base de datos, devolver array vacío
+    this.logger.warn(`No se encontraron versiones para ${makeName} ${modelName} en la base de datos para el año ${year ?? 'cualquiera'}`);
+    return { source: 'db', data: [] };
   }
 
   async decodeVin(vin: string, verbose = false, allTrims = false) {
@@ -131,11 +111,45 @@ export class CarDataService {
       }
     }
 
-    const api = await this.carapi.decodeVin(vin, verbose, allTrims);
-    const payload = api?.data ?? api ?? {};
-    await this.vinRepo.save(this.vinRepo.create({ vin, payload }));
-    this.setCache(key, payload, this.vinTtlMs);
-    return { source: 'remote', data: payload };
+    // Si no hay datos en la base de datos, devolver objeto vacío
+    this.logger.warn(`No se encontró información VIN para ${vin} en la base de datos`);
+    return { source: 'db', data: {} };
+  }
+
+  /**
+   * Método para poblar la base de datos con datos básicos de marcas y modelos
+   * Esto evita la necesidad de llamadas a la API externa
+   */
+  async seedBasicCarData() {
+    try {
+      // Verificar si ya hay datos
+      const existingMakes = await this.makeRepo.count();
+      if (existingMakes > 0) {
+        this.logger.log('Los datos básicos de vehículos ya están poblados');
+        return { success: true, message: 'Datos ya existentes' };
+      }
+
+      // Datos básicos de marcas comunes
+      const basicMakes = [
+        'Toyota', 'Honda', 'Nissan', 'Mazda', 'Subaru', 'Mitsubishi',
+        'BMW', 'Mercedes-Benz', 'Audi', 'Volkswagen', 'Volvo', 'Saab',
+        'Ford', 'Chevrolet', 'GMC', 'Cadillac', 'Buick', 'Chrysler',
+        'Dodge', 'Jeep', 'Ram', 'Tesla', 'Hyundai', 'Kia', 'Genesis',
+        'Fiat', 'Alfa Romeo', 'Maserati', 'Ferrari', 'Lamborghini',
+        'Porsche', 'Bentley', 'Rolls-Royce', 'Aston Martin', 'McLaren',
+        'Iveco', 'MAN', 'Scania', 'Volvo Trucks', 'Mercedes-Benz Trucks'
+      ];
+
+      const makeEntities = await this.makeRepo.save(
+        basicMakes.map(name => this.makeRepo.create({ name }))
+      );
+
+      this.logger.log(`Se poblaron ${makeEntities.length} marcas básicas`);
+      return { success: true, message: `Se poblaron ${makeEntities.length} marcas básicas` };
+    } catch (error) {
+      this.logger.error('Error poblando datos básicos:', error);
+      return { success: false, message: 'Error poblando datos básicos' };
+    }
   }
 }
 

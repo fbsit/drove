@@ -49,6 +49,13 @@ export class CarDataController {
     const a = (allTrims === 'yes' || allTrims === 'true');
     return this.service.decodeVin(vin, v, a);
   }
+
+  // Poblar datos básicos
+  @Get('seed-basic-data')
+  @Throttle({ default: { limit: 5, ttl: 60 } })
+  async seedBasicData() {
+    return this.service.seedBasicCarData();
+  }
 }
 
 

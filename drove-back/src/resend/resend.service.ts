@@ -105,6 +105,7 @@ export class ResendService {
     }
 
     this.client = new Resend(apiKey);
+    this.logger.log('Cliente Resend inicializado correctamente');
   }
 
   private localizeInvoiceStatus(status: string | undefined | null): string {
@@ -1461,25 +1462,38 @@ export class ResendService {
     destination: string,
     transferUrl: string,
   ) => {
-    const template = this.loadTemplate('newTransfer');
+    try {
+      const template = this.loadTemplate('newTransfer');
 
-    const html = template({
-      name,
-      vehicle,
-      requested_date: requestedDate,
-      origin,
-      destination,
-      transfer_url: this.buildFrontUrl(transferUrl),
-    });
+      const html = template({
+        name,
+        vehicle,
+        requested_date: requestedDate,
+        origin,
+        destination,
+        transfer_url: this.buildFrontUrl(transferUrl),
+      });
 
-    if (!this.client) return false;
+      if (!this.client) {
+        this.logger.warn('Cliente Resend no disponible, no se puede enviar correo de confirmación de traslado');
+        return false;
+      }
 
-    return this.client.emails.send({
-      from: 'contacto@drove.es',
-      to: email,
-      subject: 'Tu solicitud de traslado ha sido registrada',
-      html,
-    });
+      this.logger.log(`Enviando correo de confirmación de traslado a: ${email}`);
+      
+      const result = await this.client.emails.send({
+        from: 'contacto@drove.es',
+        to: email,
+        subject: 'Tu solicitud de traslado ha sido registrada',
+        html,
+      });
+
+      this.logger.log(`Correo de confirmación de traslado enviado exitosamente a: ${email}`);
+      return result;
+    } catch (error) {
+      this.logger.error(`Error enviando correo de confirmación de traslado a ${email}:`, error);
+      throw error;
+    }
   };
 
   /**
@@ -1936,4 +1950,30 @@ export class ResendService {
       html,
     });
   };
+
+  /**
+   * Método de prueba para verificar la configuración de Resend
+   */
+  public async testResendConfiguration(): Promise<boolean> {
+    try {
+      if (!this.client) {
+        this.logger.error('Cliente Resend no disponible');
+        return false;
+      }
+
+      // Intentar enviar un correo de prueba
+      const result = await this.client.emails.send({
+        from: 'contacto@drove.es',
+        to: 'test@example.com',
+        subject: 'Prueba de configuración Resend',
+        html: '<p>Este es un correo de prueba</p>',
+      });
+
+      this.logger.log('Configuración de Resend verificada correctamente');
+      return true;
+    } catch (error) {
+      this.logger.error('Error en la configuración de Resend:', error);
+      return false;
+    }
+  }
 }

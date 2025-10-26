@@ -304,15 +304,22 @@ export class TravelsService {
     });
     const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
     const url = `${frontendBase.replace(/\/$/, '')}/cliente/traslados/${travelInfo.id}`;
-    await this.resend.sendTransferRequestCreatedEmail(
-      userDetails?.email || '',
-      userDetails?.contactInfo?.fullName || '',
-      `${travel.brandVehicle} ${travel.modelVehicle} - ${travel.patentVehicle}`,
-      travel.travelDate || new Date().toLocaleDateString('es-ES'),
-      travel.startAddress.city,
-      travel.endAddress.city,
-      url || '',
-    );
+    
+    // Enviar correo al cliente confirmando la solicitud de traslado
+    try {
+      await this.resend.sendTransferRequestCreatedEmail(
+        userDetails?.email || '',
+        userDetails?.contactInfo?.fullName || '',
+        `${travel.brandVehicle} ${travel.modelVehicle} - ${travel.patentVehicle}`,
+        travel.travelDate || new Date().toLocaleDateString('es-ES'),
+        travel.startAddress.city,
+        travel.endAddress.city,
+        url || '',
+      );
+    } catch (emailError) {
+      // Log del error pero no interrumpir la creación del viaje
+      console.error('Error enviando correo de confirmación al cliente:', emailError);
+    }
 
     // Enviar correo a administrador informando de nuevo traslado
     try {

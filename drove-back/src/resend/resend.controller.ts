@@ -33,4 +33,16 @@ export class ResendController {
 
     return { success: ok };
   }
+
+  @Post('test-config')
+  @ApiOperation({ summary: 'Probar configuración de Resend' })
+  @ApiOkResponse({ schema: { example: { success: true, message: 'Configuración verificada' } } })
+  @HttpCode(HttpStatus.OK)
+  async testConfig() {
+    const success = await this.resend.testResendConfiguration();
+    return { 
+      success, 
+      message: success ? 'Configuración de Resend verificada correctamente' : 'Error en la configuración de Resend'
+    };
+  }
 }
