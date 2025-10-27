@@ -334,7 +334,9 @@ export class ResendService {
       total_with_tax: `$${(travel?.totalPrice ?? 0).toLocaleString('es-CL')}`, // e.g. '$337,47'
       issue_date: new Date().toLocaleDateString('es-ES'),
     };
-    const html = template(payload);
+    // Renderizar dos variantes de HTML: con total (cliente) y sin total (admin/receptor)
+    const htmlWithTotal = template({ ...payload });
+    const htmlNoTotal = template({ ...payload, total_with_tax: '' });
     if (!this.client) {
       return false;
     }
@@ -380,13 +382,16 @@ export class ResendService {
       }
     } catch {}
 
+    // Renderizar HTML con/ sin total para cliente / remitente
+    const htmlWith = template({ ...payload });
+    const htmlNo = template({ ...payload, total_with_tax: '' });
     const sends: Array<Promise<boolean>> = [];
     if (client?.email) {
-      sends.push(this.sendEmail({ from: 'contacto@drove.es', to: client.email, subject: payload.subject, html, ...(attachWithTotals ? { attachments: attachWithTotals } : {}) }));
+      sends.push(this.sendEmail({ from: 'contacto@drove.es', to: client.email, subject: payload.subject, html: htmlWith, ...(attachWithTotals ? { attachments: attachWithTotals } : {}) }));
     }
     const senderEmail = (travel?.personDelivery?.email as string) || '';
     if (senderEmail) {
-      sends.push(this.sendEmail({ from: 'contacto@drove.es', to: senderEmail, subject: payload.subject, html, ...(attachNoTotals ? { attachments: attachNoTotals } : {}) }));
+      sends.push(this.sendEmail({ from: 'contacto@drove.es', to: senderEmail, subject: payload.subject, html: htmlNo, ...(attachNoTotals ? { attachments: attachNoTotals } : {}) }));
     }
     await Promise.allSettled(sends);
     return true;
@@ -1030,15 +1035,17 @@ export class ResendService {
 
     const adminEmail = this.getAdminEmail();
     const receiverEmail = (travel?.personReceive?.email as string) || '';
+    const htmlWithTotal = template({ ...payload });
+    const htmlNoTotal = template({ ...payload, total_with_tax: '' });
     const sends: Array<Promise<boolean>> = [];
     if (client?.email) {
-      sends.push(this.sendEmail({ from: 'contacto@drove.es', to: client.email, subject: payload.subject, html, ...(attachWithTotal ? { attachments: attachWithTotal } : {}) }));
+      sends.push(this.sendEmail({ from: 'contacto@drove.es', to: client.email, subject: payload.subject, html: htmlWithTotal, ...(attachWithTotal ? { attachments: attachWithTotal } : {}) }));
     }
     if (adminEmail) {
-      sends.push(this.sendEmail({ from: 'contacto@drove.es', to: adminEmail, subject: payload.subject, html, ...(attachNoTotal ? { attachments: attachNoTotal } : {}) }));
+      sends.push(this.sendEmail({ from: 'contacto@drove.es', to: adminEmail, subject: payload.subject, html: htmlNoTotal, ...(attachNoTotal ? { attachments: attachNoTotal } : {}) }));
     }
     if (receiverEmail) {
-      sends.push(this.sendEmail({ from: 'contacto@drove.es', to: receiverEmail, subject: payload.subject, html, ...(attachNoTotal ? { attachments: attachNoTotal } : {}) }));
+      sends.push(this.sendEmail({ from: 'contacto@drove.es', to: receiverEmail, subject: payload.subject, html: htmlNoTotal, ...(attachNoTotal ? { attachments: attachNoTotal } : {}) }));
     }
     await Promise.allSettled(sends);
     return true;
