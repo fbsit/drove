@@ -1436,28 +1436,30 @@ export class PdfService {
         } catch {}
       }
 
-      // Regla de visualización: cliente ve total con IVA; drover siempre ve beneficio SIN IVA.
+      // Regla de visualización: cliente ve Total; drover siempre ve Beneficio (sin IVA)
       try {
         // Paso específico: en 'recogida' (step === 2) históricamente se pasa
         // detailInfo='chofer' al cliente y 'reception' al drover.
         // Ajustamos la determinación del rol a esa convención.
+        const isAssignmentStep = step === 1;
         const isPickupStep = step === 2;
-
         const isArrivalStep = step === 3;
         const isDeliveryStep = step === 4;
-        // Regla final: step 3 es vista cliente (Total con IVA) sin importar detailInfo
-        // Mapeo por paso:
-        //  - step 2 (recogida): drover => 'reception'
-        //  - step 3 (arrived): siempre cliente (no drover)
-        //  - step 4 (entrega final): drover => 'chofer'
-        const isDroverPdf = isArrivalStep
+        // Mapeo por paso (quién ve Beneficio):
+        //  - step 1 (asignación): cliente → Total (nunca drover)
+        //  - step 2 (recogida): drover si detailInfo === 'reception'
+        //  - step 3 (llegada): cliente → Total
+        //  - step 4 (entrega): drover si detailInfo === 'chofer'
+        const isDroverPdf = isAssignmentStep
           ? false
-          : isPickupStep
-            ? (detailInfo === 'reception')
-            : isDeliveryStep
-              ? (detailInfo === 'chofer')
-              : (detailInfo === 'chofer');
-        let amountLabel = 'Total con I.V.A';
+          : isArrivalStep
+            ? false
+            : isPickupStep
+              ? (detailInfo === 'reception')
+              : isDeliveryStep
+                ? (detailInfo === 'chofer')
+                : false;
+        let amountLabel = 'Total';
         const droverEmpType =
           (chofer as any)?.employmentType ||
           (travel?.drover as any)?.employmentType;
@@ -1484,17 +1486,20 @@ export class PdfService {
           // Reasignamos más abajo usando amountLabel
         }
       } catch {}
-      const isPickupStep = step === 2;
-      const isArrivalStep = step === 3;
-      const isDeliveryStep = step === 4;
-      const isDrover = isArrivalStep
+      const isAssignmentStep2 = step === 1;
+      const isPickupStep2 = step === 2;
+      const isArrivalStep2 = step === 3;
+      const isDeliveryStep2 = step === 4;
+      const isDrover = isAssignmentStep2
         ? false
-        : isPickupStep
-          ? (detailInfo === 'reception')
-          : isDeliveryStep
-            ? (detailInfo === 'chofer')
-            : (detailInfo === 'chofer');
-      const amountLabelFinal = isDrover ? 'Beneficio' : 'Total con I.V.A';
+        : isArrivalStep2
+          ? false
+          : isPickupStep2
+            ? (detailInfo === 'reception')
+            : isDeliveryStep2
+              ? (detailInfo === 'chofer')
+              : false;
+      const amountLabelFinal = isDrover ? 'Beneficio' : 'Total';
       const detailTravelTabla = [
         ['Distancia', distanceFormatted],
         [amountLabelFinal, hideTotals ? '' : totalWithVat],
@@ -1532,25 +1537,16 @@ export class PdfService {
             tableDetailTop - (filaIndex + 0.5) * rowDetailHeight - fontSize / 2;
           const selectedFont = colIndex === 0 ? helveticaBoldFont : font;
           const xUse = colIndex === 0 ? x : x - 100;
-          if (fila[0] === 'Total con I.V.A' && colIndex === 1) {
-            // Mostrar el total con IVA para cliente/admin; ocultarlo para drover (step-aware)
-            const text = isDrover ? '' : String(celda);
-            page.drawText(text, {
-              x: xUse,
-              y,
-              size: fontSize,
-              font: selectedFont,
-              color: rgb(0, 0, 0),
-            });
-          } else {
-            page.drawText(String(celda), {
-              x: xUse,
-              y,
-              size: fontSize,
-              font: selectedFont,
-              color: rgb(0, 0, 0),
-            });
-          }
+          // Si es la celda del importe (fila 2, columna 2) y hideTotals=true, no dibujar valor
+          const isAmountCell = filaIndex === 1 && colIndex === 1;
+          const textToDraw = (isAmountCell && hideTotals) ? '' : String(celda);
+          page.drawText(textToDraw, {
+            x: xUse,
+            y,
+            size: fontSize,
+            font: selectedFont,
+            color: rgb(0, 0, 0),
+          });
         });
       });
       currentY = tableDetailTop - tableDetailHeight - 50;

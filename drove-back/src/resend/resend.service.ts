@@ -982,9 +982,32 @@ export class ResendService {
     if (!this.client) {
       return false;
     }
-    let attachments: any[] | undefined;
+    // Generar adjuntos diferenciados: cliente con total; admin/receptor sin total
+    let attachWithTotal: any[] | undefined;
+    let attachNoTotal: any[] | undefined;
     try {
-      const pdfUrl = await this.pdfService.generatePDF(
+      const urlWith = await this.pdfService.generatePDF(
+        travel.id,
+        'delivery',
+        false,
+        false,
+        true,
+        true,
+        true,
+        'delivery',
+        4,
+        false,
+      );
+      if (urlWith) {
+        const res = await fetch(urlWith);
+        const buf = await res.buffer();
+        attachWithTotal = [
+          { filename: `transfer_${travel.id}_step4.pdf`, content: buf },
+        ];
+      }
+    } catch {}
+    try {
+      const urlNo = await this.pdfService.generatePDF(
         travel.id,
         'delivery',
         false,
@@ -996,27 +1019,29 @@ export class ResendService {
         4,
         true,
       );
-      if (pdfUrl) {
-        const res = await fetch(pdfUrl);
+      if (urlNo) {
+        const res = await fetch(urlNo);
         const buf = await res.buffer();
-        attachments = [
+        attachNoTotal = [
           { filename: `transfer_${travel.id}_step4.pdf`, content: buf },
         ];
       }
-    } catch (e) {}
-    const recipients = Array.from(
-      new Set([
-        (client?.email as string) || '',
-        this.getAdminEmail(),
-        (travel?.personReceive?.email as string) || '',
-      ].filter(Boolean)),
-    );
-    return this.sendToMultipleSequential(recipients, {
-      from: 'contacto@drove.es',
-      subject: payload.subject,
-      html,
-      ...(attachments ? { attachments } : {}),
-    });
+    } catch {}
+
+    const adminEmail = this.getAdminEmail();
+    const receiverEmail = (travel?.personReceive?.email as string) || '';
+    const sends: Array<Promise<boolean>> = [];
+    if (client?.email) {
+      sends.push(this.sendEmail({ from: 'contacto@drove.es', to: client.email, subject: payload.subject, html, ...(attachWithTotal ? { attachments: attachWithTotal } : {}) }));
+    }
+    if (adminEmail) {
+      sends.push(this.sendEmail({ from: 'contacto@drove.es', to: adminEmail, subject: payload.subject, html, ...(attachNoTotal ? { attachments: attachNoTotal } : {}) }));
+    }
+    if (receiverEmail) {
+      sends.push(this.sendEmail({ from: 'contacto@drove.es', to: receiverEmail, subject: payload.subject, html, ...(attachNoTotal ? { attachments: attachNoTotal } : {}) }));
+    }
+    await Promise.allSettled(sends);
+    return true;
   }
   //Correo de entrega de vehiculo (drover) X
   async sendConfirmationDeliveryDrover(travel: Travels | any) {
