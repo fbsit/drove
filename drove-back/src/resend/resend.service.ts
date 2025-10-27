@@ -468,18 +468,34 @@ export class ResendService {
         ];
       }
     } catch (e) {}
-    const recipients = Array.from(
-      new Set([
-        (driver?.email as string) || '',
-        this.getAdminEmail(),
-      ].filter(Boolean)),
-    );
-    return this.sendToMultipleSequential(recipients, {
-      from: 'contacto@drove.es',
-      subject: payload.subject,
-      html,
-      ...(attachments ? { attachments } : {}),
-    });
+    // Enviar con asuntos diferenciados: drover recibe el nuevo asunto; admin mantiene el existente
+    const droverEmail = (driver?.email as string) || '';
+    const adminEmail = this.getAdminEmail();
+
+    // 1) Email al drover con asunto solicitado
+    const droverSendPromise = droverEmail
+      ? this.sendEmail({
+          from: 'contacto@drove.es',
+          to: droverEmail,
+          subject: '¡Enhorabuena! Has sido asignado para transportar un vehículo.',
+          html,
+          ...(attachments ? { attachments } : {}),
+        })
+      : Promise.resolve(false);
+
+    // 2) Email al admin con asunto anterior para coherencia interna
+    const adminSendPromise = adminEmail
+      ? this.sendEmail({
+          from: 'contacto@drove.es',
+          to: adminEmail,
+          subject: payload.subject,
+          html,
+          ...(attachments ? { attachments } : {}),
+        })
+      : Promise.resolve(false);
+
+    await Promise.allSettled([droverSendPromise, adminSendPromise]);
+    return true;
   }
   //Correo para confirmar recogida de auto (email cliente y personDelivery)
   async sendConfirmationPickupEmailClient(travel: Travels | any) {
@@ -1370,27 +1386,40 @@ export class ResendService {
     logoUrl = 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
     year: number = new Date().getFullYear(),
   ) => {
-    const template = this.loadTemplate('newDrover-reassigned');
+    try {
+      const template = this.loadTemplate('newDrover-reassigned');
 
-    const html = template({
-      logo_url: logoUrl,
-      vehicle,
-      transfer_date: transferDate,
-      origin,
-      destination,
-      driver_name: driverName,
-      transfer_url: this.buildFrontUrl(transferUrl),
-      year,
-    });
+      const html = template({
+        logo_url: logoUrl,
+        vehicle,
+        transfer_date: transferDate,
+        origin,
+        destination,
+        driver_name: driverName,
+        transfer_url: this.buildFrontUrl(transferUrl),
+        year,
+      });
 
-    if (!this.client) return false;
+      if (!this.client) {
+        this.logger.warn('Cliente Resend no disponible, no se puede enviar correo de asignación de drover');
+        return false;
+      }
 
-    return this.client.emails.send({
-      from: 'contacto@drove.es',
-      to: email,
-      subject: 'Nuevo DROVER asignado a tu traslado',
-      html,
-    });
+      this.logger.log(`Enviando correo de asignación de drover a: ${email}`);
+      
+      const result = await this.client.emails.send({
+        from: 'contacto@drove.es',
+        to: email,
+        subject: 'Nuevo DROVER asignado a tu traslado',
+        html,
+      });
+
+      this.logger.log(`Correo de asignación de drover enviado exitosamente a: ${email}`);
+      return result;
+    } catch (error) {
+      this.logger.error(`Error enviando correo de asignación de drover a ${email}:`, error);
+      throw error;
+    }
   };
 
   /**

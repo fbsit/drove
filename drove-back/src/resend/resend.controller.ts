@@ -45,4 +45,34 @@ export class ResendController {
       message: success ? 'Configuración de Resend verificada correctamente' : 'Error en la configuración de Resend'
     };
   }
+
+  @Post('test-transfer-creation-email')
+  @ApiOperation({ summary: 'Probar envío de correo de creación de traslado' })
+  @ApiOkResponse({ schema: { example: { success: true, message: 'Correo enviado' } } })
+  @HttpCode(HttpStatus.OK)
+  async testTransferCreationEmail(@Body() body: { email: string; name: string }) {
+    try {
+      const result = await this.resend.sendTransferRequestCreatedEmail(
+        body.email,
+        body.name,
+        'Toyota Corolla - ABC123',
+        new Date().toLocaleDateString('es-ES'),
+        'Madrid',
+        'Barcelona',
+        'https://drove.up.railway.app/cliente/traslados/test-123'
+      );
+      
+      return { 
+        success: true, 
+        message: 'Correo de creación de traslado enviado correctamente',
+        result
+      };
+    } catch (error) {
+      return { 
+        success: false, 
+        message: 'Error enviando correo de creación de traslado',
+        error: error.message
+      };
+    }
+  }
 }

@@ -307,18 +307,29 @@ export class TravelsService {
     
     // Enviar correo al cliente confirmando la solicitud de traslado
     try {
+      console.log('=== ENVIANDO CORREO DE CREACIÓN DE TRASLADO ===');
+      console.log('Email del cliente:', userDetails?.email);
+      console.log('Nombre del cliente:', userDetails?.contactInfo?.fullName);
+      console.log('Vehículo:', `${travel.brandVehicle || ''} ${travel.modelVehicle || ''} - ${travel.patentVehicle || ''}`.trim());
+      console.log('Fecha:', travel.travelDate || new Date().toLocaleDateString('es-ES'));
+      console.log('Origen:', travel.startAddress?.city || 'Origen no especificado');
+      console.log('Destino:', travel.endAddress?.city || 'Destino no especificado');
+      console.log('URL:', url);
+      
       await this.resend.sendTransferRequestCreatedEmail(
         userDetails?.email || '',
         userDetails?.contactInfo?.fullName || '',
-        `${travel.brandVehicle} ${travel.modelVehicle} - ${travel.patentVehicle}`,
+        `${travel.brandVehicle || ''} ${travel.modelVehicle || ''} - ${travel.patentVehicle || ''}`.trim(),
         travel.travelDate || new Date().toLocaleDateString('es-ES'),
-        travel.startAddress.city,
-        travel.endAddress.city,
+        travel.startAddress?.city || 'Origen no especificado',
+        travel.endAddress?.city || 'Destino no especificado',
         url || '',
       );
+      
+      console.log('✅ Correo de creación enviado exitosamente');
     } catch (emailError) {
       // Log del error pero no interrumpir la creación del viaje
-      console.error('Error enviando correo de confirmación al cliente:', emailError);
+      console.error('❌ Error enviando correo de confirmación al cliente:', emailError);
     }
 
     // Enviar correo a administrador informando de nuevo traslado
