@@ -63,6 +63,7 @@ export class PdfService {
     addDniClient: boolean,
     detailInfo: string,
     step: number,
+    hideTotals: boolean = false,
   ): Promise<any> {
     try {
       let url_pdf;
@@ -84,6 +85,7 @@ export class PdfService {
             addDniClient,
             detailInfo,
             step,
+            hideTotals,
           );
           break;
         case 'invoice':
@@ -183,6 +185,7 @@ export class PdfService {
     addDniClient: boolean,
     detailInfo: string,
     step: number,
+    hideTotals: boolean = false,
   ): Promise<any> {
     try {
       // Normalizar estructuras opcionales para evitar errores por null/undefined
@@ -1494,7 +1497,7 @@ export class PdfService {
       const amountLabelFinal = isDrover ? 'Beneficio' : 'Total con I.V.A';
       const detailTravelTabla = [
         ['Distancia', distanceFormatted],
-        [amountLabelFinal, totalWithVat],
+        [amountLabelFinal, hideTotals ? '' : totalWithVat],
       ];
       detailTravelTabla.forEach((fila, filaIndex) => {
         const x = tableDetailLeft;

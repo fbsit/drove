@@ -338,10 +338,11 @@ export class ResendService {
     if (!this.client) {
       return false;
     }
-    let attachments: any[] | undefined;
+    // Enviar PDFs diferenciados: cliente con total; remitente (personDelivery) sin total
+    let attachWithTotals: any[] | undefined;
+    let attachNoTotals: any[] | undefined;
     try {
-      // Cliente debe recibir el PDF con detailInfo "chofer"
-      const pdfUrl = await this.pdfService.generatePDF(
+      const urlWith = await this.pdfService.generatePDF(
         travel.id,
         'withdrawals',
         true,
@@ -351,29 +352,44 @@ export class ResendService {
         false,
         'chofer',
         1,
+        false,
       );
-      if (pdfUrl) {
-        const res = await fetch(pdfUrl);
+      if (urlWith) {
+        const res = await fetch(urlWith);
         const buf = await res.buffer();
-        attachments = [
-          { filename: `transfer_${travel.id}_step1.pdf`, content: buf },
-        ];
+        attachWithTotals = [{ filename: `transfer_${travel.id}_step1.pdf`, content: buf }];
       }
-    } catch (e) {
-      // fallback: send without attachment
+    } catch {}
+    try {
+      const urlNo = await this.pdfService.generatePDF(
+        travel.id,
+        'withdrawals',
+        true,
+        false,
+        false,
+        false,
+        false,
+        'chofer',
+        1,
+        true,
+      );
+      if (urlNo) {
+        const res = await fetch(urlNo);
+        const buf = await res.buffer();
+        attachNoTotals = [{ filename: `transfer_${travel.id}_step1.pdf`, content: buf }];
+      }
+    } catch {}
+
+    const sends: Array<Promise<boolean>> = [];
+    if (client?.email) {
+      sends.push(this.sendEmail({ from: 'contacto@drove.es', to: client.email, subject: payload.subject, html, ...(attachWithTotals ? { attachments: attachWithTotals } : {}) }));
     }
-    const recipients = Array.from(
-      new Set([
-        (client?.email as string) || '',
-        (travel?.personDelivery?.email as string) || '',
-      ].filter(Boolean)),
-    );
-    return this.sendToMultipleSequential(recipients, {
-      from: 'contacto@drove.es',
-      subject: payload.subject,
-      html,
-      ...(attachments ? { attachments } : {}),
-    });
+    const senderEmail = (travel?.personDelivery?.email as string) || '';
+    if (senderEmail) {
+      sends.push(this.sendEmail({ from: 'contacto@drove.es', to: senderEmail, subject: payload.subject, html, ...(attachNoTotals ? { attachments: attachNoTotals } : {}) }));
+    }
+    await Promise.allSettled(sends);
+    return true;
   }
 
   //Correo para asignacion de chofer (email chofer y admin (info@drove.es))
@@ -464,7 +480,8 @@ export class ResendService {
       false,
       false,
       'delivery',
-      1,
+        1,
+        true,
       );
       if (pdfUrl) {
         const res = await fetch(pdfUrl);
@@ -581,9 +598,11 @@ export class ResendService {
     if (!this.client) {
       return false;
     }
-    let attachments: any[] | undefined;
+    // Cliente con totales, remitente sin totales
+    let withTot: any[] | undefined;
+    let noTot: any[] | undefined;
     try {
-      const pdfUrl = await this.pdfService.generatePDF(
+      const urlWith = await this.pdfService.generatePDF(
         travel.id,
         'delivery',
         true,
@@ -593,27 +612,39 @@ export class ResendService {
         false,
         'chofer',
         2,
+        false,
       );
-      if (pdfUrl) {
-        const res = await fetch(pdfUrl);
+      if (urlWith) {
+        const res = await fetch(urlWith);
         const buf = await res.buffer();
-        attachments = [
-          { filename: `transfer_${travel.id}_step2.pdf`, content: buf },
-        ];
+        withTot = [{ filename: `transfer_${travel.id}_step2.pdf`, content: buf }];
       }
-    } catch (e) {}
-    const recipients = Array.from(
-      new Set([
-        (client?.email as string) || '',
-        (travel?.personDelivery?.email as string) || '',
-      ].filter(Boolean)),
-    );
-    return this.sendToMultipleSequential(recipients, {
-      from: 'contacto@drove.es',
-      subject: 'Comprobante de inicio de transporte del vehículo',
-      html,
-      ...(attachments ? { attachments } : {}),
-    });
+    } catch {}
+    try {
+      const urlNo = await this.pdfService.generatePDF(
+        travel.id,
+        'delivery',
+        true,
+        true,
+        false,
+        false,
+        false,
+        'chofer',
+        2,
+        true,
+      );
+      if (urlNo) {
+        const res = await fetch(urlNo);
+        const buf = await res.buffer();
+        noTot = [{ filename: `transfer_${travel.id}_step2.pdf`, content: buf }];
+      }
+    } catch {}
+    const promises: Array<Promise<boolean>> = [];
+    if (client?.email) promises.push(this.sendEmail({ from: 'contacto@drove.es', to: client.email, subject: 'Comprobante de inicio de transporte del vehículo', html, ...(withTot ? { attachments: withTot } : {}) }));
+    const senderEmail2 = (travel?.personDelivery?.email as string) || '';
+    if (senderEmail2) promises.push(this.sendEmail({ from: 'contacto@drove.es', to: senderEmail2, subject: 'Comprobante de inicio de transporte del vehículo', html, ...(noTot ? { attachments: noTot } : {}) }));
+    await Promise.allSettled(promises);
+    return true;
   }
   //Correo para confirmar recogida de auto (email drover y admin (info@drove.es))
   async sendConfirmationPickupEmailDJT(travel: Travels | any) {
@@ -811,9 +842,11 @@ export class ResendService {
     if (!this.client) {
       return false;
     }
-    let attachments: any[] | undefined;
+    // Cliente con totales; admin/receptor con PDF sin totales
+    let withTot3: any[] | undefined;
+    let noTot3: any[] | undefined;
     try {
-      const pdfUrl = await this.pdfService.generatePDF(
+      const urlWith3 = await this.pdfService.generatePDF(
         travel.id,
         'delivery',
         true,
@@ -823,29 +856,43 @@ export class ResendService {
         false,
         'chofer',
         3,
+        false,
       );
-      if (pdfUrl) {
-        const res = await fetch(pdfUrl);
+      if (urlWith3) {
+        const res = await fetch(urlWith3);
         const buf = await res.buffer();
-        attachments = [
-          { filename: `transfer_${travel.id}_step3.pdf`, content: buf },
-        ];
+        withTot3 = [{ filename: `transfer_${travel.id}_step3.pdf`, content: buf }];
       }
-    } catch (e) {}
-    const recipients = Array.from(
-      new Set([
-        (client?.email as string) || '',
-        this.getAdminEmail(),
-        (travel?.personDelivery?.email as string) || '',
-        (travel?.personReceive?.email as string) || '',
-      ].filter(Boolean)),
-    );
-    return this.sendToMultipleSequential(recipients, {
-      from: 'contacto@drove.es',
-      subject: 'DROVER llego a su destino',
-      html,
-      ...(attachments ? { attachments } : {}),
-    });
+    } catch {}
+    try {
+      const urlNo3 = await this.pdfService.generatePDF(
+        travel.id,
+        'delivery',
+        true,
+        false,
+        false,
+        false,
+        false,
+        'chofer',
+        3,
+        true,
+      );
+      if (urlNo3) {
+        const res = await fetch(urlNo3);
+        const buf = await res.buffer();
+        noTot3 = [{ filename: `transfer_${travel.id}_step3.pdf`, content: buf }];
+      }
+    } catch {}
+    const adminEmail3 = this.getAdminEmail();
+    const receiverEmail3 = (travel?.personReceive?.email as string) || '';
+    const senderEmail3 = (travel?.personDelivery?.email as string) || '';
+    const tasks3: Array<Promise<boolean>> = [];
+    if (client?.email) tasks3.push(this.sendEmail({ from: 'contacto@drove.es', to: client.email, subject: 'DROVER llego a su destino', html, ...(withTot3 ? { attachments: withTot3 } : {}) }));
+    if (adminEmail3) tasks3.push(this.sendEmail({ from: 'contacto@drove.es', to: adminEmail3, subject: 'DROVER llego a su destino', html, ...(noTot3 ? { attachments: noTot3 } : {}) }));
+    if (receiverEmail3) tasks3.push(this.sendEmail({ from: 'contacto@drove.es', to: receiverEmail3, subject: 'DROVER llego a su destino', html, ...(noTot3 ? { attachments: noTot3 } : {}) }));
+    if (senderEmail3) tasks3.push(this.sendEmail({ from: 'contacto@drove.es', to: senderEmail3, subject: 'DROVER llego a su destino', html, ...(noTot3 ? { attachments: noTot3 } : {}) }));
+    await Promise.allSettled(tasks3);
+    return true;
   }
   //Correo de entrega de vehiculo (cliente admin (info@drove.es), personReceive) X
   async sendConfirmationDeliveryEmailCJT(travel: Travels | any) {
@@ -947,6 +994,7 @@ export class ResendService {
         true,
         'delivery',
         4,
+        true,
       );
       if (pdfUrl) {
         const res = await fetch(pdfUrl);
@@ -1080,9 +1128,10 @@ export class ResendService {
     if (!this.client) {
       return false;
     }
-    let attachments: any[] | undefined;
+    // Drover: PDF sin totales
+    let attachNo4: any[] | undefined;
     try {
-      const pdfUrl = await this.pdfService.generatePDF(
+      const urlNo4 = await this.pdfService.generatePDF(
         travel.id,
         'delivery',
         false,
@@ -1092,26 +1141,18 @@ export class ResendService {
         true,
         'chofer',
         4,
+        true,
       );
-      if (pdfUrl) {
-        const res = await fetch(pdfUrl);
+      if (urlNo4) {
+        const res = await fetch(urlNo4);
         const buf = await res.buffer();
-        attachments = [
-          { filename: `transfer_${travel.id}_step4.pdf`, content: buf },
-        ];
+        attachNo4 = [{ filename: `transfer_${travel.id}_step4.pdf`, content: buf }];
       }
-    } catch (e) {}
-    const recipients = Array.from(
-      new Set([
-        (driver?.email as string) || '',
-      ].filter(Boolean)),
-    );
-    return this.sendToMultipleSequential(recipients, {
-      from: 'contacto@drove.es',
-      subject: payload.subject,
-      html,
-      ...(attachments ? { attachments } : {}),
-    });
+    } catch {}
+    if (driver?.email) {
+      await this.sendEmail({ from: 'contacto@drove.es', to: driver.email, subject: payload.subject, html, ...(attachNo4 ? { attachments: attachNo4 } : {}) });
+    }
+    return true;
   }
   //Correo para verificar correos.
   async sendEmailToverifyEmail(email: string, Code: string) {

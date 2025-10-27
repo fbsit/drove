@@ -195,11 +195,8 @@ export class TravelsService {
       exp: number;
     },
   ): Promise<Travels & { url?: string | null }> {
-    const clientId = (user as any)?.sub || (user as any)?.id;
-    const payload = {
-      ...dto,
-      clientId,
-    };
+    const clientId = (dto as any)?.clientId || (user as any)?.sub || (user as any)?.id;
+    const payload = { ...dto, clientId };
     if (!payload.clientId) {
       throw new BadRequestException('Usuario no autenticado: clientId ausente');
     }
@@ -299,17 +296,16 @@ export class TravelsService {
     savedTravel.orderId = String(newInvoice.id);
     await this.travelsRepo.save(savedTravel);
     const travelInfo = await this.findOne(savedTravel.id);
-    const userDetails = await this.userRepo.findOne({
-      where: { id: user.sub },
-    });
+    const clientFromTravel = travelInfo?.client || null;
+    const userDetails = await this.userRepo.findOne({ where: { id: clientId } });
     const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
     const url = `${frontendBase.replace(/\/$/, '')}/cliente/traslados/${travelInfo.id}`;
     
     // Enviar correo al cliente confirmando la solicitud de traslado
     try {
       console.log('=== ENVIANDO CORREO DE CREACIÓN DE TRASLADO ===');
-      console.log('Email del cliente:', userDetails?.email);
-      console.log('Nombre del cliente:', userDetails?.contactInfo?.fullName);
+      console.log('Email del cliente (via travel.client):', clientFromTravel?.email);
+      console.log('Email del cliente (fallback repo):', userDetails?.email);
       console.log('Vehículo:', `${travel.brandVehicle || ''} ${travel.modelVehicle || ''} - ${travel.patentVehicle || ''}`.trim());
       console.log('Fecha:', travel.travelDate || new Date().toLocaleDateString('es-ES'));
       console.log('Origen:', travel.startAddress?.city || 'Origen no especificado');
@@ -317,8 +313,8 @@ export class TravelsService {
       console.log('URL:', url);
       
       await this.resend.sendTransferRequestCreatedEmail(
-        userDetails?.email || '',
-        userDetails?.contactInfo?.fullName || '',
+        clientFromTravel?.email || userDetails?.email || '',
+        clientFromTravel?.contactInfo?.fullName || userDetails?.contactInfo?.fullName || '',
         `${travel.brandVehicle || ''} ${travel.modelVehicle || ''} - ${travel.patentVehicle || ''}`.trim(),
         travel.travelDate || new Date().toLocaleDateString('es-ES'),
         travel.startAddress?.city || 'Origen no especificado',
