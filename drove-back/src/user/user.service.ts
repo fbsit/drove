@@ -181,6 +181,19 @@ export class UserService {
     const totalEarnings = benefitSum;
     const avgPerTrip = completedTrips > 0 ? totalEarnings / completedTrips : 0;
 
+    // Calcular rating promedio y cantidad de valoraciones del drover
+    let ratingAvg = 0;
+    let ratingCount = 0;
+    try {
+      const rows = await (this.userRepo.manager as any).query(
+        `SELECT AVG(rating) as avg, COUNT(*) as cnt FROM reviews WHERE "droverId" = $1`,
+        [id],
+      );
+      const row = Array.isArray(rows) && rows[0] ? rows[0] : null;
+      ratingAvg = row ? Number(row.avg || 0) : 0;
+      ratingCount = row ? Number(row.cnt || 0) : 0;
+    } catch {}
+
     return {
       user,
       metrics: {
@@ -188,6 +201,8 @@ export class UserService {
         completedTrips,
         totalEarnings,
         avgPerTrip,
+        rating: Number(ratingAvg?.toFixed?.(2) || ratingAvg || 0),
+        ratingCount,
       },
     };
   }
