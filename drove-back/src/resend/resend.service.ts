@@ -340,6 +340,7 @@ export class ResendService {
     }
     let attachments: any[] | undefined;
     try {
+      // Cliente debe recibir el PDF con detailInfo "chofer"
       const pdfUrl = await this.pdfService.generatePDF(
         travel.id,
         'withdrawals',
@@ -348,7 +349,7 @@ export class ResendService {
         false,
         false,
         false,
-        'delivery',
+        'chofer',
         1,
       );
       if (pdfUrl) {
@@ -448,17 +449,22 @@ export class ResendService {
       return false;
     }
     let attachments: any[] | undefined;
+    // Enviar con asuntos diferenciados: drover recibe el nuevo asunto; admin mantiene el existente
+    const droverEmail = (driver?.email as string) || '';
+    const adminEmail = this.getAdminEmail();
+
+    // Generar PDF con detailInfo "delivery" para drover/admin (con datos del receptor)
     try {
       const pdfUrl = await this.pdfService.generatePDF(
-        travel.id,
-        'withdrawals',
-        false,
-        false,
-        false,
-        false,
-        false,
-        'chofer',
-        1,
+      travel.id,
+      'withdrawals',
+      false,
+      false,
+      false,
+      false,
+      false,
+      'delivery',
+      1,
       );
       if (pdfUrl) {
         const res = await fetch(pdfUrl);
@@ -468,9 +474,6 @@ export class ResendService {
         ];
       }
     } catch (e) {}
-    // Enviar con asuntos diferenciados: drover recibe el nuevo asunto; admin mantiene el existente
-    const droverEmail = (driver?.email as string) || '';
-    const adminEmail = this.getAdminEmail();
 
     // 1) Email al drover con asunto solicitado
     const droverSendPromise = droverEmail
