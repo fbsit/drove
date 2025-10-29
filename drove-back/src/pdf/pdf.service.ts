@@ -1962,6 +1962,25 @@ export class PdfService {
               height: certHeight,
             });
             currentY = yCert - 20;
+            // 6.1) Justificante de combustible (si existe) inmediatamente debajo del certificado
+            if (mustAddFuelReceipt && handoverDocuments?.fuel_receipt) {
+              const fuelImg = await this.embedImageFromSource(
+                pdfDoc,
+                handoverDocuments.fuel_receipt,
+              );
+              if (fuelImg) {
+                // Mantener diseño: misma anchura, altura fija y separación de 10px
+                const fuelHeight = 560; // reservado en extraHeight (600)
+                const yFuel = Math.max(50, currentY - 10 - fuelHeight);
+                page.drawImage(fuelImg, {
+                  x: 50,
+                  y: yFuel,
+                  width: 500,
+                  height: fuelHeight,
+                });
+                currentY = yFuel - 20;
+              }
+            }
           } else {
             console.error(
               'Error incrustando delivery_document: formato/URL no soportado',
