@@ -414,6 +414,10 @@ const ActiveTrip: React.FC = () => {
   }
 
   const nextStatus = getNextStatus(trip.status);
+  // Comentarios de inicio/entrega
+  const pickupComments = String((trip as any)?.pickupVerification?.comments || '').trim();
+  const deliveryComments = String((trip as any)?.deliveryVerification?.handoverDocuments?.comments || '').trim();
+  const hasAnyComments = Boolean(pickupComments || deliveryComments);
 
   return (
     <div>
@@ -616,6 +620,32 @@ const ActiveTrip: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* Comentarios adicionales (inicio/fin) */}
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="flex items-center gap-2 text-white/70 text-sm">
+                <MessageCircle className="h-5 w-5 text-[#6EF7FF]" />
+                <span className="uppercase tracking-wide">COMENTARIOS DEL DROVER</span>
+              </div>
+              {hasAnyComments ? (
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 text-white text-sm">
+                  <div>
+                    <div className="text-white/60 text-xs mb-1">Inicio del traslado</div>
+                    <div className="bg-white/5 border border-white/10 rounded-xl p-3 whitespace-pre-wrap break-words min-h-[40px]">
+                      {pickupComments}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-white/60 text-xs mb-1">Final del traslado</div>
+                    <div className="bg-white/5 border border-white/10 rounded-xl p-3 whitespace-pre-wrap break-words min-h-[40px]">
+                      {deliveryComments}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-3 text-white/70">Sin comentarios por parte del drover.</div>
+              )}
+            </div>
           </CardContent>
         </Card>
 

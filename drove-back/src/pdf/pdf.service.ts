@@ -225,8 +225,9 @@ export class PdfService {
         typeof recipientIdentity.selfieWithId === 'string' &&
         recipientIdentity.selfieWithId.trim() !== '';
 
-      if (mustAddCertificate) extraHeight += 200;
-      if (mustAddFuelReceipt) extraHeight += 600;
+      // Reservar espacio suficiente para certificado y justificante para evitar solapamientos
+      if (mustAddCertificate) extraHeight += 720; // ~680px imagen + márgenes
+      if (mustAddFuelReceipt) extraHeight += 700; // ~560px imagen + márgenes
       if (mustAddSelfie) extraHeight += 260;
 
       let pageHeight = addQr ? baseWithImage : baseWithImage - qrSectionHeight;
@@ -1953,15 +1954,15 @@ export class PdfService {
           );
           if (embeddedImage) {
             const certHeight = 680;
-            // Subir el certificado 200px
-            const yCert = Math.max(50, currentY - certHeight - 300 + 270);
+            // Posicionar inmediatamente bajo el flujo, sin solapar, dejando margen 10px
+            const yCert = Math.max(50, currentY - certHeight - 10);
             page.drawImage(embeddedImage, {
               x: 50,
               y: yCert,
               width: 500,
               height: certHeight,
             });
-            currentY = yCert - 20;
+            currentY = yCert - 10;
             // 6.1) Justificante de combustible (si existe) inmediatamente debajo del certificado
             if (mustAddFuelReceipt && handoverDocuments?.fuel_receipt) {
               const fuelImg = await this.embedImageFromSource(
@@ -1970,15 +1971,15 @@ export class PdfService {
               );
               if (fuelImg) {
                 // Mantener diseño: misma anchura, altura fija y separación de 10px
-                const fuelHeight = 560; // reservado en extraHeight (600)
-                const yFuel = Math.max(50, currentY - 10 - fuelHeight);
+                const fuelHeight = 560; // altura objetivo
+                const yFuel = Math.max(50, currentY - fuelHeight - 10);
                 page.drawImage(fuelImg, {
                   x: 50,
                   y: yFuel,
                   width: 500,
                   height: fuelHeight,
                 });
-                currentY = yFuel - 20;
+                currentY = yFuel - 10;
               }
             }
           } else {
