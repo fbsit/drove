@@ -5,7 +5,7 @@ import { Check, Loader, MapPin, Phone, UserPlus } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { getVehicleTransfer } from '@/services/vehicleTransferService';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Card, CardHeader, CardTitle, CardDescription, CardContent,
 } from '@/components/ui/card';
@@ -25,6 +25,7 @@ interface Driver {
   status: 'disponible' | 'ocupado' | 'APPROVED';
   currentLat?: number;
   currentLng?: number;
+  photo?: string | null;
   location: {
     address: string;
     city: string;
@@ -147,6 +148,7 @@ export const AssignDriver: React.FC = () => {
       status: d.status === 'APPROVED' ? 'APPROVED' : 'disponible',
       currentLat: typeof d.currentLat === 'number' ? d.currentLat : undefined,
       currentLng: typeof d.currentLng === 'number' ? d.currentLng : undefined,
+      photo: d?.photo || d?.contactInfo?.selfie || d?.selfie || d?.avatar || null,
       location: {
         address: d?.location?.address || d?.contactInfo?.city || '—',
         city: d?.location?.city || d?.contactInfo?.city || '—',
@@ -349,6 +351,9 @@ export const AssignDriver: React.FC = () => {
                 {/* header */}
                 <div className="flex items-start gap-4 mb-4">
                   <Avatar className="h-14 w-14">
+                    {d?.photo ? (
+                      <AvatarImage src={d.photo} alt={d?.contactInfo?.fullName || 'Drover'} />
+                    ) : null}
                     <AvatarFallback className="bg-[#6EF7FF] text-[#22142A] font-bold">
                       {d?.contactInfo?.fullName.split(' ').map(w => w[0]).join('').slice(0, 2)}
                     </AvatarFallback>

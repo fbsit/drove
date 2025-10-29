@@ -1,0 +1,38 @@
+<table cellspacing="0" cellpadding="0" width="100%" style="background:#0F0A12;color:#fff;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+  <tr>
+    <td align="center" style="padding:24px;">
+      <table width="600" cellspacing="0" cellpadding="0" style="background:#1A1122;border-radius:14px;overflow:hidden;color:#fff;">
+        <tr>
+          <td align="center" style="padding:20px 20px 8px 20px;">
+            <img src="https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null" alt="DROVE" height="40" />
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 20px 8px 20px;">
+            <h2 style="margin:0 0 6px 0;font-size:20px;color:#6EF7FF;">Nuevo traslado creado</h2>
+            <p style="margin:0;color:#DDD;font-size:14px;">Hay un nuevo traslado pendiente de asignación.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:14px 20px 6px 20px;">
+            <div style="background:#241832;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px;">
+              <p style="margin:0 0 6px 0;font-size:14px;color:#fff;"><strong>Vehículo:</strong> {{vehicle}}</p>
+              <p style="margin:0 0 6px 0;font-size:14px;color:#fff;"><strong>Fecha solicitada:</strong> {{requested_date}}</p>
+              <p style="margin:0 0 6px 0;font-size:14px;color:#fff;"><strong>Punto de origen:</strong> {{origin}}</p>
+              <p style="margin:0 0 6px 0;font-size:14px;color:#fff;"><strong>Punto de destino:</strong> {{destination}}</p>
+              <p style="margin:0;font-size:14px;color:#A5F3FC;"><strong>Estado:</strong> En espera de asignación</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:12px 20px 24px 20px;">
+            <a href="{{transfer_url}}" style="display:inline-block;background:#6EF7FF;color:#22142A;text-decoration:none;padding:10px 16px;border-radius:10px;font-weight:600;">Abrir para asignar</a>
+          </td>
+        </tr>
+      </table>
+      <div style="color:#888;font-size:12px;margin-top:10px;">© {{year}} DROVE</div>
+    </td>
+  </tr>
+</table>
+
+

@@ -1613,14 +1613,14 @@ export class ResendService {
     destination: string,
     transferId: string,
   ) => {
-    const template = this.loadTemplate('newTransfer');
+    const template = this.loadTemplate('newTransferAdmin');
     const html = template({
-      name: clientName,
       vehicle,
       requested_date: requestedDate,
       origin,
       destination,
-      transfer_url: this.buildFrontUrl(`/admin/traslados/${transferId}`),
+      transfer_url: this.buildFrontUrl(`/admin/asignar/${transferId}`),
+      year: new Date().getFullYear(),
     });
 
     if (!this.client) return false;

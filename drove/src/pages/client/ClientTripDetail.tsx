@@ -159,6 +159,8 @@ export default function ClientTripDetail() {
     return 0;
   })();
 
+  const hasInvoicePdf = Boolean(trip?.invoice?.urlPDF);
+
   const statusInfo = {
     PENDINGPAID: { label: 'Pendiente de pago', hint: 'Abona el viaje para continuar', color: '#d97706' },
     CREATED: { label: 'Creado', hint: 'Buscando conductor', color: '#5f39bd' },
@@ -345,12 +347,14 @@ export default function ClientTripDetail() {
                     </div>
                   </div>
                 )}
-                <button
-                  className="mt-2 bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-montserrat font-bold rounded-2xl px-4 py-2 text-sm transition-colors shadow"
-                  onClick={handleFacturaDownload}
-                >
-                  Descargar factura
-                </button>
+                {hasInvoicePdf && (
+                  <button
+                    className="mt-2 bg-[#6EF7FF] hover:bg-[#32dfff] text-[#22142A] font-montserrat font-bold rounded-2xl px-4 py-2 text-sm transition-colors shadow"
+                    onClick={handleFacturaDownload}
+                  >
+                    Descargar factura
+                  </button>
+                )}
               </div>
             </div>
 
@@ -486,7 +490,7 @@ export default function ClientTripDetail() {
               <hr className="w-full border-[#22142A]/20 mb-3" />
               <div className="flex flex-col items-center w-full gap-2">
                 <div className="bg-[#b5eaff] text-[#22142A] rounded-full w-14 h-14 flex items-center justify-center font-montserrat font-bold text-2xl mb-2">
-                  {trip?.drover?.contactInfo?.fullName ?? "Drover"}
+                  {trip?.drover?.contactInfo?.fullName ?? "Buscando Drover..."}
                 </div>
                 <div className="text-[#22142A] font-montserrat font-bold md:text-xl text-center">{trip?.drover?.contactInfo?.fullName}</div>
                 <div className="text-[#22142A]/80 text-base font-montserrat text-center">{trip?.drover?.contactInfo.phone || trip?.drover?.contactInfo.phones[0]}</div>

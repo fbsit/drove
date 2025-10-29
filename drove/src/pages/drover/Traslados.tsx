@@ -11,6 +11,7 @@ import { MapPin, Calendar, Clock, Phone, Mail, Package } from 'lucide-react';
 import { AuthService } from '@/services/authService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import MobileDroverFooterNav from '@/components/layout/MobileDroverFooterNav';
 
 const DroverTraslados = () => {
   const { user } = useAuth();
@@ -90,7 +91,7 @@ const DroverTraslados = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] p-4 pb-20">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2" style={{ fontFamily: "Helvetica" }}>
@@ -222,6 +223,7 @@ const DroverTraslados = () => {
           </div>
         )}
       </div>
+      <MobileDroverFooterNav />
     </div>
   );
 };

@@ -332,8 +332,8 @@ const TransferDetail = () => {
           </Card>
         </div>
 
-        {/* Drover asignado */}
-        {transferData.droverInfo && (
+        {/* Drover asignado o buscando drover */}
+        {transferData.droverInfo ? (
           <Card className="bg-white/10 border-white/20">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
@@ -354,6 +354,25 @@ const TransferDetail = () => {
                   <Phone size={16} className="mr-2" />
                   Contactar
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="bg-white/10 border-white/20">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <User size={20} />
+                Buscando drover para asignar
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-center py-4">
+                <div className="text-center">
+                  <div className="w-16 h-16 rounded-full bg-[#6EF7FF]/20 flex items-center justify-center mx-auto mb-3">
+                    <User size={24} className="text-[#6EF7FF]" />
+                  </div>
+                  <p className="text-white/70 text-sm">Aún no se ha asignado un conductor</p>
+                </div>
               </div>
             </CardContent>
           </Card>

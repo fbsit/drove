@@ -19,6 +19,7 @@ import { toast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import MobileDroverFooterNav from '@/components/layout/MobileDroverFooterNav';
 
 const DashboardDroverPanel: React.FC = () => {
   const { user } = useAuth();           // se asume user.id
@@ -175,11 +176,44 @@ const DashboardDroverPanel: React.FC = () => {
     ]),
     status: t.status || t.transferStatus || t.state || 'ASSIGNED',
     createdAt: t.createdAt || t.created_at || t.scheduledDate || t.pickup_details?.pickupDate || Date.now(),
+    updatedAt: t.updatedAt || t.updated_at || null,
     totalPrice: parseMoney(t.totalPrice ?? t.price ?? t.amount ?? 0),
     driverFee: parseMoney(t.driverFee ?? (t as any)?.fee ?? (t as any)?.compensation ?? 0),
     driverFeeMeta: (t as any)?.driverFeeMeta || null,
     distanceTravel: t.distanceTravel ?? t.transfer_details?.distance ?? t.distance ?? '-',
   }));
+
+  // Datos de mes actual para contratados: kilómetros recorridos y cuota mensual
+  const employmentType = String((user as any)?.employmentType || '').toUpperCase();
+  const monthISO = React.useMemo(() => new Date().toISOString().slice(0, 7), []);
+  const { data: monthComp } = useQuery<any>({
+    queryKey: ['drover-monthly-comp', user?.id, monthISO],
+    queryFn: () => DroverService.getContractedMonthlyCompensation(String(user?.id), monthISO),
+    enabled: !!user?.id && employmentType === 'CONTRACTED',
+  });
+
+  const contractedKm = Number(monthComp?.kilometers || 0);
+  const contractedThreshold = Number(monthComp?.thresholdKm || 2880);
+  const deliveredTripsThisMonth = React.useMemo(() => {
+    const start = new Date(`${monthISO}-01T00:00:00Z`).getTime();
+    const end = new Date(new Date(`${monthISO}-01T00:00:00Z`).setUTCMonth(new Date(`${monthISO}-01T00:00:00Z`).getUTCMonth() + 1)).getTime();
+    const inRange = (ts: any) => {
+      const n = typeof ts === 'number' ? ts : Date.parse(String(ts));
+      return isFinite(n) && n >= start && n < end;
+    };
+    return (droverTrips as any[]).filter((t: any) => {
+      const s = String(t.status || t.transferStatus || t.state || '').toUpperCase();
+      const dateRef = t.updatedAt || t.updated_at || t.createdAt || t.created_at;
+      return s === 'DELIVERED' && inRange(dateRef);
+    }).length;
+  }, [droverTrips, monthISO]);
+
+  const avgKmPerTripThisMonth = React.useMemo(() => {
+    if (deliveredTripsThisMonth > 0 && contractedKm > 0) {
+      return contractedKm / deliveredTripsThisMonth;
+    }
+    return 0;
+  }, [contractedKm, deliveredTripsThisMonth]);
   const [search, setSearch] = React.useState('');
   const [status, setStatus] = React.useState('');
   const visibleTrips = trips
@@ -285,8 +319,17 @@ const DashboardDroverPanel: React.FC = () => {
 
       {/* KPIs (solo dos contadores como en la imagen) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-start">
-        <KpiCard icon={DollarSign} label="Ganancia estimada" value={`€${Number(stats?.totalEarnings ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`} />
-        <KpiCard icon={Star} label="Promedio por Traslado" value={`€${Number(stats?.avgPerTrip ?? derivedAvgPerTrip).toLocaleString(undefined, { minimumFractionDigits: 2 })}`} />
+        {employmentType === 'CONTRACTED' && contractedKm < contractedThreshold ? (
+          <>
+            <KpiCard icon={TrendingUp} label={`KM recorridos (objetivo ${contractedThreshold} km)`} value={`${Math.round(contractedKm).toLocaleString()} km`} />
+            <KpiCard icon={Clock} label="KM promedio por viaje" value={`${avgKmPerTripThisMonth.toFixed(1)} km`} />
+          </>
+        ) : (
+          <>
+            <KpiCard icon={DollarSign} label="Ganancia estimada" value={`€${Number(stats?.totalEarnings ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`} />
+            <KpiCard icon={Star} label="Promedio por Traslado" value={`€${Number(stats?.avgPerTrip ?? derivedAvgPerTrip).toLocaleString(undefined, { minimumFractionDigits: 2 })}`} />
+          </>
+        )}
       </div>
 
       {/* Filtros */}
@@ -382,6 +425,7 @@ const DashboardDroverPanel: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+      <MobileDroverFooterNav />
     </div>
   );
 };

@@ -117,10 +117,15 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
   };
 
   const handleFacturaDownload = () => {
-    toast({
-      title: "Descarga iniciada",
-      description: "Se está descargando la factura PDF.",
-    });
+    const url = trip?.invoice?.urlPDF;
+    if (!url) return;
+    const link = document.createElement('a');
+    link.target = '_blank';
+    link.href = url;
+    link.download = url.split('/').pop() || 'factura.pdf';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleReviewSubmitted = (review: { rating: number; comment: string }) => {
@@ -142,6 +147,7 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
   const isCompleted = trip.status === "completado";
   const canLeaveReview = isCompleted && !trip.review;
   const isPendingPayment = String(trip?.invoice?.status || trip?.status || '').toUpperCase() !== 'PAID';
+  const hasInvoicePdf = Boolean(trip?.invoice?.urlPDF);
 
   const handleCopyIban = () => {
     const iban = 'ES8300494612672916115882';
@@ -263,15 +269,17 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
                   {pagoTarjeta ? "Pagado" : "Pendiente"}
                 </span>
               )}
-              <DroveButton
-                variant="default"
-                size="sm"
-                className="mt-2 text-xs"
-                onClick={handleFacturaDownload}
-                icon={<Download className="w-3 h-3" />}
-              >
-                {isDrover ? 'Detalle' : 'Factura'}
-              </DroveButton>
+              {hasInvoicePdf && (
+                <DroveButton
+                  variant="default"
+                  size="sm"
+                  className="mt-2 text-xs"
+                  onClick={handleFacturaDownload}
+                  icon={<Download className="w-3 h-3" />}
+                >
+                  {isDrover ? 'Detalle' : 'Factura'}
+                </DroveButton>
+              )}
             </div>
           </div>
           {isPendingPayment && !isDrover && (
@@ -483,15 +491,17 @@ export default function MobileClientTripDetail({ trip }: MobileClientTripDetailP
           >
             Copiar ID #{trip.id}
           </DroveButton>
-          <DroveButton
-            variant="default"
-            size="lg"
-            icon={<Download className="w-4 h-4" />}
-            onClick={handleFacturaDownload}
-            className="w-full font-bold"
-          >
-            Descargar PDF
-          </DroveButton>
+          {hasInvoicePdf && (
+            <DroveButton
+              variant="default"
+              size="lg"
+              icon={<Download className="w-4 h-4" />}
+              onClick={handleFacturaDownload}
+              className="w-full font-bold"
+            >
+              Descargar PDF
+            </DroveButton>
+          )}
         </div>
       </div>
 

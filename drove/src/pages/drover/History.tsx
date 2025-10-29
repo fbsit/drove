@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DroverService } from '@/services/droverService';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin, Calendar, Clock, Package } from 'lucide-react';
+import MobileDroverFooterNav from '@/components/layout/MobileDroverFooterNav';
 
 const DroverHistorialTraslados = () => {
   const [statusFilter, setStatusFilter] = useState('todos');
@@ -55,7 +56,7 @@ const DroverHistorialTraslados = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#22142A] via-[#2A1B3D] to-[#22142A] p-4 pb-20">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Historial de Traslados</h1>
@@ -150,6 +151,7 @@ const DroverHistorialTraslados = () => {
           </div>
         )}
       </div>
+      <MobileDroverFooterNav />
     </div>
   );
 };
