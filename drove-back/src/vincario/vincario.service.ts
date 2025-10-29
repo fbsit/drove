@@ -65,16 +65,27 @@ export class VincarioService {
       if (cached) {
         const isFresh = Date.now() - new Date(cached.createdAt).getTime() < this.vinTtlMs;
         if (isFresh) {
-          this.logger.log(`VIN ${normalizedVin} encontrado en cache`);
-          return {
-            success: true,
-            data: {
-              make: cached.payload.make || '',
-              model: cached.payload.model || '',
-              year: cached.payload.year || '',
-              vin: normalizedVin
-            }
-          };
+          // Verificar que los datos cacheados tengan información útil
+          const cachedData = cached.payload;
+          const hasUsefulCachedData = 
+            (cachedData.make || cachedData.manufacturer || cachedData.brand) &&
+            (cachedData.model || cachedData.model_name) &&
+            (cachedData.year || cachedData.model_year || cachedData.vehicle_year);
+          
+          if (hasUsefulCachedData) {
+            this.logger.log(`VIN ${normalizedVin} encontrado en cache con datos útiles`);
+            return {
+              success: true,
+              data: {
+                make: cachedData.make || cachedData.manufacturer || cachedData.brand || '',
+                model: cachedData.model || cachedData.model_name || '',
+                year: cachedData.year || cachedData.model_year || cachedData.vehicle_year || '',
+                vin: normalizedVin
+              }
+            };
+          } else {
+            this.logger.warn(`VIN ${normalizedVin} en cache no tiene información útil - ignorando cache`);
+          }
         }
       }
 
@@ -122,16 +133,27 @@ export class VincarioService {
         vin: normalizedVin
       };
 
-      // Guardar en cache
-      try {
-        await this.vinRepo.save({
-          vin: normalizedVin,
-          payload: data
-        });
-        this.logger.log(`VIN ${normalizedVin} guardado en cache`);
-      } catch (cacheError) {
-        this.logger.warn(`Error guardando VIN en cache:`, cacheError);
-        // No fallar por error de cache
+      // Verificar si tenemos información útil antes de cachear
+      const hasUsefulData = vinData.make && vinData.model && vinData.year;
+      
+      if (hasUsefulData) {
+        // Solo guardar en cache si tenemos información útil
+        try {
+          await this.vinRepo.save({
+            vin: normalizedVin,
+            payload: data
+          });
+          this.logger.log(`VIN ${normalizedVin} guardado en cache con datos útiles`);
+        } catch (cacheError) {
+          this.logger.warn(`Error guardando VIN en cache:`, cacheError);
+          // No fallar por error de cache
+        }
+      } else {
+        this.logger.warn(`VIN ${normalizedVin} no tiene información útil - no se cachea`);
+        return {
+          success: false,
+          error: 'No se encontró información completa para este VIN (marca, modelo o año faltante)'
+        };
       }
 
       this.logger.log(`VIN ${normalizedVin} validado exitosamente: ${vinData.make} ${vinData.model} ${vinData.year}`);
