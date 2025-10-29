@@ -90,7 +90,12 @@ export class VincarioService {
         })
       );
 
+      console.log(response);
+
       const data = response.data;
+
+      // Loggear la respuesta completa de Vincario
+      this.logger.log(`Vincario API response para VIN ${normalizedVin}:`, JSON.stringify(data, null, 2));
 
       // Verificar si la respuesta es exitosa
       if (!data || data.error) {
@@ -101,11 +106,19 @@ export class VincarioService {
         };
       }
 
-      // Extraer datos relevantes
+      // Loggear las claves disponibles en la respuesta
+      this.logger.log(`Campos disponibles en respuesta Vincario:`, Object.keys(data));
+      
+      // Loggear campos específicos que esperamos
+      this.logger.log(`make: ${data.make}, model: ${data.model}, year: ${data.year}`);
+      this.logger.log(`manufacturer: ${data.manufacturer}, model_year: ${data.model_year}`);
+      this.logger.log(`vehicle_type: ${data.vehicle_type}, body_style: ${data.body_style}`);
+
+      // Extraer datos relevantes - probar diferentes campos posibles
       const vinData = {
-        make: data.make || '',
-        model: data.model || '',
-        year: data.year || '',
+        make: data.make || data.manufacturer || data.brand || '',
+        model: data.model || data.model_name || '',
+        year: data.year || data.model_year || data.vehicle_year || '',
         vin: normalizedVin
       };
 

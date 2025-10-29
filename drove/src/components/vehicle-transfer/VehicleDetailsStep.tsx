@@ -70,11 +70,19 @@ const VehicleDetailsStep: React.FC<VehicleDetailsStepProps> = ({ form }) => {
       const result = await vincarioService.validateVin(vinValue);
       
       if (result.success && result.data) {
+        console.log(`[VIN_VALIDATION] Datos recibidos de Vincario:`, result.data);
+        
         // Actualizar formulario con datos de Vincario
         form.setValue("vehicleDetails.brand", result.data.make);
         form.setValue("vehicleDetails.model", result.data.model);
         form.setValue("vehicleDetails.year", result.data.year);
         form.setValue("vehicleDetails.vinValidated", true);
+        
+        console.log(`[VIN_VALIDATION] Formulario actualizado con:`, {
+          brand: result.data.make,
+          model: result.data.model,
+          year: result.data.year
+        });
         
         setVinState({
           vinValidated: true,

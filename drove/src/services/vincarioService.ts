@@ -22,9 +22,11 @@ export interface VincarioValidationState {
 class VincarioService {
   async validateVin(vin: string): Promise<VincarioResponse> {
     try {
+      console.log(`[VINCARIO] Validando VIN: ${vin}`);
       const data = await ApiService.post<VincarioResponse>('/vincario/decode', { 
         vin: vin.toUpperCase() 
       });
+      console.log(`[VINCARIO] Respuesta recibida:`, data);
       return data;
     } catch (error: any) {
       console.error('Error validating VIN:', error);
