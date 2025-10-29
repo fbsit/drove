@@ -13,6 +13,7 @@ export interface VehicleTransferFormData {
     brand?: string;
     model?: string;
     year?: string;
+    vinValidated?: boolean;
   };
   pickupDetails?: {
     originAddress?: {
@@ -143,16 +144,33 @@ export const useVehicleTransferRequest = () => {
     if (stepNumber === 1) {
       const { vehicleDetails } = formValues ?? {};
 
+      // Validar que el VIN esté presente y validado
+      if (!vehicleDetails?.vin?.trim()) {
+        form.setError('vehicleDetails.vin' as any, { type: 'required', message: 'El VIN es obligatorio' });
+        return false;
+      }
+
+      if (!vehicleDetails?.vinValidated) {
+        toast({ 
+          variant: 'destructive', 
+          title: 'VIN no validado', 
+          description: 'Debes validar el VIN antes de continuar.' 
+        });
+        return false;
+      }
+
+      // Validar que los datos del vehículo estén presentes (obtenidos de Vincario)
       const hasAllVehicleFields =
         !!vehicleDetails?.brand?.trim() &&
         !!vehicleDetails?.model?.trim() &&
-        !!vehicleDetails?.year?.toString().trim() &&
-        !!vehicleDetails?.vin?.trim(); // matrícula ya no es obligatoria
+        !!vehicleDetails?.year?.toString().trim();
 
       if (!hasAllVehicleFields) {
-        if (!vehicleDetails?.vin?.trim()) {
-          form.setError('vehicleDetails.vin' as any, { type: 'required', message: 'El VIN es obligatorio' });
-        }
+        toast({ 
+          variant: 'destructive', 
+          title: 'Datos incompletos', 
+          description: 'Los datos del vehículo no están completos. Valida el VIN nuevamente.' 
+        });
         return false;
       }
 

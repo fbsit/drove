@@ -25,6 +25,7 @@ export interface VehicleTransferFormData {
     year?: string;
     licensePlate?: string;
     vin?: string;
+    vinValidated?: boolean;
   };
   
   transferDetails?: {

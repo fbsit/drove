@@ -7,6 +7,7 @@ import {
   IsBoolean,
   IsEnum,
   IsNumber,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/mapped-types';
@@ -123,7 +124,7 @@ export class AddressDto {
 /* ---------- DTOs principales de viaje ---------- */
 
 export class CreateTravelDto {
-  @ApiProperty() @IsString() bastidor: string;
+  @ApiProperty() @IsString() @IsNotEmpty() bastidor: string;
   @ApiProperty() @IsString() typeVehicle: string;
   @ApiProperty() @IsString() brandVehicle: string;
   @ApiProperty() @IsString() yearVehicle: string;
