@@ -1208,11 +1208,19 @@ export class PdfService {
                   wixImageUrl,
                 );
                 if (img) {
+                  // Mantener proporción de la imagen dentro del área disponible
+                  const naturalW = (img as any).width || imageWidth;
+                  const naturalH = (img as any).height || imageHeight;
+                  const scale = Math.min(imageWidth / naturalW, imageHeight / naturalH);
+                  const drawW = Math.max(1, Math.floor(naturalW * scale));
+                  const drawH = Math.max(1, Math.floor(naturalH * scale));
+                  const offsetX = xPosition + 10 + Math.max(0, (imageWidth - drawW) / 2);
+                  const offsetY = currentY + 10 + Math.max(0, (imageHeight - drawH) / 2);
                   page.drawImage(img, {
-                    x: xPosition + 10,
-                    y: currentY + 10,
-                    width: imageWidth,
-                    height: imageHeight,
+                    x: offsetX,
+                    y: offsetY,
+                    width: drawW,
+                    height: drawH,
                   });
                 } else {
                   console.warn(

@@ -108,6 +108,19 @@ export class ResendService {
     this.logger.log('Cliente Resend inicializado correctamente');
   }
 
+  private async mayIncludeContractedBenefit(droverId?: string): Promise<boolean> {
+    try {
+      if (!droverId) return false;
+      const monthISO = new Date().toISOString().slice(0, 7);
+      const monthly = await this.compensation.calcContractedMonthlyByDrover(droverId, monthISO);
+      const totalKm = Number(monthly?.kilometers || 0);
+      const threshold = Number(monthly?.thresholdKm || 0);
+      return isFinite(totalKm) && isFinite(threshold) && totalKm >= threshold;
+    } catch {
+      return false;
+    }
+  }
+
   private localizeInvoiceStatus(status: string | undefined | null): string {
     const key = String(status || '').toUpperCase();
     const map: Record<string, string> = {
@@ -416,14 +429,20 @@ export class ResendService {
         return isNaN(n) ? 0 : n;
       } catch { return 0; }
     })();
-    const driverBenefit = (() => {
-      const stored = (travel as any)?.driverFee;
-      if (typeof stored === 'number' && !isNaN(stored)) return stored;
+    const driverBenefitText = await (async () => {
       try {
         const emp = String(travel?.drover?.employmentType || '').toUpperCase();
-        if (emp === 'CONTRACTED') return this.compensation.calcContractedPerTrip(kmValue).driverFee;
-        return this.compensation.calcFreelancePerTrip(kmValue).driverFee;
-      } catch { return 0; }
+        if (emp === 'CONTRACTED') {
+          const allow = await this.mayIncludeContractedBenefit(travel?.drover?.id);
+          if (!allow) return '';
+          const fee = this.compensation.calcContractedPerTrip(kmValue).driverFee;
+          return `${Number(fee || 0).toFixed(2)} €`;
+        }
+        const stored = (travel as any)?.driverFee;
+        if (typeof stored === 'number' && !isNaN(stored)) return `${Number(stored).toFixed(2)} €`;
+        const fee = this.compensation.calcFreelancePerTrip(kmValue).driverFee;
+        return `${Number(fee || 0).toFixed(2)} €`;
+      } catch { return ''; }
     })();
 
     const payload: Payload & { driver_benefit?: string } = {
@@ -461,7 +480,7 @@ export class ResendService {
         country: delivery.country,
       },
       distance: kmValue, // e.g. 200
-      driver_benefit: `${driverBenefit.toFixed(2)} €`,
+      driver_benefit: driverBenefitText,
       total_with_tax: `$${(travel?.totalPrice ?? 0).toLocaleString('es-CL')}`, // retained for client templates
       issue_date: new Date().toLocaleDateString('es-ES'),
     };
@@ -671,14 +690,20 @@ export class ResendService {
         return isNaN(n) ? 0 : n;
       } catch { return 0; }
     })();
-    const driverBenefit2 = (() => {
-      const stored = (travel as any)?.driverFee;
-      if (typeof stored === 'number' && !isNaN(stored)) return stored;
+    const driverBenefitPickupText = await (async () => {
       try {
         const emp = String(travel?.drover?.employmentType || '').toUpperCase();
-        if (emp === 'CONTRACTED') return this.compensation.calcContractedPerTrip(kmValue2).driverFee;
-        return this.compensation.calcFreelancePerTrip(kmValue2).driverFee;
-      } catch { return 0; }
+        if (emp === 'CONTRACTED') {
+          const allow = await this.mayIncludeContractedBenefit(travel?.drover?.id);
+          if (!allow) return '';
+          const fee = this.compensation.calcContractedPerTrip(kmValue2).driverFee;
+          return `${Number(fee || 0).toFixed(2)} €`;
+        }
+        const stored = (travel as any)?.driverFee;
+        if (typeof stored === 'number' && !isNaN(stored)) return `${Number(stored).toFixed(2)} €`;
+        const fee = this.compensation.calcFreelancePerTrip(kmValue2).driverFee;
+        return `${Number(fee || 0).toFixed(2)} €`;
+      } catch { return ''; }
     })();
 
     const payload: Payload & { driver_benefit?: string } = {
@@ -718,7 +743,7 @@ export class ResendService {
         country: delivery.country,
       },
       distance: kmValue2, // e.g. 200
-      driver_benefit: `${driverBenefit2.toFixed(2)} €`,
+      driver_benefit: driverBenefitPickupText,
       total_with_tax: `$${travel.totalPrice.toLocaleString('es-CL')}`, // retained but not used in drover template
       issue_date: new Date().toLocaleDateString('es-ES'),
     };
@@ -1088,14 +1113,20 @@ export class ResendService {
         return isNaN(n) ? 0 : n;
       } catch { return 0; }
     })();
-    const driverBenefitDelivery = (() => {
-      const stored = (travel as any)?.driverFee;
-      if (typeof stored === 'number' && !isNaN(stored)) return stored;
+    const driverBenefitDeliveryText = await (async () => {
       try {
         const emp = String(travel?.drover?.employmentType || '').toUpperCase();
-        if (emp === 'CONTRACTED') return this.compensation.calcContractedPerTrip(kmValueDelivery).driverFee;
-        return this.compensation.calcFreelancePerTrip(kmValueDelivery).driverFee;
-      } catch { return 0; }
+        if (emp === 'CONTRACTED') {
+          const allow = await this.mayIncludeContractedBenefit(travel?.drover?.id);
+          if (!allow) return '';
+          const fee = this.compensation.calcContractedPerTrip(kmValueDelivery).driverFee;
+          return `${Number(fee || 0).toFixed(2)} €`;
+        }
+        const stored = (travel as any)?.driverFee;
+        if (typeof stored === 'number' && !isNaN(stored)) return `${Number(stored).toFixed(2)} €`;
+        const fee = this.compensation.calcFreelancePerTrip(kmValueDelivery).driverFee;
+        return `${Number(fee || 0).toFixed(2)} €`;
+      } catch { return ''; }
     })();
 
     const payload: Payload & { driver_benefit?: string } = {
@@ -1151,7 +1182,7 @@ export class ResendService {
           return isNaN(n) ? 0 : n;
         } catch { return 0; }
       })(), // e.g. 200
-      driver_benefit: `${driverBenefitDelivery.toFixed(2)} €`,
+      driver_benefit: driverBenefitDeliveryText,
       total_with_tax: `$${travel.totalPrice.toLocaleString('es-CL')}`,
       issue_date: new Date().toLocaleDateString('es-ES'),
     };
