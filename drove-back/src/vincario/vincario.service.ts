@@ -67,19 +67,28 @@ export class VincarioService {
         if (isFresh) {
           // Verificar que los datos cacheados tengan información útil
           const cachedData = cached.payload;
-          const hasUsefulCachedData = 
-            (cachedData.make || cachedData.manufacturer || cachedData.brand) &&
-            (cachedData.model || cachedData.model_name) &&
-            (cachedData.year || cachedData.model_year || cachedData.vehicle_year);
+          const cachedDecodeArray = cachedData.decode || [];
+          
+          // Función helper para extraer valor por label del cache
+          const getCachedValueByLabel = (label: string): string => {
+            const item = cachedDecodeArray.find((item: any) => item.label === label);
+            return item ? String(item.value) : '';
+          };
+          
+          const cachedMake = getCachedValueByLabel('Make');
+          const cachedModel = getCachedValueByLabel('Model');
+          const cachedYear = getCachedValueByLabel('Model Year');
+          
+          const hasUsefulCachedData = cachedMake && cachedModel && cachedYear;
           
           if (hasUsefulCachedData) {
             this.logger.log(`VIN ${normalizedVin} encontrado en cache con datos útiles`);
             return {
               success: true,
               data: {
-                make: cachedData.make || cachedData.manufacturer || cachedData.brand || '',
-                model: cachedData.model || cachedData.model_name || '',
-                year: cachedData.year || cachedData.model_year || cachedData.vehicle_year || '',
+                make: cachedMake,
+                model: cachedModel,
+                year: cachedYear,
                 vin: normalizedVin
               }
             };
@@ -117,21 +126,25 @@ export class VincarioService {
         };
       }
 
-      // Loggear las claves disponibles en la respuesta
-      this.logger.log(`Campos disponibles en respuesta Vincario:`, Object.keys(data));
+      // Vincario devuelve los datos en un array 'decode' con objetos {label, value}
+      const decodeArray = data.decode || [];
+      this.logger.log(`Array decode tiene ${decodeArray.length} elementos`);
       
-      // Loggear campos específicos que esperamos
-      this.logger.log(`make: ${data.make}, model: ${data.model}, year: ${data.year}`);
-      this.logger.log(`manufacturer: ${data.manufacturer}, model_year: ${data.model_year}`);
-      this.logger.log(`vehicle_type: ${data.vehicle_type}, body_style: ${data.body_style}`);
-
-      // Extraer datos relevantes - probar diferentes campos posibles
+      // Función helper para extraer valor por label
+      const getValueByLabel = (label: string): string => {
+        const item = decodeArray.find((item: any) => item.label === label);
+        return item ? String(item.value) : '';
+      };
+      
+      // Extraer datos relevantes del array decode
       const vinData = {
-        make: data.make || data.manufacturer || data.brand || '',
-        model: data.model || data.model_name || '',
-        year: data.year || data.model_year || data.vehicle_year || '',
+        make: getValueByLabel('Make'),
+        model: getValueByLabel('Model'),
+        year: getValueByLabel('Model Year'),
         vin: normalizedVin
       };
+      
+      this.logger.log(`Datos extraídos: make=${vinData.make}, model=${vinData.model}, year=${vinData.year}`);
 
       // Verificar si tenemos información útil antes de cachear
       const hasUsefulData = vinData.make && vinData.model && vinData.year;
