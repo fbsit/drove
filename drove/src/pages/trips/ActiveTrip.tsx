@@ -516,7 +516,7 @@ const ActiveTrip: React.FC = () => {
                     return (
                       <>
                         <div className="text-3xl font-bold text-green-300">€{Number(display).toFixed(2)}</div>
-                        <div className="text-white/60 text-sm mt-2">Compensación estimada (sin IVA).</div>
+                        <div className="text-white/60 text-sm mt-2">Compensación estimada.</div>
                       </>
                     );
                   })()}
