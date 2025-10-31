@@ -1,6 +1,6 @@
 import { http, HttpResponse } from 'msw';
 
-const API = 'https://drove-backend-production.up.railway.app';
+const API = (import.meta as any)?.env?.VITE_API_BASE_URL ||'https://drove-backend-production.up.railway.app';
 
 export const handlers = [
   http.post(`${API}/auth/login`, async () =>
