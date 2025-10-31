@@ -493,7 +493,7 @@ export class AdminService {
 
     // 3) Enviar correos con información completa
     try {
-      const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+      const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.es';
       const clientEmail = savedAfter?.client?.email || '';
       const driverName = savedAfter?.drover?.contactInfo?.fullName || 'Conductor';
       const vehicle = `${savedAfter?.brandVehicle ?? ''} ${savedAfter?.modelVehicle ?? ''} - ${savedAfter?.patentVehicle ?? ''}`.trim();

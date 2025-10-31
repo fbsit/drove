@@ -154,7 +154,7 @@ export class ResendService {
   }
 
   private buildFrontUrl(pathOrUrl: string): string {
-    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.es';
     if (!pathOrUrl) return baseUrl.replace(/\/$/, '');
     if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
     const sep = pathOrUrl.startsWith('/') ? '' : '/';
@@ -162,7 +162,7 @@ export class ResendService {
   }
 
   private buildVerificationPath(usePage: 'withdrawals' | 'delivery', id: string): string {
-    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.es';
     const base = baseUrl.replace(/\/$/, '');
     const path = usePage === 'withdrawals' ? '/verificacion/recogida/' : '/verificacion/entrega/';
     return `${base}${path}${encodeURIComponent(id)}`;
@@ -1309,7 +1309,7 @@ export class ResendService {
   ) => {
     const template = this.loadTemplate('activeNewTrafficBoss');
 
-    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.es';
     const loginUrl = `${baseUrl.replace(/\/$/, '')}/login`;
     const html = template({
       name,
@@ -1382,7 +1382,7 @@ export class ResendService {
   ) => {
     const template = this.loadTemplate('approvedAccount');
 
-    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.es';
     const computedLogin = `${baseUrl.replace(/\/$/, '')}/login`;
     const html = template({
       name,
@@ -1731,7 +1731,7 @@ export class ResendService {
     const template = this.loadTemplate('questionReview');
 
     // Asegurar URL absoluta y clickeable
-    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.es';
     const normalizedLink = (() => {
       if (!reviewLink) return `${baseUrl.replace(/\/$/, '')}/resena`;
       if (/^https?:\/\//i.test(reviewLink)) return reviewLink;

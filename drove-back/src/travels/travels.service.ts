@@ -252,7 +252,7 @@ export class TravelsService {
         paymentIntentId: '',
         travel: savedTravel,
       });
-      const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+      const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.es';
       const base = frontendBase.replace(/\/$/, '');
       checkoutUrl = await this.stripeService.createCheckoutSession({
         transferId: savedTravel.id,
@@ -298,7 +298,7 @@ export class TravelsService {
     const travelInfo = await this.findOne(savedTravel.id);
     const clientFromTravel = travelInfo?.client || null;
     const userDetails = await this.userRepo.findOne({ where: { id: clientId } });
-    const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.es';
     const url = `${frontendBase.replace(/\/$/, '')}/cliente/traslados/${travelInfo.id}`;
     
     // Enviar correo al cliente confirmando la solicitud de traslado
@@ -448,7 +448,7 @@ export class TravelsService {
     const userDetails = await this.userRepo.findOne({
       where: { id: travel.idClient },
     });
-    const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.es';
     const url = `${frontendBase.replace(/\/$/, '')}/cliente/traslados/${travel.id}`;
     await this.resend.sendTransferRescheduledEmail(
       userDetails?.email || '',

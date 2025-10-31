@@ -25,7 +25,7 @@ export class EmailVerificationService {
     user.codeExpiresAt = new Date(Date.now() + this.CODE_TTL);
     await this.userRepo.save(user);
 
-    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.es';
     const verifyUrl = `${baseUrl.replace(/\/$/, '')}/verifyEmail?email=${encodeURIComponent(normalized)}&code=${encodeURIComponent(code)}`;
     const name = user?.contactInfo?.fullName || normalized;
     await this.resend.sendEmailVerificationEmail(normalized, name, verifyUrl);

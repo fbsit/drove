@@ -59,7 +59,7 @@ export class ResendController {
         new Date().toLocaleDateString('es-ES'),
         'Madrid',
         'Barcelona',
-        'https://drove.up.railway.app/cliente/traslados/test-123'
+        'https://drove.es/cliente/traslados/test-123'
       );
       
       return { 
