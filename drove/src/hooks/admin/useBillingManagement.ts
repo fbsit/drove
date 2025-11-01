@@ -16,12 +16,12 @@ export interface InvoiceData {
   transfer_id?: string;
 }
 
-export const useBillingManagement = (filters?: { search?: string; status?: 'todos' | InvoiceData['status']; clientId?: string; from?: Date; to?: Date }) => {
+export const useBillingManagement = (filters?: { search?: string; status?: 'all' | string; clientId?: string; from?: Date; to?: Date }) => {
   const [pendingPayments, setPendingPayments] = useState<InvoiceData[]>([]);
   const [pendingInvoices, setPendingInvoices] = useState<InvoiceData[]>([]);
   const [allInvoices, setAllInvoices] = useState<InvoiceData[]>([]);
   const debouncedSearch = useDebouncedValue(filters?.search ?? '', 300);
-  const normalizedStatus = filters?.status ?? 'todos';
+  const normalizedStatus = filters?.status ?? 'all';
   const from = filters?.from ? filters.from.toISOString().slice(0,10) : undefined;
   const to = filters?.to ? filters.to.toISOString().slice(0,10) : undefined;
 
@@ -31,7 +31,8 @@ export const useBillingManagement = (filters?: { search?: string; status?: 'todo
       const [, params] = queryKey as [string, { search?: string; status?: string; clientId?: string; from?: string; to?: string }];
       return AdminService.getAllInvoices({
         search: params?.search || undefined,
-        status: params?.status && params.status !== 'todos' ? params.status : undefined,
+        // status is EN programmatic. 'all' means no filter
+        status: params?.status && params.status !== 'all' ? params.status : undefined,
         clientId: params?.clientId,
         from: params?.from,
         to: params?.to,

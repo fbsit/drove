@@ -175,7 +175,8 @@ const DesktopTransferRequest: React.FC = () => {
                     <Button
                       type="button"
                       onClick={handleNext}
-                      className="w-full sm:w-auto rounded-2xl bg-[#6EF7FF] hover:bg-[#5FE4ED] text-[#22142A] font-bold transition-all duration-200 shadow-lg hover:shadow-xl"
+                      disabled={step === 1 && !form.watch('vehicleDetails.vinValidated')}
+                      className="w-full sm:w-auto rounded-2xl bg-[#6EF7FF] hover:bg-[#5FE4ED] text-[#22142A] font-bold transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Siguiente
                       <ArrowRight className="ml-2 h-4 w-4" />

@@ -32,11 +32,12 @@ interface InvoiceFiltersBarProps {
   setOnlyPending?: (v: boolean) => void;
 }
 
+// Programmatic values in EN; user-facing labels in ES
 const STATUS_OPTIONS = [
-  { value: "todos", label: "Todos los estados" },
-  { value: "emitida", label: "Emitida" },
-  { value: "anticipo", label: "Anticipada" },
-  { value: "pagada", label: "Pagada" },
+  { value: "all", label: "Todos los estados" },
+  { value: "SENT", label: "Emitida" },
+  { value: "ADVANCE", label: "Anticipada" },
+  { value: "PAID", label: "Pagada" },
 ];
 const TRANSFER_OPTIONS = [
   { value: "todos", label: "Todos los traslados" },

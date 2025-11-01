@@ -22,6 +22,9 @@ export interface VehicleTransferDB {
   id: string;
   created_at: string;
   status: TransferStatus;
+  // Compensación del drover (opcional)
+  driverFee?: number;
+  driverFeeMeta?: any;
   vehicleDetails: {
     type: VehicleType;
     brand: string;

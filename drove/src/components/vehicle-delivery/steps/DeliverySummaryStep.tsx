@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { MapPin } from 'lucide-react'
 import { VehicleTransferDB } from '@/types/vehicle-transfer-db'
 import GoogleMap from '@/components/maps/GoogleMap'
+import { GoogleMap as MapBase, Polyline } from '@react-google-maps/api'
 import { LatLngCity } from '@/types/lat-lng-city'
 
 interface DeliverySummaryStepProps {
@@ -17,22 +18,102 @@ const DeliverySummaryStep: React.FC<DeliverySummaryStepProps> = ({ transfer }) =
   const vehicleDetails = transfer.vehicleDetails;
   const pickupDetails = transfer.pickupDetails;
   const transferDetails = transfer.transferDetails;
-  const senderDetails = transfer.senderDetails;
-  const receiverDetails = transfer.receiverDetails;
+  // Preferir datos del viaje cuando vengan en el objeto
+  const startAddress: any = (transfer as any)?.startAddress || null;
+  const endAddress: any = (transfer as any)?.endAddress || null;
+  const senderDetails = (transfer as any)?.client?.contactInfo?.fullName ? {
+    fullName: (transfer as any)?.client?.contactInfo?.fullName,
+    email: (transfer as any)?.client?.email,
+  } : transfer.senderDetails;
+  const receiverDetails = (transfer as any)?.personReceive?.fullName ? {
+    fullName: (transfer as any)?.personReceive?.fullName,
+    email: (transfer as any)?.personReceive?.email,
+  } : transfer.receiverDetails;
 
   // GoogleMap espera objetos { address: string, city: string, lat: number | null, lng: number | null }
+  const originCityStr = (startAddress?.address || startAddress?.city) || pickupDetails.originAddress || (
+    typeof pickupDetails.originLat === 'number' && typeof pickupDetails.originLng === 'number'
+      ? `${pickupDetails.originLat}, ${pickupDetails.originLng}`
+      : 'Origen'
+  );
+  const destCityStr = (endAddress?.address || endAddress?.city) || pickupDetails.destinationAddress || (
+    typeof pickupDetails.destinationLat === 'number' && typeof pickupDetails.destinationLng === 'number'
+      ? `${pickupDetails.destinationLat}, ${pickupDetails.destinationLng}`
+      : 'Destino'
+  );
   const originAddr: LatLngCity = { 
-    address: pickupDetails.originAddress || '',
-    city: pickupDetails.originAddress || '',
-    lat: pickupDetails.originLat || 0,
-    lng: pickupDetails.originLng || 0
+    address: pickupDetails.originAddress || originCityStr,
+    city: originCityStr,
+    // Pasar null si no hay coordenadas para evitar (0,0)
+    // @ts-ignore
+    lat: typeof startAddress?.lat === 'number' ? startAddress.lat : (typeof pickupDetails.originLat === 'number' ? pickupDetails.originLat : null),
+    // @ts-ignore
+    lng: typeof startAddress?.lng === 'number' ? startAddress.lng : (typeof pickupDetails.originLng === 'number' ? pickupDetails.originLng : null),
   };
   const destAddr: LatLngCity = {
-    address: pickupDetails.destinationAddress || '',
-    city: pickupDetails.destinationAddress || '',
-    lat: pickupDetails.destinationLat || 0,
-    lng: pickupDetails.destinationLng || 0
+    address: destCityStr,
+    city: destCityStr,
+    // @ts-ignore
+    lat: typeof endAddress?.lat === 'number' ? endAddress.lat : (typeof pickupDetails.destinationLat === 'number' ? pickupDetails.destinationLat : null),
+    // @ts-ignore
+    lng: typeof endAddress?.lng === 'number' ? endAddress.lng : (typeof pickupDetails.destinationLng === 'number' ? pickupDetails.destinationLng : null),
   };
+
+  const capturedPolyline: string = String((transfer as any)?.routePolyline || '').trim();
+  const hasCapturedRoute = capturedPolyline.length > 0;
+
+  // Decoder ligero para polyline (Google encoding)
+  const decodePolyline = (str: string): Array<{ lat: number; lng: number }> => {
+    let index = 0, lat = 0, lng = 0, coordinates: Array<{ lat: number; lng: number }> = [];
+    while (index < str.length) {
+      let b, shift = 0, result = 0;
+      do { b = str.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+      const dlat = (result & 1) ? ~(result >> 1) : (result >> 1);
+      lat += dlat;
+      shift = 0; result = 0;
+      do { b = str.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+      const dlng = (result & 1) ? ~(result >> 1) : (result >> 1);
+      lng += dlng;
+      coordinates.push({ lat: lat / 1e5, lng: lng / 1e5 });
+    }
+    return coordinates;
+  };
+
+  const isValidCoord = (v: any) => typeof v === 'number' && isFinite(v) && v !== 0;
+  const parseNumber = (v: any): number | null => {
+    if (typeof v === 'number' && isFinite(v)) return v;
+    const s = String(v ?? '').trim();
+    if (!s) return null;
+    const norm = s.replace(/[^0-9.,-]/g, '').replace(',', '.');
+    const n = parseFloat(norm);
+    return isFinite(n) ? n : null;
+  };
+
+  // Preferir distancia/tiempo reales del drover si existen; fallback a transferDetails
+  const distanceDisplay = (() => {
+    const fromTop = parseNumber((transfer as any)?.distanceTravel);
+    const d = (fromTop != null && fromTop > 0) ? fromTop : parseNumber(transferDetails.distance);
+    return d != null && isFinite(d) && d > 0 ? String(d) : '—';
+  })();
+  const durationDisplay = (() => {
+    const fromTop = parseNumber((transfer as any)?.timeTravel);
+    const t = (fromTop != null && fromTop > 0) ? fromTop : parseNumber(transferDetails.duration);
+    return t != null && isFinite(t) && t > 0 ? String(t) : '—';
+  })();
+
+  // Fallbacks extra robustos para mobile (evitar falsy/undefined)
+  const senderName  = senderDetails?.fullName || (transfer as any)?.client?.contactInfo?.fullName || '-';
+  const senderEmail = senderDetails?.email    || (transfer as any)?.client?.email                   || '-';
+  const recvName    = receiverDetails?.fullName || (transfer as any)?.personReceive?.fullName || '-';
+  const recvEmail   = receiverDetails?.email    || (transfer as any)?.personReceive?.email    || '-';
+
+  try {
+    console.log('[DELIVERY_SUMMARY] start/end', startAddress, endAddress);
+    console.log('[DELIVERY_SUMMARY] origin/dest city', originCityStr, destCityStr);
+    console.log('[DELIVERY_SUMMARY] distance/time', distanceDisplay, durationDisplay);
+    console.log('[DELIVERY_SUMMARY] polyline len', capturedPolyline.length);
+    console.log('[DELIVERY_SUMMARY] sender/receiver', senderDetails, receiverDetails);
+  } catch {}
 
   return (
     <div className="space-y-6">
@@ -73,20 +154,20 @@ const DeliverySummaryStep: React.FC<DeliverySummaryStepProps> = ({ transfer }) =
           <h3 className="text-white font-bold">Datos del traslado</h3>
           <div>
             <p className="text-white/50 text-xs">Origen</p>
-            <p className="text-white">{pickupDetails.originAddress}</p>
+            <p className="text-white">{originCityStr}</p>
           </div>
           <div>
             <p className="text-white/50 text-xs">Destino</p>
-            <p className="text-white">{pickupDetails.destinationAddress}</p>
+            <p className="text-white">{destCityStr}</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-white/50 text-xs">Distancia</p>
-              <p className="text-white">{transferDetails.distance} km</p>
+              <p className="text-white">{distanceDisplay} km</p>
             </div>
             <div>
               <p className="text-white/50 text-xs">Tiempo est.</p>
-              <p className="text-white">{transferDetails.duration} min</p>
+              <p className="text-white">{durationDisplay} min</p>
             </div>
           </div>
         </CardContent>
@@ -109,19 +190,50 @@ const DeliverySummaryStep: React.FC<DeliverySummaryStepProps> = ({ transfer }) =
         </CardContent>
       </Card>
 
-      {/* Mapa con ruta */}
+      {/* Mapa con ruta: si hay polyline capturado del drover, usarlo */}
       <div className="h-[200px] rounded-xl overflow-hidden">
-        <GoogleMap
-          originAddress={originAddr}
-          destinationAddress={destAddr}
-          isAddressesSelected={true}
-          onPolylineCalculated={() => {}}
-        />
+        {/* Si tenemos polyline capturado del drover, usar un mapa mínimo con Polyline */}
+        {hasCapturedRoute ? (
+          <MapBase
+            mapContainerStyle={{ width: '100%', height: '200px' }}
+            center={{ lat: isValidCoord(originAddr.lat) ? (originAddr.lat as number) : 40.4168, lng: isValidCoord(originAddr.lng) ? (originAddr.lng as number) : -3.7038 }}
+            zoom={8}
+            options={{ disableDefaultUI: true }}
+            onLoad={(m) => {
+              try {
+                const path = decodePolyline(capturedPolyline).map(p => ({ lat: p.lat, lng: p.lng }));
+                if (path.length) {
+                  const bounds = new google.maps.LatLngBounds();
+                  path.forEach(pt => bounds.extend(new google.maps.LatLng(pt.lat, pt.lng)));
+                  m.fitBounds(bounds, 40);
+                }
+              } catch {}
+            }}
+          >
+            <Polyline
+              path={decodePolyline(capturedPolyline)}
+              options={{ strokeColor: '#6EF7FF', strokeOpacity: 0.9, strokeWeight: 4 }}
+            />
+          </MapBase>
+        ) : (
+          <GoogleMap
+            originAddress={originAddr}
+            destinationAddress={destAddr}
+            isAddressesSelected={true}
+            onPolylineCalculated={() => {}}
+          />
+        )}
       </div>
 
-      {/* Precio total */}
+      {/* Beneficio del drover (mostrar solo fee sin IVA) */}
       <div className="text-center text-white/50 text-sm">
-        <p>Precio total: {transferDetails.totalPrice} €</p>
+        {(() => {
+          const fee = typeof (transfer as any)?.driverFee === 'number' ? (transfer as any).driverFee : undefined;
+          if (typeof fee === 'number') {
+            return <p>Beneficio del drover (estimado, sin IVA): €{Number(fee).toFixed(2)}</p>;
+          }
+          return null;
+        })()}
       </div>
     </div>
   )

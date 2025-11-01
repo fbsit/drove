@@ -7,6 +7,7 @@ import { Package, Route, Star, Calendar } from 'lucide-react';
 import { DroverService } from '@/services/droverService';
 import { useQuery } from '@tanstack/react-query';
 import TravelOfferModal from '@/components/drover/TravelOfferModal';
+import MobileDroverFooterNav from '@/components/layout/MobileDroverFooterNav';
 
 const DroverDashboard = () => {
   const navigate = useNavigate();
@@ -155,6 +156,7 @@ const DroverDashboard = () => {
           </Card>
         </div>
       </div>
+    <MobileDroverFooterNav />
       
       {/* Modal de ofertas de viaje */}
       <TravelOfferModal />

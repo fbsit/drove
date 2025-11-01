@@ -25,6 +25,7 @@ import { join } from 'path';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { CarDataModule } from './cardata/cardata.module';
+import { VincarioModule } from './vincario/vincario.module';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { CarDataModule } from './cardata/cardata.module';
     PaymentsModule,
     PdfModule,
     CarDataModule,
+    VincarioModule,
   ],
   providers: [
     {

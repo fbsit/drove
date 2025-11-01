@@ -13,7 +13,7 @@ const description =
 const Invoices: React.FC = () => {
   /* ----------------------------- filtros locale ---------------------------- */
   const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('todos');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterTransfer, setFilterTransfer] = useState<string>('todos');
   const [filterClient, setFilterClient] = useState('');
   const [filterDrover, setFilterDrover] = useState<string>('todos');
@@ -46,7 +46,8 @@ const Invoices: React.FC = () => {
         const [, params] = queryKey as [string, any];
         return await AdminService.getAllInvoices({
           search: params?.search || undefined,
-          status: params?.status && params.status !== 'todos' ? params.status : undefined,
+          // Programmatic EN values; 'all' means no status filter
+          status: params?.status && params.status !== 'all' ? params.status : undefined,
           clientName: params?.clientName,
           transferStatus: params?.transferStatus,
           droverName: params?.droverName,
@@ -149,7 +150,7 @@ const Invoices: React.FC = () => {
         || toAddr.includes(term)
         || transferIdStr.includes(term);
 
-      const matchesStatus = filterStatus === 'todos' || statusNorm === String(filterStatus).toLowerCase();
+      const matchesStatus = filterStatus === 'all' || statusNorm === String(filterStatus).toLowerCase();
       const matchesTransfer = filterTransfer === 'todos' || transferNorm === String(filterTransfer).toLowerCase();
       const matchesClient = !filterClient || clientName === String(filterClient).toLowerCase();
       const matchesDrover = filterDrover === 'todos' || droverName === String(filterDrover).toLowerCase();

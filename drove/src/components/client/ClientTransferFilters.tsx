@@ -41,9 +41,15 @@ const ClientTransferFilters: React.FC<Props> = ({
     ? `${format(dateRange.from, "dd/MM/yy", { locale: es })} - ${format(dateRange.to, "dd/MM/yy", { locale: es })}`
     : "Seleccionar fechas";
 
-  function onDateSelect(range: DateRange | undefined) {
-    setDateRange(range);
-  }
+  // Mejor UX: aplicar con botón, no onSelect inmediato
+  const [open, setOpen] = React.useState(false);
+  const [tempRange, setTempRange] = React.useState<DateRange | undefined>(() => dateRange);
+  const onOpenChange = (v: boolean) => {
+    if (v) setTempRange(dateRange);
+    setOpen(v);
+  };
+  const apply = () => { setDateRange(tempRange); setOpen(false); };
+  const clear = () => { setTempRange(undefined); };
 
   return (
     <div className="flex flex-col md:flex-row bg-white/10 rounded-2xl p-4 mb-6 gap-3">
@@ -65,7 +71,7 @@ const ClientTransferFilters: React.FC<Props> = ({
           </SelectGroup>
         </SelectContent>
       </Select>
-      <Popover>
+      <Popover open={open} onOpenChange={onOpenChange}>
         <PopoverTrigger asChild>
           <Button
             type="button"
@@ -79,13 +85,20 @@ const ClientTransferFilters: React.FC<Props> = ({
         <PopoverContent className="p-0 bg-[#22142A] border-0" align="start">
           <CalendarComponent
             mode="range"
-            selected={dateRange}
-            onSelect={onDateSelect}
+            selected={tempRange}
+            onSelect={setTempRange}
             locale={es}
             initialFocus
             numberOfMonths={2}
             className="p-3 pointer-events-auto"
           />
+          <div className="flex items-center justify-between gap-2 px-3 pb-3">
+            <button onClick={clear} className="text-xs text-white/70 hover:text-white">Limpiar</button>
+            <div className="flex gap-2">
+              <button onClick={() => setOpen(false)} className="text-xs px-3 py-1 rounded-2xl bg-white/10 text-white hover:bg-white/20">Cancelar</button>
+              <button onClick={apply} className="text-xs px-3 py-1 rounded-2xl bg-[#6EF7FF] text-[#22142A] font-bold hover:opacity-90">Aplicar</button>
+            </div>
+          </div>
         </PopoverContent>
       </Popover>
     </div>

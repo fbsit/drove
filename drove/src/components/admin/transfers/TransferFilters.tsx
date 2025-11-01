@@ -46,12 +46,25 @@ const TransferFilters: React.FC<TransferFiltersProps> = ({
     ? `${format(dateRange.from, 'dd/MM/yyyy', { locale: es })} - ${format(dateRange.to, 'dd/MM/yyyy', { locale: es })}`
     : 'Seleccionar fechas';
 
-  const handleDateRangeSelect = (range: DateRange | undefined) => {
-    if (range) {
-      setDateRange({ from: range.from, to: range.to });
-    } else {
-      setDateRange({});
-    }
+  // Mejor UX: usar rango temporal y aplicar con botón, no buscar en cada click
+  const [open, setOpen] = React.useState(false);
+  const [tempRange, setTempRange] = React.useState<DateRange | undefined>(() => {
+    return (dateRange?.from || dateRange?.to) ? { from: dateRange.from, to: dateRange.to } : undefined;
+  });
+
+  const handleOpenChange = (v: boolean) => {
+    // Al abrir, sincroniza el tempRange con el valor actual
+    if (v) setTempRange((dateRange?.from || dateRange?.to) ? { from: dateRange.from, to: dateRange.to } : undefined);
+    setOpen(v);
+  };
+
+  const applyRange = () => {
+    if (tempRange) setDateRange({ from: tempRange.from, to: tempRange.to }); else setDateRange({});
+    setOpen(false);
+  };
+
+  const clearRange = () => {
+    setTempRange(undefined);
   };
 
   return (
@@ -92,7 +105,7 @@ const TransferFilters: React.FC<TransferFiltersProps> = ({
             </SelectContent>
           </Select>
 
-          <Popover>
+          <Popover open={open} onOpenChange={handleOpenChange}>
             <PopoverTrigger asChild>
               <button className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-4 h-10 text-white hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#6EF7FF]/50 lg:w-1/3">
                 <Calendar className="h-4 w-4 text-[#6EF7FF]" />
@@ -103,13 +116,20 @@ const TransferFilters: React.FC<TransferFiltersProps> = ({
               <CalendarComponent
                 initialFocus
                 mode="range"
-                defaultMonth={dateRange?.from}
-                selected={dateRange as DateRange}
-                onSelect={handleDateRangeSelect}
+                defaultMonth={tempRange?.from || dateRange?.from}
+                selected={tempRange}
+                onSelect={setTempRange}
                 numberOfMonths={2}
                 locale={es}
                 className="bg-[#22142A] text-white pointer-events-auto"
               />
+              <div className="flex items-center justify-between gap-2 p-2 border-t border-white/10">
+                <button onClick={clearRange} className="text-xs text-white/70 hover:text-white px-2 py-1">Limpiar</button>
+                <div className="flex gap-2">
+                  <button onClick={() => setOpen(false)} className="text-xs px-3 py-1 rounded-2xl bg-white/10 text-white hover:bg-white/20">Cancelar</button>
+                  <button onClick={applyRange} className="text-xs px-3 py-1 rounded-2xl bg-[#6EF7FF] text-[#22142A] font-bold hover:opacity-90">Aplicar</button>
+                </div>
+              </div>
             </PopoverContent>
           </Popover>
         </div>

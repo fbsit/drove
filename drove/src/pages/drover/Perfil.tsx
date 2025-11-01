@@ -1,9 +1,10 @@
 
 import React from "react";
 import { User } from "lucide-react";
+import MobileDroverFooterNav from '@/components/layout/MobileDroverFooterNav';
 
 const PerfilDrover: React.FC = () => (
-  <div className="max-w-xl mx-auto py-8">
+  <div className="max-w-xl mx-auto py-8 pb-20">
     <h1 className="text-2xl mb-6" style={{ fontFamily: "Montserrat", fontWeight: "bold", color: "white" }}>
       Perfil del Drover
     </h1>
@@ -32,6 +33,7 @@ const PerfilDrover: React.FC = () => (
         </div>
       </div>
     </div>
+    <MobileDroverFooterNav />
   </div>
 );
 

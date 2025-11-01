@@ -4,7 +4,7 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import * as QrImage from 'qr-image';
 import fetch from 'node-fetch';
 import { PricingService } from './../rates/prices.service';
-import { CompensationService } from './../rates/compensation.service';
+import { CompensationService, parseKmFromDistance } from './../rates/compensation.service';
 import { User } from './../user/entities/user.entity';
 import { Travels } from './../travels/entities/travel.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -63,6 +63,7 @@ export class PdfService {
     addDniClient: boolean,
     detailInfo: string,
     step: number,
+    hideTotals: boolean = false,
   ): Promise<any> {
     try {
       let url_pdf;
@@ -84,6 +85,7 @@ export class PdfService {
             addDniClient,
             detailInfo,
             step,
+            hideTotals,
           );
           break;
         case 'invoice':
@@ -108,7 +110,7 @@ export class PdfService {
       console.log('generando qr', page);
       const rawBaseUrl =
         this.configService.get<string>('FRONTEND_BASE_URL') ||
-        'https://drove.up.railway.app';
+        'https://drove.es';
       const baseUrl = rawBaseUrl.replace(/\/+$/, '');
       // withdrawals => flujo de recogida, delivery => flujo de entrega
       const url =
@@ -183,6 +185,7 @@ export class PdfService {
     addDniClient: boolean,
     detailInfo: string,
     step: number,
+    hideTotals: boolean = false,
   ): Promise<any> {
     try {
       // Normalizar estructuras opcionales para evitar errores por null/undefined
@@ -222,8 +225,9 @@ export class PdfService {
         typeof recipientIdentity.selfieWithId === 'string' &&
         recipientIdentity.selfieWithId.trim() !== '';
 
-      if (mustAddCertificate) extraHeight += 200;
-      if (mustAddFuelReceipt) extraHeight += 600;
+      // Reservar espacio suficiente para certificado y justificante para evitar solapamientos
+      if (mustAddCertificate) extraHeight += 720; // ~680px imagen + márgenes
+      if (mustAddFuelReceipt) extraHeight += 700; // ~560px imagen + márgenes
       if (mustAddSelfie) extraHeight += 260;
 
       let pageHeight = addQr ? baseWithImage : baseWithImage - qrSectionHeight;
@@ -1205,11 +1209,19 @@ export class PdfService {
                   wixImageUrl,
                 );
                 if (img) {
+                  // Mantener proporción de la imagen dentro del área disponible
+                  const naturalW = (img as any).width || imageWidth;
+                  const naturalH = (img as any).height || imageHeight;
+                  const scale = Math.min(imageWidth / naturalW, imageHeight / naturalH);
+                  const drawW = Math.max(1, Math.floor(naturalW * scale));
+                  const drawH = Math.max(1, Math.floor(naturalH * scale));
+                  const offsetX = xPosition + 10 + Math.max(0, (imageWidth - drawW) / 2);
+                  const offsetY = currentY + 10 + Math.max(0, (imageHeight - drawH) / 2);
                   page.drawImage(img, {
-                    x: xPosition + 10,
-                    y: currentY + 10,
-                    width: imageWidth,
-                    height: imageHeight,
+                    x: offsetX,
+                    y: offsetY,
+                    width: drawW,
+                    height: drawH,
                   });
                 } else {
                   console.warn(
@@ -1407,70 +1419,99 @@ export class PdfService {
         (detailRoute && (detailRoute as any).DistanceInKM) ||
         travel?.distanceTravel ||
         '';
-      const distanceFormatted = distanceKmRaw
-        ? `${Number(distanceKmRaw).toFixed(2)} Kilómetros`
+      const distanceKmNum = typeof distanceKmRaw === 'number'
+        ? distanceKmRaw
+        : parseKmFromDistance(String(distanceKmRaw || ''));
+      const distanceFormatted = distanceKmNum > 0
+        ? `${Number(distanceKmNum).toFixed(2)} Kilómetros`
         : '—';
       const rawTotalCliente = (detailRoute as any)?.priceResult?.Total_Cliente;
-      let totalWithVat =
-        rawTotalCliente != null && rawTotalCliente !== ''
-          ? typeof rawTotalCliente === 'number'
-            ? `${rawTotalCliente} €`
-            : String(rawTotalCliente).includes('€')
-              ? String(rawTotalCliente)
-              : `${rawTotalCliente} €`
-          : typeof travel?.totalPrice === 'number'
-            ? `${(travel.totalPrice as number).toFixed(2)} €`
-            : '—';
+      let totalWithVat = '—';
+      if (rawTotalCliente != null && rawTotalCliente !== '') {
+        if (typeof rawTotalCliente === 'number') {
+          totalWithVat = `${rawTotalCliente.toFixed(2)} €`;
+        } else {
+          const s = String(rawTotalCliente);
+          totalWithVat = s.includes('€') ? s : `${s} €`;
+        }
+      } else if (typeof travel?.totalPrice === 'number' && !isNaN(travel.totalPrice)) {
+        totalWithVat = `${(travel.totalPrice as number).toFixed(2)} €`;
+      } else {
+        // Fallback: calcular total con IVA a partir de la distancia
+        try {
+          const kmForPrice = Number(distanceKmNum || 0);
+          const preview = this.priceService.getPrice(kmForPrice);
+          totalWithVat = `${Number(preview.total).toFixed(2)} €`;
+        } catch {}
+      }
 
-      // Regla de visualización para el PDF del drover: autónomo ve su compensación; contratado no ve total por viaje.
+      // Regla de visualización: cliente ve Total; drover siempre ve Beneficio (sin IVA)
       try {
-        const isDroverPdf = detailInfo === 'chofer';
+        // Paso específico: en 'recogida' (step === 2) históricamente se pasa
+        // detailInfo='chofer' al cliente y 'reception' al drover.
+        // Ajustamos la determinación del rol a esa convención.
+        const isAssignmentStep = step === 1;
+        const isPickupStep = step === 2;
+        const isArrivalStep = step === 3;
+        const isDeliveryStep = step === 4;
+        // Mapeo por paso (quién ve Beneficio):
+        //  - step 1 (asignación): cliente → Total (nunca drover)
+        //  - step 2 (recogida): drover si detailInfo === 'reception'
+        //  - step 3 (llegada): cliente → Total
+        //  - step 4 (entrega): drover si detailInfo === 'chofer'
+        const isDroverPdf = isAssignmentStep
+          ? false
+          : isArrivalStep
+            ? false
+            : isPickupStep
+              ? (detailInfo === 'reception')
+              : isDeliveryStep
+                ? (detailInfo === 'chofer')
+                : false;
+        let amountLabel = 'Total';
         const droverEmpType =
           (chofer as any)?.employmentType ||
           (travel?.drover as any)?.employmentType;
-        // Determinar KM para freelance
-        const kmNumber = Number(
-          (distanceKmRaw as any) ||
-            parseFloat(String(travel?.distanceTravel || '0')) ||
-            0,
-        );
-        if (
-          isDroverPdf &&
-          String(droverEmpType || '').toUpperCase() === 'FREELANCE'
-        ) {
-          // Preferir compensación persistida si existe (con IVA si está disponible)
+        // Determinar KM parseado de forma robusta
+        const kmNumber = Number(distanceKmNum || 0);
+        if (isDroverPdf) {
+          amountLabel = 'Beneficio';
+          const role = String(droverEmpType || '').toUpperCase();
           const storedFee = (travel as any)?.driverFee;
-          const storedMeta = (travel as any)?.driverFeeMeta || {};
-          const storedWithVat =
-            typeof storedMeta?.driverFeeWithVat === 'number'
-              ? storedMeta.driverFeeWithVat
-              : null;
-          if (typeof storedWithVat === 'number' && !isNaN(storedWithVat)) {
-            totalWithVat = `${Number(storedWithVat).toFixed(2)} € compensación IVA incl.`;
-          } else if (typeof storedFee === 'number' && !isNaN(storedFee)) {
-            const withVat = Number((Number(storedFee) * 1.21).toFixed(2));
-            totalWithVat = `${withVat.toFixed(2)} € compensación IVA incl.`;
+          if (typeof storedFee === 'number' && !isNaN(storedFee)) {
+            totalWithVat = `${Number(storedFee).toFixed(2)} €`;
+          } else if (role === 'FREELANCE') {
+            const preview = this.compensationService.calcFreelancePerTrip(kmNumber);
+            totalWithVat = `${Number(preview.driverFee).toFixed(2)} €`;
+          } else if (role === 'CONTRACTED') {
+            const preview = this.compensationService.calcContractedPerTrip(kmNumber);
+            totalWithVat = `${Number(preview.driverFee).toFixed(2)} €`;
           } else {
-            const preview =
-              this.compensationService.calcFreelancePerTrip(kmNumber);
-            const withVat =
-              typeof (preview as any)?.driverFeeWithVat === 'number'
-                ? (preview as any).driverFeeWithVat
-                : Number((preview.driverFee * 1.21).toFixed(2));
-            totalWithVat = `${withVat.toFixed(2)} € compensación IVA incl.`;
+            totalWithVat = '—';
           }
         }
-        if (
-          isDroverPdf &&
-          String(droverEmpType || '').toUpperCase() === 'CONTRACTED'
-        ) {
-          // Ocultar importe por viaje para contratados
-          totalWithVat = '—';
+        // Sobrescribir etiqueta en la tabla si es drover
+        if (isDroverPdf) {
+          // Reasignamos más abajo usando amountLabel
         }
       } catch {}
+      const isAssignmentStep2 = step === 1;
+      const isPickupStep2 = step === 2;
+      const isArrivalStep2 = step === 3;
+      const isDeliveryStep2 = step === 4;
+      const isDrover = isAssignmentStep2
+        ? false
+        : isArrivalStep2
+          ? false
+          : isPickupStep2
+            ? (detailInfo === 'reception')
+            : isDeliveryStep2
+              ? (detailInfo === 'chofer')
+              : false;
+      const amountLabelFinal = isDrover ? 'Beneficio' : 'Total';
       const detailTravelTabla = [
         ['Distancia', distanceFormatted],
-        ['Total con I.V.A', totalWithVat],
+        [amountLabelFinal, hideTotals ? '' : totalWithVat],
       ];
       detailTravelTabla.forEach((fila, filaIndex) => {
         const x = tableDetailLeft;
@@ -1505,33 +1546,16 @@ export class PdfService {
             tableDetailTop - (filaIndex + 0.5) * rowDetailHeight - fontSize / 2;
           const selectedFont = colIndex === 0 ? helveticaBoldFont : font;
           const xUse = colIndex === 0 ? x : x - 100;
-          if (fila[0] === 'Total con I.V.A' && colIndex === 1) {
-            if (chofer?.detailRegister?.typeUser === 'Chofer') {
-              page.drawText(celda, {
-                x: xUse,
-                y,
-                size: fontSize,
-                font: selectedFont,
-                color: rgb(0, 0, 0),
-              });
-            } else {
-              page.drawText('', {
-                x: xUse,
-                y,
-                size: fontSize,
-                font: selectedFont,
-                color: rgb(0, 0, 0),
-              });
-            }
-          } else {
-            page.drawText(celda, {
-              x: xUse,
-              y,
-              size: fontSize,
-              font: selectedFont,
-              color: rgb(0, 0, 0),
-            });
-          }
+          // Si es la celda del importe (fila 2, columna 2) y hideTotals=true, no dibujar valor
+          const isAmountCell = filaIndex === 1 && colIndex === 1;
+          const textToDraw = (isAmountCell && hideTotals) ? '' : String(celda);
+          page.drawText(textToDraw, {
+            x: xUse,
+            y,
+            size: fontSize,
+            font: selectedFont,
+            color: rgb(0, 0, 0),
+          });
         });
       });
       currentY = tableDetailTop - tableDetailHeight - 50;
@@ -1930,15 +1954,34 @@ export class PdfService {
           );
           if (embeddedImage) {
             const certHeight = 680;
-            // Subir el certificado 200px
-            const yCert = Math.max(50, currentY - certHeight - 300 + 270);
+            // Posicionar inmediatamente bajo el flujo, sin solapar, dejando margen 10px
+            const yCert = Math.max(50, currentY - certHeight - 10);
             page.drawImage(embeddedImage, {
               x: 50,
               y: yCert,
               width: 500,
               height: certHeight,
             });
-            currentY = yCert - 20;
+            currentY = yCert - 10;
+            // 6.1) Justificante de combustible (si existe) inmediatamente debajo del certificado
+            if (mustAddFuelReceipt && handoverDocuments?.fuel_receipt) {
+              const fuelImg = await this.embedImageFromSource(
+                pdfDoc,
+                handoverDocuments.fuel_receipt,
+              );
+              if (fuelImg) {
+                // Mantener diseño: misma anchura, altura fija y separación de 10px
+                const fuelHeight = 560; // altura objetivo
+                const yFuel = Math.max(50, currentY - fuelHeight - 10);
+                page.drawImage(fuelImg, {
+                  x: 50,
+                  y: yFuel,
+                  width: 500,
+                  height: fuelHeight,
+                });
+                currentY = yFuel - 10;
+              }
+            }
           } else {
             console.error(
               'Error incrustando delivery_document: formato/URL no soportado',

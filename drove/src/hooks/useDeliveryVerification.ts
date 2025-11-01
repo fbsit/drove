@@ -11,6 +11,7 @@ import {
   getVehicleTransfer,
   saveDeliveryVerification,
 } from '@/services/vehicleTransferService';
+import TransferService from '@/services/transferService';
 import { TransferStatus } from '@/services/api/types/transfers';
 
 // Definición de interfaz local para TransferDetail
@@ -95,12 +96,30 @@ export const useDeliveryVerification = (transferId: string) => {
         return;
       }
       try {
-        const data = await getVehicleTransfer(transferId) as unknown as LocalTransferDetail;
+        let data = await getVehicleTransfer(transferId) as unknown as LocalTransferDetail;
+        // Fallback: si no vienen relaciones clave, re-fetch directo al travel completo
+        const lacksCore = !data?.startAddress || !data?.endAddress || (data as any)?.routePolyline == null;
+        if (lacksCore) {
+          try {
+            const full = await TransferService.getTravelById(transferId);
+            data = { ...(full as any) } as LocalTransferDetail;
+          } catch {}
+        }
         if (!data) throw new Error('Traslado no encontrado');
+
+        const parseNum = (v: any): number => {
+          if (typeof v === 'number' && isFinite(v)) return v;
+          const s = String(v ?? '').replace(/[^0-9.,-]/g, '').replace(',', '.');
+          const n = parseFloat(s);
+          return isFinite(n) ? n : 0;
+        };
 
         const adapted: VehicleTransferDB = {
           id: data.id,
           created_at: data.created_at ?? data.createdAt ?? '',
+          // Mapear compensación si viene del backend
+          driverFee: (data as any)?.driverFee ?? undefined,
+          driverFeeMeta: (data as any)?.driverFeeMeta ?? undefined,
           vehicleDetails: {
             type: mapVehicleType(data.typeVehicle) ?? 'coche',
             brand: data.brandVehicle ?? '',
@@ -110,12 +129,12 @@ export const useDeliveryVerification = (transferId: string) => {
             vin: data.bastidor ?? '',
           },
           pickupDetails: {
-            originAddress: data.startAddress?.city ?? '',
-            destinationAddress: data.endAddress?.city ?? '',
-            originLat: data.startAddress?.lat ?? 0,
-            originLng: data.startAddress?.lng ?? 0,
-            destinationLat: data.endAddress?.lat ?? 0,
-            destinationLng: data.endAddress?.lng ?? 0,
+            originAddress: data.startAddress?.city ?? (data as any)?.startAddress?.address ?? '',
+            destinationAddress: data.endAddress?.city ?? (data as any)?.endAddress?.address ?? '',
+            originLat: data.startAddress?.lat ?? (data as any)?.startAddress?.lat ?? 0,
+            originLng: data.startAddress?.lng ?? (data as any)?.startAddress?.lng ?? 0,
+            destinationLat: data.endAddress?.lat ?? (data as any)?.endAddress?.lat ?? 0,
+            destinationLng: data.endAddress?.lng ?? (data as any)?.endAddress?.lng ?? 0,
             pickupDate: data.travelDate ?? '',
             pickupTime: data.travelTime ?? '',
           },
@@ -134,8 +153,8 @@ export const useDeliveryVerification = (transferId: string) => {
             phone: data.personReceive?.phone ?? '',
           },
           transferDetails: {
-            distance: Number(data.distanceTravel ?? '0'),
-            duration: Number(data.timeTravel ?? '0'),
+            distance: parseNum((data as any)?.distanceTravel ?? (data as any)?.transfer_details?.distance ?? (data as any)?.distance ?? 0),
+            duration: parseNum((data as any)?.timeTravel ?? (data as any)?.transfer_details?.duration ?? (data as any)?.duration ?? 0),
             totalPrice: Number(data.totalPrice ?? '0'),
             signature: data.signatureStartClient ?? '',
           },

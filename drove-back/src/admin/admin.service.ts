@@ -91,6 +91,11 @@ export class AdminService {
         country: user.contactInfo.country || '',
         zipCode: user.contactInfo.zip || '',
         selfie: user.contactInfo.selfie || undefined,
+        // Documentación de drover (si aplica)
+        licenseFront: (user.contactInfo as any)?.licenseFront || undefined,
+        licenseBack: (user.contactInfo as any)?.licenseBack || undefined,
+        imageUpload2: (user.contactInfo as any)?.imageUpload2 || undefined,
+        pdfUpload: (user.contactInfo as any)?.pdfUpload || undefined,
       },
       totalSpent,
       tripsCount: travels.length,
@@ -111,6 +116,18 @@ export class AdminService {
       const completedTrips = delivered.length;
 
       const typeStr = String(user.employmentType || DroverEmploymentType.FREELANCE).toUpperCase() as keyof typeof DroverEmploymentType;
+
+      // Meses con actividad (DELIVERED) para promedios contractados
+      const monthKeys = new Set(
+        delivered
+          .map(t => (t.updatedAt || t.createdAt))
+          .filter(Boolean)
+          .map(d => {
+            const dt = new Date(d as any);
+            return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
+          }),
+      );
+      const monthsActive = Math.max(1, monthKeys.size);
 
       // Ganancias freelance: usar driverFee si está, fallback a cálculo por km
       const calcFreelanceTotal = async () => {
@@ -135,25 +152,32 @@ export class AdminService {
         totalEarnings = await calcFreelanceTotal();
         avgPerTrip = completedTrips > 0 ? totalEarnings / completedTrips : 0;
       } else {
-        // Contratado: estimación mensual del mes actual
-        const now = new Date();
-        const monthISO = `${now.getUTCFullYear()}-${String(now.getUTCMonth()+1).padStart(2,'0')}`;
-        try {
-          contractedMonthly = await this.compensation?.calcContractedMonthlyByDrover(userId, monthISO);
-        } catch {}
+        // Contratado: sumar compensación mensual por cada mes con actividad; si no hay, usar el mes actual
+        const months = Array.from(monthKeys);
+        if (months.length === 0) {
+          const now = new Date();
+          const monthISO = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+          try {
+            contractedMonthly = await this.compensation?.calcContractedMonthlyByDrover(userId, monthISO);
+            totalEarnings = Number(contractedMonthly?.total || 0);
+          } catch {}
+        } else {
+          const monthlyResults = await Promise.all(
+            months.map(async (m) => {
+              try {
+                return await this.compensation?.calcContractedMonthlyByDrover(userId, m);
+              } catch {
+                return null;
+              }
+            })
+          );
+          const validResults = monthlyResults.filter((r): r is NonNullable<typeof r> => Boolean(r));
+          totalEarnings = validResults.reduce((sum, m: any) => sum + Number(m.total || 0), 0);
+          contractedMonthly = validResults.slice(-1)[0] || null;
+        }
       }
 
-      // Promedio mensual: por número de meses con viajes entregados (evita dividir por meses sin actividad)
-      const monthKeys = new Set(
-        delivered
-          .map(t => (t.updatedAt || t.createdAt))
-          .filter(Boolean)
-          .map(d => {
-            const dt = new Date(d as any);
-            return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
-          }),
-      );
-      const monthsActive = Math.max(1, monthKeys.size);
+      // Promedio mensual sobre meses con actividad
       const avgMonthlyEarnings = totalEarnings / monthsActive;
 
       // Promedio de tiempo por traslado (minutos), usando timeTravel si está, sino (updatedAt - startedAt)
@@ -388,6 +412,7 @@ export class AdminService {
     status?: string;
     startDate?: string;
     endDate?: string;
+    search?: string;
   }) {
     const where: any = {};
     if (filters?.status) {
@@ -398,12 +423,35 @@ export class AdminService {
       where.createdAt = Between(filters.startDate, filters.endDate);
     }
 
-    const transfers = await this.transferRepo.find({
-      where,
-      order: { createdAt: 'DESC' },
-      relations: this.defaultRelations, // <-- trae payments, client y drover
-    });
+    // Búsqueda básica: cliente (nombre/email), origen/destino (ciudad), id, vehículo (matrícula/marca/modelo)
+    const qb = this.transferRepo
+      .createQueryBuilder('t')
+      .leftJoinAndSelect('t.client', 'client')
+      .leftJoinAndSelect('t.drover', 'drover')
+      .orderBy('t.createdAt', 'DESC');
 
+    if (where.status) qb.andWhere('t.status = :status', { status: where.status });
+    if (where.createdAt) qb.andWhere('t.createdAt BETWEEN :from AND :to', { from: (where.createdAt as any).lower, to: (where.createdAt as any).upper });
+
+    const term = String(filters?.search || '').trim();
+    if (term) {
+      const like = `%${term.toLowerCase()}%`;
+      qb.andWhere(
+        `(
+          LOWER(t.id::text) LIKE :like OR
+          LOWER(COALESCE(client.email,'')) LIKE :like OR
+          LOWER(COALESCE((client.contactInfo->>'fullName')::text,'')) LIKE :like OR
+          LOWER(COALESCE((t.startAddress->>'city')::text,'')) LIKE :like OR
+          LOWER(COALESCE((t.endAddress->>'city')::text,'')) LIKE :like OR
+          LOWER(COALESCE(t.patentVehicle,'')) LIKE :like OR
+          LOWER(COALESCE(t.brandVehicle,'')) LIKE :like OR
+          LOWER(COALESCE(t.modelVehicle,'')) LIKE :like
+        )`,
+        { like },
+      );
+    }
+
+    const transfers = await qb.getMany();
     return { transfers };
   }
 
@@ -445,7 +493,7 @@ export class AdminService {
 
     // 3) Enviar correos con información completa
     try {
-      const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+      const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.es';
       const clientEmail = savedAfter?.client?.email || '';
       const driverName = savedAfter?.drover?.contactInfo?.fullName || 'Conductor';
       const vehicle = `${savedAfter?.brandVehicle ?? ''} ${savedAfter?.modelVehicle ?? ''} - ${savedAfter?.patentVehicle ?? ''}`.trim();

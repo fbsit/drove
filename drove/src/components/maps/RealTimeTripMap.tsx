@@ -47,10 +47,14 @@ const computeBearing = (a: LatLng, b: LatLng) => {
 };
 
 const mapOptions: google.maps.MapOptions = {
-  disableDefaultUI: true,
+  // Habilitar zoom y gestos para navegación manual
+  disableDefaultUI: false,
   zoomControl: true,
-  scrollwheel: false,
-  gestureHandling: 'cooperative',
+  streetViewControl: false,
+  mapTypeControl: false,
+  fullscreenControl: false,
+  scrollwheel: true,
+  gestureHandling: 'greedy',
   clickableIcons: false,
   styles: [{ elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
   { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
@@ -149,9 +153,24 @@ const RealTimeTripMap: React.FC<Props> = ({
   const mapRef = useRef<google.maps.Map | null>(null);
   const lastPosRef = useRef<LatLng | null>(null);
   const [heading, setHeading] = useState<number>(0);
+  const [follow, setFollow] = useState<boolean>(true);
+  const originRef = useRef<LatLng>(origin); // centro inicial solo para vista pre-inicio
+  const lastPanAtRef = useRef<number>(0);
+  const userInteractingAtRef = useRef<number>(0);
+  const [routeOrigin, setRouteOrigin] = useState<LatLng>(origin);
+  const lastRouteUpdateRef = useRef<number>(0);
 
-  /* ────────── geolocalización continua ────────── */
+  /* ────────── geolocalización continua (solo en IN_PROGRESS) ────────── */
   useEffect(() => {
+    // Solo activar seguimiento cuando el viaje está en progreso
+    if (tripStatus !== 'IN_PROGRESS') {
+      if (watchId.current) {
+        try { navigator.geolocation.clearWatch(watchId.current); } catch {}
+      }
+      setPos(null);
+      return;
+    }
+
     if (!navigator.geolocation) {
       toast({ variant: 'destructive', title: 'GPS no disponible' });
       return;
@@ -164,43 +183,80 @@ const RealTimeTripMap: React.FC<Props> = ({
     );
 
     watchId.current = navigator.geolocation.watchPosition(
-      ({ coords }) => setPos({ lat: coords.latitude, lng: coords.longitude }),
+      ({ coords }) => {
+        const next = { lat: coords.latitude, lng: coords.longitude };
+        // Filtro de movimiento mínimo: ignorar cambios < 5 m
+        const last = lastPosRef.current;
+        if (last && haversineMeters(last, next) < 5) return;
+        setPos(next);
+      },
       () => { },
       { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 },
     );
 
-    return () => watchId.current && navigator.geolocation.clearWatch(watchId.current);
-  }, [toast]);
+    return () => {
+      if (watchId.current) {
+        try { navigator.geolocation.clearWatch(watchId.current); } catch {}
+      }
+    };
+  }, [toast, tripStatus]);
 
   /* ────────── proximidad al destino ────────── */
   useEffect(() => {
     if (pos) {
       setNear(haversineMeters(pos, destination) <= 100);
       try {
-        if (tripStatus.toLowerCase() === 'in_progress' && mapRef.current) {
+        // Esperar 1.5s tras interacción manual antes de retomar auto-follow
+        const interactedRecently = Date.now() - (userInteractingAtRef.current || 0) < 1500;
+        if (tripStatus.toLowerCase() === 'in_progress' && mapRef.current && follow && !interactedRecently) {
           const last = lastPosRef.current;
           const derivedHeading = last ? computeBearing(last, pos) : heading;
-          const targetHeading = Number.isFinite(derivedHeading) ? derivedHeading : heading;
+          const targetHeadingRaw = Number.isFinite(derivedHeading) ? derivedHeading : heading;
+          // Interpolar heading: 80% del anterior + 20% del nuevo
+          const targetHeading = 0.8 * heading + 0.2 * targetHeadingRaw;
           setHeading(targetHeading);
-          // Follow-like camera: center, keep close zoom, tilt and orient by heading
-          mapRef.current.panTo(pos as any);
-          try { mapRef.current.setZoom(Math.max(15, zoom)); } catch { }
+          // Throttle paneos + solo si estamos lejos del centro (>100m) para evitar loop visual
+          const now = Date.now();
+          const center = mapRef.current.getCenter?.();
+          const centerLatLng: LatLng | null = center ? { lat: center.lat(), lng: center.lng() } : null;
+          const farFromCenter = centerLatLng ? (haversineMeters(centerLatLng, pos) > 100) : true;
+          if (farFromCenter && now - (lastPanAtRef.current || 0) > 2000) {
+            mapRef.current.panTo(pos as any);
+            lastPanAtRef.current = now;
+          }
           try { (mapRef.current as any).setTilt?.(60); } catch { }
           try { (mapRef.current as any).setHeading?.(targetHeading); } catch { }
         }
         lastPosRef.current = pos;
       } catch { }
     }
-  }, [pos, destination, tripStatus, zoom, heading]);
+  }, [pos, destination, tripStatus, zoom, heading, follow]);
 
-  /* ────────── origen dinámico de la ruta ────────── */
-  const dynamicOrigin: LatLng =
-    tripStatus.toLowerCase() === 'in_progress' && pos ? pos : origin;
-  console.log("destination", destination)
+  // Mantener el centro del mapa estable para evitar re-montajes del mapa/direcciones
+  // El seguimiento se hace con panTo dentro del efecto, no con center prop dinámico
   const containerStyle = useMemo(
     () => ({ width: '100%', height }),
     [height],
   );
+
+  // Actualizar el origen de la ruta desde la POSICIÓN ACTUAL del drover cuando está en progreso,
+  // pero con thresholds para evitar parpadeos (cada >150m y >30s)
+  useEffect(() => {
+    if (tripStatus.toLowerCase() !== 'in_progress' || !pos) return;
+    const now = Date.now();
+    const moved = haversineMeters(routeOrigin, pos);
+    const longEnough = now - (lastRouteUpdateRef.current || 0) > 30000; // 30s
+    // Inicialmente, fijar la ruta al drover inmediatamente
+    if (!routeOrigin || (routeOrigin.lat === origin.lat && routeOrigin.lng === origin.lng)) {
+      setRouteOrigin(pos);
+      lastRouteUpdateRef.current = now;
+      return;
+    }
+    if (moved > 150 && longEnough) {
+      setRouteOrigin(pos);
+      lastRouteUpdateRef.current = now;
+    }
+  }, [pos, tripStatus, routeOrigin]);
 
   if (!isReady) {
     return (
@@ -214,13 +270,23 @@ const RealTimeTripMap: React.FC<Props> = ({
     <div className="relative h-fit w-full">
       <GoogleMap
         mapContainerStyle={containerStyle}
-        center={dynamicOrigin}
-        zoom={zoom}
+        center={tripStatus === 'IN_PROGRESS' && pos ? (pos as any) : (originRef.current as any)}
         options={mapOptions}
-        onLoad={(map) => { mapRef.current = map; }}
+        onLoad={(map) => {
+          mapRef.current = map;
+          // Detectar interacción manual para pausar el auto-follow un par de segundos
+          map.addListener('dragstart', () => { userInteractingAtRef.current = Date.now(); });
+          map.addListener('zoom_changed', () => { userInteractingAtRef.current = Date.now(); });
+          // Si ya estamos en IN_PROGRESS y tenemos posición, centrar en el drover una sola vez
+          if (tripStatus.toLowerCase() === 'in_progress' && lastPosRef.current) {
+            try { map.panTo(lastPosRef.current as any); } catch {}
+          }
+          // Fijar zoom inicial sin controlarlo externamente para que no se reinicie
+          try { map.setZoom(zoom); } catch {}
+        }}
       >
         {/* posición actual */}
-        {pos && (
+        {tripStatus === 'IN_PROGRESS' && pos && (
           <Marker
             position={pos}
             icon={{
@@ -246,10 +312,9 @@ const RealTimeTripMap: React.FC<Props> = ({
           }}
         />
 
-        {/* ruta */}
+        {/* ruta (estable para evitar recomputar en cada tick de GPS) */}
         <MapDirections
-          key={`${dynamicOrigin.lat}-${dynamicOrigin.lng}`} // fuerza re-render al cambiar
-          origin={dynamicOrigin}
+          origin={tripStatus === 'IN_PROGRESS' && pos ? routeOrigin : originRef.current}
           destination={destination}
           travelMode="DRIVING"
         />
@@ -260,6 +325,60 @@ const RealTimeTripMap: React.FC<Props> = ({
           🚘 Estás a &lt; 100 m del destino
         </div>
       )}
+
+      {/* Controles de navegación */}
+      <div className="absolute left-3 top-3 flex flex-col gap-2 z-50 pointer-events-auto">
+        <button
+          onClick={() => {
+            if (mapRef.current) {
+              const z = mapRef.current.getZoom() || 14;
+              try { mapRef.current.setZoom(Math.min(z + 1, 21)); } catch {}
+            }
+          }}
+          className="px-2 py-1 rounded bg-white/90 text-black text-sm shadow"
+        >
+          +
+        </button>
+        <button
+          onClick={() => {
+            if (mapRef.current) {
+              const z = mapRef.current.getZoom() || 14;
+              try { mapRef.current.setZoom(Math.max(z - 1, 3)); } catch {}
+            }
+          }}
+          className="px-2 py-1 rounded bg-white/90 text-black text-sm shadow"
+        >
+          −
+        </button>
+        <button
+          onClick={() => {
+            if (pos && mapRef.current) {
+              userInteractingAtRef.current = 0; // reanudar inmediatamente
+              setFollow(true);
+              mapRef.current.panTo(pos as any);
+              try { mapRef.current.setZoom(Math.max(15, zoom)); } catch {}
+            }
+          }}
+          className="px-2 py-1 rounded bg-white/90 text-black text-xs shadow"
+        >
+          Centrar
+        </button>
+        <button
+          onClick={() => {
+            setFollow((v) => {
+              const next = !v;
+              if (!next && mapRef.current) {
+                try { (mapRef.current as any).setTilt?.(0); } catch {}
+                try { (mapRef.current as any).setHeading?.(0); } catch {}
+              }
+              return next;
+            });
+          }}
+          className={`px-2 py-1 rounded text-xs shadow ${follow ? 'bg-red-600 text-white' : 'bg-white/90 text-black'}`}
+        >
+          {follow ? 'Seguimiento: ON' : 'Seguimiento: OFF'}
+        </button>
+      </div>
     </div>
   );
 };

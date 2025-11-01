@@ -15,8 +15,10 @@ import { mapRawUserTypeToRole } from './../helpers/UserRole';
 import { TransferStatus } from '../travels/entities/travel.entity';
 import { Travels } from '../travels/entities/travel.entity';
 import { ResendService } from '../resend/resend.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { BadRequestException } from '@nestjs/common';
 import { classifyId, normalizeId, validateDni, validateNie, isLikelyCompanyName } from './utils/spanish-id';
+import { CompensationService, parseKmFromDistance } from '../rates/compensation.service';
 
 import { randomBytes } from 'crypto';
 
@@ -29,6 +31,8 @@ export class UserService {
     @InjectRepository(Travels)
     private readonly travelsRepo: Repository<Travels>,
     private readonly resend: ResendService,
+    private readonly notifications: NotificationsService,
+    private readonly compensation: CompensationService,
   ) {}
 
   /**
@@ -91,7 +95,7 @@ export class UserService {
         created.codeExpiresAt = new Date(Date.now() + 10 * 60_000); // 10 minutos
         await this.userRepo.save(created);
 
-        const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+        const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.es';
         const verifyUrl = `${baseUrl.replace(/\/$/, '')}/verifyEmail?email=${encodeURIComponent(created.email)}&code=${encodeURIComponent(code)}`;
         const name = created?.contactInfo?.fullName || created.email;
         await this.resend.sendEmailVerificationEmail(created.email, name, verifyUrl);
@@ -100,6 +104,23 @@ export class UserService {
       }
 
       this.logger.log(`User created id=${created.id}`);
+
+      // Notificación de nuevo usuario para admins
+      try {
+        await this.notifications.create({
+          title: 'Nuevo registro',
+          message: `${created?.contactInfo?.fullName || created.email} se ha registrado como ${String(role).toUpperCase()}`,
+          read: false,
+          roleTarget: 'ADMIN',
+          category: 'NEW_USER',
+          entityType: 'USER',
+          entityId: created.id,
+          data: {
+            userRole: role,
+            email: created.email,
+          },
+        } as any);
+      } catch {}
       return created;
     } catch (error: any) {
       this.logger.error(`Create user failed: ${error?.message}`, error?.stack);
@@ -134,13 +155,44 @@ export class UserService {
 
     const assignedTrips = travels.length;
 
-    const completedTrips = travels.filter(
-      (trip) => trip.status === TransferStatus.DELIVERED,
-    ).length;
+    const delivered = travels.filter((t) => t.status === TransferStatus.DELIVERED);
+    const completedTrips = delivered.length;
 
-    const totalEarnings = travels
-      .filter((trip) => trip.status === TransferStatus.DELIVERED)
-      .reduce((sum, trip) => sum + (trip.totalPrice || 0), 0);
+    // Calcular beneficio real del drover por viaje (driverFee); si falta, aproximar con la tabla
+    const isFreelance = String(user.employmentType || '').toUpperCase() === DroverEmploymentType.FREELANCE;
+    let benefitSum = 0;
+    for (const t of delivered) {
+      const stored = typeof (t as any)?.driverFee === 'number' ? Number((t as any).driverFee) : null;
+      if (stored != null && !isNaN(stored)) {
+        benefitSum += stored;
+        continue;
+      }
+      try {
+        const km = parseKmFromDistance((t as any)?.distanceTravel);
+        if (typeof km === 'number' && km > 0 && this.compensation) {
+          const preview = isFreelance
+            ? this.compensation.calcFreelancePerTrip(km)
+            : this.compensation.calcContractedPerTrip(km);
+          benefitSum += Number(preview?.driverFee || 0);
+        }
+      } catch {}
+    }
+
+    const totalEarnings = benefitSum;
+    const avgPerTrip = completedTrips > 0 ? totalEarnings / completedTrips : 0;
+
+    // Calcular rating promedio y cantidad de valoraciones del drover
+    let ratingAvg = 0;
+    let ratingCount = 0;
+    try {
+      const rows = await (this.userRepo.manager as any).query(
+        `SELECT AVG(rating) as avg, COUNT(*) as cnt FROM reviews WHERE "droverId" = $1`,
+        [id],
+      );
+      const row = Array.isArray(rows) && rows[0] ? rows[0] : null;
+      ratingAvg = row ? Number(row.avg || 0) : 0;
+      ratingCount = row ? Number(row.cnt || 0) : 0;
+    } catch {}
 
     return {
       user,
@@ -148,6 +200,9 @@ export class UserService {
         assignedTrips,
         completedTrips,
         totalEarnings,
+        avgPerTrip,
+        rating: Number(ratingAvg?.toFixed?.(2) || ratingAvg || 0),
+        ratingCount,
       },
     };
   }

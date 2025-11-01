@@ -15,7 +15,8 @@ import {
   Timer,
   Target,
   Zap,
-  RotateCcw
+  RotateCcw,
+  Mail
 } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -169,6 +170,12 @@ const TransferDetailsCard: React.FC<TransferDetailsCardProps> = ({ transfer: ini
   const getDistance = () => transfer.distanceTravel || transfer.distance || 0;
   const getSenderName = () => transfer.personDelivery?.fullName || transfer.senderName || '';
   const getReceiverName = () => transfer.personReceive?.fullName || transfer.receiverName || '';
+  const getSenderDni = () => (transfer as any)?.personDelivery?.dni || (transfer as any)?.senderDni || '';
+  const getReceiverDni = () => (transfer as any)?.personReceive?.dni || (transfer as any)?.receiverDni || '';
+  const getSenderPhone = () => (transfer as any)?.personDelivery?.phone || (transfer as any)?.senderPhone || '';
+  const getReceiverPhone = () => (transfer as any)?.personReceive?.phone || (transfer as any)?.receiverPhone || '';
+  const getSenderEmail = () => (transfer as any)?.personDelivery?.email || (transfer as any)?.senderEmail || '';
+  const getReceiverEmail = () => (transfer as any)?.personReceive?.email || (transfer as any)?.receiverEmail || '';
 
   console.log("transfer", transfer)
 
@@ -388,10 +395,62 @@ const TransferDetailsCard: React.FC<TransferDetailsCardProps> = ({ transfer: ini
                   <div className="bg-white/20 rounded-lg p-3">
                     <p className="text-xs  mb-1">REMITENTE</p>
                     <p className="font-medium ">{getSenderName()}</p>
+                    <div className="mt-2 space-y-1 text-xs ">
+                      <div className="flex items-center gap-2">
+                        <User className="w-3.5 h-3.5 text-[#6EF7FF]" />
+                        <span>DNI: {getSenderDni() || '—'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-3.5 h-3.5 text-[#6EF7FF]" />
+                        {getSenderPhone() ? (
+                          <a href={`tel:${String(getSenderPhone()).replace(/\s+/g, '')}`} className="underline underline-offset-2">
+                            {getSenderPhone()}
+                          </a>
+                        ) : (
+                          <span>—</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-3.5 h-3.5 text-[#6EF7FF]" />
+                        {getSenderEmail() ? (
+                          <a href={`mailto:${getSenderEmail()}`} className="underline underline-offset-2">
+                            {getSenderEmail()}
+                          </a>
+                        ) : (
+                          <span>—</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                   <div className="bg-white/20 rounded-lg p-3">
                     <p className="text-xs  mb-1">DESTINATARIO</p>
                     <p className="font-medium ">{getReceiverName()}</p>
+                    <div className="mt-2 space-y-1 text-xs ">
+                      <div className="flex items-center gap-2">
+                        <User className="w-3.5 h-3.5 text-[#6EF7FF]" />
+                        <span>DNI: {getReceiverDni() || '—'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-3.5 h-3.5 text-[#6EF7FF]" />
+                        {getReceiverPhone() ? (
+                          <a href={`tel:${String(getReceiverPhone()).replace(/\s+/g, '')}`} className="underline underline-offset-2">
+                            {getReceiverPhone()}
+                          </a>
+                        ) : (
+                          <span>—</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-3.5 h-3.5 text-[#6EF7FF]" />
+                        {getReceiverEmail() ? (
+                          <a href={`mailto:${getReceiverEmail()}`} className="underline underline-offset-2">
+                            {getReceiverEmail()}
+                          </a>
+                        ) : (
+                          <span>—</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

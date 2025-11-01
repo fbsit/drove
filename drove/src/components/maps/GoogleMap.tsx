@@ -52,6 +52,8 @@ const GoogleMapComponent = ({
 }: MapProps) => {
   const { isReady, error, isApiBlocked } = useGoogleMapsInit();
   const [map, setMap] = useState<google.maps.Map | null>(null);
+  const userZoomRef = useRef<number | null>(null);
+  const userCenterRef = useRef<google.maps.LatLngLiteral | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const isMapInitialized = useRef(false);
@@ -99,8 +101,16 @@ const GoogleMapComponent = ({
     isMapInitialized.current = true;
     
     // Reducir detalle del mapa para mejorar rendimiento
-    map.setOptions({
-      maxZoom: 15
+    map.setOptions({ maxZoom: 15 });
+
+    // Suscribirse a eventos de interacción del usuario para recordar zoom/centro
+    map.addListener('zoom_changed', () => {
+      const z = map.getZoom();
+      if (typeof z === 'number') userZoomRef.current = z;
+    });
+    map.addListener('center_changed', () => {
+      const c = map.getCenter?.();
+      if (c) userCenterRef.current = { lat: c.lat(), lng: c.lng() };
     });
   }, []);
 
@@ -112,7 +122,7 @@ const GoogleMapComponent = ({
     mapFitBoundsCalled.current = false;
   }, []);
   
-  // Ajustar el mapa para mostrar todos los marcadores
+  // Ajustar el mapa para mostrar todos los marcadores (solo una vez por cambio de ruta)
   useEffect(() => {
     if (!mapRef.current || !markers || !markers.origin || !markers.destination || mapFitBoundsCalled.current) return;
     
@@ -122,17 +132,25 @@ const GoogleMapComponent = ({
       bounds.extend(new google.maps.LatLng(markers.destination.lat, markers.destination.lng));
       
       // Corregido: Usar objeto con propiedades correctas para padding
-      mapRef.current.fitBounds(bounds, {
-        top: 50,
-        right: 50,
-        bottom: 50,
-        left: 50
-      });
+      mapRef.current.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
       
       mapFitBoundsCalled.current = true;
     } catch (error) {
       console.error('Error al ajustar el mapa:', error);
     }
+  }, [markers]);
+
+  // Acción de recentrar respetando el zoom/centro del usuario si existen
+  const recenter = useCallback(() => {
+    const m = mapRef.current;
+    if (!m || !markers) return;
+    const bounds = new google.maps.LatLngBounds();
+    bounds.extend(new google.maps.LatLng(markers.origin.lat, markers.origin.lng));
+    bounds.extend(new google.maps.LatLng(markers.destination.lat, markers.destination.lng));
+    // Si el usuario ya ajustó zoom/centro, preservarlos
+    if (userCenterRef.current) m.setCenter(userCenterRef.current);
+    if (typeof userZoomRef.current === 'number') m.setZoom(userZoomRef.current as number);
+    else m.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
   }, [markers]);
 
   // Usar useEffect para sincronizar datos con el mapa en lugar de recrear componentes
@@ -236,6 +254,15 @@ const GoogleMapComponent = ({
           )}
         </ReactGoogleMap>
         <MapLoadingOverlay isVisible={isLoading} />
+
+        {/* Botón de centrar que no resetea el zoom del usuario */}
+        <button
+          type="button"
+          onClick={recenter}
+          className="absolute bottom-3 right-3 px-3 py-2 rounded-md bg-white text-[#22142A] shadow"
+        >
+          Centrar
+        </button>
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Travels } from './../travels/entities/travel.entity';
 import { PdfService } from '../pdf/pdf.service';
+import { CompensationService } from '../rates/compensation.service';
 import fetch from 'node-fetch';
 
 export interface ResendSendEmailPayload {
@@ -92,7 +93,7 @@ export class ResendService {
   private sendQueue: Promise<any> = Promise.resolve();
   private sendTimestamps: number[] = [];
 
-  constructor(private readonly config: ConfigService, private readonly pdfService: PdfService) {
+  constructor(private readonly config: ConfigService, private readonly pdfService: PdfService, private readonly compensation: CompensationService) {
     const apiKey = 're_dikLWbNB_2tg41mPRK8UCuUcybKSwEiw1';
 
     if (!apiKey) {
@@ -104,6 +105,20 @@ export class ResendService {
     }
 
     this.client = new Resend(apiKey);
+    this.logger.log('Cliente Resend inicializado correctamente');
+  }
+
+  private async mayIncludeContractedBenefit(droverId?: string): Promise<boolean> {
+    try {
+      if (!droverId) return false;
+      const monthISO = new Date().toISOString().slice(0, 7);
+      const monthly = await this.compensation.calcContractedMonthlyByDrover(droverId, monthISO);
+      const totalKm = Number(monthly?.kilometers || 0);
+      const threshold = Number(monthly?.thresholdKm || 0);
+      return isFinite(totalKm) && isFinite(threshold) && totalKm >= threshold;
+    } catch {
+      return false;
+    }
   }
 
   private localizeInvoiceStatus(status: string | undefined | null): string {
@@ -139,7 +154,7 @@ export class ResendService {
   }
 
   private buildFrontUrl(pathOrUrl: string): string {
-    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.es';
     if (!pathOrUrl) return baseUrl.replace(/\/$/, '');
     if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
     const sep = pathOrUrl.startsWith('/') ? '' : '/';
@@ -147,7 +162,7 @@ export class ResendService {
   }
 
   private buildVerificationPath(usePage: 'withdrawals' | 'delivery', id: string): string {
-    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.es';
     const base = baseUrl.replace(/\/$/, '');
     const path = usePage === 'withdrawals' ? '/verificacion/recogida/' : '/verificacion/entrega/';
     return `${base}${path}${encodeURIComponent(id)}`;
@@ -267,7 +282,27 @@ export class ResendService {
     const pickup = travel.startAddress;
     const delivery = travel.endAddress;
 
-    const payload: Payload = {
+    const kmValue = (() => {
+      const raw = (travel as any)?.distanceTravel;
+      if (typeof raw === 'number') return raw;
+      try {
+        const s = String(raw || '').replace(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '').replace(/\s+/g, '');
+        const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+        const n = parseFloat(withDot);
+        return isNaN(n) ? 0 : n;
+      } catch { return 0; }
+    })();
+    const driverBenefit = (() => {
+      const stored = (travel as any)?.driverFee;
+      if (typeof stored === 'number' && !isNaN(stored)) return stored;
+      try {
+        const emp = String(travel?.drover?.employmentType || '').toUpperCase();
+        if (emp === 'CONTRACTED') return this.compensation.calcContractedPerTrip(kmValue).driverFee;
+        return this.compensation.calcFreelancePerTrip(kmValue).driverFee;
+      } catch { return 0; }
+    })();
+
+    const payload: Payload & { driver_benefit?: string } = {
       to: client.email,
       subject: 'Traslado asignado a un Drover',
       preheader: 'Tu vehículo pronto será recogido.',
@@ -299,17 +334,30 @@ export class ResendService {
         region: delivery.region,
         country: delivery.country,
       },
-      distance: Number(travel.distanceTravel), // e.g. 200
+      distance: (() => {
+        const raw = (travel as any)?.distanceTravel;
+        if (typeof raw === 'number') return raw;
+        try {
+          const s = String(raw || '').replace(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '').replace(/\s+/g, '');
+          const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+          const n = parseFloat(withDot);
+          return isNaN(n) ? 0 : n;
+        } catch { return 0; }
+      })(), // e.g. 200
       total_with_tax: `$${(travel?.totalPrice ?? 0).toLocaleString('es-CL')}`, // e.g. '$337,47'
       issue_date: new Date().toLocaleDateString('es-ES'),
     };
-    const html = template(payload);
+    // Renderizar dos variantes de HTML: con total (cliente) y sin total (admin/receptor)
+    const htmlWithTotal = template({ ...payload });
+    const htmlNoTotal = template({ ...payload, total_with_tax: '' });
     if (!this.client) {
       return false;
     }
-    let attachments: any[] | undefined;
+    // Enviar PDFs diferenciados: cliente con total; remitente (personDelivery) sin total
+    let attachWithTotals: any[] | undefined;
+    let attachNoTotals: any[] | undefined;
     try {
-      const pdfUrl = await this.pdfService.generatePDF(
+      const urlWith = await this.pdfService.generatePDF(
         travel.id,
         'withdrawals',
         true,
@@ -319,29 +367,47 @@ export class ResendService {
         false,
         'chofer',
         1,
+        false,
       );
-      if (pdfUrl) {
-        const res = await fetch(pdfUrl);
+      if (urlWith) {
+        const res = await fetch(urlWith);
         const buf = await res.buffer();
-        attachments = [
-          { filename: `transfer_${travel.id}_step1.pdf`, content: buf },
-        ];
+        attachWithTotals = [{ filename: `transfer_${travel.id}_step1.pdf`, content: buf }];
       }
-    } catch (e) {
-      // fallback: send without attachment
+    } catch {}
+    try {
+      const urlNo = await this.pdfService.generatePDF(
+        travel.id,
+        'withdrawals',
+        true,
+        false,
+        false,
+        false,
+        false,
+        'chofer',
+        1,
+        true,
+      );
+      if (urlNo) {
+        const res = await fetch(urlNo);
+        const buf = await res.buffer();
+        attachNoTotals = [{ filename: `transfer_${travel.id}_step1.pdf`, content: buf }];
+      }
+    } catch {}
+
+    // Renderizar HTML con/ sin total para cliente / remitente
+    const htmlWith = template({ ...payload });
+    const htmlNo = template({ ...payload, total_with_tax: '' });
+    const sends: Array<Promise<boolean>> = [];
+    if (client?.email) {
+      sends.push(this.sendEmail({ from: 'contacto@drove.es', to: client.email, subject: payload.subject, html: htmlWith, ...(attachWithTotals ? { attachments: attachWithTotals } : {}) }));
     }
-    const recipients = Array.from(
-      new Set([
-        (client?.email as string) || '',
-        (travel?.personDelivery?.email as string) || '',
-      ].filter(Boolean)),
-    );
-    return this.sendToMultipleSequential(recipients, {
-      from: 'contacto@drove.es',
-      subject: payload.subject,
-      html,
-      ...(attachments ? { attachments } : {}),
-    });
+    const senderEmail = (travel?.personDelivery?.email as string) || '';
+    if (senderEmail) {
+      sends.push(this.sendEmail({ from: 'contacto@drove.es', to: senderEmail, subject: payload.subject, html: htmlNo, ...(attachNoTotals ? { attachments: attachNoTotals } : {}) }));
+    }
+    await Promise.allSettled(sends);
+    return true;
   }
 
   //Correo para asignacion de chofer (email chofer y admin (info@drove.es))
@@ -353,7 +419,33 @@ export class ResendService {
     const delivery = travel.endAddress;
 
     const holder = travel.personDelivery || {};
-    const payload: Payload = {
+    const kmValue = (() => {
+      const raw = (travel as any)?.distanceTravel;
+      if (typeof raw === 'number') return raw;
+      try {
+        const s = String(raw || '').replace(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '').replace(/\s+/g, '');
+        const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+        const n = parseFloat(withDot);
+        return isNaN(n) ? 0 : n;
+      } catch { return 0; }
+    })();
+    const driverBenefitText = await (async () => {
+      try {
+        const emp = String(travel?.drover?.employmentType || '').toUpperCase();
+        if (emp === 'CONTRACTED') {
+          const allow = await this.mayIncludeContractedBenefit(travel?.drover?.id);
+          if (!allow) return '';
+          const fee = this.compensation.calcContractedPerTrip(kmValue).driverFee;
+          return `${Number(fee || 0).toFixed(2)} €`;
+        }
+        const stored = (travel as any)?.driverFee;
+        if (typeof stored === 'number' && !isNaN(stored)) return `${Number(stored).toFixed(2)} €`;
+        const fee = this.compensation.calcFreelancePerTrip(kmValue).driverFee;
+        return `${Number(fee || 0).toFixed(2)} €`;
+      } catch { return ''; }
+    })();
+
+    const payload: Payload & { driver_benefit?: string } = {
       to: client.email,
       subject: 'Traslado asignado a un Drover',
       preheader: 'Tu vehículo pronto será recogido.',
@@ -387,8 +479,9 @@ export class ResendService {
         region: delivery.region,
         country: delivery.country,
       },
-      distance: Number(travel.distanceTravel), // e.g. 200
-      total_with_tax: `$${(travel?.totalPrice ?? 0).toLocaleString('es-CL')}`, // e.g. '$337,47'
+      distance: kmValue, // e.g. 200
+      driver_benefit: driverBenefitText,
+      total_with_tax: `$${(travel?.totalPrice ?? 0).toLocaleString('es-CL')}`, // retained for client templates
       issue_date: new Date().toLocaleDateString('es-ES'),
     };
     const html = template(payload);
@@ -396,17 +489,23 @@ export class ResendService {
       return false;
     }
     let attachments: any[] | undefined;
+    // Enviar con asuntos diferenciados: drover recibe el nuevo asunto; admin mantiene el existente
+    const droverEmail = (driver?.email as string) || '';
+    const adminEmail = this.getAdminEmail();
+
+    // Generar PDF con detailInfo "delivery" para drover/admin (con datos del receptor)
     try {
       const pdfUrl = await this.pdfService.generatePDF(
-        travel.id,
-        'withdrawals',
-        false,
-        false,
-        false,
-        false,
-        false,
-        'delivery',
+      travel.id,
+      'withdrawals',
+      false,
+      false,
+      false,
+      false,
+      false,
+      'delivery',
         1,
+        true,
       );
       if (pdfUrl) {
         const res = await fetch(pdfUrl);
@@ -416,18 +515,31 @@ export class ResendService {
         ];
       }
     } catch (e) {}
-    const recipients = Array.from(
-      new Set([
-        (driver?.email as string) || '',
-        this.getAdminEmail(),
-      ].filter(Boolean)),
-    );
-    return this.sendToMultipleSequential(recipients, {
-      from: 'contacto@drove.es',
-      subject: payload.subject,
-      html,
-      ...(attachments ? { attachments } : {}),
-    });
+
+    // 1) Email al drover con asunto solicitado
+    const droverSendPromise = droverEmail
+      ? this.sendEmail({
+          from: 'contacto@drove.es',
+          to: droverEmail,
+          subject: '¡Enhorabuena! Has sido asignado para transportar un vehículo.',
+          html,
+          ...(attachments ? { attachments } : {}),
+        })
+      : Promise.resolve(false);
+
+    // 2) Email al admin con asunto anterior para coherencia interna
+    const adminSendPromise = adminEmail
+      ? this.sendEmail({
+          from: 'contacto@drove.es',
+          to: adminEmail,
+          subject: payload.subject,
+          html,
+          ...(attachments ? { attachments } : {}),
+        })
+      : Promise.resolve(false);
+
+    await Promise.allSettled([droverSendPromise, adminSendPromise]);
+    return true;
   }
   //Correo para confirmar recogida de auto (email cliente y personDelivery)
   async sendConfirmationPickupEmailClient(travel: Travels | any) {
@@ -438,8 +550,25 @@ export class ResendService {
     const pickup = travel.startAddress;
     const delivery = travel.endAddress;
     const pickupVerification = travel?.pickupVerification || {};
+    // Normalizar firmas: materializar dataURL a URL pública si corresponde
+    const clientSigRaw = typeof pickupVerification?.signature === 'string' ? pickupVerification.signature : (travel?.signatureStartClient || '');
+    const droverSigRaw = typeof pickupVerification?.droverSignature === 'string' ? pickupVerification.droverSignature : '';
+    const clientSignatureUrl = clientSigRaw?.startsWith('data:')
+      ? await (async () => {
+          const mod = await import('../storage/storage.service');
+          const svc = new (mod as any).StorageService(undefined as any, undefined as any, undefined as any, undefined as any);
+          return await (svc as any).uploadBase64Image(clientSigRaw, `travel/${travel.id}/signatures`);
+        })()
+      : clientSigRaw || '';
+    const droverSignatureUrl = droverSigRaw?.startsWith('data:')
+      ? await (async () => {
+          const mod = await import('../storage/storage.service');
+          const svc = new (mod as any).StorageService(undefined as any, undefined as any, undefined as any, undefined as any);
+          return await (svc as any).uploadBase64Image(droverSigRaw, `travel/${travel.id}/signatures`);
+        })()
+      : droverSigRaw || '';
 
-    const payload: Payload = {
+    const payload: Payload & { driver_benefit?: string } = {
       to: client.email,
       subject: 'Traslado asignado a un Drover',
       preheader: 'Tu vehículo pronto será recogido.',
@@ -451,15 +580,8 @@ export class ResendService {
       pickup_time: travel.travelTime,
       client_name: client.contactInfo.fullName,
       client_phone: client?.contactInfo?.phone || '',
-      holder_signature_url:
-        typeof pickupVerification?.signature === 'string'
-          ? pickupVerification.signature
-          : (travel?.signatureStartClient || ''),
-      driver_signature_url:
-        // Si la firma viene como dataURL base64, la incrustamos tal cual; si viene como URL normal de bucket, también funciona en clientes de correo
-        typeof pickupVerification?.droverSignature === 'string'
-          ? pickupVerification.droverSignature
-          : '',
+      holder_signature_url: clientSignatureUrl,
+      driver_signature_url: droverSignatureUrl,
       doc_issue_date: new Date().toLocaleDateString('es-ES'),
       request_id: travel.id,
       vehicle_type: travel.typeVehicle,
@@ -482,8 +604,17 @@ export class ResendService {
         region: delivery.region,
         country: delivery.country,
       },
-      distance: Number(travel.distanceTravel), // e.g. 200
-      total_with_tax: `$${travel.totalPrice.toLocaleString('es-CL')}`, // e.g. '$337,47'
+      distance: (() => {
+        const raw = (travel as any)?.distanceTravel;
+        if (typeof raw === 'number') return raw;
+        try {
+          const s = String(raw || '').replace(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '').replace(/\s+/g, '');
+          const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+          const n = parseFloat(withDot);
+          return isNaN(n) ? 0 : n;
+        } catch { return 0; }
+      })(), // e.g. 200
+      total_with_tax: `$${travel.totalPrice.toLocaleString('es-CL')}`, // retained but not used in drover template
       issue_date: new Date().toLocaleDateString('es-ES'),
     };
 
@@ -491,9 +622,11 @@ export class ResendService {
     if (!this.client) {
       return false;
     }
-    let attachments: any[] | undefined;
+    // Cliente con totales, remitente sin totales
+    let withTot: any[] | undefined;
+    let noTot: any[] | undefined;
     try {
-      const pdfUrl = await this.pdfService.generatePDF(
+      const urlWith = await this.pdfService.generatePDF(
         travel.id,
         'delivery',
         true,
@@ -503,27 +636,39 @@ export class ResendService {
         false,
         'chofer',
         2,
+        false,
       );
-      if (pdfUrl) {
-        const res = await fetch(pdfUrl);
+      if (urlWith) {
+        const res = await fetch(urlWith);
         const buf = await res.buffer();
-        attachments = [
-          { filename: `transfer_${travel.id}_step2.pdf`, content: buf },
-        ];
+        withTot = [{ filename: `transfer_${travel.id}_step2.pdf`, content: buf }];
       }
-    } catch (e) {}
-    const recipients = Array.from(
-      new Set([
-        (client?.email as string) || '',
-        (travel?.personDelivery?.email as string) || '',
-      ].filter(Boolean)),
-    );
-    return this.sendToMultipleSequential(recipients, {
-      from: 'contacto@drove.es',
-      subject: 'Comprobante de inicio de transporte del vehículo',
-      html,
-      ...(attachments ? { attachments } : {}),
-    });
+    } catch {}
+    try {
+      const urlNo = await this.pdfService.generatePDF(
+        travel.id,
+        'delivery',
+        true,
+        true,
+        false,
+        false,
+        false,
+        'chofer',
+        2,
+        true,
+      );
+      if (urlNo) {
+        const res = await fetch(urlNo);
+        const buf = await res.buffer();
+        noTot = [{ filename: `transfer_${travel.id}_step2.pdf`, content: buf }];
+      }
+    } catch {}
+    const promises: Array<Promise<boolean>> = [];
+    if (client?.email) promises.push(this.sendEmail({ from: 'contacto@drove.es', to: client.email, subject: 'Comprobante de inicio de transporte del vehículo', html, ...(withTot ? { attachments: withTot } : {}) }));
+    const senderEmail2 = (travel?.personDelivery?.email as string) || '';
+    if (senderEmail2) promises.push(this.sendEmail({ from: 'contacto@drove.es', to: senderEmail2, subject: 'Comprobante de inicio de transporte del vehículo', html, ...(noTot ? { attachments: noTot } : {}) }));
+    await Promise.allSettled(promises);
+    return true;
   }
   //Correo para confirmar recogida de auto (email drover y admin (info@drove.es))
   async sendConfirmationPickupEmailDJT(travel: Travels | any) {
@@ -535,7 +680,33 @@ export class ResendService {
     const delivery = travel.endAddress;
     const receiver = travel.personReceive || {};
 
-    const payload: Payload = {
+    const kmValue2 = (() => {
+      const raw = (travel as any)?.distanceTravel;
+      if (typeof raw === 'number') return raw;
+      try {
+        const s = String(raw || '').replace(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '').replace(/\s+/g, '');
+        const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+        const n = parseFloat(withDot);
+        return isNaN(n) ? 0 : n;
+      } catch { return 0; }
+    })();
+    const driverBenefitPickupText = await (async () => {
+      try {
+        const emp = String(travel?.drover?.employmentType || '').toUpperCase();
+        if (emp === 'CONTRACTED') {
+          const allow = await this.mayIncludeContractedBenefit(travel?.drover?.id);
+          if (!allow) return '';
+          const fee = this.compensation.calcContractedPerTrip(kmValue2).driverFee;
+          return `${Number(fee || 0).toFixed(2)} €`;
+        }
+        const stored = (travel as any)?.driverFee;
+        if (typeof stored === 'number' && !isNaN(stored)) return `${Number(stored).toFixed(2)} €`;
+        const fee = this.compensation.calcFreelancePerTrip(kmValue2).driverFee;
+        return `${Number(fee || 0).toFixed(2)} €`;
+      } catch { return ''; }
+    })();
+
+    const payload: Payload & { driver_benefit?: string } = {
       to: client.email,
       subject: 'Traslado asignado a un Drover',
       preheader: 'Tu vehículo pronto será recogido.',
@@ -571,8 +742,9 @@ export class ResendService {
         region: delivery.region,
         country: delivery.country,
       },
-      distance: Number(travel.distanceTravel), // e.g. 200
-      total_with_tax: `$${travel.totalPrice.toLocaleString('es-CL')}`, // e.g. '$337,47'
+      distance: kmValue2, // e.g. 200
+      driver_benefit: driverBenefitPickupText,
+      total_with_tax: `$${travel.totalPrice.toLocaleString('es-CL')}`, // retained but not used in drover template
       issue_date: new Date().toLocaleDateString('es-ES'),
     };
 
@@ -624,6 +796,26 @@ export class ResendService {
     const delivery = travel.endAddress;
     const deliveryVerification = travel?.deliveryVerification || {};
 
+    const kmValue3 = (() => {
+      const raw = (travel as any)?.distanceTravel;
+      if (typeof raw === 'number') return raw;
+      try {
+        const s = String(raw || '').replace(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '').replace(/\s+/g, '');
+        const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+        const n = parseFloat(withDot);
+        return isNaN(n) ? 0 : n;
+      } catch { return 0; }
+    })();
+    const driverBenefit3 = (() => {
+      const stored = (travel as any)?.driverFee;
+      if (typeof stored === 'number' && !isNaN(stored)) return stored;
+      try {
+        const emp = String(travel?.drover?.employmentType || '').toUpperCase();
+        if (emp === 'CONTRACTED') return this.compensation.calcContractedPerTrip(kmValue3).driverFee;
+        return this.compensation.calcFreelancePerTrip(kmValue3).driverFee;
+      } catch { return 0; }
+    })();
+
     const payload: Payload = {
       to: client.email,
       subject: 'Traslado asignado a un Drover',
@@ -662,7 +854,16 @@ export class ResendService {
         region: delivery.region,
         country: delivery.country,
       },
-      distance: Number(travel.distanceTravel), // e.g. 200
+      distance: (() => {
+        const raw = (travel as any)?.distanceTravel;
+        if (typeof raw === 'number') return raw;
+        try {
+          const s = String(raw || '').replace(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '').replace(/\s+/g, '');
+          const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+          const n = parseFloat(withDot);
+          return isNaN(n) ? 0 : n;
+        } catch { return 0; }
+      })(), // e.g. 200
       total_with_tax: `$${travel.totalPrice.toLocaleString('es-CL')}`, // e.g. '$337,47'
       issue_date: new Date().toLocaleDateString('es-ES'),
     };
@@ -671,9 +872,11 @@ export class ResendService {
     if (!this.client) {
       return false;
     }
-    let attachments: any[] | undefined;
+    // Cliente con totales; admin/receptor con PDF sin totales
+    let withTot3: any[] | undefined;
+    let noTot3: any[] | undefined;
     try {
-      const pdfUrl = await this.pdfService.generatePDF(
+      const urlWith3 = await this.pdfService.generatePDF(
         travel.id,
         'delivery',
         true,
@@ -683,29 +886,43 @@ export class ResendService {
         false,
         'chofer',
         3,
+        false,
       );
-      if (pdfUrl) {
-        const res = await fetch(pdfUrl);
+      if (urlWith3) {
+        const res = await fetch(urlWith3);
         const buf = await res.buffer();
-        attachments = [
-          { filename: `transfer_${travel.id}_step3.pdf`, content: buf },
-        ];
+        withTot3 = [{ filename: `transfer_${travel.id}_step3.pdf`, content: buf }];
       }
-    } catch (e) {}
-    const recipients = Array.from(
-      new Set([
-        (client?.email as string) || '',
-        this.getAdminEmail(),
-        (travel?.personDelivery?.email as string) || '',
-        (travel?.personReceive?.email as string) || '',
-      ].filter(Boolean)),
-    );
-    return this.sendToMultipleSequential(recipients, {
-      from: 'contacto@drove.es',
-      subject: 'DROVER llego a su destino',
-      html,
-      ...(attachments ? { attachments } : {}),
-    });
+    } catch {}
+    try {
+      const urlNo3 = await this.pdfService.generatePDF(
+        travel.id,
+        'delivery',
+        true,
+        false,
+        false,
+        false,
+        false,
+        'chofer',
+        3,
+        true,
+      );
+      if (urlNo3) {
+        const res = await fetch(urlNo3);
+        const buf = await res.buffer();
+        noTot3 = [{ filename: `transfer_${travel.id}_step3.pdf`, content: buf }];
+      }
+    } catch {}
+    const adminEmail3 = this.getAdminEmail();
+    const receiverEmail3 = (travel?.personReceive?.email as string) || '';
+    const senderEmail3 = (travel?.personDelivery?.email as string) || '';
+    const tasks3: Array<Promise<boolean>> = [];
+    if (client?.email) tasks3.push(this.sendEmail({ from: 'contacto@drove.es', to: client.email, subject: 'DROVER llego a su destino', html, ...(withTot3 ? { attachments: withTot3 } : {}) }));
+    if (adminEmail3) tasks3.push(this.sendEmail({ from: 'contacto@drove.es', to: adminEmail3, subject: 'DROVER llego a su destino', html, ...(noTot3 ? { attachments: noTot3 } : {}) }));
+    if (receiverEmail3) tasks3.push(this.sendEmail({ from: 'contacto@drove.es', to: receiverEmail3, subject: 'DROVER llego a su destino', html, ...(noTot3 ? { attachments: noTot3 } : {}) }));
+    if (senderEmail3) tasks3.push(this.sendEmail({ from: 'contacto@drove.es', to: senderEmail3, subject: 'DROVER llego a su destino', html, ...(noTot3 ? { attachments: noTot3 } : {}) }));
+    await Promise.allSettled(tasks3);
+    return true;
   }
   //Correo de entrega de vehiculo (cliente admin (info@drove.es), personReceive) X
   async sendConfirmationDeliveryEmailCJT(travel: Travels | any) {
@@ -717,6 +934,22 @@ export class ResendService {
     const delivery = travel.endAddress;
     const receiver = travel.personReceive || {};
     const handover = travel?.deliveryVerification?.handoverDocuments || {};
+    const clientSigRaw = typeof handover?.client_signature === 'string' ? handover.client_signature : '';
+    const droverSigRaw = typeof handover?.drover_signature === 'string' ? handover.drover_signature : '';
+    const clientSignatureUrl = clientSigRaw?.startsWith('data:')
+      ? await (async () => {
+          const mod = await import('../storage/storage.service');
+          const svc = new (mod as any).StorageService(undefined as any, undefined as any, undefined as any, undefined as any);
+          return await (svc as any).uploadBase64Image(clientSigRaw, `travel/${travel.id}/signatures`);
+        })()
+      : clientSigRaw || '';
+    const droverSignatureUrl = droverSigRaw?.startsWith('data:')
+      ? await (async () => {
+          const mod = await import('../storage/storage.service');
+          const svc = new (mod as any).StorageService(undefined as any, undefined as any, undefined as any, undefined as any);
+          return await (svc as any).uploadBase64Image(droverSigRaw, `travel/${travel.id}/signatures`);
+        })()
+      : droverSigRaw || '';
 
     const payload: Payload = {
       to: client.email,
@@ -737,8 +970,8 @@ export class ResendService {
       client_name: client.contactInfo.fullName,
       receiver_name: receiver?.fullName || '',
       receiver_nif: receiver?.dni || '',
-      client_signature_url: typeof handover?.client_signature === 'string' ? handover.client_signature : '',
-      driver_signature_url: typeof handover?.drover_signature === 'string' ? handover.drover_signature : '',
+      client_signature_url: clientSignatureUrl,
+      driver_signature_url: droverSignatureUrl,
       doc_issue_date: new Date().toLocaleDateString('es-ES'),
       request_id: travel.id,
       vehicle_type: travel.typeVehicle,
@@ -761,7 +994,16 @@ export class ResendService {
         region: delivery.region,
         country: delivery.country,
       },
-      distance: Number(travel.distanceTravel), // e.g. 200
+      distance: (() => {
+        const raw = (travel as any)?.distanceTravel;
+        if (typeof raw === 'number') return raw;
+        try {
+          const s = String(raw || '').replace(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '').replace(/\s+/g, '');
+          const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+          const n = parseFloat(withDot);
+          return isNaN(n) ? 0 : n;
+        } catch { return 0; }
+      })(), // e.g. 200
       total_with_tax: `$${travel.totalPrice.toLocaleString('es-CL')}`, // e.g. '$337,47'
       issue_date: new Date().toLocaleDateString('es-ES'),
     };
@@ -770,9 +1012,11 @@ export class ResendService {
     if (!this.client) {
       return false;
     }
-    let attachments: any[] | undefined;
+    // Generar adjuntos diferenciados: cliente con total; admin/receptor sin total
+    let attachWithTotal: any[] | undefined;
+    let attachNoTotal: any[] | undefined;
     try {
-      const pdfUrl = await this.pdfService.generatePDF(
+      const urlWith = await this.pdfService.generatePDF(
         travel.id,
         'delivery',
         false,
@@ -780,30 +1024,56 @@ export class ResendService {
         true,
         true,
         true,
-        'chofer',
+        'delivery',
         4,
+        false,
       );
-      if (pdfUrl) {
-        const res = await fetch(pdfUrl);
+      if (urlWith) {
+        const res = await fetch(urlWith);
         const buf = await res.buffer();
-        attachments = [
+        attachWithTotal = [
           { filename: `transfer_${travel.id}_step4.pdf`, content: buf },
         ];
       }
-    } catch (e) {}
-    const recipients = Array.from(
-      new Set([
-        (client?.email as string) || '',
-        this.getAdminEmail(),
-        (travel?.personReceive?.email as string) || '',
-      ].filter(Boolean)),
-    );
-    return this.sendToMultipleSequential(recipients, {
-      from: 'contacto@drove.es',
-      subject: payload.subject,
-      html,
-      ...(attachments ? { attachments } : {}),
-    });
+    } catch {}
+    try {
+      const urlNo = await this.pdfService.generatePDF(
+        travel.id,
+        'delivery',
+        false,
+        false,
+        true,
+        true,
+        true,
+        'delivery',
+        4,
+        true,
+      );
+      if (urlNo) {
+        const res = await fetch(urlNo);
+        const buf = await res.buffer();
+        attachNoTotal = [
+          { filename: `transfer_${travel.id}_step4.pdf`, content: buf },
+        ];
+      }
+    } catch {}
+
+    const adminEmail = this.getAdminEmail();
+    const receiverEmail = (travel?.personReceive?.email as string) || '';
+    const htmlWithTotal = template({ ...payload });
+    const htmlNoTotal = template({ ...payload, total_with_tax: '' });
+    const sends: Array<Promise<boolean>> = [];
+    if (client?.email) {
+      sends.push(this.sendEmail({ from: 'contacto@drove.es', to: client.email, subject: payload.subject, html: htmlWithTotal, ...(attachWithTotal ? { attachments: attachWithTotal } : {}) }));
+    }
+    if (adminEmail) {
+      sends.push(this.sendEmail({ from: 'contacto@drove.es', to: adminEmail, subject: payload.subject, html: htmlNoTotal, ...(attachNoTotal ? { attachments: attachNoTotal } : {}) }));
+    }
+    if (receiverEmail) {
+      sends.push(this.sendEmail({ from: 'contacto@drove.es', to: receiverEmail, subject: payload.subject, html: htmlNoTotal, ...(attachNoTotal ? { attachments: attachNoTotal } : {}) }));
+    }
+    await Promise.allSettled(sends);
+    return true;
   }
   //Correo de entrega de vehiculo (drover) X
   async sendConfirmationDeliveryDrover(travel: Travels | any) {
@@ -815,8 +1085,51 @@ export class ResendService {
     const delivery = travel.endAddress;
     const receiver = travel.personReceive || {};
     const handover = travel?.deliveryVerification?.handoverDocuments || {};
+    const clientSigRaw = typeof handover?.client_signature === 'string' ? handover.client_signature : '';
+    const droverSigRaw = typeof handover?.drover_signature === 'string' ? handover.drover_signature : '';
+    const clientSignatureUrl = clientSigRaw?.startsWith('data:')
+      ? await (async () => {
+          const mod = await import('../storage/storage.service');
+          const svc = new (mod as any).StorageService(undefined as any, undefined as any, undefined as any, undefined as any);
+          return await (svc as any).uploadBase64Image(clientSigRaw, `travel/${travel.id}/signatures`);
+        })()
+      : clientSigRaw || '';
+    const droverSignatureUrl = droverSigRaw?.startsWith('data:')
+      ? await (async () => {
+          const mod = await import('../storage/storage.service');
+          const svc = new (mod as any).StorageService(undefined as any, undefined as any, undefined as any, undefined as any);
+          return await (svc as any).uploadBase64Image(droverSigRaw, `travel/${travel.id}/signatures`);
+        })()
+      : droverSigRaw || '';
 
-    const payload: Payload = {
+    // benefit computation (unique names to avoid redeclare)
+    const kmValueDelivery = (() => {
+      const raw = (travel as any)?.distanceTravel;
+      if (typeof raw === 'number') return raw;
+      try {
+        const s = String(raw || '').replace(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '').replace(/\s+/g, '');
+        const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+        const n = parseFloat(withDot);
+        return isNaN(n) ? 0 : n;
+      } catch { return 0; }
+    })();
+    const driverBenefitDeliveryText = await (async () => {
+      try {
+        const emp = String(travel?.drover?.employmentType || '').toUpperCase();
+        if (emp === 'CONTRACTED') {
+          const allow = await this.mayIncludeContractedBenefit(travel?.drover?.id);
+          if (!allow) return '';
+          const fee = this.compensation.calcContractedPerTrip(kmValueDelivery).driverFee;
+          return `${Number(fee || 0).toFixed(2)} €`;
+        }
+        const stored = (travel as any)?.driverFee;
+        if (typeof stored === 'number' && !isNaN(stored)) return `${Number(stored).toFixed(2)} €`;
+        const fee = this.compensation.calcFreelancePerTrip(kmValueDelivery).driverFee;
+        return `${Number(fee || 0).toFixed(2)} €`;
+      } catch { return ''; }
+    })();
+
+    const payload: Payload & { driver_benefit?: string } = {
       to: client.email,
       subject: 'Felicidades entregaste el vehículo',
       preheader: 'Tu vehículo pronto será recogido.',
@@ -835,8 +1148,8 @@ export class ResendService {
       client_name: client.contactInfo.fullName,
       receiver_name: receiver?.fullName || '',
       receiver_nif: receiver?.dni || '',
-      client_signature_url: typeof handover?.client_signature === 'string' ? handover.client_signature : '',
-      driver_signature_url: typeof handover?.drover_signature === 'string' ? handover.drover_signature : '',
+      client_signature_url: clientSignatureUrl,
+      driver_signature_url: droverSignatureUrl,
       doc_issue_date: new Date().toLocaleDateString('es-ES'),
       request_id: travel.id,
       vehicle_type: travel.typeVehicle,
@@ -859,8 +1172,18 @@ export class ResendService {
         region: delivery.region,
         country: delivery.country,
       },
-      distance: Number(travel.distanceTravel), // e.g. 200
-      total_with_tax: `$${travel.totalPrice.toLocaleString('es-CL')}`, // e.g. '$337,47'
+      distance: (() => {
+        const raw = (travel as any)?.distanceTravel;
+        if (typeof raw === 'number') return raw;
+        try {
+          const s = String(raw || '').replace(/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '').replace(/\s+/g, '');
+          const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+          const n = parseFloat(withDot);
+          return isNaN(n) ? 0 : n;
+        } catch { return 0; }
+      })(), // e.g. 200
+      driver_benefit: driverBenefitDeliveryText,
+      total_with_tax: `$${travel.totalPrice.toLocaleString('es-CL')}`,
       issue_date: new Date().toLocaleDateString('es-ES'),
     };
 
@@ -868,9 +1191,10 @@ export class ResendService {
     if (!this.client) {
       return false;
     }
-    let attachments: any[] | undefined;
+    // Drover: PDF sin totales
+    let attachNo4: any[] | undefined;
     try {
-      const pdfUrl = await this.pdfService.generatePDF(
+      const urlNo4 = await this.pdfService.generatePDF(
         travel.id,
         'delivery',
         false,
@@ -878,28 +1202,20 @@ export class ResendService {
         true,
         true,
         true,
-        'reception',
+        'chofer',
         4,
+        true,
       );
-      if (pdfUrl) {
-        const res = await fetch(pdfUrl);
+      if (urlNo4) {
+        const res = await fetch(urlNo4);
         const buf = await res.buffer();
-        attachments = [
-          { filename: `transfer_${travel.id}_step4.pdf`, content: buf },
-        ];
+        attachNo4 = [{ filename: `transfer_${travel.id}_step4.pdf`, content: buf }];
       }
-    } catch (e) {}
-    const recipients = Array.from(
-      new Set([
-        (driver?.email as string) || '',
-      ].filter(Boolean)),
-    );
-    return this.sendToMultipleSequential(recipients, {
-      from: 'contacto@drove.es',
-      subject: payload.subject,
-      html,
-      ...(attachments ? { attachments } : {}),
-    });
+    } catch {}
+    if (driver?.email) {
+      await this.sendEmail({ from: 'contacto@drove.es', to: driver.email, subject: payload.subject, html, ...(attachNo4 ? { attachments: attachNo4 } : {}) });
+    }
+    return true;
   }
   //Correo para verificar correos.
   async sendEmailToverifyEmail(email: string, Code: string) {
@@ -975,7 +1291,7 @@ export class ResendService {
     });
   }
   /**
-   * Envía el correo de activación de un nuevo “Jefe de Tráfico”.
+   * Envía el correo de activación de un nuevo "Jefe de Tráfico".
    * Usa el sistema de plantillas existente (`loadTemplate`).
    *
    * Nombre de la plantilla:  trafficManagerActivated
@@ -993,7 +1309,7 @@ export class ResendService {
   ) => {
     const template = this.loadTemplate('activeNewTrafficBoss');
 
-    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.es';
     const loginUrl = `${baseUrl.replace(/\/$/, '')}/login`;
     const html = template({
       name,
@@ -1052,7 +1368,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el e-mail de “Cuenta aprobada” (usuario estándar).
+   * Envía el e-mail de "Cuenta aprobada" (usuario estándar).
    *
    * Plantilla:  accountApproved
    * Variables que la plantilla recibe:
@@ -1066,7 +1382,7 @@ export class ResendService {
   ) => {
     const template = this.loadTemplate('approvedAccount');
 
-    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.es';
     const computedLogin = `${baseUrl.replace(/\/$/, '')}/login`;
     const html = template({
       name,
@@ -1084,7 +1400,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo de “Cuenta no aprobada”.
+   * Envía el correo de "Cuenta no aprobada".
    *
    * Plantilla:  accountRejected
    * Variables que la plantilla recibe:
@@ -1114,7 +1430,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo de “Factura disponible” tras el pago de un traslado.
+   * Envía el correo de "Factura disponible" tras el pago de un traslado.
    *
    * Plantilla:  invoiceAvailable
    * Variables que la plantilla recibe:
@@ -1153,7 +1469,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo de “Nuevo DROVER asignado”.
+   * Envía el correo de "Nuevo DROVER asignado".
    *
    * Plantilla:  driverAssigned
    * Variables que la plantilla recibe:
@@ -1177,31 +1493,44 @@ export class ResendService {
     logoUrl = 'https://console-production-7856.up.railway.app/api/v1/buckets/drover/objects/download?preview=true&prefix=9.png&version_id=null',
     year: number = new Date().getFullYear(),
   ) => {
-    const template = this.loadTemplate('newDrover-reassigned');
+    try {
+      const template = this.loadTemplate('newDrover-reassigned');
 
-    const html = template({
-      logo_url: logoUrl,
-      vehicle,
-      transfer_date: transferDate,
-      origin,
-      destination,
-      driver_name: driverName,
-      transfer_url: this.buildFrontUrl(transferUrl),
-      year,
-    });
+      const html = template({
+        logo_url: logoUrl,
+        vehicle,
+        transfer_date: transferDate,
+        origin,
+        destination,
+        driver_name: driverName,
+        transfer_url: this.buildFrontUrl(transferUrl),
+        year,
+      });
 
-    if (!this.client) return false;
+      if (!this.client) {
+        this.logger.warn('Cliente Resend no disponible, no se puede enviar correo de asignación de drover');
+        return false;
+      }
 
-    return this.client.emails.send({
-      from: 'contacto@drove.es',
-      to: email,
-      subject: 'Nuevo DROVER asignado a tu traslado',
-      html,
-    });
+      this.logger.log(`Enviando correo de asignación de drover a: ${email}`);
+      
+      const result = await this.client.emails.send({
+        from: 'contacto@drove.es',
+        to: email,
+        subject: 'Nuevo DROVER asignado a tu traslado',
+        html,
+      });
+
+      this.logger.log(`Correo de asignación de drover enviado exitosamente a: ${email}`);
+      return result;
+    } catch (error) {
+      this.logger.error(`Error enviando correo de asignación de drover a ${email}:`, error);
+      throw error;
+    }
   };
 
   /**
-   * Envía el correo de “Nueva reseña recibida” al DROVER.
+   * Envía el correo de "Nueva reseña recibida" al DROVER.
    *
    * Plantilla:  reviewReceived
    * Variables que la plantilla recibe:
@@ -1249,7 +1578,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo “Solicitud de traslado registrada” al cliente.
+   * Envía el correo "Solicitud de traslado registrada" al cliente.
    *
    * Plantilla:  transferRequestCreated
    * Variables que la plantilla recibe:
@@ -1269,25 +1598,38 @@ export class ResendService {
     destination: string,
     transferUrl: string,
   ) => {
-    const template = this.loadTemplate('newTransfer');
+    try {
+      const template = this.loadTemplate('newTransfer');
 
-    const html = template({
-      name,
-      vehicle,
-      requested_date: requestedDate,
-      origin,
-      destination,
-      transfer_url: this.buildFrontUrl(transferUrl),
-    });
+      const html = template({
+        name,
+        vehicle,
+        requested_date: requestedDate,
+        origin,
+        destination,
+        transfer_url: this.buildFrontUrl(transferUrl),
+      });
 
-    if (!this.client) return false;
+      if (!this.client) {
+        this.logger.warn('Cliente Resend no disponible, no se puede enviar correo de confirmación de traslado');
+        return false;
+      }
 
-    return this.client.emails.send({
-      from: 'contacto@drove.es',
-      to: email,
-      subject: 'Tu solicitud de traslado ha sido registrada',
-      html,
-    });
+      this.logger.log(`Enviando correo de confirmación de traslado a: ${email}`);
+      
+      const result = await this.client.emails.send({
+        from: 'contacto@drove.es',
+        to: email,
+        subject: 'Tu solicitud de traslado ha sido registrada',
+        html,
+      });
+
+      this.logger.log(`Correo de confirmación de traslado enviado exitosamente a: ${email}`);
+      return result;
+    } catch (error) {
+      this.logger.error(`Error enviando correo de confirmación de traslado a ${email}:`, error);
+      throw error;
+    }
   };
 
   /**
@@ -1302,14 +1644,14 @@ export class ResendService {
     destination: string,
     transferId: string,
   ) => {
-    const template = this.loadTemplate('newTransfer');
+    const template = this.loadTemplate('newTransferAdmin');
     const html = template({
-      name: clientName,
       vehicle,
       requested_date: requestedDate,
       origin,
       destination,
-      transfer_url: this.buildFrontUrl(`/admin/traslados/${transferId}`),
+      transfer_url: this.buildFrontUrl(`/admin/asignar/${transferId}`),
+      year: new Date().getFullYear(),
     });
 
     if (!this.client) return false;
@@ -1323,7 +1665,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo de “Pago recibido”.
+   * Envía el correo de "Pago recibido".
    *
    * Plantilla:  paymentReceived
    * Variables que la plantilla recibe:
@@ -1365,7 +1707,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo “Solicitud de evaluación” al cliente
+   * Envía el correo "Solicitud de evaluación" al cliente
    * después de que su traslado fue completado.
    *
    * Plantilla:  reviewRequest
@@ -1389,7 +1731,7 @@ export class ResendService {
     const template = this.loadTemplate('questionReview');
 
     // Asegurar URL absoluta y clickeable
-    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const baseUrl = process.env.FRONTEND_BASE_URL || 'https://drove.es';
     const normalizedLink = (() => {
       if (!reviewLink) return `${baseUrl.replace(/\/$/, '')}/resena`;
       if (/^https?:\/\//i.test(reviewLink)) return reviewLink;
@@ -1417,7 +1759,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo “Recordatorio de traslado” al drover.
+   * Envía el correo "Recordatorio de traslado" al drover.
    *
    * Plantilla:  transferReminder
    * Variables que la plantilla recibe:
@@ -1459,7 +1801,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo de “Restablecer contraseña”.
+   * Envía el correo de "Restablecer contraseña".
    *
    * Plantilla:  passwordReset
    * Variables que la plantilla recibe:
@@ -1490,7 +1832,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo “Traslado reprogramado”.
+   * Envía el correo "Traslado reprogramado".
    *
    * Plantilla:  transferRescheduled
    * Variables que la plantilla recibe:
@@ -1535,7 +1877,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo “Pago recibido – Pendiente de facturación” al equipo admin.
+   * Envía el correo "Pago recibido – Pendiente de facturación" al equipo admin.
    *
    * Plantilla:  transferPendingInvoice
    * Variables que la plantilla recibe:
@@ -1580,7 +1922,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo “Traslado listo para ser asignado” al equipo de operaciones.
+   * Envía el correo "Traslado listo para ser asignado" al equipo de operaciones.
    *
    * Plantilla:  transferReadyToAssign
    * Variables que la plantilla recibe:
@@ -1625,7 +1967,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo “Traslado cancelado”.
+   * Envía el correo "Traslado cancelado".
    *
    * Plantilla:  transferCancelled
    * Variables que la plantilla recibe:
@@ -1664,7 +2006,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo “Traslado pendiente de facturación”.
+   * Envía el correo "Traslado pendiente de facturación".
    * Se usa cuando el pago por transferencia fue confirmado,
    * pero aún falta registrar la factura.
    *
@@ -1711,7 +2053,7 @@ export class ResendService {
   };
 
   /**
-   * Envía el correo “Verifica tu correo electrónico”.
+   * Envía el correo "Verifica tu correo electrónico".
    *
    * Plantilla:  emailVerification
    * Variables que la plantilla recibe:
@@ -1744,4 +2086,30 @@ export class ResendService {
       html,
     });
   };
+
+  /**
+   * Método de prueba para verificar la configuración de Resend
+   */
+  public async testResendConfiguration(): Promise<boolean> {
+    try {
+      if (!this.client) {
+        this.logger.error('Cliente Resend no disponible');
+        return false;
+      }
+
+      // Intentar enviar un correo de prueba
+      const result = await this.client.emails.send({
+        from: 'contacto@drove.es',
+        to: 'test@example.com',
+        subject: 'Prueba de configuración Resend',
+        html: '<p>Este es un correo de prueba</p>',
+      });
+
+      this.logger.log('Configuración de Resend verificada correctamente');
+      return true;
+    } catch (error) {
+      this.logger.error('Error en la configuración de Resend:', error);
+      return false;
+    }
+  }
 }

@@ -1,6 +1,6 @@
 
 import { DirectionsRenderer, DirectionsService } from '@react-google-maps/api';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 
 export interface MapDirectionsProps {
   origin: google.maps.LatLngLiteral;
@@ -17,6 +17,39 @@ const MapDirections: React.FC<MapDirectionsProps> = ({
 }) => {
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [directionsRequested, setDirectionsRequested] = useState(false);
+  const lastOriginRef = useRef<google.maps.LatLngLiteral | null>(null);
+  const lastDestRef = useRef<google.maps.LatLngLiteral | null>(null);
+  const lastRequestAtRef = useRef<number>(0);
+
+  // Utilidad local: distancia Haversine en metros
+  const haversineMeters = (a: google.maps.LatLngLiteral, b: google.maps.LatLngLiteral) => {
+    const R = 6371e3;
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const φ1 = toRad(a.lat), φ2 = toRad(b.lat);
+    const Δφ = toRad(b.lat - a.lat);
+    const Δλ = toRad(b.lng - a.lng);
+    const s = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+    return 2 * R * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+  };
+
+  // Throttle + cache: recomputar solo si pasaron >30s o movimos >150m o cambió destino
+  useEffect(() => {
+    const now = Date.now();
+    const lastO = lastOriginRef.current;
+    const lastD = lastDestRef.current;
+    const destChanged = !lastD || lastD.lat !== destination.lat || lastD.lng !== destination.lng;
+    const moved = lastO ? haversineMeters(lastO, origin) : Infinity;
+    const timeOk = now - (lastRequestAtRef.current || 0) > 30000; // 30s
+    const shouldRecalc = !directions || destChanged || moved > 150 || timeOk;
+    if (shouldRecalc) {
+      lastOriginRef.current = origin;
+      lastDestRef.current = destination;
+      lastRequestAtRef.current = now;
+      setDirections(null);
+      setDirectionsRequested(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [origin.lat, origin.lng, destination.lat, destination.lng]);
 
   const directionsCallback = useCallback(
     (

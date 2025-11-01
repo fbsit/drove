@@ -19,6 +19,7 @@ import { toast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import MobileDroverFooterNav from '@/components/layout/MobileDroverFooterNav';
 
 const DashboardDroverPanel: React.FC = () => {
   const { user } = useAuth();           // se asume user.id
@@ -33,16 +34,13 @@ const DashboardDroverPanel: React.FC = () => {
   const UPDATE_MINUTES = 3; // intervalo de envío en minutos (optimizable)
 
   /* ------------------ fetch datos reales ------------------ */
-  const { data: dashboard, isLoading } = useQuery({
+  const { data: dashboard, isLoading } = useQuery<{
+    metrics?: { assignedTrips: number; completedTrips: number; totalEarnings: number; avgPerTrip?: number; rating?: number; ratingCount?: number };
+    [k: string]: any;
+  }>({
     queryKey: ['drover-dashboard', user?.id],
     queryFn: () => DroverService.getDroverDashboard(),
     enabled: !!user?.id,
-    onError: () =>
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'No se pudo cargar tu panel.',
-      }),
   });
 
   console.log("dashboard", dashboard)
@@ -52,6 +50,8 @@ const DashboardDroverPanel: React.FC = () => {
     completedTrips: 0,
     totalEarnings: 0,
   };
+
+  // NOTE: derivedAvgPerTrip se calcula más abajo, después de declarar droverTrips y compPreviewByTripId
 
 
   console.log("valor stats", stats)
@@ -64,6 +64,74 @@ const DashboardDroverPanel: React.FC = () => {
     },
     enabled: !!user?.id,
   });
+
+  // Precalcular compensación faltante usando la misma tabla del backend (endpoint preview)
+  const [compPreviewByTripId, setCompPreviewByTripId] = React.useState<Record<string, any>>({});
+
+  const parseKmFromDistance = React.useCallback((raw: any): number => {
+    if (typeof raw === 'number') return raw;
+    try {
+      const s = String(raw || '').replace(/[^0-9,.,-]/g, '').replace(/\s+/g, '');
+      const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+      const n = parseFloat(withDot);
+      return isNaN(n) ? 0 : Math.round(n);
+    } catch { return 0; }
+  }, []);
+
+  React.useEffect(() => {
+    const run = async () => {
+      const empType = String((user as any)?.employmentType || '').toUpperCase();
+      if (empType === 'CONTRACTED') return; // contratados muestran KM, no beneficio
+      const id = user?.id;
+      if (!id) return;
+      const tasks: Array<Promise<void>> = [];
+      (Array.isArray(droverTrips) ? droverTrips : []).forEach((t: any) => {
+        const tripId = t.id || t._id;
+        const fee = Number(t?.driverFee || 0);
+        const hasMeta = typeof (t?.driverFeeMeta?.driverFeeWithVat) === 'number';
+        if (fee > 0 || hasMeta || compPreviewByTripId[tripId]) return;
+        const km = parseKmFromDistance(t?.distanceTravel || t?.transfer_details?.distance || t?.distance);
+        if (!km || km <= 0) return;
+        tasks.push((async () => {
+          try {
+            const preview: any = await DroverService.previewCompensation({ droverId: id, km });
+            if (preview && typeof (preview as any).driverFee === 'number') {
+              setCompPreviewByTripId(prev => ({ ...prev, [tripId]: { driverFee: Number((preview as any).driverFee || 0), driverFeeWithVat: Number((preview as any).driverFeeWithVat || (Number((preview as any).driverFee || 0) * 1.21)) } }));
+            }
+          } catch { }
+        })());
+      });
+      if (tasks.length) await Promise.allSettled(tasks);
+    };
+    run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [droverTrips, user?.id]);
+
+  // Fallback: si el backend no envía avgPerTrip, calcularlo desde el beneficio por viaje
+  // basado en driverFee/driverFeeMeta o preview (ahora que ya existen droverTrips y compPreviewByTripId)
+  const completedTripsCount = (droverTrips as any[]).filter((t: any) => {
+    const s = String(t.status || t.transferStatus || t.state || '').toUpperCase();
+    return s === 'DELIVERED';
+  }).length;
+
+  const derivedAvgPerTrip = (() => {
+    let sum = 0;
+    let cnt = 0;
+    (droverTrips as any[]).forEach((t: any) => {
+      const s = String(t.status || t.transferStatus || t.state || '').toUpperCase();
+      if (s !== 'DELIVERED') return;
+      const meta = (t as any)?.driverFeeMeta;
+      const feeMeta = typeof meta?.driverFee === 'number' ? Number(meta.driverFee) : null;
+      const fee = typeof t?.driverFee === 'number' ? Number(t.driverFee) : null;
+      const prev = compPreviewByTripId[t.id || t._id]?.driverFee;
+      const benefit = (prev != null) ? Number(prev) : (feeMeta != null ? feeMeta : (fee != null ? fee : null));
+      if (typeof benefit === 'number' && isFinite(benefit)) {
+        sum += benefit; cnt += 1;
+      }
+    });
+    if (!cnt && completedTripsCount) return 0;
+    return cnt ? (sum / cnt) : 0;
+  })();
 
   // Normalizar campos para la UI
   const readAddr = (obj: any, paths: string[]): string => {
@@ -108,11 +176,44 @@ const DashboardDroverPanel: React.FC = () => {
     ]),
     status: t.status || t.transferStatus || t.state || 'ASSIGNED',
     createdAt: t.createdAt || t.created_at || t.scheduledDate || t.pickup_details?.pickupDate || Date.now(),
+    updatedAt: t.updatedAt || t.updated_at || null,
     totalPrice: parseMoney(t.totalPrice ?? t.price ?? t.amount ?? 0),
     driverFee: parseMoney(t.driverFee ?? (t as any)?.fee ?? (t as any)?.compensation ?? 0),
     driverFeeMeta: (t as any)?.driverFeeMeta || null,
     distanceTravel: t.distanceTravel ?? t.transfer_details?.distance ?? t.distance ?? '-',
   }));
+
+  // Datos de mes actual para contratados: kilómetros recorridos y cuota mensual
+  const employmentType = String((user as any)?.employmentType || '').toUpperCase();
+  const monthISO = React.useMemo(() => new Date().toISOString().slice(0, 7), []);
+  const { data: monthComp } = useQuery<any>({
+    queryKey: ['drover-monthly-comp', user?.id, monthISO],
+    queryFn: () => DroverService.getContractedMonthlyCompensation(String(user?.id), monthISO),
+    enabled: !!user?.id && employmentType === 'CONTRACTED',
+  });
+
+  const contractedKm = Number(monthComp?.kilometers || 0);
+  const contractedThreshold = Number(monthComp?.thresholdKm || 2880);
+  const deliveredTripsThisMonth = React.useMemo(() => {
+    const start = new Date(`${monthISO}-01T00:00:00Z`).getTime();
+    const end = new Date(new Date(`${monthISO}-01T00:00:00Z`).setUTCMonth(new Date(`${monthISO}-01T00:00:00Z`).getUTCMonth() + 1)).getTime();
+    const inRange = (ts: any) => {
+      const n = typeof ts === 'number' ? ts : Date.parse(String(ts));
+      return isFinite(n) && n >= start && n < end;
+    };
+    return (droverTrips as any[]).filter((t: any) => {
+      const s = String(t.status || t.transferStatus || t.state || '').toUpperCase();
+      const dateRef = t.updatedAt || t.updated_at || t.createdAt || t.created_at;
+      return s === 'DELIVERED' && inRange(dateRef);
+    }).length;
+  }, [droverTrips, monthISO]);
+
+  const avgKmPerTripThisMonth = React.useMemo(() => {
+    if (deliveredTripsThisMonth > 0 && contractedKm > 0) {
+      return contractedKm / deliveredTripsThisMonth;
+    }
+    return 0;
+  }, [contractedKm, deliveredTripsThisMonth]);
   const [search, setSearch] = React.useState('');
   const [status, setStatus] = React.useState('');
   const visibleTrips = trips
@@ -218,11 +319,17 @@ const DashboardDroverPanel: React.FC = () => {
 
       {/* KPIs (solo dos contadores como en la imagen) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-start">
-        <KpiCard icon={DollarSign} label="Ganancia estimada IVA incl." value={`€${(() => {
-          const base = Number(stats?.totalEarnings ?? 0);
-          return Number((base * 1.21)).toLocaleString(undefined, { minimumFractionDigits: 2 });
-        })()}`} />
-        <KpiCard icon={Star} label="Promedio por Traslado IVA incl." value={`€${Number((Number(stats?.avgPerTrip ?? 0) * 1.21)).toLocaleString(undefined, { minimumFractionDigits: 2 })}`} />
+        {employmentType === 'CONTRACTED' && contractedKm < contractedThreshold ? (
+          <>
+            <KpiCard icon={TrendingUp} label={`KM recorridos (objetivo ${contractedThreshold} km)`} value={`${Math.round(contractedKm).toLocaleString()} km`} />
+            <KpiCard icon={Clock} label="KM promedio por viaje" value={`${avgKmPerTripThisMonth.toFixed(1)} km`} />
+          </>
+        ) : (
+          <>
+            <KpiCard icon={DollarSign} label="Ganancia estimada" value={`€${Number(stats?.totalEarnings ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`} />
+            <KpiCard icon={Star} label="Promedio por Traslado" value={`€${Number(stats?.avgPerTrip ?? derivedAvgPerTrip).toLocaleString(undefined, { minimumFractionDigits: 2 })}`} />
+          </>
+        )}
       </div>
 
       {/* Filtros */}
@@ -283,34 +390,32 @@ const DashboardDroverPanel: React.FC = () => {
                   </div>
 
                 </div>
-                {/* Pie con ganancia a la izquierda y botón a la derecha */}
+                {/* Pie: para contratados mostrar KM; para freelance mostrar ganancia */}
                 <div className="flex justify-between items-center gap-4">
                   {(() => {
-                    const empType = String(user?.employmentType || '').toUpperCase();
+                    const empType = String((user as any)?.employmentType || '').toUpperCase();
                     const km = (() => { const n = parseFloat(String(t.distanceTravel || '').replace(/[^0-9,.-]/g, '').replace(',', '.')); return isNaN(n) ? 0 : Math.round(n); })();
-                    const freelanceTable: Array<{ min: number; max: number; driverFee: number }> = [
-                      { min: 0, max: 99, driverFee: 50 }, { min: 100, max: 199, driverFee: 70 },
-                      { min: 200, max: 299, driverFee: 95 }, { min: 300, max: 399, driverFee: 110 },
-                      { min: 400, max: 499, driverFee: 119 }, { min: 500, max: 599, driverFee: 127 },
-                      { min: 600, max: 699, driverFee: 145 }, { min: 700, max: 799, driverFee: 160 },
-                      { min: 800, max: 899, driverFee: 175 }, { min: 900, max: 999, driverFee: 195 },
-                      { min: 1000, max: 1099, driverFee: 210 }, { min: 1100, max: 1199, driverFee: 230 },
-                      { min: 1200, max: 1299, driverFee: 236 }, { min: 1300, max: 1399, driverFee: 245 },
-                      { min: 1400, max: 1499, driverFee: 270 }, { min: 1500, max: 1599, driverFee: 280 },
-                      { min: 1600, max: 1699, driverFee: 290 }, { min: 1700, max: 1799, driverFee: 300 },
-                      { min: 1800, max: 1899, driverFee: 310 }, { min: 1900, max: 1999, driverFee: 320 },
-                    ];
+                    // El backend ahora persiste driverFee y driverFeeMeta con la tabla actualizada (+10€)
+                    // Por lo tanto, priorizamos esos valores; si no existen, dejamos 0 en lugar de recalcular con una tabla obsoleta
                     const meta: any = t.driverFeeMeta;
-                    const withVat = typeof meta?.driverFeeWithVat === 'number' ? meta.driverFeeWithVat : null;
+                    const feeMeta = typeof meta?.driverFee === 'number' ? Number(meta.driverFee) : null;
                     const fee = Number(t.driverFee || 0);
-                    const baseDisplay = fee > 0
-                      ? fee
-                      : (empType === 'FREELANCE' && km > 0
-                        ? (freelanceTable.find(r => km >= r.min && km <= r.max) || freelanceTable[freelanceTable.length - 1]).driverFee
-                        : 0);
-                    const displayWithVat = typeof withVat === 'number' ? Number(withVat) : Number((baseDisplay * 1.21).toFixed(2));
+                    const preview = compPreviewByTripId[t.id || t._id];
+                    const displayFee = (preview?.driverFee != null)
+                      ? Number(preview.driverFee)
+                      : (feeMeta != null ? feeMeta : (fee > 0 ? fee : 0));
+
+                    if (empType === 'CONTRACTED') {
+                      const distanceDisplay = typeof t.distanceTravel === 'string' && t.distanceTravel.trim()
+                        ? t.distanceTravel
+                        : `${km} km`;
+                      return (
+                        <div className="text-[#6EF7FF] text-lg font-bold flex-1 text-start">Kilómetros: {distanceDisplay}</div>
+                      );
+                    }
+
                     return (
-                      <div className="text-[#6EF7FF] text-lg font-bold flex-1 text-start">Ganancia: €{Number(displayWithVat).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                      <div className="text-[#6EF7FF] text-lg font-bold flex-1 text-start">Ganancia: €{Number(displayFee || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                     );
                   })()}
                   <Link to={`/traslados/activo/${t.id}`} className="px-5 py-2 h-9 rounded-2xl bg-[#6EF7FF] text-[#22142A] text-sm hover:bg-[#22142A] hover:text-white transition-colors">Ver detalles</Link>
@@ -320,6 +425,7 @@ const DashboardDroverPanel: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+      <MobileDroverFooterNav />
     </div>
   );
 };

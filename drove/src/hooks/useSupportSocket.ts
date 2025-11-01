@@ -41,7 +41,7 @@ export function useSupportSocket(
 
   useEffect(() => {
     const token = localStorage.getItem('auth_token') ?? '';
-    const BASE_URL = (import.meta as any)?.env?.VITE_API_BASE_URL || 'https://drove-backend-production.up.railway.app';
+    const BASE_URL = (import.meta as any)?.env?.VITE_API_BASE_URL || 'https://drove-backend.up.railway.app';
     const s = io(`${BASE_URL}/support`, {
       path: '/socket.io',
       auth: token ? { token } : undefined,

@@ -195,10 +195,11 @@ export class TravelsService {
       exp: number;
     },
   ): Promise<Travels & { url?: string | null }> {
-    const payload = {
-      ...dto,
-      clientId: user.sub,
-    };
+    const clientId = (dto as any)?.clientId || (user as any)?.sub || (user as any)?.id;
+    const payload = { ...dto, clientId };
+    if (!payload.clientId) {
+      throw new BadRequestException('Usuario no autenticado: clientId ausente');
+    }
     const travel = this.travelsRepo.create(this.mapRawToDto(payload));
     if (travel.paymentMethod === 'card') {
       travel.status = TransferStatus.PENDINGPAID;
@@ -251,7 +252,7 @@ export class TravelsService {
         paymentIntentId: '',
         travel: savedTravel,
       });
-      const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+      const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.es';
       const base = frontendBase.replace(/\/$/, '');
       checkoutUrl = await this.stripeService.createCheckoutSession({
         transferId: savedTravel.id,
@@ -295,24 +296,42 @@ export class TravelsService {
     savedTravel.orderId = String(newInvoice.id);
     await this.travelsRepo.save(savedTravel);
     const travelInfo = await this.findOne(savedTravel.id);
-    const userDetails = await this.userRepo.findOne({
-      where: { id: user.sub },
-    });
-    const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const clientFromTravel = travelInfo?.client || null;
+    const userDetails = await this.userRepo.findOne({ where: { id: clientId } });
+    const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.es';
     const url = `${frontendBase.replace(/\/$/, '')}/cliente/traslados/${travelInfo.id}`;
-    await this.resend.sendTransferRequestCreatedEmail(
-      userDetails?.email || '',
-      userDetails?.contactInfo?.fullName || '',
-      `${travel.brandVehicle} ${travel.modelVehicle} - ${travel.patentVehicle}`,
-      travel.travelDate || new Date().toLocaleDateString('es-ES'),
-      travel.startAddress.city,
-      travel.endAddress.city,
-      url || '',
-    );
+    
+    // Enviar correo al cliente confirmando la solicitud de traslado
+    try {
+      console.log('=== ENVIANDO CORREO DE CREACIÓN DE TRASLADO ===');
+      console.log('Email del cliente (via travel.client):', clientFromTravel?.email);
+      console.log('Email del cliente (fallback repo):', userDetails?.email);
+      console.log('Vehículo:', `${travel.brandVehicle || ''} ${travel.modelVehicle || ''} - ${travel.patentVehicle || ''}`.trim());
+      console.log('Fecha:', travel.travelDate || new Date().toLocaleDateString('es-ES'));
+      console.log('Origen:', travel.startAddress?.city || 'Origen no especificado');
+      console.log('Destino:', travel.endAddress?.city || 'Destino no especificado');
+      console.log('URL:', url);
+      
+      await this.resend.sendTransferRequestCreatedEmail(
+        clientFromTravel?.email || userDetails?.email || '',
+        clientFromTravel?.contactInfo?.fullName || userDetails?.contactInfo?.fullName || '',
+        `${travel.brandVehicle || ''} ${travel.modelVehicle || ''} - ${travel.patentVehicle || ''}`.trim(),
+        travel.travelDate || new Date().toLocaleDateString('es-ES'),
+        travel.startAddress?.city || 'Origen no especificado',
+        travel.endAddress?.city || 'Destino no especificado',
+        url || '',
+      );
+      
+      console.log('✅ Correo de creación enviado exitosamente');
+    } catch (emailError) {
+      // Log del error pero no interrumpir la creación del viaje
+      console.error('❌ Error enviando correo de confirmación al cliente:', emailError);
+    }
 
     // Enviar correo a administrador informando de nuevo traslado
     try {
-      const adminEmail = process.env.ADMIN_NOTIF_EMAIL || 'info@drove.es';
+      // Compatibilidad con ambas variables de entorno posibles
+      const adminEmail = process.env.ADMIN_NOTIFICATIONS_EMAIL || process.env.ADMIN_NOTIF_EMAIL || 'info@drove.es';
       await this.resend.sendTransferCreatedAdminEmail(
         adminEmail,
         userDetails?.contactInfo?.fullName || 'Cliente',
@@ -342,6 +361,24 @@ export class TravelsService {
         },
       });
       notif;
+    } catch {}
+
+    // Notificación para cliente: confirmación de solicitud registrada
+    try {
+      await this.notifications?.create({
+        title: 'Solicitud de traslado registrada',
+        message: `Hemos recibido tu solicitud ${travelInfo.id}`,
+        roleTarget: UserRole.CLIENT,
+        category: 'TRAVEL_CREATED',
+        entityType: 'TRAVEL',
+        entityId: travelInfo.id,
+        read: false,
+        userId: user.sub,
+        data: {
+          startCity: travel.startAddress?.city,
+          endCity: travel.endAddress?.city,
+        },
+      });
     } catch {}
     return { ...travelInfo, url: checkoutUrl };
   }
@@ -411,7 +448,7 @@ export class TravelsService {
     const userDetails = await this.userRepo.findOne({
       where: { id: travel.idClient },
     });
-    const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.es';
     const url = `${frontendBase.replace(/\/$/, '')}/cliente/traslados/${travel.id}`;
     await this.resend.sendTransferRescheduledEmail(
       userDetails?.email || '',
@@ -818,9 +855,10 @@ export class TravelsService {
       { id },
       { pickupVerification: dto, status: TransferStatus.PICKED_UP },
     );
-    // Mandar correo 3 (cliente) y 4 (drover y JT)
-    this.resend.sendConfirmationPickupEmailClient(travel);
-    this.resend.sendConfirmationPickupEmailDJT(travel);
+    // Mandar correo 3 (cliente) y 4 (drover y JT) con travel actualizado (incluye firmas)
+    const updatedTravel = { ...travel, pickupVerification: dto } as any;
+    this.resend.sendConfirmationPickupEmailClient(updatedTravel);
+    this.resend.sendConfirmationPickupEmailDJT(updatedTravel);
 
     // Notificaciones: vehículo recogido
     try {

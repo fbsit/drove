@@ -85,6 +85,43 @@ export class StorageService {
     return url;
   }
 
+  /**
+   * Sube una imagen recibida como data URL base64 y devuelve URL pública.
+   * Admite cabeceras como: data:image/png;base64,XXXXX
+   */
+  async uploadBase64Image(dataUrl: string, folderPath = ''): Promise<string> {
+    try {
+      const match = /^data:(.+);base64,(.+)$/.exec(String(dataUrl));
+      if (!match) throw new Error('Invalid data URL');
+      const contentType = match[1];
+      const base64 = match[2];
+      const buffer = Buffer.from(base64, 'base64');
+      const ext = contentType.includes('png')
+        ? '.png'
+        : contentType.includes('jpeg') || contentType.includes('jpg')
+        ? '.jpg'
+        : contentType.includes('webp')
+        ? '.webp'
+        : '';
+
+      const keyName = `${folderPath.replace(/^\//, '')}/${randomUUID()}${ext}`;
+      await this.s3.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: keyName,
+          Body: buffer,
+          ContentType: contentType,
+          ACL: 'public-read',
+        }),
+      );
+      const base = this.endpoint.replace(/\/$/, '');
+      return `${base}/${this.bucket}/${keyName}`;
+    } catch (e) {
+      this.logger.error('uploadBase64Image failed', e as any);
+      throw e;
+    }
+  }
+
   async uploadInvoice(
     file: Express.Multer.File,
     invoiceId: number,

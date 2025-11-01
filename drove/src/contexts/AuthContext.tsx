@@ -184,6 +184,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         localStorage.removeItem('auth_user_id');
         localStorage.removeItem('auth_user_name');
         localStorage.removeItem('auth_user_type');
+        // Cancelar refresh programado
+        import('@/services/api').then(m => m.default.cancelProactiveRefresh?.()).catch(() => {});
       } catch {}
       authState.setUser(null);
       authState.setSession(null);
@@ -205,6 +207,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (localStorage.getItem('auth_token')) {
       refreshUser();               // hidrata la sesión
+      // Programar refresh proactivo del token
+      import('@/services/api').then(m => m.default.scheduleProactiveRefresh?.()).catch(() => {});
     } else {
       authState.setIsLoading(false);
     }
@@ -221,6 +225,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         localStorage.removeItem('auth_user_id');
         localStorage.removeItem('auth_user_name');
         localStorage.removeItem('auth_user_type');
+        import('@/services/api').then(m => m.default.cancelProactiveRefresh?.()).catch(() => {});
       } catch {}
       authState.setUser(null);
       authState.setSession(null);

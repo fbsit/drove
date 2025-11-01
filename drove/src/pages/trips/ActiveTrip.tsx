@@ -65,6 +65,7 @@ const ActiveTrip: React.FC = () => {
   const { toggleChat } = useSupportChat();
   const [navOverlay, setNavOverlay] = useState(false);
   const [navDismissed, setNavDismissed] = useState(false);
+  const [benefitPreview, setBenefitPreview] = useState<number | null>(null);
 
   // (efecto para abrir mapa cuando esté en progreso se declara más abajo, tras obtener trip)
 
@@ -203,7 +204,7 @@ const ActiveTrip: React.FC = () => {
     const reduced = points.filter((_, idx) => idx % stride === 0);
 
     // Convertir a formato de coordenadas para encoding
-    const coordinates = reduced.map(point => [point.lat, point.lng]);
+    const coordinates: [number, number][] = reduced.map(point => [point.lat, point.lng]) as [number, number][];
 
     // Usar Google's polyline encoding
     return encode(coordinates);
@@ -243,6 +244,35 @@ const ActiveTrip: React.FC = () => {
       }
     };
   }, [trip?.endAddress, trip?.status]);
+
+  // Calcular beneficio (drover freelance) usando la MISMA tabla del backend
+  useEffect(() => {
+    if (!trip || !user) return;
+    const role = String(user.role || '').toUpperCase();
+    if (role !== 'DROVER') return;
+    const emp = String((user as any)?.employmentType || employmentType || '').toUpperCase();
+    if (emp === 'CONTRACTED') { setBenefitPreview(null); return; }
+    // Parsear km de la distancia del viaje
+    const distAny: any = (trip as any)?.distanceTravel || (trip as any)?.transfer_details?.distance || (trip as any)?.distance || '';
+    const s = String(distAny || '').replace(/[^0-9,.-]/g, '').replace(/\s+/g, '');
+    const withDot = s.includes(',') && !s.includes('.') ? s.replace(',', '.') : s.replace(/,/g, '');
+    const km = parseFloat(withDot);
+    if (!isFinite(km) || km <= 0) { setBenefitPreview(null); return; }
+    const droverId = (user as any)?.id;
+    if (!droverId) return;
+    (async () => {
+      try {
+        const prev: any = await DroverService.previewCompensation({ droverId, km });
+        // Usar SIEMPRE el monto sin IVA para el drover
+        const feeNoVat = typeof prev?.driverFee === 'number'
+          ? Number(prev.driverFee)
+          : (typeof prev?.driverFeeWithVat === 'number' ? Number((Number(prev.driverFeeWithVat) / 1.21).toFixed(2)) : null);
+        setBenefitPreview(feeNoVat ?? null);
+      } catch {
+        setBenefitPreview(null);
+      }
+    })();
+  }, [trip, user, employmentType]);
 
   const getNextStatus = (currentStatus: string): string | null => {
     console.log("currentStatus", currentStatus);
@@ -384,6 +414,10 @@ const ActiveTrip: React.FC = () => {
   }
 
   const nextStatus = getNextStatus(trip.status);
+  // Comentarios de inicio/entrega
+  const pickupComments = String((trip as any)?.pickupVerification?.comments || '').trim();
+  const deliveryComments = String((trip as any)?.deliveryVerification?.handoverDocuments?.comments || '').trim();
+  const hasAnyComments = Boolean(pickupComments || deliveryComments);
 
   return (
     <div>
@@ -463,14 +497,29 @@ const ActiveTrip: React.FC = () => {
             <CardContent>
               {String(user?.role || '').toLowerCase() === 'drover' ? (
                 <>
-                  <div className="text-3xl font-bold text-green-300">€{(() => {
+                  {(() => {
+                    const emp = String((user as any)?.employmentType || employmentType || '').toUpperCase();
+                    if (emp === 'CONTRACTED') {
+                      return (
+                        <>
+                          <div className="text-3xl font-bold text-green-300">{trip.distanceTravel || '—'}</div>
+                          <div className="text-white/60 text-sm mt-2">Kilómetros del viaje</div>
+                        </>
+                      );
+                    }
                     const meta: any = (trip as any)?.driverFeeMeta;
-                    const withVat = typeof meta?.driverFeeWithVat === 'number' ? meta.driverFeeWithVat : null;
-                    if (typeof withVat === 'number') return Number(withVat).toFixed(2);
-                    const base = Number((trip?.driverFee ?? freelanceFee ?? 0));
-                    return Number((isNaN(base) ? 0 : base * 1.21)).toFixed(2);
-                  })()}</div>
-                  <div className="text-white/60 text-sm mt-2">Compensación estimada IVA incl.</div>
+                    const feeMetaNoVat = typeof meta?.driverFee === 'number' ? Number(meta.driverFee) : null;
+                    const base = Number(trip?.driverFee || 0);
+                    const display = (benefitPreview != null)
+                      ? Number(benefitPreview)
+                      : (feeMetaNoVat != null ? feeMetaNoVat : (isNaN(base) ? 0 : base));
+                    return (
+                      <>
+                        <div className="text-3xl font-bold text-green-300">€{Number(display).toFixed(2)}</div>
+                        <div className="text-white/60 text-sm mt-2">Compensación estimada.</div>
+                      </>
+                    );
+                  })()}
                 </>
               ) : (
                 <>
@@ -571,6 +620,32 @@ const ActiveTrip: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* Comentarios adicionales (inicio/fin) */}
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="flex items-center gap-2 text-white/70 text-sm">
+                <MessageCircle className="h-5 w-5 text-[#6EF7FF]" />
+                <span className="uppercase tracking-wide">COMENTARIOS DEL DROVER</span>
+              </div>
+              {hasAnyComments ? (
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 text-white text-sm">
+                  <div>
+                    <div className="text-white/60 text-xs mb-1">Inicio del traslado</div>
+                    <div className="bg-white/5 border border-white/10 rounded-xl p-3 whitespace-pre-wrap break-words min-h-[40px]">
+                      {pickupComments}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-white/60 text-xs mb-1">Final del traslado</div>
+                    <div className="bg-white/5 border border-white/10 rounded-xl p-3 whitespace-pre-wrap break-words min-h-[40px]">
+                      {deliveryComments}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-3 text-white/70">Sin comentarios por parte del drover.</div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -730,7 +805,7 @@ const ActiveTrip: React.FC = () => {
       </div>
       {navOverlay && isAssignedDrover && trip?.status === 'IN_PROGRESS' && (
         <div className="fixed inset-0 z-50 bg-[#0B0F19]">
-          <div className="absolute top-3 left-3 z-10 flex gap-2">
+          <div className={`absolute z-10 flex gap-2 ${isMobile ? 'bottom-4 left-4' : 'top-3 left-3'}`}>
             <Button
               variant="secondary"
               className="rounded-2xl bg-white/10 text-white border-white/20 hover:bg-white/20"

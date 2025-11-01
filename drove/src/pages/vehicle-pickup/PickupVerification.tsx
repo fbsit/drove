@@ -132,14 +132,15 @@ const PickupVerification: React.FC = () => {
 
   const {
     signature,
+    droverSignature,
     comments,
     setSignature,
+    setDroverSignature,
     setComments,
     submitVerification,
     isLoading: isSubmitting,
     clearDraft,
   } = usePickupVerification(transferId!);
-  const [droverSignature, setDroverSignature] = useState<string>('');
 
   // URLs de las imágenes subidas estructuradas según DTOs
   const [exteriorImageUrls, setExteriorImageUrls] = useState<Record<string, string>>({});
@@ -452,11 +453,13 @@ const PickupVerification: React.FC = () => {
           <>
             <label className="block text-white mb-2">Firma de la persona que entrega</label>
             <div className="bg-white rounded-lg p-4 mb-6">
-              <SignatureCanvas onSignatureChange={(data) => setSignature(data)} />
+              <SignatureCanvas value={signature} onSignatureChange={(data) => setSignature(data)} />
+              <p className="text-xs text-white/70 mt-2">Requerida para continuar</p>
             </div>
             <label className="block text-white mb-2">Firma del drover</label>
             <div className="bg-white rounded-lg p-4 mb-6">
-              <SignatureCanvas onSignatureChange={(data) => setDroverSignature(data)} />
+              <SignatureCanvas value={droverSignature} onSignatureChange={(data) => setDroverSignature(data)} />
+              <p className="text-xs text-white/70 mt-2">Requerida para continuar</p>
             </div>
             <label className="block text-white mb-2">Comentarios adicionales</label>
             <textarea

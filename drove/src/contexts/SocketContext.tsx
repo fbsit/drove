@@ -27,7 +27,7 @@ interface SocketContextType {
 
 const SocketContext = createContext<SocketContextType | null>(null);
 
-const API_URL = 'https://drove-backend-production.up.railway.app';
+const API_URL = (import.meta as any)?.env?.VITE_API_BASE_URL || 'https://drove-backend.up.railway.app';
 
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();

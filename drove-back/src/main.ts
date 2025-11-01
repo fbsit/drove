@@ -17,7 +17,9 @@ async function bootstrap() {
       'http://localhost:8080',
       'http://localhost:8080/registro',
       'http://127.0.0.1:8080',
-      'https://drove.up.railway.app',
+      'https://drove.es',
+      'https://drove.es',
+      'https://drove-production.up.railway.app'
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization, Accept, Access-Control-Allow-Origin',

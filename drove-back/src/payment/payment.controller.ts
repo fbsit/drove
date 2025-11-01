@@ -49,7 +49,7 @@ export class PaymentsController {
       throw new BadRequestException('transferId y amount son requeridos');
     }
 
-    const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+    const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.es';
     const base = frontendBase.replace(/\/$/, '');
     const success_url = `${base}/payments/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancel_url = `${base}/payments/cancel`;
@@ -91,7 +91,7 @@ export class PaymentsController {
             const paymentDate = new Date().toLocaleDateString('es-ES'); // formato DD/MM/AAAA
             const amount = travel?.totalPrice?.toFixed(2); // asumiendo que travel.amount es un número
             const paymentMethod = travel.paymentMethod; // método de pago usado
-            const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.up.railway.app';
+            const frontendBase = process.env.FRONTEND_BASE_URL || 'https://drove.es';
             const transferUrl = `${frontendBase.replace(/\/$/, '')}/cliente/traslados/${transferId}`;
             const opsEmail = process.env.OPERATIONS_EMAIL || process.env.ADMIN_NOTIFICATIONS_EMAIL;
             const userDetails = await this.userRepo.findOneById(

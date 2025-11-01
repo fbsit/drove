@@ -98,7 +98,9 @@ const FinalHandoverStep: React.FC<Props> = ({
 
     onDataChanged(!formValid)
 
-    if (formValid && !readyRef.current) {
+    // Cuando el formulario es válido, notificar SIEMPRE los datos actuales,
+    // de modo que cambios posteriores en "comments" también se persistan.
+    if (formValid) {
       onDataReady({
         delivery_document: imageUrls.delivery_document!,
         fuel_receipt: imageUrls.fuel_receipt!,

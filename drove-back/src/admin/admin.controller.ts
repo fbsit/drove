@@ -175,18 +175,20 @@ export class AdminController {
 
   /* ─────────── Traslados ─────────── */
 
-  /** GET /admin/transfers?status=&startDate=&endDate= */
+  /** GET /admin/transfers?status=&startDate=&endDate=&search= */
   @Get('transfers')
   @ApiOperation({ summary: 'Listar traslados con filtros' })
   @ApiQuery({ name: 'status', required: false })
   @ApiQuery({ name: 'startDate', required: false })
   @ApiQuery({ name: 'endDate', required: false })
+  @ApiQuery({ name: 'search', required: false })
   getAdminTransfers(
     @Query('status') status?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('search') search?: string,
   ) {
-    return this.adminService.getAdminTransfers({ status, startDate, endDate });
+    return this.adminService.getAdminTransfers({ status, startDate, endDate, search });
   }
 
   @Get('reports')

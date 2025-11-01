@@ -17,21 +17,45 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
   label = "Firmar aquí"
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [lastX, setLastX] = useState(0);
   const [lastY, setLastY] = useState(0);
   const [hasSignature, setHasSignature] = useState(false);
 
-  // Setup canvas on mount
+  // Setup canvas on mount and resize (corrige offset/escala en móviles)
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const setup = () => {
+      const canvas = canvasRef.current;
+      const container = containerRef.current;
+      if (!canvas || !container) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    // Fondo transparente sin placeholder
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  }, [label]);
+      const rect = container.getBoundingClientRect();
+      const cssW = Math.max(320, rect.width);
+      const cssH = height;
+      const dpr = window.devicePixelRatio || 1;
+
+      // Buffer en píxeles físicos para nitidez
+      canvas.width = Math.floor(cssW * dpr);
+      canvas.height = Math.floor(cssH * dpr);
+      // Mostrar a tamaño CSS
+      canvas.style.width = `${cssW}px`;
+      canvas.style.height = `${cssH}px`;
+      // Escalar contexto al DPR y limpiar
+      try { (ctx as any).setTransform?.(1, 0, 0, 1, 0, 0); } catch {}
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, cssW, cssH);
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+    };
+    setup();
+    const onResize = () => setup();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [height, width, label]);
 
   // Mouse event handlers
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
@@ -53,8 +77,9 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
       clientY = e.clientY;
     }
 
-    setLastX(clientX - rect.left);
-    setLastY(clientY - rect.top);
+    const dpr = window.devicePixelRatio || 1;
+    setLastX((clientX - rect.left) * (canvas.width / (rect.width * dpr)));
+    setLastY((clientY - rect.top) * (canvas.height / (rect.height * dpr)));
 
     if (!hasSignature) setHasSignature(true);
   };
@@ -85,15 +110,15 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
       clientY = e.clientY;
     }
 
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
+    // Convertir coords a espacio del canvas (compensando escala CSS/DPR)
+    const dpr = window.devicePixelRatio || 1;
+    const x = (clientX - rect.left) * (canvas.width / (rect.width * dpr));
+    const y = (clientY - rect.top) * (canvas.height / (rect.height * dpr));
 
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(x, y);
     ctx.strokeStyle = '#111827';
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
     ctx.stroke();
 
     setLastX(x);
@@ -118,6 +143,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Limpiar en espacio de píxeles físicos
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     setHasSignature(false);
@@ -125,7 +151,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
   };
 
   return (
-    <div className="relative border border-white/20 rounded-md">
+    <div ref={containerRef} className="relative border border-white/20 rounded-md">
       <canvas
         ref={canvasRef}
         width={width}

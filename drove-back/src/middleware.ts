@@ -12,6 +12,7 @@ export class AuthMiddleware implements NestMiddleware {
     // Rutas públicas explícitas
     const publicPaths = [
       '/auth/login',
+      '/auth/refresh',
       '/users',
       '/users/forgot-password',
       '/users/reset-password',

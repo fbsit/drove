@@ -47,7 +47,28 @@ export class InvoicesService {
     const limit = Math.min(100, Math.max(1, params?.limit || 50));
 
     const where: any = {};
-    if (params?.status) where.status = params.status as any;
+    // Normalizar estado (acepta español e inglés). 'ADVANCE' no siempre existe en el enum → filtrar luego
+    let normalizedForWhere: string | undefined;
+    if (params?.status) {
+      const normalized = String(params.status || '').toUpperCase();
+      const map: Record<string, string> = {
+        EMITIDA: 'SENT',
+        ANTICIPO: 'ADVANCE',
+        PAGADA: 'PAID',
+        PAID: 'PAID',
+        SENT: 'SENT',
+        DRAFT: 'DRAFT',
+        BORRADOR: 'DRAFT',
+        VOID: 'VOID',
+        VOIDED: 'VOID',
+        REJECTED: 'REJECTED',
+        RECHAZADA: 'REJECTED',
+        ANULADA: 'VOID',
+      };
+      const finalStatus = map[normalized] ?? normalized;
+      if (finalStatus !== 'ADVANCE') normalizedForWhere = finalStatus;
+    }
+    if (normalizedForWhere) where.status = normalizedForWhere as any;
     if (params?.clientId) where.customerId = params.clientId;
     if (params?.from || params?.to) {
       // invoiceDate es DATE, aplicamos rango con Between manual via query builder por flexibilidad
@@ -73,18 +94,37 @@ export class InvoicesService {
 
     // Filtros avanzados en travel: clientName, droverName, transferStatus y search
     if (params?.transferStatus) {
-      qb = qb.andWhere('LOWER(t.status) = LOWER(:tstatus)', { tstatus: params.transferStatus });
+      const raw = String(params.transferStatus || '').toLowerCase();
+      const map: Record<string, string> = {
+        pendiente: 'CREATED',
+        en_proceso: 'IN_PROGRESS',
+        completado: 'DELIVERED',
+        cancelado: 'CANCELLED',
+        assigned: 'ASSIGNED',
+        created: 'CREATED',
+        in_progress: 'IN_PROGRESS',
+        delivered: 'DELIVERED',
+        cancelled: 'CANCELLED',
+      };
+      const tstatus = (map[raw] ?? params.transferStatus).toUpperCase();
+      // Compare directly against enum = avoid LOWER() on enum type
+      qb = qb.andWhere('t.status = :tstatus', { tstatus });
     }
     if (params?.clientName) {
-      qb = qb.andWhere('LOWER(client.contactInfo->>\'fullName\') = LOWER(:cname)', { cname: params.clientName });
+      qb = qb.andWhere('LOWER(client."contactInfo"->>\'fullName\') = LOWER(:cname)', { cname: params.clientName });
     }
     if (params?.droverName) {
-      qb = qb.andWhere('LOWER(drover.contactInfo->>\'fullName\') = LOWER(:dname)', { dname: params.droverName });
+      qb = qb.andWhere('LOWER(drover."contactInfo"->>\'fullName\') = LOWER(:dname)', { dname: params.droverName });
     }
     if (params?.search) {
       const term = `%${params.search.toLowerCase()}%`;
       qb = qb.andWhere(
-        "LOWER(COALESCE(client.contactInfo->>'fullName','')) LIKE :term OR LOWER(COALESCE(drover.contactInfo->>'fullName','')) LIKE :term OR LOWER(COALESCE(t.startAddress,'')) LIKE :term OR LOWER(COALESCE(t.endAddress,'')) LIKE :term",
+        `(
+          LOWER(COALESCE(client."contactInfo"->>'fullName','')) LIKE :term OR
+          LOWER(COALESCE(drover."contactInfo"->>'fullName','')) LIKE :term OR
+          LOWER(COALESCE((t."startAddress"->>'city')::text,'')) LIKE :term OR
+          LOWER(COALESCE((t."endAddress"->>'city')::text,'')) LIKE :term
+        )`,
         { term },
       );
     }
@@ -107,6 +147,13 @@ export class InvoicesService {
       }
       return withTravel;
     });
+
+    // Si el filtro solicitado fue 'ADVANCE', aplicar ahora sobre el enriquecido
+    if (params?.status && String(params.status).toUpperCase() === 'ANTICIPO') {
+      enriched = enriched.filter((i: any) => String(i.status).toUpperCase() === 'ADVANCE');
+    } else if (params?.status && String(params.status).toUpperCase() === 'ADVANCE') {
+      enriched = enriched.filter((i: any) => String(i.status).toUpperCase() === 'ADVANCE');
+    }
 
     // Filtro onlyPending a nivel combinado (por si se cambió el where.status)
     if (params?.onlyPending) {
