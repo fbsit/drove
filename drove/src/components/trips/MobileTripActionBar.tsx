@@ -86,7 +86,7 @@ const MobileTripActionBar: React.FC<MobileTripActionBarProps> = ({
     pendingItems.push({
       key: 'delivery-verification',
       title: 'Completar verificación de entrega',
-      description: 'Accede escaneando el QR del receptor. No navegamos directamente al formulario.',
+      description: 'Accede escaneando el QR del receptor.',
       actionLabel: 'Escanear QR del receptor',
       onAction: () => navigate('/qr/scan'),
       icon: <QrCode className="text-[#6EF7FF]" size={18} />,

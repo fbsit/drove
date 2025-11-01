@@ -32,14 +32,14 @@ const Login: React.FC = () => {
   // Redirección tras login exitoso - SOLO cuando tenemos usuario completo
   useEffect(() => {
     console.log("🔍 Login useEffect - isAuthenticated:", isAuthenticated, "user:", user);
-    
+
     if (isAuthenticated && user && user.role) {
       console.log('✅ Usuario autenticado con role completo, redirigiendo:', user);
       const redirectTo = getRedirectPathForUser();
       console.log('🎯 Redirigiendo a:', redirectTo);
-      
+
       navigate(redirectTo, { replace: true });
-      
+
       toast({
         title: `Bienvenido, ${user?.full_name || user?.email?.split('@')[0]}`,
         description: 'Has iniciado sesión correctamente',
@@ -64,19 +64,19 @@ const Login: React.FC = () => {
         pendingCredentials.current = values;
         setVerificationEmail(values.email);
         setIsModalOpen(true);
-      } else if(err.message.includes('Usuario no aprobado')) {
+      } else if (err.message.includes('Usuario no aprobado')) {
         toast({
           variant: 'destructive',
           title: 'Error al iniciar sesión',
           description: err?.message || 'Credenciales incorrectas',
         });
-      } else if(err.message.includes('Email no verificado')) {
+      } else if (err.message.includes('Email no verificado')) {
         //Levantar modal de verificación
         pendingCredentials.current = values;
         setVerificationEmail(values.email);
         setIsModalOpen(true);
       } else {
-         toast({
+        toast({
           variant: 'destructive',
           title: 'Error al iniciar sesión',
           description: err?.message || 'Credenciales incorrectas',
@@ -111,7 +111,7 @@ const Login: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-drove flex items-center justify-center p-4">
+    <div className="min-h-screen bg-drove flex items-center justify-center p-4 py-20">
       <div className="max-w-md w-full bg-white/10 rounded-2xl p-8">
         <LoginHeader />
         <LoginForm onSubmit={handleSubmit} isLoading={isLoading} />

@@ -68,10 +68,10 @@ const PaymentMethodStep: React.FC<PaymentMethodStepProps> = ({ form }) => {
             <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="price-breakdown" className="border-white/10">
                 <AccordionTrigger className="text-white hover:no-underline">
-                  <div className="flex justify-between w-full pr-4">
+                  <div className="flex justify-between w-full pr-4 text-left">
                     <span>Total a pagar (IVA incluido)</span>
                     <span className="text-[#6EF7FF] font-bold text-lg">
-                      {form.watch("transferDetails.totalPrice")} €
+                      {form.watch("transferDetails.totalPrice")}€
                     </span>
                   </div>
                 </AccordionTrigger>
@@ -102,7 +102,11 @@ const PaymentMethodStep: React.FC<PaymentMethodStepProps> = ({ form }) => {
           <Alert className="bg-white/10 border-white/10">
             <AlertCircle className="h-4 w-4 text-[#6EF7FF]" />
             <AlertDescription className="text-white/70">
-              Una vez confirmada la solicitud, recibirás un email con los datos bancarios para realizar la transferencia. Tu solicitud quedará pendiente hasta confirmar el pago.
+              Una vez confirmada tu solicitud, el traslado del
+              vehículo quedará pendiente de asignación.
+              Recibirás un email cuando el traslado sea asignado a un
+              Drover. También recibirás la factura y los datos bancarios para
+              efectuar el pago dentro del plazo establecido.
             </AlertDescription>
           </Alert>
         </div>

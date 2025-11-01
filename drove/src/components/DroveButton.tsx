@@ -48,7 +48,7 @@ export const DroveButton: React.FC<DroveButtonProps> = ({
       {...props}
     >
       {icon && <span className="mr-1 sm:mr-2 flex-shrink-0">{icon}</span>}
-      <span className="truncate">{children}</span>
+      <span className="truncate flex items-center">{children}</span>
     </button>
   );
 };

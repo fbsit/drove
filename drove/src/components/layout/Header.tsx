@@ -492,7 +492,7 @@ const Header = () => {
                   className={`mt-1 h-2 w-2 rounded-full ${n.read ? "bg-white/30" : "bg-[#6EF7FF]"
                     }`}
                 />
-                <div className="flex-1">
+                <div className="flex-1 text-start">
                   <div className="text-white text-sm font-semibold">{n.title}</div>
                   <div className="text-white/70 text-xs">{n.message}</div>
                 </div>

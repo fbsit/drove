@@ -113,7 +113,7 @@ const DroverProfile = () => {
                   <div className="text-[#6EF7FF] text-sm">DROVER • Aprobado</div>
                   <div className="text-white/70 text-sm flex items-center gap-3 mt-1">
                     <span className="flex items-center gap-1"><Mail size={14} /> {user?.email}</span>
-                    <span className="flex items-center gap-1"><Phone size={14} /> {user?.phone || '—'}</span>
+                    <span className="flex items-center gap-1"><Phone size={14} /> {formData.phone || '—'}</span>
                   </div>
                 </div>
               </div>

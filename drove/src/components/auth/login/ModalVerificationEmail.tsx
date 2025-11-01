@@ -104,16 +104,16 @@ export const ModalVerificationEmail: React.FC<Props> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-[#22142A] text-white border-white/10 max-w-md">
+      <DialogContent className="bg-[#22142A] text-white border-white/10 max-w-[90vw] md:max-w-md rounded-xl gap-0">
         <DialogHeader>
           <DialogTitle>Verificación de correo</DialogTitle>
           {step === 'intro' ? (
-            <DialogDescription className="text-white/70">
+            <DialogDescription className="text-white/70 !my-6 text-center">
               Tu cuenta aún no está verificada. Presiona <b>Enviar código</b> para
               recibir un código de 6 dígitos en <span className="font-medium">{email}</span>.
             </DialogDescription>
           ) : (
-            <DialogDescription className="text-white/70">
+            <DialogDescription className="text-white/70 text-center !mt-4">
               Ingresa el código enviado a&nbsp;
               <span className="font-medium">{email}</span>. Expira en {format(secondsLeft)}.
             </DialogDescription>
@@ -139,7 +139,7 @@ export const ModalVerificationEmail: React.FC<Props> = ({
           </div>
         )}
 
-        <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+        <DialogFooter className="flex flex-col gap-2 sm:flex-row !justify-center">
           {step === 'intro' ? (
             <Button
               onClick={handleSendCode}

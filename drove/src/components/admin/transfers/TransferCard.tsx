@@ -162,21 +162,6 @@ const TransferCard: React.FC<Props> = ({ transfer, gamify }) => {
                   Reagendar
                 </Button>
               )}
-
-              {/* Botón Reasignar solo para traslados asignados */}
-              {isAssigned && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-orange-400/50 text-orange-400 hover:bg-orange-400/10 hover:text-white w-full"
-                  asChild
-                >
-                  <Link to={`/admin/reasignar/${transfer.id}`}>
-                    <RefreshCcw size={14} className="mr-1" />
-                    Reasignar
-                  </Link>
-                </Button>
-              )}
             </div>
           )}
 

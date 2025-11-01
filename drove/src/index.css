@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -48,14 +47,14 @@
 
   /* Fuentes */
   @font-face {
-    font-family: 'Helvetica';
-    src: local('Helvetica'), local('Helvetica-Regular');
+    font-family: "Helvetica";
+    src: local("Helvetica"), local("Helvetica-Regular");
     font-weight: normal;
   }
 
   @font-face {
-    font-family: 'Helvetica';
-    src: local('Helvetica Bold'), local('Helvetica-Bold');
+    font-family: "Helvetica";
+    src: local("Helvetica Bold"), local("Helvetica-Bold");
     font-weight: bold;
   }
 
@@ -67,7 +66,12 @@
     @apply bg-drove font-helvetica text-white;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-helvetica;
     font-weight: bold !important;
   }
@@ -76,7 +80,7 @@
   .admin-page-container {
     padding-top: 24px !important;
   }
-  
+
   @media (min-width: 768px) {
     .admin-page-container {
       padding-top: 32px !important;
@@ -88,4 +92,15 @@
   .drove-btn {
     @apply inline-flex items-center justify-center rounded-2xl border border-drove-light bg-transparent px-6 py-3 text-drove-light hover:bg-drove-accent hover:text-drove transition-colors focus:outline-none focus:ring-2 focus:ring-drove-accent focus:ring-offset-2 disabled:opacity-50;
   }
+}
+
+/* --- Evita fondo blanco en autocompletados --- */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0px 1000px #473a53 inset !important; /* tu color de fondo */
+  -webkit-text-fill-color: #fff !important; /* color del texto */
+  transition: background-color 5000s ease-in-out 0s; /* evita el flash amarillo */
 }

@@ -32,9 +32,9 @@ const ForgotPassword: React.FC = () => {
   const handleSubmit = async (values: ForgotPasswordFormValues) => {
     try {
       setIsLoading(true);
-      
+
       const resultForgot = await AuthService.forgotPassword(values.email);
-      
+
       setEmailSent(true);
       toast({
         title: 'Email enviado',
@@ -53,15 +53,15 @@ const ForgotPassword: React.FC = () => {
 
   if (emailSent) {
     return (
-      <div className="min-h-screen bg-drove flex items-center justify-center p-4">
+      <div className="min-h-screen bg-drove flex items-center justify-center px-4 py-20">
         <div className="max-w-md w-full bg-white/10 rounded-2xl p-8">
-          <LoginHeader />
-          
+          {/* <LoginHeader /> */}
+
           <div className="text-center space-y-6">
             <div className="mx-auto w-16 h-16 bg-[#6EF7FF]/20 rounded-full flex items-center justify-center">
               <Mail className="h-8 w-8 text-[#6EF7FF]" />
             </div>
-            
+
             <div>
               <h2 className="text-2xl font-bold text-white mb-2">
                 Email Enviado
@@ -73,13 +73,13 @@ const ForgotPassword: React.FC = () => {
                 </span>
               </p>
             </div>
-            
+
             <div className="bg-[#6EF7FF]/10 rounded-xl p-4 border border-[#6EF7FF]/30">
               <p className="text-sm text-white/80">
                 Si no recibes el email en unos minutos, revisa tu carpeta de spam o solicita uno nuevo.
               </p>
             </div>
-            
+
             <div className="space-y-4">
               <DroveButton
                 variant="accent"
@@ -88,7 +88,7 @@ const ForgotPassword: React.FC = () => {
               >
                 Enviar de nuevo
               </DroveButton>
-              
+
               <Link to="/login" className="block">
                 <DroveButton variant="outline" className="w-full">
                   <ArrowLeft className="mr-2 h-4 w-4" />
@@ -103,10 +103,10 @@ const ForgotPassword: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-drove flex items-center justify-center p-4">
+    <div className="min-h-screen bg-drove flex items-center justify-center p-4 py-20">
       <div className="max-w-md w-full bg-white/10 rounded-2xl p-8">
-        <LoginHeader />
-        
+        {/* <LoginHeader /> */}
+
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-white mb-2">
             Recuperar Contraseña
@@ -125,9 +125,9 @@ const ForgotPassword: React.FC = () => {
                 <FormItem>
                   <FormLabel className="text-white">Email</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="correo@ejemplo.com" 
-                      {...field} 
+                    <Input
+                      placeholder="correo@ejemplo.com"
+                      {...field}
                       disabled={isLoading}
                     />
                   </FormControl>

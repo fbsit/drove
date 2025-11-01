@@ -345,10 +345,10 @@ const DashboardDroverPanel: React.FC = () => {
             onChange={(e) => setSearch(e.target.value)}
           />
           <select className="w-full bg-white/10 border border-white/10 rounded-2xl px-4 py-2 text-white col-span-1 md:col-span-2 focus:outline-none focus:ring-2 focus:ring-[#6EF7FF] focus:border-transparent" value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="">Todos</option>
-            <option value="ASSIGNED">Asignados</option>
-            <option value="IN_PROGRESS">En Progreso</option>
-            <option value="DELIVERED">Completados</option>
+            <option className='text-black' value="">Todos</option>
+            <option className='text-black' value="ASSIGNED">Asignados</option>
+            <option className='text-black' value="IN_PROGRESS">En Progreso</option>
+            <option className='text-black' value="DELIVERED">Completados</option>
           </select>
         </CardContent>
       </Card>

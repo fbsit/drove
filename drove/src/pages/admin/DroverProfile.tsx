@@ -80,7 +80,7 @@ const DroverProfile: React.FC = () => {
         avgTimePerTrip: String(metrics.avgTimePerTrip ?? 'N/A'),
         medals: Number(metrics.medals ?? 0),
       });
-    } catch {}
+    } catch { }
   };
 
   // Buscar el drover por id
@@ -147,7 +147,7 @@ const DroverProfile: React.FC = () => {
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Top actions bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between px-3 xs:px-4 md:px-0 gap-2">
+      <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
         <Button
           variant="outline"
           onClick={() => navigate(-1)}
@@ -155,31 +155,33 @@ const DroverProfile: React.FC = () => {
         >
           <ArrowLeft size={16} className="mr-2" /> Volver a Drovers
         </Button>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap justify-center md:justify-end mt-6 gap-4 md:mt-0 w-full md:w-fit">
           <Button
             onClick={handleHire}
             variant="outline"
-            className="rounded-xl bg-green-700 text-white hover:text-green-900 hover:bg-green-200 font-bold h-10 px-6 py-2"
+            className="rounded-xl bg-green-700 text-white hover:text-green-900 hover:bg-green-200 font-bold h-10 px-6 py-2 w-full md:w-fit"
           >
             <ShieldCheck size={16} className="mr-2" /> {String(drover.employmentType || '').toUpperCase() === 'CONTRACTED' ? 'Marcar Flex' : 'Contratar'}
           </Button>
-          {(drover.status === "PENDING" || drover.status === "REJECTED") && (
-            <Button
-              onClick={handleApproved}
-              className="rounded-2xl border border-cyan-400/40 bg-transparent text-cyan-300 hover:bg-cyan-400/10"
-            >
-              <BadgeCheck size={16} className="mr-2" /> Aprobar
-            </Button>
-          )}
-          {(drover.status === "PENDING" || drover.status === "APPROVED") && (
-            <Button
-              onClick={handleRejected}
-              variant="destructive"
-              className="rounded-2xl"
-            >
-              <UserX size={16} className="mr-2" /> Rechazar
-            </Button>
-          )}
+          <div className="flex gap-4 w-full md:w-fit">
+            {(drover.status === "PENDING" || drover.status === "REJECTED") && (
+              <Button
+                onClick={handleApproved}
+                className="rounded-2xl border border-cyan-400/40 bg-transparent text-cyan-300 hover:bg-cyan-400/10 flex-1 md:w-fit"
+              >
+                <BadgeCheck size={16} className="mr-2" /> Aprobar
+              </Button>
+            )}
+            {(drover.status === "PENDING" || drover.status === "APPROVED") && (
+              <Button
+                onClick={handleRejected}
+                variant="destructive"
+                className="rounded-2xl flex-1 md:w-fit"
+              >
+                <UserX size={16} className="mr-2" /> Rechazar
+              </Button>
+            )}
+          </div>
         </div>
       </div>
       {/* Header card */}
@@ -200,9 +202,9 @@ const DroverProfile: React.FC = () => {
         </div>
         {/* Info */}
         <div className="flex-1 min-w-0 w-full">
-          <div className="flex flex-wrap gap-2 items-center mb-1 text-start">
+          <div className="flex flex-wrap gap-4 items-center mb-4 justify-center md:justify-start">
             <h1
-              className="text-lg xs:text-xl md:text-2xl text-white font-bold break-words w-full"
+              className="text-lg xs:text-xl md:text-2xl text-white font-bold break-words w-full md:text-start"
               style={{ fontFamily: "Helvetica" }}
             >
               {drover?.contactInfo?.fullName}
@@ -218,7 +220,7 @@ const DroverProfile: React.FC = () => {
               Nivel 3
             </span>
           </div>
-          <div className="flex flex-col xs:flex-row gap-1 xs:gap-3 items-start xs:items-center mt-2 text-white/80 text-xs sm:text-sm">
+          <div className="flex flex-col xs:flex-row gap-1 xs:gap-3 items-center md:items-start mt-2 text-white/80 text-xs sm:text-sm">
             <div className="flex items-center gap-1">
               <Mail size={15} className="inline mr-1 opacity-70" />
               <span>{drover.email}</span>
@@ -235,7 +237,7 @@ const DroverProfile: React.FC = () => {
       </div>
 
       {/* KPIs (estilo con iconos y colores) */}
-      <div className="px-3 xs:px-4 md:px-0">
+      <div>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4">
           <div className="bg-white/10 rounded-2xl p-6 text-center backdrop-blur-sm">
             <div className="bg-white/90 p-3 rounded-2xl w-fit mx-auto mb-3">

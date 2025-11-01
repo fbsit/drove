@@ -44,7 +44,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
       canvas.style.width = `${cssW}px`;
       canvas.style.height = `${cssH}px`;
       // Escalar contexto al DPR y limpiar
-      try { (ctx as any).setTransform?.(1, 0, 0, 1, 0, 0); } catch {}
+      try { (ctx as any).setTransform?.(1, 0, 0, 1, 0, 0); } catch { }
       ctx.scale(dpr, dpr);
       ctx.clearRect(0, 0, cssW, cssH);
       ctx.lineWidth = 2.5;
@@ -163,7 +163,7 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
         onTouchStart={startDrawing}
         onTouchMove={draw}
         onTouchEnd={endDrawing}
-        className="touch-none w-full h-auto cursor-crosshair rounded-md bg-white"
+        className="touch-none !w-full h-auto cursor-crosshair rounded-md bg-white"
       />
 
       <Button
